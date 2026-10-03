@@ -1,8 +1,8 @@
 {
   "schemaVersion": 1,
   "locale": "zh-CN",
-  "keyCount": 3541,
-  "keyFingerprint": "63ef0f0fb348525914ac49ec3607971413eae40b0cb0a39b010dfe6e542ee7a0",
+  "keyCount": 3544,
+  "keyFingerprint": "f2ff95341fae263d54efeae1d6ef9ab2e4aa1fd5d442449d1cc5246156436d3a",
   "translations": {
     "buttons": {
       "addFileSubtask": "添加文件子任务",
@@ -3237,6 +3237,8 @@
       "fileBodyPanelFileLabel": "文件",
       "fileBodyPanelTitle": "内容",
       "fileBodyPlaceholder": "项目详情……",
+      "filePropertiesUnavailable": "来源缺失、不明确或无效，无法使用文件属性。",
+      "filePropertyReadOnly": "{{name}} 的当前值无法安全编辑，因此为只读。",
       "fileTaskNameTitle": "文件任务名称",
       "fileTemplateInfoLabel": "信息：",
       "filterStatus": "筛选状态",
@@ -3258,6 +3260,7 @@
       "groupCommands": "命令",
       "groupConnections": "关联",
       "groupCustom": "自定义",
+      "groupFile": "文件",
       "groupOverview": "概览",
       "groupPlanning": "计划",
       "hideFileBodyPanel": "隐藏内容面板",
@@ -3586,5 +3589,5 @@
       "toggleDescendantPreview": "切换子任务预览"
     }
   },
-  "sourceVersion": "a8bbe0702c1c8d764a9bc714527116b1b5a2d27b9788fcf0ebae359f4b16986c"
+  "sourceVersion": "1aad687690a767050d03ca6471fcfda59de1ced31ea3777305b296cf662c570c"
 }

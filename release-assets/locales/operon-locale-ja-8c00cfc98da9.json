@@ -1,8 +1,8 @@
 {
   "schemaVersion": 1,
   "locale": "ja",
-  "keyCount": 3541,
-  "keyFingerprint": "63ef0f0fb348525914ac49ec3607971413eae40b0cb0a39b010dfe6e542ee7a0",
+  "keyCount": 3544,
+  "keyFingerprint": "f2ff95341fae263d54efeae1d6ef9ab2e4aa1fd5d442449d1cc5246156436d3a",
   "translations": {
     "buttons": {
       "addFileSubtask": "ファイルサブタスクを追加",
@@ -3237,6 +3237,8 @@
       "fileBodyPanelFileLabel": "ファイル",
       "fileBodyPanelTitle": "本文",
       "fileBodyPlaceholder": "プロジェクトの詳細...",
+      "filePropertiesUnavailable": "ソースが存在しない、曖昧、または無効なため、ファイルプロパティを利用できません。",
+      "filePropertyReadOnly": "{{name}} は現在の値を安全に編集できないため読み取り専用です。",
       "fileTaskNameTitle": "ファイルタスク名",
       "fileTemplateInfoLabel": "情報:",
       "filterStatus": "ステータスで絞り込み",
@@ -3258,6 +3260,7 @@
       "groupCommands": "コマンド",
       "groupConnections": "関連",
       "groupCustom": "カスタム",
+      "groupFile": "ファイル",
       "groupOverview": "概要",
       "groupPlanning": "計画",
       "hideFileBodyPanel": "本文パネルを非表示",
@@ -3586,5 +3589,5 @@
       "toggleDescendantPreview": "子孫プレビューを切り替え"
     }
   },
-  "sourceVersion": "5ec6d5c18824c003514a1b8712df3393b0130b048dde36010a0d4fb7521a76d5"
+  "sourceVersion": "cf16ffc9393958f7c55d768b639b4aff6de512c6faaa52615d03690e9817e2ab"
 }

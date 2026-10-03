@@ -78,6 +78,7 @@ export function openTableFilePropertyPicker(options: {
 	sourcePath: string;
 	lifecycleOwner?: Node;
 	sessionKey?: string;
+ preserveListValues?: boolean;
 	onFocusReturn?: () => void;
 	onMutation: (mutation: RawYamlPropertyMutation) => void;
 	onClose?: () => void;
@@ -105,6 +106,7 @@ export function openTableFilePropertyPicker(options: {
 				type: 'list',
 				sourcePath: options.sourcePath,
 				value: current,
+                preserveValues: options.preserveListValues,
 				candidates: [...options.candidates],
 				onCommit: () => undefined,
 				onCommitValues: (_key, values) => options.onMutation({ kind: 'set', value: values }),

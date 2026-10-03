@@ -23806,6 +23806,7 @@ export default class OperonPlugin extends Plugin {
 						movedFile.path, await this.app.vault.read(movedFile), freshTask.primary.lineNumber) : undefined;
 					return {
 						...(fileBody ? { fileBody } : {}),
+      ...(request.fileProperties?.length ? { fileProperties: request.fileProperties } : {}),
 						canonicalState: {
 							description: freshTask.description,
 							checkbox: freshTask.checkbox,
@@ -24912,7 +24913,9 @@ export default class OperonPlugin extends Plugin {
 		}
 		let outcome: PluginUiMutationOutcome;
 		try {
-			if (await this.writer.taskFieldsMatchCurrentSource(task.operonId, expectedValues)) {
+			if (await this.writer.taskFieldsMatchCurrentSource(task.operonId, expectedValues, request.fileProperties?.length ? {
+     changes: request.fileProperties, ...(request.fileBody?.dirty ? { bodyContent: request.fileBody.content } : {}),
+    } : undefined)) {
 				this.indexer.scheduleReindex(task.primary.filePath);
 				outcome = 'committed-repair-scheduled';
 			} else if (await this.writer.taskFieldsMatchCurrentSource(task.operonId, beforeValues)) {
@@ -24946,6 +24949,7 @@ export default class OperonPlugin extends Plugin {
 		request: TaskEditorSaveRequest,
 		timerPayload: Record<string, string>,
 	): Promise<boolean | null> {
+		if (request.fileProperties?.length) return this.applyEditedTaskDirectFromView(task, request, timerPayload);
 		if (this.settings.keepInlineTasksWithParent && task.primary.format === 'inline') {
 			return this.applyEditedTaskDirectFromView(task, request, timerPayload);
 		}
@@ -31554,6 +31558,7 @@ export default class OperonPlugin extends Plugin {
 		request: TaskEditorSaveRequest,
 		timerPayload: Record<string, string>,
 	): Promise<boolean | null> {
+		if (request.fileProperties?.length && (task.primary.format !== 'yaml' || this.indexer.hasDuplicateOperonIdConflict(task.operonId))) return false;
 		const parsed = this.parseInlineTaskLine(request.taskLine, 0, task.primary.filePath);
 		if (!parsed?.operonId || parsed.operonId !== task.operonId) return false;
 
@@ -31574,6 +31579,7 @@ export default class OperonPlugin extends Plugin {
 			return null;
 		}
 		if (repeatTemporalScope.action === 'skipAndCancel') {
+   if (request.fileProperties?.length) return null;
 			const outcome = await this.updatePluginUiTaskStatusAndRefresh(freshTask.operonId, {
 				_checkbox: 'cancelled',
 				dateCancelled: localToday(),
@@ -31761,7 +31767,11 @@ export default class OperonPlugin extends Plugin {
 				() => this.writer.writeTaskFields(
 					freshTask.operonId,
 					parentLinkExpected ? this.parentLinkReplacementPayload(freshTask, payload) : payload,
-					{ mode: 'replace', reindex: 'none', touchAncestors: false, expectedFieldValues: parentLinkExpected },
+					{ mode: 'replace', reindex: 'none', touchAncestors: false, expectedFieldValues: parentLinkExpected,
+      ...(request.fileProperties?.length ? { filePropertyDraft: { changes: request.fileProperties,
+       ...(request.fileBody?.dirty ? { body: { expectedContent: request.fileBody.expectedContent ?? '', content: request.fileBody.content } } : {}),
+      } } : {}),
+     },
 				),
 			);
 		if (!wroteYamlTask) return false;
@@ -31781,7 +31791,7 @@ export default class OperonPlugin extends Plugin {
 		if (request.fileBody) {
 			request.fileBody.filePath = indexedPath;
 		}
-		if (request.fileBody?.dirty) {
+		if (request.fileBody?.dirty && !request.fileProperties?.length) {
 			try {
 				await this.writeFileTaskBodyIfNeeded(indexedFile, request.fileBody);
 			} catch (error) {

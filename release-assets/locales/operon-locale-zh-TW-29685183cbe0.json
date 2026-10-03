@@ -1,8 +1,8 @@
 {
   "schemaVersion": 1,
   "locale": "zh-TW",
-  "keyCount": 3541,
-  "keyFingerprint": "63ef0f0fb348525914ac49ec3607971413eae40b0cb0a39b010dfe6e542ee7a0",
+  "keyCount": 3544,
+  "keyFingerprint": "f2ff95341fae263d54efeae1d6ef9ab2e4aa1fd5d442449d1cc5246156436d3a",
   "translations": {
     "buttons": {
       "addFileSubtask": "新增檔案子任務",
@@ -3237,6 +3237,8 @@
       "fileBodyPanelFileLabel": "檔案",
       "fileBodyPanelTitle": "內容",
       "fileBodyPlaceholder": "專案詳情……",
+      "filePropertiesUnavailable": "來源缺失、不明確或無效，無法使用檔案屬性。",
+      "filePropertyReadOnly": "{{name}} 的目前值無法安全編輯，因此為唯讀。",
       "fileTaskNameTitle": "檔案任務名稱",
       "fileTemplateInfoLabel": "資訊：",
       "filterStatus": "篩選狀態",
@@ -3258,6 +3260,7 @@
       "groupCommands": "命令",
       "groupConnections": "關聯",
       "groupCustom": "自訂",
+      "groupFile": "檔案",
       "groupOverview": "概覽",
       "groupPlanning": "規劃",
       "hideFileBodyPanel": "隱藏內容面板",
@@ -3586,5 +3589,5 @@
       "toggleDescendantPreview": "切換子任務預覽"
     }
   },
-  "sourceVersion": "34602641d20871a4b701f3275f0e52c773d463b017b42566a3de876031d9eb5b"
+  "sourceVersion": "538c1ed014defac1a863ec5ee88e695de522b0b47eb1a9a17578cabee05db4c8"
 }

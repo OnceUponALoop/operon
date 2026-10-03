@@ -1,8 +1,8 @@
 {
   "schemaVersion": 1,
   "locale": "ru",
-  "keyCount": 3541,
-  "keyFingerprint": "63ef0f0fb348525914ac49ec3607971413eae40b0cb0a39b010dfe6e542ee7a0",
+  "keyCount": 3544,
+  "keyFingerprint": "f2ff95341fae263d54efeae1d6ef9ab2e4aa1fd5d442449d1cc5246156436d3a",
   "translations": {
     "buttons": {
       "addFileSubtask": "Добавить файловую подзадачу",
@@ -3237,6 +3237,8 @@
       "fileBodyPanelFileLabel": "Файл",
       "fileBodyPanelTitle": "Содержимое",
       "fileBodyPlaceholder": "Детали проекта...",
+      "filePropertiesUnavailable": "Свойства недоступны: источник отсутствует, неоднозначен или некорректен.",
+      "filePropertyReadOnly": "{{name}} доступно только для чтения: текущее значение нельзя безопасно изменить.",
       "fileTaskNameTitle": "Название файловой задачи",
       "fileTemplateInfoLabel": "Инфо:",
       "filterStatus": "Фильтр статуса",
@@ -3258,6 +3260,7 @@
       "groupCommands": "Команды",
       "groupConnections": "Связи",
       "groupCustom": "Пользовательские",
+      "groupFile": "Файл",
       "groupOverview": "Обзор",
       "groupPlanning": "Планирование",
       "hideFileBodyPanel": "Скрыть панель содержимого",
@@ -3586,5 +3589,5 @@
       "toggleDescendantPreview": "Переключить предпросмотр потомков"
     }
   },
-  "sourceVersion": "ce9d3bc856d71ac71f6035e421f2aa1d8c27e8649a1a7e2d7096cab16eabdf4a"
+  "sourceVersion": "909441fe98988a17081eec6c2fd8fe31d4074ec2e9e2bbef0cd620ac63062b5b"
 }

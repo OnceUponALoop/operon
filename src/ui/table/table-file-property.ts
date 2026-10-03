@@ -559,7 +559,7 @@ function normalizeObsidianPropertyTypeId(value: unknown): ObsidianPropertyTypeId
 
 const isSupportedTableFilePropertyValue = isSupportedRawYamlPropertyValue;
 
-function getTableFilePropertyTypeIcon(type: FilterFieldType): string {
+export function getTableFilePropertyTypeIcon(type: FilterFieldType): string {
 	switch (type) {
 		case 'list':
 		case 'tags':

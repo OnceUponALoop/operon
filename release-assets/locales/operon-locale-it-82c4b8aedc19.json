@@ -1,8 +1,8 @@
 {
   "schemaVersion": 1,
   "locale": "it",
-  "keyCount": 3541,
-  "keyFingerprint": "63ef0f0fb348525914ac49ec3607971413eae40b0cb0a39b010dfe6e542ee7a0",
+  "keyCount": 3544,
+  "keyFingerprint": "f2ff95341fae263d54efeae1d6ef9ab2e4aa1fd5d442449d1cc5246156436d3a",
   "translations": {
     "buttons": {
       "addFileSubtask": "Aggiungi sotto-attività-file",
@@ -3237,6 +3237,8 @@
       "fileBodyPanelFileLabel": "File",
       "fileBodyPanelTitle": "Contenuto",
       "fileBodyPlaceholder": "Dettagli del progetto...",
+      "filePropertiesUnavailable": "Proprietà non disponibili: la fonte è mancante, ambigua o non valida.",
+      "filePropertyReadOnly": "{{name}} è di sola lettura perché il valore attuale non può essere modificato in sicurezza.",
       "fileTaskNameTitle": "Nome dell'attività-file",
       "fileTemplateInfoLabel": "Info:",
       "filterStatus": "Filtra stato",
@@ -3258,6 +3260,7 @@
       "groupCommands": "Comandi",
       "groupConnections": "Collegamenti",
       "groupCustom": "Personalizzato",
+      "groupFile": "File",
       "groupOverview": "Panoramica",
       "groupPlanning": "Pianificazione",
       "hideFileBodyPanel": "Nascondi pannello contenuto",
@@ -3586,5 +3589,5 @@
       "toggleDescendantPreview": "Alterna anteprima discendenti"
     }
   },
-  "sourceVersion": "589526962ad1a00cd11b6877bb7a6ede07f09b61d9b8a4fd28675f16694fdfa5"
+  "sourceVersion": "6c1ddf1b50b72ef5ebc1b989470972772339d6e421d008d43717fab06a05ef42"
 }

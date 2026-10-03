@@ -1,8 +1,8 @@
 {
   "schemaVersion": 1,
   "locale": "tr",
-  "keyCount": 3541,
-  "keyFingerprint": "63ef0f0fb348525914ac49ec3607971413eae40b0cb0a39b010dfe6e542ee7a0",
+  "keyCount": 3544,
+  "keyFingerprint": "f2ff95341fae263d54efeae1d6ef9ab2e4aa1fd5d442449d1cc5246156436d3a",
   "translations": {
     "buttons": {
       "addFileSubtask": "Dosya Tipi Alt Görev Ekle",
@@ -3237,6 +3237,8 @@
       "fileBodyPanelFileLabel": "Dosya",
       "fileBodyPanelTitle": "İçerik",
       "fileBodyPlaceholder": "Proje detayları...",
+      "filePropertiesUnavailable": "Kaynak eksik, belirsiz veya geçersiz olduğu için dosya özellikleri kullanılamıyor.",
+      "filePropertyReadOnly": "{{name}}: mevcut değer güvenle düzenlenemediği için salt okunur.",
       "fileTaskNameTitle": "Dosya Tipi Görev Adı",
       "fileTemplateInfoLabel": "Bilgi:",
       "filterStatus": "Durum filtrele",
@@ -3258,6 +3260,7 @@
       "groupCommands": "Komutlar",
       "groupConnections": "Bağlantılar",
       "groupCustom": "Özel",
+      "groupFile": "Dosya",
       "groupOverview": "Genel",
       "groupPlanning": "Planlama",
       "hideFileBodyPanel": "İçerik panelini gizle",
@@ -3586,5 +3589,5 @@
       "toggleDescendantPreview": "Alt görev önizlemesini aç/kapat"
     }
   },
-  "sourceVersion": "b1f76da1700b50739fc6e58e5cf232a14ac6ef082c2eda523a5a6e41b598ce93"
+  "sourceVersion": "19b7c28bbd05c6b491af15501885ac5fa3ee82255e7c7e00960ffd41e910037e"
 }

@@ -9,6 +9,7 @@ const CUSTOM_LIST_PAGE_SIZE = 20;
 const CUSTOM_LIST_LOAD_MORE_SCROLL_THRESHOLD_PX = 48;
 
 export interface CustomListFieldPickerOptions extends CustomFieldPickerBaseOptions<'list'> {
+ preserveValues?: boolean;
  rankEmptyCandidates?: (candidates: readonly string[]) => string[];
 	app: App;
 	sourcePath?: string;
@@ -58,7 +59,7 @@ export function showCustomListFieldPicker(
 	});
 	actions.appendChild(clearButton);
 
-	let selectedValues = Array.from(new Set(options.value.map(normalizeCustomListValue).filter(Boolean)));
+	let selectedValues = Array.from(new Set(options.preserveValues ? options.value : options.value.map(normalizeCustomListValue).filter(Boolean)));
 	let matches: string[] = [];
 	let activeIndex = 0;
 	let loadedCount = 0;

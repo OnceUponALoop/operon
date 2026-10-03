@@ -43,7 +43,10 @@ import {
     type RawYamlPropertyWriteResult,
 } from './raw-yaml-property';
 
+import { canApplyFileTaskPropertyChanges, readFileTaskPropertyDocument, fileTaskPropertyIdentityMatches, type FileTaskPropertyChange } from './file-task-property-draft';
+
 export interface TaskWriteOptions {
+    filePropertyDraft?: { changes: readonly FileTaskPropertyChange[]; body?: { expectedContent: string; content: string } };
     mode?: 'merge' | 'replace';
     reindex?: 'scheduled' | 'none';
     touchAncestors?: boolean;
@@ -1219,7 +1222,9 @@ export class TaskWriter {
             const ancestorIds = modifiedTimestamp && options.touchAncestors !== false
                 ? this.collectAffectedAncestorIdsForWrite(task, fieldValues, mode)
                 : new Set<string>();
-            const writeResult = options.expectedFieldValues
+            const writeResult = options.filePropertyDraft
+                ? { wrote: await this.writeFileTaskEditorDraft(file, task, fieldValues, options, permit), yamlFastPath: 'none' as const, fallbackReason: 'none' }
+                : options.expectedFieldValues
                 ? { wrote: await this.writeExpectedTaskFields(file, task, fieldValues, options, permit), yamlFastPath: 'none' as const, fallbackReason: 'none' }
                 : location.format === 'yaml'
                 ? await this.writeYamlTask(file, operonId, fieldValues, mode, options, permit)
@@ -1275,6 +1280,52 @@ export class TaskWriter {
             `fallbackReason=${writeResult.fallbackReason}`,
         );
         return true;
+    }
+
+    /** File properties and managed editor/body changes commit in one native file transaction. */
+    private async writeFileTaskEditorDraft(file: TFile, task: IndexedTask, fieldValues: Record<string, string>, options: TaskWriteOptions, permit: TaskWriterSharedMutationPermit): Promise<boolean> {
+        if (task.primary.format !== 'yaml' || !options.filePropertyDraft) return false;
+        const draft = options.filePropertyDraft;
+        return this.enqueueFileMutation(this.getFileWriteQueueKey(file.path), async () => {
+            const validatePath = this.hooks.validatePluginWritePath ?? this.hooks.validateWritePath;
+            if (validatePath && !await validatePath(file.path, false)) return false;
+            let nextContent: string | null = null;
+            try {
+                await this.app.vault.process(file, content => {
+                    const currentTask = this.indexer.getTask(task.operonId);
+                    const document = readFileTaskPropertyDocument(content);
+                    if (options.canCommit?.() === false || !currentTask || currentTask.primary.format !== 'yaml'
+                        || currentTask.primary.filePath !== file.path || this.blockDuplicateConflict(task.operonId)
+                        || !document || !fileTaskPropertyIdentityMatches(document.frontmatter, task.operonId, this.keyMappings)
+                        || !canApplyFileTaskPropertyChanges(document.frontmatter, draft.changes, this.keyMappings)
+                        || (draft.body && document.body !== draft.body.expectedContent)) throw EXACT_MARKDOWN_SOURCE_MUTATION_ABORT;
+                    if (options.expectedFieldValues) {
+                        const expected = this.prepareIndexedYamlExpectedFields(content, options.expectedFieldValues);
+                        if (!expected || !this.taskFieldsMatchSourceContent(file.path, content, { operonId: task.operonId, format: 'yaml', fieldValues, expectedFieldValues: expected })) throw EXACT_MARKDOWN_SOURCE_MUTATION_ABORT;
+                    }
+                    const nextFields = { ...fieldValues };
+                    const createdPresent = getManagedYamlAliases('datetimeCreated', this.keyMappings).some(key => {
+                        const raw = this.stringifyFrontmatterScalar(document.frontmatter[key]); return raw !== null && raw.trim() !== '';
+                    });
+                    if (!Object.prototype.hasOwnProperty.call(nextFields, 'datetimeCreated') && !createdPresent) {
+                        const created = resolveYamlTaskCreatedBackfillValue(file.stat.ctime);
+                        if (created) nextFields.datetimeCreated = created;
+                    }
+                    const plan = applyYamlTaskFieldValues(document.frontmatter, nextFields, options.mode ?? 'replace', this.keyMappings);
+                    for (const change of draft.changes) document.frontmatter[change.propertyName] = change.value;
+                    const opening = content.startsWith('---\r\n') ? '---\r\n' : '---\n';
+                    nextContent = normalizeYamlFrontmatterFormatting(`${opening}${[...document.order.filter(key => Object.prototype.hasOwnProperty.call(document.frontmatter, key)), ...Object.keys(document.frontmatter).filter(key => !document.order.includes(key))].map(key => stringifyYaml({ [key]: document.frontmatter[key] }).trimEnd()).join('\n')}\n---\n${draft.body?.content ?? document.body}`, plan);
+                    if (nextContent !== content) this.hooks.onBeforeWriteFile?.(file.path);
+                    return nextContent;
+                });
+                return nextContent !== null;
+            } catch (error) {
+                if (error === EXACT_MARKDOWN_SOURCE_MUTATION_ABORT) return false;
+                // A transport error after applying the write must not be replayed blindly.
+                if (nextContent !== null && await this.app.vault.read(file).catch(() => null) === nextContent) return true;
+                throw error;
+            }
+        }, permit);
     }
 
     /** Optional UI compare-and-set; comparison and patch share the native source transaction. */
@@ -1466,12 +1517,13 @@ export class TaskWriter {
     async taskFieldsMatchCurrentSource(
         operonId: string,
         expectedValues: Record<string, string>,
+        filePropertyDraft?: { changes: readonly FileTaskPropertyChange[]; bodyContent?: string },
     ): Promise<boolean> {
         const task = this.indexer.getTask(operonId);
         if (!task || this.blockDuplicateConflict(operonId)) return false;
         for (const expectedKey of Object.keys(expectedValues)) {
             if (expectedKey === '_checkbox') continue;
-            if (expectedKey === '_tags' || (task.primary.format === 'inline' && expectedKey === '_description')) continue;
+            if (expectedKey === '_tags' || ((task.primary.format === 'inline' || filePropertyDraft) && expectedKey === '_description')) continue;
             if (!getManagedTaskFieldType(expectedKey, this.keyMappings)) return false;
         }
         const file = this.app.vault.getAbstractFileByPath(task.primary.filePath);
@@ -1479,6 +1531,16 @@ export class TaskWriter {
 
         return await this.enqueueFileMutation(this.getFileWriteQueueKey(file.path), async () => {
             const content = await this.app.vault.read(file);
+            if (filePropertyDraft) {
+                const document = readFileTaskPropertyDocument(content);
+                if (task.primary.format !== 'yaml' || !document || !fileTaskPropertyIdentityMatches(document.frontmatter, operonId, this.keyMappings)
+                    || (filePropertyDraft.bodyContent !== undefined && document.body !== filePropertyDraft.bodyContent)
+                    || !filePropertyDraft.changes.every(change => {
+                        const actual = readRawYamlPropertyExpectation(document.frontmatter, change.propertyName);
+                        return actual !== null && rawYamlPropertyExpectationsEqual(actual, { present: true, value: change.value });
+                    })) return false;
+            }
+
             if (task.primary.format === 'yaml') {
                 const match = content.match(/^---\r?\n([\s\S]*?)\r?\n---(?:\r?\n|$)/u);
                 if (!match) return false;
@@ -1487,6 +1549,7 @@ export class TaskWriter {
                 const frontmatter = parsed as Record<string, unknown>;
                 if (!this.frontmatterMatchesOperonId(frontmatter, operonId)) return false;
                 return Object.entries(expectedValues).every(([expectedKey, expectedValue]) => {
+                    if (filePropertyDraft && expectedKey === '_description') return file.basename === expectedValue;
                     if (expectedKey === '_tags') {
                         const raw = frontmatter.tags;
                         const tags = Array.isArray(raw) ? raw.map(String) : typeof raw === 'string' ? parseListValue(raw) : [];

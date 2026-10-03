@@ -1,8 +1,8 @@
 {
   "schemaVersion": 1,
   "locale": "es",
-  "keyCount": 3541,
-  "keyFingerprint": "63ef0f0fb348525914ac49ec3607971413eae40b0cb0a39b010dfe6e542ee7a0",
+  "keyCount": 3544,
+  "keyFingerprint": "f2ff95341fae263d54efeae1d6ef9ab2e4aa1fd5d442449d1cc5246156436d3a",
   "translations": {
     "buttons": {
       "addFileSubtask": "Añadir subtarea de archivo",
@@ -3237,6 +3237,8 @@
       "fileBodyPanelFileLabel": "Archivo",
       "fileBodyPanelTitle": "Contenido",
       "fileBodyPlaceholder": "Detalles del proyecto...",
+      "filePropertiesUnavailable": "Las propiedades no están disponibles: el origen falta, es ambiguo o no es válido.",
+      "filePropertyReadOnly": "{{name}} es de solo lectura porque su valor actual no se puede editar de forma segura.",
       "fileTaskNameTitle": "Nombre de la tarea de archivo",
       "fileTemplateInfoLabel": "Información:",
       "filterStatus": "Filtrar estado",
@@ -3258,6 +3260,7 @@
       "groupCommands": "Comandos",
       "groupConnections": "Conexiones",
       "groupCustom": "Personalizado",
+      "groupFile": "Archivo",
       "groupOverview": "Resumen",
       "groupPlanning": "Planificación",
       "hideFileBodyPanel": "Ocultar panel de contenido",
@@ -3586,5 +3589,5 @@
       "toggleDescendantPreview": "Alternar vista previa de descendientes"
     }
   },
-  "sourceVersion": "fe326baff1dea3ccc8cef9eba5979284a26099fc588dcc9092987f9b5d792c08"
+  "sourceVersion": "430c061df2dc60193afae0c3a2f96c5aba5d24d9583c09c9c9c62b60051413c5"
 }
