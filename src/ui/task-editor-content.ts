@@ -3636,7 +3636,10 @@ export class TaskEditorContent {
  }
 
  private renderDesktopFileProperties(root: HTMLElement): void {
-  const focusedName = Array.from(this.filePropertyRows).find(([, entry]) => entry.row.contains(root.ownerDocument.activeElement) || entry.action === root.ownerDocument.activeElement)?.[0];
+  const activeElement = root.ownerDocument.activeElement;
+  const focusedEntry = Array.from(this.filePropertyRows).find(([, entry]) => entry.row.contains(activeElement) || entry.action === activeElement);
+  const focusedName = focusedEntry?.[0];
+  const focusedValue = focusedEntry?.[1].value.contains(activeElement) ?? false;
   this.closeFilePropertyPicker?.();
   cleanupOperonHoverTooltips(root); root.empty(); this.filePropertyRows.clear();
   if (!this.filePropertyUnavailable && !this.fileProperties.size) return;
@@ -3659,7 +3662,13 @@ export class TaskEditorContent {
    this.filePropertyRows.set(name, { row, value, action });
    this.refreshFilePropertyValue(name);
   }
-  if (focusedName) this.filePropertyRows.get(focusedName)?.action.focus({ preventScroll: true });
+  if (focusedName) {
+   const restored = this.filePropertyRows.get(focusedName);
+   const valueTarget = restored?.row.hidden ? null : restored?.value.querySelector<HTMLElement>('[tabindex="0"]');
+   const target = (focusedValue ? valueTarget : null) ?? (restored && !restored.action.disabled ? restored.action : valueTarget)
+    ?? Array.from(this.filePropertyRows.values()).map(surface => !surface.action.disabled ? surface.action : surface.row.hidden ? null : surface.value.querySelector<HTMLElement>('[tabindex="0"]')).find(surface => surface !== null);
+   target?.focus({ preventScroll: true });
+  }
  }
 
  private refreshFilePropertyValue(name: string): void {
