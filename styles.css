@@ -35822,7 +35822,8 @@ body .operon-state-icon-setting:where(.operon-settings-scope, .operon-settings-s
 	align-self: center;
 }
 /* Desktop Task Editor property groups; mobile keeps its existing surface. */
-.operon-task-editor:not(.operon-task-editor-mobile) .operon-editor-desktop-properties > .operon-editor-desktop-property-group {
+.operon-task-editor:not(.operon-task-editor-mobile) .operon-editor-desktop-properties > .operon-editor-desktop-property-group,
+.operon-task-editor:not(.operon-task-editor-mobile) .operon-editor-desktop-commands {
 	padding: 10px 18px 14px;
 	margin: 0;
 	background: color-mix(in srgb, var(--background-secondary) 55%, transparent);
@@ -35922,10 +35923,7 @@ body .operon-state-icon-setting:where(.operon-settings-scope, .operon-settings-s
 }
 
 .operon-task-editor:not(.operon-task-editor-mobile) .operon-editor-desktop-commands {
-	display: flex;
-	align-items: center;
-	justify-content: space-between;
-	gap: 12px;
+	border-top: none;
 }
 
 .operon-task-editor:not(.operon-task-editor-mobile) .operon-editor-desktop-commands .operon-editor-core-actions {
@@ -35944,10 +35942,6 @@ body .operon-state-icon-setting:where(.operon-settings-scope, .operon-settings-s
 	--operon-task-editor-core-button-focus-ring: color-mix(in srgb, var(--operon-task-editor-accent, var(--interactive-accent)) 12%, transparent);
 	--operon-task-editor-core-danger: color-mix(in srgb, var(--color-red) 86%, var(--text-normal));
 	--operon-task-editor-core-danger-border: color-mix(in srgb, var(--color-red) 42%, var(--background-modifier-border));
-}
-
-.operon-task-editor:not(.operon-task-editor-mobile) .operon-editor-desktop-commands {
-	flex-wrap: wrap;
 }
 
 /* Desktop property values: stable geometry with hover and keyboard affordances. */

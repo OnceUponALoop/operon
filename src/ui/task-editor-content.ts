@@ -3519,8 +3519,9 @@ export class TaskEditorContent {
 
 	private renderDesktopPropertyGroups(container: HTMLElement): void {
 		const commands = container.createDiv('operon-editor-group operon-editor-desktop-commands');
-		commands.createDiv({ text: t('taskEditor', 'groupCommands'), cls: 'operon-editor-desktop-group-title' });
-		const actions = commands.createDiv('operon-editor-core-actions');
+		const header = commands.createDiv('operon-editor-desktop-group-header');
+		header.createDiv({ text: t('taskEditor', 'groupCommands'), cls: 'operon-editor-core-title-badge operon-editor-desktop-group-title' });
+		const actions = header.createDiv('operon-editor-core-actions operon-task-editor-workflow-actions');
 		this.renderCoreActionButtons(actions);
 		this.renderRemoveControl(actions);
 
