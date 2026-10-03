@@ -1,8 +1,8 @@
 {
   "schemaVersion": 1,
   "locale": "zh-TW",
-  "keyCount": 3534,
-  "keyFingerprint": "f97dfb0133140d667d70352a0490af970cee4e305edb1f775e0dc87fcd641452",
+  "keyCount": 3540,
+  "keyFingerprint": "f5ffe8a848bfda113aa3f85eec4af9212d4ee1057dafb7c2ce0846e72c748c2a",
   "translations": {
     "buttons": {
       "addFileSubtask": "新增檔案子任務",
@@ -3254,6 +3254,12 @@
       "flowTimeStartBreak": "開始休息",
       "flowTimeTargetReached": "已達到 FlowTime 目標",
       "goToSource": "前往原始檔",
+      "groupActivity": "活動",
+      "groupCommands": "命令",
+      "groupConnections": "關聯",
+      "groupCustom": "自訂",
+      "groupOverview": "概覽",
+      "groupPlanning": "規劃",
       "hideFileBodyPanel": "隱藏內容面板",
       "inlineTargetActive": "目前檔案",
       "inlineTargetBelowParent": "父任務核取方塊下方",
@@ -3579,5 +3585,5 @@
       "toggleDescendantPreview": "切換子任務預覽"
     }
   },
-  "sourceVersion": "3fdec7a37264e9336a920feabe507fd4fe0c18ec0e8b1eb72580a65f54273194"
+  "sourceVersion": "c5738dbfe20a20eed44329b5c97a6b1e5e37fd31b24f42b9ad7a95e23bc1056f"
 }

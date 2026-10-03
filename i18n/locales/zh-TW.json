@@ -2566,6 +2566,12 @@
 		"invalidReminder": "無效提醒"
 	},
 	"taskEditor": {
+		"groupCommands": "命令",
+		"groupOverview": "概覽",
+		"groupPlanning": "規劃",
+		"groupActivity": "活動",
+		"groupConnections": "關聯",
+		"groupCustom": "自訂",
 		"addNote": "新增筆記",
 		"editNote": "編輯筆記",
 		"description": "描述",

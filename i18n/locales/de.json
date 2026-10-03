@@ -2566,6 +2566,12 @@
 		"invalidReminder": "Ungültige Erinnerung"
 	},
 	"taskEditor": {
+		"groupCommands": "Aktionen",
+		"groupOverview": "Überblick",
+		"groupPlanning": "Planung",
+		"groupActivity": "Aktivität",
+		"groupConnections": "Verknüpfungen",
+		"groupCustom": "Benutzerdefiniert",
 		"addNote": "Notiz hinzufügen",
 		"editNote": "Notiz bearbeiten",
 		"description": "Beschreibung",

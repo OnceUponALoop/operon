@@ -2566,6 +2566,12 @@
 		"invalidReminder": "Geçersiz hatırlatıcı"
 	},
 	"taskEditor": {
+		"groupCommands": "Komutlar",
+		"groupOverview": "Genel",
+		"groupPlanning": "Planlama",
+		"groupActivity": "Etkinlik",
+		"groupConnections": "Bağlantılar",
+		"groupCustom": "Özel",
 		"addNote": "Not ekle",
 		"editNote": "Notu düzenle",
 		"description": "Açıklama",

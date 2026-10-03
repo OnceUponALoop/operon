@@ -1,8 +1,8 @@
 {
   "schemaVersion": 1,
   "locale": "zh-CN",
-  "keyCount": 3534,
-  "keyFingerprint": "f97dfb0133140d667d70352a0490af970cee4e305edb1f775e0dc87fcd641452",
+  "keyCount": 3540,
+  "keyFingerprint": "f5ffe8a848bfda113aa3f85eec4af9212d4ee1057dafb7c2ce0846e72c748c2a",
   "translations": {
     "buttons": {
       "addFileSubtask": "添加文件子任务",
@@ -3254,6 +3254,12 @@
       "flowTimeStartBreak": "开始休息",
       "flowTimeTargetReached": "已达到 FlowTime 目标",
       "goToSource": "前往源文件",
+      "groupActivity": "活动",
+      "groupCommands": "命令",
+      "groupConnections": "关联",
+      "groupCustom": "自定义",
+      "groupOverview": "概览",
+      "groupPlanning": "计划",
       "hideFileBodyPanel": "隐藏内容面板",
       "inlineTargetActive": "当前文件",
       "inlineTargetBelowParent": "父任务复选框下方",
@@ -3579,5 +3585,5 @@
       "toggleDescendantPreview": "切换子任务预览"
     }
   },
-  "sourceVersion": "7d277f9d03a9088368ebf3d5f479da1b4cae415874f5ec5ffff7eb5455e63a19"
+  "sourceVersion": "f6f81fd315fa608c2965e03064215dfbc8a56496d50022105400f3c89f591d03"
 }

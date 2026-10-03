@@ -2566,6 +2566,12 @@
 		"invalidReminder": "Invalid reminder"
 	},
 	"taskEditor": {
+		"groupCommands": "Commands",
+		"groupOverview": "Overview",
+		"groupPlanning": "Planning",
+		"groupActivity": "Activity",
+		"groupConnections": "Connections",
+		"groupCustom": "Custom",
 		"addNote": "Add note",
 		"editNote": "Edit note",
 		"description": "Description",

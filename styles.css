@@ -10366,23 +10366,47 @@ body .operon-task-editor-file-panel .operon-task-editor-file-source-editor.markd
 }
 
 .operon-editor-core .operon-editor-inline-label,
-.operon-editor-core .operon-appearance-label {
+.operon-editor-core .operon-appearance-label,
+
+
+:is(.operon-editor-desktop-core-property, .operon-editor-desktop-commands) .operon-editor-inline-label,
+:is(.operon-editor-desktop-core-property, .operon-editor-desktop-commands) .operon-appearance-label {
 	display: none;
 }
 
 .operon-editor-core .operon-editor-inline-control,
 .operon-editor-core .operon-appearance-icon-wrap,
-.operon-editor-core .operon-appearance-color-wrap {
+.operon-editor-core .operon-appearance-color-wrap,
+
+
+:is(.operon-editor-desktop-core-property, .operon-editor-desktop-commands) .operon-editor-inline-control,
+:is(.operon-editor-desktop-core-property, .operon-editor-desktop-commands) .operon-appearance-icon-wrap,
+:is(.operon-editor-desktop-core-property, .operon-editor-desktop-commands) .operon-appearance-color-wrap {
 	padding-top: 0;
 }
 
 .operon-editor-core .operon-editor-picker-button,
 .operon-editor-core .operon-status-input,
-.operon-editor-core .operon-editor-estimate-field input {
+.operon-editor-core .operon-editor-estimate-field input,
+
+
+:is(.operon-editor-desktop-core-property, .operon-editor-desktop-commands) .operon-editor-picker-button,
+:is(.operon-editor-desktop-core-property, .operon-editor-desktop-commands) .operon-status-input,
+:is(.operon-editor-desktop-core-property, .operon-editor-desktop-commands) .operon-editor-estimate-field input {
 	font-size: 13px;
 }
 
 .operon-editor-core button:is(
+	.operon-editor-picker-button,
+	.operon-editor-core-action-btn,
+	.operon-editor-core-panel-toggle,
+	.operon-editor-estimate-reallocate,
+	.operon-icon-trigger,
+	.operon-color-swatch
+),
+
+
+:is(.operon-editor-desktop-core-property, .operon-editor-desktop-commands) button:is(
 	.operon-editor-picker-button,
 	.operon-editor-core-action-btn,
 	.operon-editor-core-panel-toggle,
@@ -10413,6 +10437,16 @@ body .operon-task-editor-file-panel .operon-task-editor-file-source-editor.markd
 	.operon-editor-estimate-reallocate,
 	.operon-icon-trigger,
 	.operon-color-swatch
+):is(:hover, :focus-visible, .is-picker-open):not(:disabled),
+
+
+:is(.operon-editor-desktop-core-property, .operon-editor-desktop-commands) button:is(
+	.operon-editor-picker-button,
+	.operon-editor-core-action-btn,
+	.operon-editor-core-panel-toggle,
+	.operon-editor-estimate-reallocate,
+	.operon-icon-trigger,
+	.operon-color-swatch
 ):is(:hover, :focus-visible, .is-picker-open):not(:disabled) {
 	border-color: var(--operon-task-editor-core-button-hover-border);
 	background: transparent;
@@ -10429,7 +10463,15 @@ body .operon-task-editor-file-panel .operon-task-editor-file-source-editor.markd
 	.operon-editor-core-action-btn,
 	.operon-editor-core-panel-toggle
 ).is-active,
-.operon-editor-core button.operon-color-swatch.has-color {
+.operon-editor-core button.operon-color-swatch.has-color,
+
+
+:is(.operon-editor-desktop-core-property, .operon-editor-desktop-commands) button:is(
+	.operon-editor-picker-button,
+	.operon-editor-core-action-btn,
+	.operon-editor-core-panel-toggle
+).is-active,
+:is(.operon-editor-desktop-core-property, .operon-editor-desktop-commands) button.operon-color-swatch.has-color {
 	border-color: var(--operon-task-editor-core-button-active-border);
 	background: transparent;
 	background-color: transparent;
@@ -10447,6 +10489,18 @@ body .operon-task-editor-file-panel .operon-task-editor-file-source-editor.markd
 	.operon-editor-picker-button,
 	.operon-editor-core-action-btn,
 	.operon-editor-estimate-reallocate
+):disabled:is(:hover, :focus-visible),
+
+
+:is(.operon-editor-desktop-core-property, .operon-editor-desktop-commands) button:is(
+	.operon-editor-picker-button,
+	.operon-editor-core-action-btn,
+	.operon-editor-estimate-reallocate
+):disabled,
+:is(.operon-editor-desktop-core-property, .operon-editor-desktop-commands) button:is(
+	.operon-editor-picker-button,
+	.operon-editor-core-action-btn,
+	.operon-editor-estimate-reallocate
 ):disabled:is(:hover, :focus-visible) {
 	border-color: var(--operon-task-editor-core-button-border);
 	background: transparent;
@@ -10459,7 +10513,11 @@ body .operon-task-editor-file-panel .operon-task-editor-file-source-editor.markd
 }
 
 .operon-editor-core button.operon-editor-core-action-btn.operon-editor-core-danger-btn:hover,
-.operon-editor-core button.operon-editor-core-action-btn.operon-editor-core-danger-btn:focus-visible {
+.operon-editor-core button.operon-editor-core-action-btn.operon-editor-core-danger-btn:focus-visible,
+
+
+:is(.operon-editor-desktop-core-property, .operon-editor-desktop-commands) button.operon-editor-core-action-btn.operon-editor-core-danger-btn:hover,
+:is(.operon-editor-desktop-core-property, .operon-editor-desktop-commands) button.operon-editor-core-action-btn.operon-editor-core-danger-btn:focus-visible {
 	border-color: var(--operon-task-editor-core-danger-border);
 	background: transparent;
 	background-color: transparent;
@@ -10470,7 +10528,12 @@ body .operon-task-editor-file-panel .operon-task-editor-file-source-editor.markd
 
 .operon-editor-core button.operon-editor-core-action-btn.operon-editor-core-tracker-action.is-running,
 .operon-editor-core button.operon-editor-core-action-btn.operon-editor-core-tracker-action.is-running:hover:not(:disabled),
-.operon-editor-core button.operon-editor-core-action-btn.operon-editor-core-tracker-action.is-running:focus-visible:not(:disabled) {
+.operon-editor-core button.operon-editor-core-action-btn.operon-editor-core-tracker-action.is-running:focus-visible:not(:disabled),
+
+
+:is(.operon-editor-desktop-core-property, .operon-editor-desktop-commands) button.operon-editor-core-action-btn.operon-editor-core-tracker-action.is-running,
+:is(.operon-editor-desktop-core-property, .operon-editor-desktop-commands) button.operon-editor-core-action-btn.operon-editor-core-tracker-action.is-running:hover:not(:disabled),
+:is(.operon-editor-desktop-core-property, .operon-editor-desktop-commands) button.operon-editor-core-action-btn.operon-editor-core-tracker-action.is-running:focus-visible:not(:disabled) {
 	border-color: var(--operon-task-editor-core-danger-border);
 	background: transparent;
 	background-color: transparent;
@@ -10616,7 +10679,10 @@ body .operon-task-editor-file-panel .operon-task-editor-file-source-editor.markd
 	flex: 1 1 auto;
 }
 
-.operon-editor-core .operon-editor-estimate-field input[type="number"] {
+.operon-editor-core .operon-editor-estimate-field input[type="number"],
+
+
+:is(.operon-editor-desktop-core-property, .operon-editor-desktop-commands) .operon-editor-estimate-field input[type="number"] {
 	height: var(--operon-task-editor-core-control-height, 42px);
 	min-height: var(--operon-task-editor-core-control-height, 42px);
 	margin: 0;
@@ -10636,7 +10702,10 @@ body .operon-task-editor-file-panel .operon-task-editor-file-source-editor.markd
 	--input-shadow-hover: none;
 }
 
-.operon-editor-core .operon-editor-estimate-field input[type="number"]:hover {
+.operon-editor-core .operon-editor-estimate-field input[type="number"]:hover,
+
+
+:is(.operon-editor-desktop-core-property, .operon-editor-desktop-commands) .operon-editor-estimate-field input[type="number"]:hover {
 	border-color: var(--operon-task-editor-core-button-hover-border);
 	background: transparent;
 	background-color: transparent;
@@ -10645,7 +10714,11 @@ body .operon-task-editor-file-panel .operon-task-editor-file-source-editor.markd
 }
 
 .operon-editor-core .operon-editor-estimate-field input[type="number"]:focus,
-.operon-editor-core .operon-editor-estimate-field input[type="number"]:focus-visible {
+.operon-editor-core .operon-editor-estimate-field input[type="number"]:focus-visible,
+
+
+:is(.operon-editor-desktop-core-property, .operon-editor-desktop-commands) .operon-editor-estimate-field input[type="number"]:focus,
+:is(.operon-editor-desktop-core-property, .operon-editor-desktop-commands) .operon-editor-estimate-field input[type="number"]:focus-visible {
 	border-color: var(--operon-task-editor-core-button-hover-border);
 	background: transparent;
 	background-color: transparent;
@@ -11275,11 +11348,19 @@ body .operon-task-editor button.operon-editor-tracking-session-action.is-danger:
 }
 
 .operon-editor-core .setting-item,
+.operon-editor-collapsible .setting-item,
+
+
+:is(.operon-editor-desktop-core-property, .operon-editor-desktop-commands) .setting-item,
 .operon-editor-collapsible .setting-item {
 	border-top: none;
 }
 
 .operon-editor-core .setting-item-info,
+.operon-editor-collapsible .setting-item-info,
+
+
+:is(.operon-editor-desktop-core-property, .operon-editor-desktop-commands) .setting-item-info,
 .operon-editor-collapsible .setting-item-info {
 	width: 100%;
 	margin: 0 0 6px 0;
@@ -11298,13 +11379,27 @@ body .operon-task-editor button.operon-editor-tracking-session-action.is-danger:
 .operon-editor-core .setting-item-name::before,
 .operon-editor-core .setting-item-name::after,
 .operon-editor-collapsible .setting-item-name::before,
+.operon-editor-collapsible .setting-item-name::after,
+
+
+:is(.operon-editor-desktop-core-property, .operon-editor-desktop-commands) .setting-item-info::before,
+:is(.operon-editor-desktop-core-property, .operon-editor-desktop-commands) .setting-item-info::after,
+.operon-editor-collapsible .setting-item-info::before,
+.operon-editor-collapsible .setting-item-info::after,
+:is(.operon-editor-desktop-core-property, .operon-editor-desktop-commands) .setting-item-name::before,
+:is(.operon-editor-desktop-core-property, .operon-editor-desktop-commands) .setting-item-name::after,
+.operon-editor-collapsible .setting-item-name::before,
 .operon-editor-collapsible .setting-item-name::after {
 	content: none;
 	display: none;
 }
 
 .operon-editor-core .operon-status-input-wrap,
-.operon-editor-core .operon-status-input {
+.operon-editor-core .operon-status-input,
+
+
+:is(.operon-editor-desktop-core-property, .operon-editor-desktop-commands) .operon-status-input-wrap,
+:is(.operon-editor-desktop-core-property, .operon-editor-desktop-commands) .operon-status-input {
 	width: 100%;
 	box-sizing: border-box;
 }
@@ -11315,7 +11410,10 @@ body .operon-task-editor button.operon-editor-tracking-session-action.is-danger:
 	box-sizing: border-box;
 }
 
-.operon-editor-core .setting-item-control {
+.operon-editor-core .setting-item-control,
+
+
+:is(.operon-editor-desktop-core-property, .operon-editor-desktop-commands) .setting-item-control {
 	width: 100%;
 	align-items: stretch;
 	margin: 0;
@@ -11326,6 +11424,13 @@ body .operon-task-editor button.operon-editor-tracking-session-action.is-danger:
 .operon-editor-core .setting-item-control select,
 .operon-editor-core .operon-status-input,
 .operon-editor-core .operon-status-input-wrap,
+.operon-editor-core-more-btn,
+
+
+:is(.operon-editor-desktop-core-property, .operon-editor-desktop-commands) .setting-item-control input,
+:is(.operon-editor-desktop-core-property, .operon-editor-desktop-commands) .setting-item-control select,
+:is(.operon-editor-desktop-core-property, .operon-editor-desktop-commands) .operon-status-input,
+:is(.operon-editor-desktop-core-property, .operon-editor-desktop-commands) .operon-status-input-wrap,
 .operon-editor-core-more-btn {
 	min-height: var(--operon-task-editor-core-control-height, 42px);
 	height: var(--operon-task-editor-core-control-height, 42px);
@@ -11333,7 +11438,12 @@ body .operon-task-editor button.operon-editor-tracking-session-action.is-danger:
 
 .operon-editor-core .setting-item-control input,
 .operon-editor-core .setting-item-control select,
-.operon-editor-core .operon-status-input {
+.operon-editor-core .operon-status-input,
+
+
+:is(.operon-editor-desktop-core-property, .operon-editor-desktop-commands) .setting-item-control input,
+:is(.operon-editor-desktop-core-property, .operon-editor-desktop-commands) .setting-item-control select,
+:is(.operon-editor-desktop-core-property, .operon-editor-desktop-commands) .operon-status-input {
 	box-sizing: border-box;
 	margin: 0;
 	padding-top: 0;
@@ -11358,6 +11468,11 @@ body .operon-task-editor button.operon-editor-tracking-session-action.is-danger:
 
 .operon-editor-core .setting-item-name,
 .operon-editor-collapsible .setting-item-name,
+.operon-editor-inline-label,
+
+
+:is(.operon-editor-desktop-core-property, .operon-editor-desktop-commands) .setting-item-name,
+.operon-editor-collapsible .setting-item-name,
 .operon-editor-inline-label {
 	line-height: 1.2;
 	margin: 0;
@@ -11365,6 +11480,10 @@ body .operon-task-editor button.operon-editor-tracking-session-action.is-danger:
 }
 
 .operon-editor-core .operon-editor-inline-control,
+.operon-editor-collapsible .operon-editor-inline-control,
+
+
+:is(.operon-editor-desktop-core-property, .operon-editor-desktop-commands) .operon-editor-inline-control,
 .operon-editor-collapsible .operon-editor-inline-control {
 	align-self: start;
 }
@@ -12452,7 +12571,10 @@ body .modal.operon-tracker-session-edit-modal button:is(
 	height: 18px;
 }
 
-body .operon-editor-core button.operon-color-swatch.has-color > .operon-color-swatch-dot {
+body .operon-editor-core button.operon-color-swatch.has-color > .operon-color-swatch-dot,
+
+
+body :is(.operon-editor-desktop-core-property, .operon-editor-desktop-commands) button.operon-color-swatch.has-color > .operon-color-swatch-dot {
 	position: absolute;
 	inset: 9px;
 	display: block;
@@ -35698,4 +35820,132 @@ body .operon-state-icon-setting:where(.operon-settings-scope, .operon-settings-s
  */
 :where(.setting-group.operon-settings-scope) .setting-item:not(.setting-item-heading, .mod-vertical, .operon-settings-long-text-setting):has(> .setting-item-info) > .setting-item-control:has(> :is(input, select, button, .checkbox-container)):not(:has(textarea)) {
 	align-self: center;
+}
+/* Desktop Task Editor property groups; mobile keeps its existing surface. */
+.operon-task-editor:not(.operon-task-editor-mobile) .operon-editor-desktop-properties > .operon-editor-desktop-property-group {
+	padding: 10px 18px 14px;
+	margin: 0;
+	background: color-mix(in srgb, var(--background-secondary) 55%, transparent);
+	border-radius: var(--operon-task-editor-surface-radius, 6px);
+	gap: 8px;
+}
+
+.operon-task-editor:not(.operon-task-editor-mobile) .operon-editor-desktop-group-header {
+	display: grid;
+	grid-template-columns: 25% minmax(0, 1fr);
+	align-items: start;
+	gap: 12px;
+	min-width: 0;
+}
+
+.operon-task-editor:not(.operon-task-editor-mobile) .operon-editor-desktop-group-title {
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	box-sizing: border-box;
+	height: 36px;
+	min-width: 0;
+	margin: 0;
+	padding: 0 8px;
+	font-weight: var(--font-semibold);
+}
+
+.operon-task-editor:not(.operon-task-editor-mobile) .operon-editor-desktop-group-header .operon-task-editor-workflow-actions {
+	justify-content: flex-end;
+	padding: 0;
+}
+
+.operon-task-editor:not(.operon-task-editor-mobile) .operon-editor-desktop-property-row {
+	display: grid;
+	grid-template-columns: 25% minmax(0, 1fr);
+	align-items: start;
+	gap: 12px;
+	min-width: 0;
+}
+
+.operon-task-editor:not(.operon-task-editor-mobile) .operon-editor-desktop-property-row[hidden] {
+	display: none;
+}
+
+.operon-task-editor:not(.operon-task-editor-mobile) .operon-editor-desktop-property-label {
+	display: flex;
+	align-items: center;
+	gap: 8px;
+	min-height: 36px;
+	min-width: 0;
+	color: var(--text-muted);
+	overflow-wrap: anywhere;
+}
+
+.operon-task-editor:not(.operon-task-editor-mobile) .operon-editor-desktop-property-label svg {
+	width: 16px;
+	height: 16px;
+	flex-shrink: 0;
+}
+
+.operon-task-editor:not(.operon-task-editor-mobile) .operon-editor-desktop-property-value {
+	min-width: 0;
+	max-width: 100%;
+}
+
+.operon-task-editor:not(.operon-task-editor-mobile) .operon-editor-desktop-property-value :is(.operon-editor-inline-label, .operon-appearance-label, .setting-item-info, .operon-editor-picker-anchor) {
+	display: none;
+}
+
+.operon-task-editor:not(.operon-task-editor-mobile) .operon-editor-desktop-property-value :is(.setting-item, .setting-item-control, .operon-editor-inline-control) {
+	width: 100%;
+	min-width: 0;
+	margin: 0;
+	padding: 0;
+	border: none;
+	background: transparent;
+}
+
+.operon-task-editor:not(.operon-task-editor-mobile) .operon-editor-desktop-property-value .setting-item-control {
+	justify-content: flex-start;
+}
+
+.operon-task-editor:not(.operon-task-editor-mobile) .operon-editor-desktop-property-value :is(.operon-editor-picker-stack, .operon-editor-contexts-stack, .operon-editor-tags-stack, .operon-editor-inline-input) {
+	width: 100%;
+	min-width: 0;
+}
+
+.operon-task-editor:not(.operon-task-editor-mobile) .operon-editor-desktop-property-value :is(.operon-editor-picker-selected, .operon-editor-contexts-selected, .operon-editor-tags-selected, .operon-editor-compact-selection-chip, .operon-editor-picker-button) {
+	max-width: 100%;
+	min-width: 0;
+	overflow-wrap: anywhere;
+}
+
+.operon-task-editor:not(.operon-task-editor-mobile) .operon-editor-desktop-property-value .operon-editor-picker-button-text {
+	white-space: normal;
+	overflow-wrap: anywhere;
+}
+
+.operon-task-editor:not(.operon-task-editor-mobile) .operon-editor-desktop-commands {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	gap: 12px;
+}
+
+.operon-task-editor:not(.operon-task-editor-mobile) .operon-editor-desktop-commands .operon-editor-core-actions {
+	flex-wrap: wrap;
+}
+
+.operon-task-editor:not(.operon-task-editor-mobile) .operon-editor-desktop-commands .operon-editor-inline-label {
+	display: none;
+}
+
+.operon-task-editor:not(.operon-task-editor-mobile) :is(.operon-editor-desktop-properties, .operon-editor-desktop-commands) {
+	--operon-task-editor-core-control-height: 34px;
+	--operon-task-editor-core-button-border: color-mix(in srgb, var(--text-muted) 28%, var(--background-modifier-border));
+	--operon-task-editor-core-button-hover-border: color-mix(in srgb, var(--operon-task-editor-accent, var(--interactive-accent)) 34%, var(--background-modifier-border));
+	--operon-task-editor-core-button-active-border: color-mix(in srgb, var(--operon-task-editor-accent, var(--interactive-accent)) 42%, var(--background-modifier-border));
+	--operon-task-editor-core-button-focus-ring: color-mix(in srgb, var(--operon-task-editor-accent, var(--interactive-accent)) 12%, transparent);
+	--operon-task-editor-core-danger: color-mix(in srgb, var(--color-red) 86%, var(--text-normal));
+	--operon-task-editor-core-danger-border: color-mix(in srgb, var(--color-red) 42%, var(--background-modifier-border));
+}
+
+.operon-task-editor:not(.operon-task-editor-mobile) .operon-editor-desktop-commands {
+	flex-wrap: wrap;
 }

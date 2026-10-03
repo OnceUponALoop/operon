@@ -2566,6 +2566,12 @@
 		"invalidReminder": "無効なリマインダー"
 	},
 	"taskEditor": {
+		"groupCommands": "コマンド",
+		"groupOverview": "概要",
+		"groupPlanning": "計画",
+		"groupActivity": "活動",
+		"groupConnections": "関連",
+		"groupCustom": "カスタム",
 		"addNote": "ノートを追加",
 		"editNote": "ノートを編集",
 		"description": "説明",

@@ -2566,6 +2566,12 @@
 		"invalidReminder": "Recordatorio no válido"
 	},
 	"taskEditor": {
+		"groupCommands": "Comandos",
+		"groupOverview": "Resumen",
+		"groupPlanning": "Planificación",
+		"groupActivity": "Actividad",
+		"groupConnections": "Conexiones",
+		"groupCustom": "Personalizado",
 		"addNote": "Añadir nota",
 		"editNote": "Editar nota",
 		"description": "Descripción",

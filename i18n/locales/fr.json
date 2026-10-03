@@ -2566,6 +2566,12 @@
 		"invalidReminder": "Rappel non valide"
 	},
 	"taskEditor": {
+		"groupCommands": "Commandes",
+		"groupOverview": "Vue d’ensemble",
+		"groupPlanning": "Planification",
+		"groupActivity": "Activité",
+		"groupConnections": "Relations",
+		"groupCustom": "Personnalisé",
 		"addNote": "Ajouter une note",
 		"editNote": "Modifier la note",
 		"description": "Description",

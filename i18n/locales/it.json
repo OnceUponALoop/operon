@@ -2566,6 +2566,12 @@
 		"invalidReminder": "Promemoria non valido"
 	},
 	"taskEditor": {
+		"groupCommands": "Comandi",
+		"groupOverview": "Panoramica",
+		"groupPlanning": "Pianificazione",
+		"groupActivity": "Attività",
+		"groupConnections": "Collegamenti",
+		"groupCustom": "Personalizzato",
 		"addNote": "Aggiungi nota",
 		"editNote": "Modifica nota",
 		"description": "Descrizione",

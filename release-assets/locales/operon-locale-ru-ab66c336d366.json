@@ -1,8 +1,8 @@
 {
   "schemaVersion": 1,
   "locale": "ru",
-  "keyCount": 3534,
-  "keyFingerprint": "f97dfb0133140d667d70352a0490af970cee4e305edb1f775e0dc87fcd641452",
+  "keyCount": 3540,
+  "keyFingerprint": "f5ffe8a848bfda113aa3f85eec4af9212d4ee1057dafb7c2ce0846e72c748c2a",
   "translations": {
     "buttons": {
       "addFileSubtask": "Добавить файловую подзадачу",
@@ -3254,6 +3254,12 @@
       "flowTimeStartBreak": "Начать перерыв",
       "flowTimeTargetReached": "Цель FlowTime достигнута",
       "goToSource": "Перейти к источнику",
+      "groupActivity": "Действия",
+      "groupCommands": "Команды",
+      "groupConnections": "Связи",
+      "groupCustom": "Пользовательские",
+      "groupOverview": "Обзор",
+      "groupPlanning": "Планирование",
       "hideFileBodyPanel": "Скрыть панель содержимого",
       "inlineTargetActive": "Активный файл",
       "inlineTargetBelowParent": "Под флажками родительской задачи",
@@ -3579,5 +3585,5 @@
       "toggleDescendantPreview": "Переключить предпросмотр потомков"
     }
   },
-  "sourceVersion": "2a226472a5959809495542491e2bce6a902ff293a2862f7952a21e75aa9ded35"
+  "sourceVersion": "f0a06dba7560bf4b597d8eedbfa83ec57c3ac86f41df9a4a5781951ce1d2f1fc"
 }

@@ -2566,6 +2566,12 @@
 		"invalidReminder": "Недопустимое напоминание"
 	},
 	"taskEditor": {
+		"groupCommands": "Команды",
+		"groupOverview": "Обзор",
+		"groupPlanning": "Планирование",
+		"groupActivity": "Действия",
+		"groupConnections": "Связи",
+		"groupCustom": "Пользовательские",
 		"addNote": "Добавить заметку",
 		"editNote": "Редактировать заметку",
 		"description": "Описание",

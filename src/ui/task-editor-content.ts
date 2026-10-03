@@ -429,6 +429,18 @@ function isTaskEditorSaveCommit(value: TaskEditorSaveCallbackResult): value is T
 		&& Object.values(state.fieldValues).every(fieldValue => typeof fieldValue === 'string');
 }
 
+export const TASK_EDITOR_DESKTOP_GROUPS = [
+	{ key: 'overview', fields: ['taskType', 'taskIcon', 'taskColor', 'status', 'priority', 'taskImage', 'taskGallery'] },
+	{ key: 'planning', fields: ['dateStarted', 'dateDue', 'repeat', 'reminderDatetimes', 'reminderRules'] },
+	{ key: 'activity', fields: ['assignees', 'location', 'dateScheduled', 'datetimeStart', 'estimate', 'datetimeEnd', 'dateCompleted', 'dateCancelled'] },
+	{ key: 'connections', fields: ['contexts', 'tags', 'links', 'parentTask', 'subtasks', 'blockedBy', 'blocking'] },
+] as const;
+
+const DESKTOP_CORE_FIELDS = new Set([
+	'taskIcon', 'taskColor', 'status', 'priority', 'dateStarted', 'dateDue', 'repeat',
+	'dateScheduled', 'datetimeStart', 'estimate', 'datetimeEnd', 'dateCompleted', 'dateCancelled',
+]);
+
 export class TaskEditorContent {
 
 	private app: App;
@@ -494,6 +506,7 @@ export class TaskEditorContent {
 	private workflowExpanded = false;
 	private workflowActionsEl: HTMLElement | null = null;
 	private workflowRowsEl: HTMLElement | null = null;
+	private desktopPropertyRows = new Map<string, { row: HTMLElement; value: HTMLElement; core: boolean; signature: string }>();
 	private workflowActionButtons = new Map<string, HTMLButtonElement>();
 	private workflowActionPickerClose: (() => void) | null = null;
 	private workflowDraftSubtaskParentId: string | null = null;
@@ -1280,8 +1293,7 @@ export class TaskEditorContent {
 		this.renderTimeSummarySection(primaryFields, progressState);
 
 		// High-frequency fields directly under the primary text and time summaries.
-		this.renderCoreSection(container);
-		this.renderWorkflowSurface(container);
+		this.renderDesktopPropertyGroups(container);
 		this.renderDetailsSection(container);
 
 		// Actions bar
@@ -2242,6 +2254,7 @@ export class TaskEditorContent {
 		this.refreshTrackingSessionsSection = null;
 		this.workflowActionsEl = null;
 		this.workflowRowsEl = null;
+		this.desktopPropertyRows.clear();
 		this.workflowActionButtons.clear();
 		this.closeActiveWorkflowActionPicker();
 		this.workflowDraftSubtaskParentId = null;
@@ -2332,6 +2345,7 @@ export class TaskEditorContent {
 		this.refreshParentContextSection = null;
 		this.workflowActionsEl = null;
 		this.workflowRowsEl = null;
+		this.desktopPropertyRows.clear();
 		this.workflowActionButtons.clear();
 		this.closeActiveWorkflowActionPicker();
 		this.workflowDraftSubtaskParentId = null;
@@ -3466,40 +3480,95 @@ export class TaskEditorContent {
 		}
 	}
 
-	private renderCoreSection(container: HTMLElement): void {
-		const group = container.createDiv('operon-editor-group operon-editor-core');
-		const header = group.createDiv('operon-editor-core-header');
-		const headerLeft = header.createDiv('operon-editor-core-header-left');
-		headerLeft.createDiv({ text: t('taskEditor', 'core'), cls: 'operon-editor-core-title-badge' });
-		this.renderCoreActionButtons(header.createDiv('operon-editor-core-actions'));
+	private renderDesktopPropertyGroups(container: HTMLElement): void {
+		const commands = container.createDiv('operon-editor-group operon-editor-desktop-commands');
+		commands.createDiv({ text: t('taskEditor', 'groupCommands'), cls: 'operon-editor-desktop-group-title' });
+		const actions = commands.createDiv('operon-editor-core-actions');
+		this.renderCoreActionButtons(actions);
+		this.renderRemoveControl(actions);
 
-		const topRow = group.createDiv('operon-editor-core-row is-top');
-		const cluster = topRow.createDiv('operon-editor-quick-cluster operon-editor-core-icon-cluster');
-		this.renderIconControl(cluster);
-		this.renderColorControl(cluster);
+		const root = container.createDiv('operon-editor-desktop-properties operon-task-editor-workflow-values');
+		this.workflowRowsEl = root;
+		const items = this.getRenderableWorkflowPickerItems();
+		const configured = new Map(this.settings.taskEditorWorkflowPickers.map(item => [item.key, item.visible]));
+		const available = new Set(items.map(item => item.key));
+		const assigned = new Set<string>();
+		for (const group of TASK_EDITOR_DESKTOP_GROUPS) {
+			const keys = group.fields.filter(key => {
+				assigned.add(key);
+				return DESKTOP_CORE_FIELDS.has(key) ? configured.get(key) !== false : available.has(key);
+			});
+			this.renderDesktopPropertyGroup(root, group.key, keys);
+		}
+		const customKeys = items.filter(item => !assigned.has(item.key)).map(item => item.key);
+		if (customKeys.length > 0) this.renderDesktopPropertyGroup(root, 'custom', customKeys);
+		this.refreshDesktopPropertyRows();
+	}
 
-		const topGrid = topRow.createDiv('operon-editor-grid-2 operon-editor-core-main');
-		this.renderPriorityControl(topGrid);
-		this.renderStatusControl(topGrid);
+	private renderDesktopPropertyGroup(root: HTMLElement, key: string, keys: readonly string[]): void {
+		const group = root.createDiv('operon-editor-group operon-task-editor-workflow-surface operon-editor-desktop-property-group');
+		group.dataset.propertyGroup = key;
+		const header = group.createDiv('operon-editor-desktop-group-header');
+		header.createDiv({ text: t('taskEditor', `group${key.charAt(0).toUpperCase()}${key.slice(1)}`), cls: 'operon-editor-core-title-badge operon-editor-desktop-group-title' });
+		const actions = header.createDiv('operon-task-editor-workflow-actions');
+		this.renderWorkflowPickerActions(actions, keys.map(field => ({ key: field, visible: true })), false);
+		for (const field of keys) {
+			const row = group.createDiv('operon-editor-desktop-property-row');
+			row.dataset.propertyKey = field;
+			const label = row.createDiv('operon-editor-desktop-property-label');
+			setIcon(label.createSpan(), this.resolveWorkflowPickerIcon(field));
+			label.createSpan({ text: this.getWorkflowPickerLabel(field) });
+			const value = row.createDiv('operon-editor-desktop-property-value');
+			const core = DESKTOP_CORE_FIELDS.has(field);
+			this.desktopPropertyRows.set(field, { row, value, core, signature: '' });
+			if (core) {
+				row.addClass('operon-editor-desktop-core-property');
+				this.renderDesktopCoreProperty(value, field);
+				for (const input of Array.from(value.querySelectorAll('input'))) setAccessibleLabelWithoutTooltip(input, this.getWorkflowPickerLabel(field));
+				row.addEventListener('focusout', () => {
+					getOwnerWindow(row).requestAnimationFrame(() => {
+						if (row.isConnected && !this.disposed) this.refreshDesktopPropertyRows();
+					});
+				});
+			}
+		}
+	}
 
-		const dateRow = group.createDiv('operon-editor-core-row is-dates operon-editor-core-grid-3');
-		this.renderDateControl(dateRow, 'dateStarted', t('taskEditor', 'started'), t('taskEditor', 'startDatePlaceholder'));
-		this.renderDateControl(dateRow, 'dateScheduled', t('taskEditor', 'scheduled'), t('taskEditor', 'scheduledDatePlaceholder'));
-		this.renderDateControl(dateRow, 'dateDue', t('taskEditor', 'dueDate'), t('taskEditor', 'dueDatePlaceholder'));
+	private renderDesktopCoreProperty(value: HTMLElement, key: string): void {
+		switch (key) {
+			case 'taskIcon': this.renderIconControl(value); break;
+			case 'taskColor': this.renderColorControl(value); break;
+			case 'status': this.renderStatusControl(value); break;
+			case 'priority': this.renderPriorityControl(value); break;
+			case 'repeat': this.renderRepeatControl(value); break;
+			case 'estimate': this.renderEstimateControl(value); break;
+			case 'datetimeStart':
+			case 'datetimeEnd': this.renderDatetimeControl(value, key, this.getWorkflowPickerLabel(key)); break;
+			default: this.renderDateControl(value, key, this.getWorkflowPickerLabel(key));
+		}
+	}
 
-		const datetimeRow = group.createDiv('operon-editor-core-row operon-editor-core-grid-3 operon-editor-time-row');
-		this.renderDatetimeControl(datetimeRow, 'datetimeStart', t('taskEditor', 'datetimeStart'));
-		this.renderEstimateControl(datetimeRow);
-		this.renderDatetimeControl(datetimeRow, 'datetimeEnd', t('taskEditor', 'datetimeEnd'));
-
-		const repeatRow = group.createDiv('operon-editor-core-row');
-		this.renderRepeatControl(repeatRow);
-
-		const terminalRow = group.createDiv('operon-editor-core-row operon-editor-grid-2');
-		terminalRow.addClass('operon-editor-grid-3');
-		this.renderDateControl(terminalRow, 'dateCompleted', t('taskEditor', 'finished'), t('taskEditor', 'finishedDatePlaceholder'));
-		this.renderDateControl(terminalRow, 'dateCancelled', t('taskEditor', 'cancelled'), t('taskEditor', 'cancelledDatePlaceholder'));
-		this.renderRemoveControl(terminalRow);
+	private refreshDesktopPropertyRows(): void {
+		for (const [key, entry] of this.desktopPropertyRows) {
+			const hasValue = this.hasWorkflowPickerValue(key);
+			entry.row.hidden = !hasValue && !(entry.core && entry.row.contains(entry.row.ownerDocument.activeElement));
+			if (entry.core) continue;
+			const signature = JSON.stringify([
+				key === 'subtasks' ? this.getWorkflowSubtaskIds() : key === 'tags' ? this.tags : this.fieldValues[key],
+				this.isSystemReminderWorkflowKey(key) ? REMINDER_RULE_ANCHORS.map(anchor => this.fieldValues[anchor]) : null,
+			]);
+			if (entry.signature === signature) continue;
+			entry.signature = signature;
+			cleanupOperonHoverTooltips(entry.value);
+			entry.value.empty();
+			if (!hasValue) continue;
+			const managed = getManagedTaskDataFieldPicker(key, this.settings.keyMappings);
+			const custom = getCustomFieldMapping(this.settings.keyMappings, key);
+			if (managed) this.renderManagedTaskDataWorkflowPicker(entry.value, managed);
+			else if (custom && isProjectedCustomFieldType(custom)) this.renderCustomWorkflowPicker(entry.value, custom);
+			else this.renderWorkflowPicker(entry.value, key);
+		}
+		this.refreshWorkflowActionButtonStates();
 	}
 
 	private renderCopyOperonIdButton(container: HTMLElement): void {
@@ -3732,10 +3801,10 @@ export class TaskEditorContent {
 			|| key === 'related';
 	}
 
-	private renderWorkflowPickerActions(container: HTMLElement, items = this.getRenderableWorkflowPickerItems()): void {
+	private renderWorkflowPickerActions(container: HTMLElement, items = this.getRenderableWorkflowPickerItems(), reset = true): void {
 		cleanupOperonHoverTooltips(container);
 		container.empty();
-		this.workflowActionButtons.clear();
+		if (reset) this.workflowActionButtons.clear();
 		for (const item of items) {
 			const label = this.getWorkflowPickerLabel(item.key);
 			const button = container.createEl('button', {
@@ -3780,6 +3849,10 @@ export class TaskEditorContent {
 
 	private refreshWorkflowPickerSurfaceValues(): void {
 		this.refreshWorkflowActionButtonStates();
+		if (this.workflowRowsEl?.hasClass('operon-editor-desktop-properties')) {
+			this.refreshDesktopPropertyRows();
+			return;
+		}
 		if (!this.workflowRowsEl) return;
 		this.renderFilledWorkflowPickers(this.workflowRowsEl);
 	}
@@ -3810,11 +3883,18 @@ export class TaskEditorContent {
 			&& this.isSystemReminderWorkflowKey(key)
 			&& getAvailableReminderRuleAnchors(this.fieldValues).length === 0;
 		button.toggleClass('is-locked', locked);
-		button.disabled = ruleAddDisabled;
-		button.setAttr('aria-disabled', String(locked || ruleAddDisabled));
+		button.disabled = ruleAddDisabled || (key === 'datetimeEnd' && !(this.fieldValues['datetimeStart'] ?? '').trim());
+		button.setAttr('aria-disabled', String(locked || button.disabled));
 	}
 
 	private getWorkflowPickerLabel(key: string): string {
+		const coreLabels: Record<string, string> = {
+			taskIcon: 'taskIcon', taskColor: 'taskColor', status: 'status', priority: 'priority',
+			dateStarted: 'started', dateDue: 'dueDate', dateScheduled: 'scheduled',
+			datetimeStart: 'datetimeStart', datetimeEnd: 'datetimeEnd', estimate: 'estimateMinutesShort',
+			repeat: 'repeat', dateCompleted: 'finished', dateCancelled: 'cancelled',
+		};
+		if (coreLabels[key]) return t('taskEditor', coreLabels[key]);
 		const managedTaskDataField = getManagedTaskDataFieldPicker(key, this.settings.keyMappings);
 		if (managedTaskDataField) return managedTaskDataField.label;
 		const customMapping = getCustomFieldMapping(this.settings.keyMappings, key);
@@ -3918,6 +3998,7 @@ export class TaskEditorContent {
 				settings: this.settings,
 				allTasks: this.indexer.getAllTasks(),
 				canonicalKey: key,
+				manualDatePicker: (this.desktopPropertyRows?.size ?? 0) > 0 ? this.getManualDatePickerOptions(key) : undefined,
 				anchor: button,
 				currentFieldValues: { ...this.fieldValues },
 				getCurrentFieldValues: () => this.fieldValues,
@@ -3957,6 +4038,25 @@ export class TaskEditorContent {
 	}
 
 	private commitWorkflowActionPayload(payload: Record<string, string | string[]>): void {
+		if ((this.desktopPropertyRows?.size ?? 0) > 0) {
+			const remaining = { ...payload };
+			if (typeof remaining.status === 'string') {
+				if (remaining.status) {
+					if (!this.applyStatusDraftChange(remaining.status)) return;
+				} else delete this.fieldValues['status'];
+				delete remaining.status;
+			}
+			for (const key of ['dateCompleted', 'dateCancelled']) {
+				const value = remaining[key];
+				if (typeof value !== 'string') continue;
+				if (!this.applyDateDraftChange(key, value)) return;
+				delete remaining[key];
+			}
+			if (typeof remaining.repeat === 'string' && parseRepeatRule(remaining.repeat) && !this.fieldValues['repeatSeriesId']) {
+				remaining.repeatSeriesId = generateRepeatSeriesId();
+			}
+			payload = remaining;
+		}
 		const fieldPayload: Record<string, string | string[]> = {};
 		for (const [key, value] of Object.entries(payload)) {
 			if (key === 'tags') {
@@ -3969,6 +4069,8 @@ export class TaskEditorContent {
 		if (Object.keys(fieldPayload).length > 0) {
 			this.applyTaskFieldPickerPayload(fieldPayload);
 		}
+		this.refreshSchedulingDraftControls();
+		this.applyThemeColor();
 		this.markEdited();
 		this.refreshWorkflowPickerSurfaceValues();
 	}
@@ -4481,6 +4583,7 @@ export class TaskEditorContent {
 			});
 		});
 
+		this.registerSchedulingDraftRefresher(refreshButton);
 		refreshButton();
 	}
 
@@ -4538,6 +4641,7 @@ export class TaskEditorContent {
 			openPicker();
 		});
 
+		this.registerSchedulingDraftRefresher(refresh);
 		refresh();
 	}
 
@@ -5077,6 +5181,7 @@ export class TaskEditorContent {
 			if (skipButton.contains(event.target as Node)) return;
 			openPicker(event);
 		});
+		this.registerSchedulingDraftRefresher(refresh);
 		refresh();
 	}
 
@@ -5415,6 +5520,7 @@ export class TaskEditorContent {
 			setAccessibleLabelWithoutTooltip(iconButton, t('taskEditor', 'taskIcon'));
 			iconButton.classList.remove('has-icon');
 		};
+		this.registerSchedulingDraftRefresher(refreshIconPreview);
 		refreshIconPreview();
 
 		const selectItem = (iconId: string) => {
@@ -5479,6 +5585,10 @@ export class TaskEditorContent {
 			}
 			swatch.classList.toggle('has-color', !!hex);
 		};
+		this.registerSchedulingDraftRefresher(() => {
+			const color = this.fieldValues['taskColor'] ?? '';
+			refreshSwatch(color ? `#${color.replace(/^#/, '')}` : '');
+		});
 		refreshSwatch(currentColorHex);
 
 		swatch.addEventListener('click', () => {
@@ -6485,6 +6595,7 @@ export class TaskEditorContent {
 		if (this.disposed) return;
 		this.hasBeenEdited = true;
 		this.editVersion += 1;
+		if ((this.desktopPropertyRows?.size ?? 0) > 0) this.refreshDesktopPropertyRows();
 		this.refreshFileBodySaveButtonState();
 		this.scheduleSave();
 	}

@@ -1,8 +1,8 @@
 {
   "schemaVersion": 1,
   "locale": "ja",
-  "keyCount": 3534,
-  "keyFingerprint": "f97dfb0133140d667d70352a0490af970cee4e305edb1f775e0dc87fcd641452",
+  "keyCount": 3540,
+  "keyFingerprint": "f5ffe8a848bfda113aa3f85eec4af9212d4ee1057dafb7c2ce0846e72c748c2a",
   "translations": {
     "buttons": {
       "addFileSubtask": "ファイルサブタスクを追加",
@@ -3254,6 +3254,12 @@
       "flowTimeStartBreak": "休憩を開始",
       "flowTimeTargetReached": "FlowTime の目標に達しました",
       "goToSource": "ソースへ移動",
+      "groupActivity": "活動",
+      "groupCommands": "コマンド",
+      "groupConnections": "関連",
+      "groupCustom": "カスタム",
+      "groupOverview": "概要",
+      "groupPlanning": "計画",
       "hideFileBodyPanel": "本文パネルを非表示",
       "inlineTargetActive": "アクティブなファイル",
       "inlineTargetBelowParent": "親タスクのチェックボックスの下",
@@ -3579,5 +3585,5 @@
       "toggleDescendantPreview": "子孫プレビューを切り替え"
     }
   },
-  "sourceVersion": "1195fa35dc4811f30fb87ab0ea0b239fe65eea95196775a73ce428675acb9e61"
+  "sourceVersion": "1552ec8c051d17fdd3651700151b8be17a56743193f0d75269d87463f8b80c8c"
 }

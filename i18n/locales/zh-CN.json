@@ -2566,6 +2566,12 @@
 		"invalidReminder": "无效提醒"
 	},
 	"taskEditor": {
+		"groupCommands": "命令",
+		"groupOverview": "概览",
+		"groupPlanning": "计划",
+		"groupActivity": "活动",
+		"groupConnections": "关联",
+		"groupCustom": "自定义",
 		"addNote": "添加笔记",
 		"editNote": "编辑笔记",
 		"description": "描述",

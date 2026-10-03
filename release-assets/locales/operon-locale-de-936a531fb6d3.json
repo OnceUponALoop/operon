@@ -1,8 +1,8 @@
 {
   "schemaVersion": 1,
   "locale": "de",
-  "keyCount": 3534,
-  "keyFingerprint": "f97dfb0133140d667d70352a0490af970cee4e305edb1f775e0dc87fcd641452",
+  "keyCount": 3540,
+  "keyFingerprint": "f5ffe8a848bfda113aa3f85eec4af9212d4ee1057dafb7c2ce0846e72c748c2a",
   "translations": {
     "buttons": {
       "addFileSubtask": "Datei-Unteraufgabe hinzufügen",
@@ -3254,6 +3254,12 @@
       "flowTimeStartBreak": "Pause starten",
       "flowTimeTargetReached": "FlowTime-Ziel erreicht",
       "goToSource": "Zur Quelle gehen",
+      "groupActivity": "Aktivität",
+      "groupCommands": "Aktionen",
+      "groupConnections": "Verknüpfungen",
+      "groupCustom": "Benutzerdefiniert",
+      "groupOverview": "Überblick",
+      "groupPlanning": "Planung",
       "hideFileBodyPanel": "Inhaltsbereich ausblenden",
       "inlineTargetActive": "Aktive Datei",
       "inlineTargetBelowParent": "Unter den Kontrollkästchen der übergeordneten Aufgabe",
@@ -3579,5 +3585,5 @@
       "toggleDescendantPreview": "Vorschau untergeordneter Aufgaben umschalten"
     }
   },
-  "sourceVersion": "d3c711ab1652952633191df006e497d04e15d28d34b91cc2b792cbae95b191da"
+  "sourceVersion": "fc17d91422a8938c021d01dcb50f7e3abab7a7879081cd71b82400b399965780"
 }

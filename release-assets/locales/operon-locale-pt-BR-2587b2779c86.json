@@ -1,8 +1,8 @@
 {
   "schemaVersion": 1,
   "locale": "pt-BR",
-  "keyCount": 3534,
-  "keyFingerprint": "f97dfb0133140d667d70352a0490af970cee4e305edb1f775e0dc87fcd641452",
+  "keyCount": 3540,
+  "keyFingerprint": "f5ffe8a848bfda113aa3f85eec4af9212d4ee1057dafb7c2ce0846e72c748c2a",
   "translations": {
     "buttons": {
       "addFileSubtask": "Adicionar subtarefa em arquivo",
@@ -3254,6 +3254,12 @@
       "flowTimeStartBreak": "Iniciar pausa",
       "flowTimeTargetReached": "Meta do FlowTime alcançada",
       "goToSource": "Ir para a origem",
+      "groupActivity": "Atividade",
+      "groupCommands": "Comandos",
+      "groupConnections": "Conexões",
+      "groupCustom": "Personalizado",
+      "groupOverview": "Visão geral",
+      "groupPlanning": "Planejamento",
       "hideFileBodyPanel": "Ocultar painel de conteúdo",
       "inlineTargetActive": "Arquivo ativo",
       "inlineTargetBelowParent": "Abaixo das caixas da tarefa principal",
@@ -3579,5 +3585,5 @@
       "toggleDescendantPreview": "Alternar visualização descendente"
     }
   },
-  "sourceVersion": "682c16ad5c9c527a99efd34bf60c725a0a77eebd556c4f32d09097cfbdd366d8"
+  "sourceVersion": "ef65c698d41596c0df3d50ff0097dbafec124107c18f71a3165216a384e4ede8"
 }
