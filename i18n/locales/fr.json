@@ -2725,6 +2725,7 @@
 		"relatedPlaceholder": "[[Note de projet]]",
 		"openParentTask": "Ouvrir la tâche parente",
 		"editSubtask": "Modifier la sous-tâche",
+		"moreValues": "{{count}} de plus",
 		"showLess": "Afficher moins",
 		"showMoreSubtasksOne": "Afficher {{count}} sous-tâche de plus",
 		"showMoreSubtasksMany": "Afficher {{count}} sous-tâches de plus",

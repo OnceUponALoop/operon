@@ -2725,6 +2725,7 @@
 		"relatedPlaceholder": "[[项目笔记]]",
 		"openParentTask": "打开父任务",
 		"editSubtask": "编辑子任务",
+		"moreValues": "还有 {{count}} 项",
 		"showLess": "收起",
 		"showMoreSubtasksOne": "显示另外 {{count}} 个子任务",
 		"showMoreSubtasksMany": "显示另外 {{count}} 个子任务",

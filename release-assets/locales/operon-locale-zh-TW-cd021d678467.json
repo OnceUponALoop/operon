@@ -1,8 +1,8 @@
 {
   "schemaVersion": 1,
   "locale": "zh-TW",
-  "keyCount": 3540,
-  "keyFingerprint": "f5ffe8a848bfda113aa3f85eec4af9212d4ee1057dafb7c2ce0846e72c748c2a",
+  "keyCount": 3541,
+  "keyFingerprint": "63ef0f0fb348525914ac49ec3607971413eae40b0cb0a39b010dfe6e542ee7a0",
   "translations": {
     "buttons": {
       "addFileSubtask": "新增檔案子任務",
@@ -3275,6 +3275,7 @@
       "linkLabel": "連結：",
       "links": "連結",
       "more": "更多",
+      "moreValues": "還有 {{count}} 項",
       "namedColors": "命名顏色",
       "newOperonTaskFile": "新建 Operon 任務檔案",
       "noColorSelected": "未選擇顏色",
@@ -3585,5 +3586,5 @@
       "toggleDescendantPreview": "切換子任務預覽"
     }
   },
-  "sourceVersion": "c5738dbfe20a20eed44329b5c97a6b1e5e37fd31b24f42b9ad7a95e23bc1056f"
+  "sourceVersion": "34602641d20871a4b701f3275f0e52c773d463b017b42566a3de876031d9eb5b"
 }

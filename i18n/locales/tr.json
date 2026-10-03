@@ -2725,6 +2725,7 @@
 		"relatedPlaceholder": "[[Proje Notu]]",
 		"openParentTask": "Üst görevi aç",
 		"editSubtask": "Alt görevi düzenle",
+		"moreValues": "{{count}} daha",
 		"showLess": "Daha az göster",
 		"showMoreSubtasksOne": "{{count}} alt görev daha göster",
 		"showMoreSubtasksMany": "{{count}} alt görev daha göster",

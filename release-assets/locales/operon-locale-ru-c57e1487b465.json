@@ -1,8 +1,8 @@
 {
   "schemaVersion": 1,
   "locale": "ru",
-  "keyCount": 3540,
-  "keyFingerprint": "f5ffe8a848bfda113aa3f85eec4af9212d4ee1057dafb7c2ce0846e72c748c2a",
+  "keyCount": 3541,
+  "keyFingerprint": "63ef0f0fb348525914ac49ec3607971413eae40b0cb0a39b010dfe6e542ee7a0",
   "translations": {
     "buttons": {
       "addFileSubtask": "Добавить файловую подзадачу",
@@ -3275,6 +3275,7 @@
       "linkLabel": "Ссылка:",
       "links": "Ссылки",
       "more": "Ещё",
+      "moreValues": "Ещё {{count}}",
       "namedColors": "Именованные цвета",
       "newOperonTaskFile": "Новый файл задачи Operon",
       "noColorSelected": "Цвет не выбран",
@@ -3585,5 +3586,5 @@
       "toggleDescendantPreview": "Переключить предпросмотр потомков"
     }
   },
-  "sourceVersion": "f0a06dba7560bf4b597d8eedbfa83ec57c3ac86f41df9a4a5781951ce1d2f1fc"
+  "sourceVersion": "ce9d3bc856d71ac71f6035e421f2aa1d8c27e8649a1a7e2d7096cab16eabdf4a"
 }

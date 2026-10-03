@@ -507,6 +507,9 @@ export class TaskEditorContent {
 	private workflowActionsEl: HTMLElement | null = null;
 	private workflowRowsEl: HTMLElement | null = null;
 	private desktopPropertyRows = new Map<string, { row: HTMLElement; value: HTMLElement; core: boolean; signature: string }>();
+	private desktopSubtasksExpanded = false;
+	private desktopSubtaskLayoutCleanup: (() => void) | null = null;
+	private desktopSubtaskToggleNeedsFocus = false;
 	private workflowActionButtons = new Map<string, HTMLButtonElement>();
 	private workflowActionPickerClose: (() => void) | null = null;
 	private workflowDraftSubtaskParentId: string | null = null;
@@ -2254,6 +2257,7 @@ export class TaskEditorContent {
 		this.refreshTrackingSessionsSection = null;
 		this.workflowActionsEl = null;
 		this.workflowRowsEl = null;
+		this.clearDesktopSubtaskLayout();
 		this.desktopPropertyRows.clear();
 		this.workflowActionButtons.clear();
 		this.closeActiveWorkflowActionPicker();
@@ -2345,6 +2349,7 @@ export class TaskEditorContent {
 		this.refreshParentContextSection = null;
 		this.workflowActionsEl = null;
 		this.workflowRowsEl = null;
+		this.clearDesktopSubtaskLayout();
 		this.desktopPropertyRows.clear();
 		this.workflowActionButtons.clear();
 		this.closeActiveWorkflowActionPicker();
@@ -3516,7 +3521,7 @@ export class TaskEditorContent {
 			const row = group.createDiv('operon-editor-desktop-property-row');
 			row.dataset.propertyKey = field;
 			const label = row.createDiv('operon-editor-desktop-property-label');
-			setIcon(label.createSpan(), this.resolveWorkflowPickerIcon(field));
+			setIcon(label.createSpan('operon-editor-desktop-property-icon'), this.resolveWorkflowPickerIcon(field));
 			label.createSpan({ text: this.getWorkflowPickerLabel(field) });
 			const value = row.createDiv('operon-editor-desktop-property-value');
 			const core = DESKTOP_CORE_FIELDS.has(field);
@@ -3551,6 +3556,7 @@ export class TaskEditorContent {
 	private refreshDesktopPropertyRows(): void {
 		for (const [key, entry] of this.desktopPropertyRows) {
 			const hasValue = this.hasWorkflowPickerValue(key);
+			this.refreshDesktopPropertyIcon(key, entry.row, hasValue);
 			entry.row.hidden = !hasValue && !(entry.core && entry.row.contains(entry.row.ownerDocument.activeElement));
 			if (entry.core) continue;
 			const signature = JSON.stringify([
@@ -3559,9 +3565,19 @@ export class TaskEditorContent {
 			]);
 			if (entry.signature === signature) continue;
 			entry.signature = signature;
+			if (key === 'subtasks') {
+				this.desktopSubtaskToggleNeedsFocus = entry.value.querySelector('.operon-editor-subtasks-more') === entry.value.ownerDocument.activeElement;
+				this.clearDesktopSubtaskLayout();
+			}
 			cleanupOperonHoverTooltips(entry.value);
 			entry.value.empty();
-			if (!hasValue) continue;
+			if (!hasValue) {
+				if (key === 'subtasks' && this.desktopSubtaskToggleNeedsFocus) {
+					this.desktopSubtaskToggleNeedsFocus = false;
+					this.workflowActionButtons.get(key)?.focus();
+				}
+				continue;
+			}
 			const managed = getManagedTaskDataFieldPicker(key, this.settings.keyMappings);
 			const custom = getCustomFieldMapping(this.settings.keyMappings, key);
 			if (managed) this.renderManagedTaskDataWorkflowPicker(entry.value, managed);
@@ -3569,6 +3585,86 @@ export class TaskEditorContent {
 			else this.renderWorkflowPicker(entry.value, key);
 		}
 		this.refreshWorkflowActionButtonStates();
+	}
+
+	private refreshDesktopPropertyIcon(key: string, row: HTMLElement, hasValue: boolean): void {
+		const icon = row.querySelector<HTMLElement>('.operon-editor-desktop-property-icon');
+		if (!icon) return;
+		const selected = key === 'taskIcon' ? this.fieldValues['taskIcon']?.trim() : '';
+		const iconId = selected && getIcon(selected) ? selected : this.resolveWorkflowPickerIcon(key);
+		if (icon.dataset.iconId !== iconId) {
+			setIcon(icon, iconId);
+			icon.dataset.iconId = iconId;
+		}
+		icon.toggleClass('has-value', hasValue);
+		const color = key === 'taskColor' ? this.fieldValues['taskColor']?.trim().replace(/^#/, '') : '';
+		if (color && /^[0-9a-f]{6}$/i.test(color)) icon.style.color = `#${color}`;
+		else icon.style.removeProperty('color');
+	}
+
+	private clearDesktopSubtaskLayout(): void {
+		this.desktopSubtaskLayoutCleanup?.();
+		this.desktopSubtaskLayoutCleanup = null;
+	}
+
+	private setupDesktopSubtaskLayout(selectedWrap: HTMLElement): void {
+		this.clearDesktopSubtaskLayout();
+		const owner = getOwnerWindow(selectedWrap);
+		const button = selectedWrap.parentElement!.createEl('button', {
+			cls: 'operon-editor-subtasks-more',
+			attr: { type: 'button', 'aria-expanded': String(this.desktopSubtasksExpanded) },
+		});
+		button.hidden = true;
+		let frame: number | null = null;
+		let stopped = false;
+		const layout = () => {
+			frame = null;
+			if (stopped || !selectedWrap.isConnected || this.disposed) return;
+			const chips = Array.from(selectedWrap.children) as HTMLElement[];
+			const focusedChip = chips.findIndex(chip => chip.contains(selectedWrap.ownerDocument.activeElement));
+			for (const chip of chips) chip.hidden = false;
+			const tops: number[] = [];
+			let visibleCount = chips.length;
+			for (let index = 0; index < chips.length; index += 1) {
+				const top = chips[index].getBoundingClientRect().top;
+				if (!tops.some(rowTop => Math.abs(rowTop - top) < 1)) tops.push(top);
+				if (tops.length > 3) { visibleCount = index; break; }
+			}
+			const hiddenCount = chips.length - visibleCount;
+			for (let index = visibleCount; index < chips.length; index += 1) chips[index].hidden = !this.desktopSubtasksExpanded;
+			button.hidden = hiddenCount === 0;
+			button.setText(this.desktopSubtasksExpanded ? t('taskEditor', 'showLess') : t('taskEditor', 'moreValues', { count: String(hiddenCount) }));
+			button.setAttr('aria-expanded', String(this.desktopSubtasksExpanded));
+			setAccessibleLabelWithoutTooltip(button, this.desktopSubtasksExpanded ? t('taskEditor', 'showLess') : t('taskEditor', hiddenCount === 1 ? 'showMoreSubtasksOne' : 'showMoreSubtasksMany', { count: String(hiddenCount) }));
+			if (this.desktopSubtaskToggleNeedsFocus || (button.hidden && button.ownerDocument.activeElement === button) || (!this.desktopSubtasksExpanded && focusedChip >= visibleCount)) {
+				this.desktopSubtaskToggleNeedsFocus = false;
+				if (button.hidden) this.workflowActionButtons.get('subtasks')?.focus();
+				else button.focus();
+			}
+		};
+		const schedule = () => {
+			if (!stopped && frame === null) frame = owner.requestAnimationFrame(layout);
+		};
+		button.addEventListener('click', () => {
+			this.desktopSubtasksExpanded = !this.desktopSubtasksExpanded;
+			schedule();
+		});
+		const Observer = (owner as Window & { ResizeObserver?: typeof ResizeObserver }).ResizeObserver;
+		const observer = Observer ? new Observer(schedule) : null;
+		observer?.observe(selectedWrap);
+		for (const chip of Array.from(selectedWrap.children)) observer?.observe(chip);
+		owner.addEventListener('resize', schedule);
+		selectedWrap.ownerDocument.fonts?.addEventListener('loadingdone', schedule);
+		void selectedWrap.ownerDocument.fonts?.ready.then(schedule);
+		this.desktopSubtaskLayoutCleanup = () => {
+			stopped = true;
+			if (frame !== null) owner.cancelAnimationFrame(frame);
+			observer?.disconnect();
+			owner.removeEventListener('resize', schedule);
+			selectedWrap.ownerDocument.fonts?.removeEventListener('loadingdone', schedule);
+			button.remove();
+		};
+		schedule();
 	}
 
 	private renderCopyOperonIdButton(container: HTMLElement): void {
@@ -4251,6 +4347,7 @@ export class TaskEditorContent {
 
 		const openEditPicker = (anchor: HTMLElement, index: number, rawValue: string) => {
 			if (closePicker) return;
+			if (group.hasClass('operon-editor-desktop-property-value')) anchor.addClass('is-picker-open');
 			const ownerWindow = anchor.ownerDocument.defaultView ?? getActiveWindow();
 			let committed = false;
 			let closeHandled = false;
@@ -4259,6 +4356,7 @@ export class TaskEditorContent {
 				if (closeHandled) return;
 				closeHandled = true;
 				closePicker = null;
+				anchor.removeClass('is-picker-open');
 				if (committed) this.refreshWorkflowPickerSurfaceValues();
 				scheduleTaskEditorReminderFocus({
 					ownerWindow,
@@ -4781,11 +4879,15 @@ export class TaskEditorContent {
 		const input = shell.createEl('input', {
 			attr: { type: 'number', placeholder: '' },
 		});
+		const sizeInput = () => {
+			if (container.hasClass('operon-editor-desktop-property-value')) input.style.width = `calc(${Math.max(2, input.value.length + 1)}ch + 20px)`;
+		};
 		let refreshButtonState = (): void => {};
 		const refresh = (): void => {
 			const seconds = parseInt(this.fieldValues['estimate'] ?? '0', 10);
 			input.value = seconds > 0 ? String(Math.round(seconds / 60)) : '';
 			shell.classList.toggle('has-value', input.value.length > 0);
+			sizeInput();
 		};
 		this.registerSchedulingDraftRefresher(refresh);
 		const applyInputValue = (refreshEstimateReallocation = false): void => {
@@ -4803,6 +4905,7 @@ export class TaskEditorContent {
 		input.addEventListener('input', () => {
 			applyInputValue();
 			shell.classList.toggle('has-value', input.value.length > 0);
+			sizeInput();
 			this.markEdited();
 		});
 		input.addEventListener('change', commitInputValue);
@@ -5085,7 +5188,9 @@ export class TaskEditorContent {
 		const openPicker = (event?: Event) => {
 			event?.preventDefault();
 			event?.stopPropagation();
+			if (container.hasClass('operon-editor-desktop-property-value')) trigger.addClass('is-picker-open');
 			showRepeatPicker(trigger, {
+				onClose: () => trigger.removeClass('is-picker-open'),
 				value: this.fieldValues['repeat'],
 				repeatEnd: this.fieldValues['datetimeRepeatEnd'],
 				repeatSeriesId: this.fieldValues['repeatSeriesId'],
@@ -5133,7 +5238,9 @@ export class TaskEditorContent {
 			const repeatSeriesId = (this.fieldValues['repeatSeriesId'] ?? '').trim();
 			if (!parsed || !repeatSeriesId || !this.taskOperonId || !this.getRepeatSkipDates || !this.onUpdateRepeatSkips) return;
 			if (parsed.mode !== 'schedule' && parsed.mode !== 'count') return;
+			if (container.hasClass('operon-editor-desktop-property-value')) skipButton.addClass('is-picker-open');
 			showRepeatSkipPicker(skipButton, {
+				onClose: () => skipButton.removeClass('is-picker-open'),
 				taskId: this.taskOperonId,
 				repeat: rawRepeat,
 				repeatSeriesId,
@@ -5506,6 +5613,12 @@ export class TaskEditorContent {
 		const refreshIconPreview = () => {
 			iconButton.empty();
 			const name = this.fieldValues['taskIcon'] ?? '';
+			if (container.hasClass('operon-editor-desktop-property-value')) {
+				iconButton.setText(name);
+				iconButton.toggleClass('has-icon', !!name);
+				setAccessibleLabelWithoutTooltip(iconButton, this.getWorkflowPickerLabel('taskIcon'));
+				return;
+			}
 			const fallbackIds = name
 				? [name]
 				: ['obsidian-new', 'obsidian-logo', 'gem', 'hexagon'];
@@ -5531,21 +5644,25 @@ export class TaskEditorContent {
 
 		const openSharedIconPicker = (query: string) => {
 			closeIconPicker?.();
+			if (container.hasClass('operon-editor-desktop-property-value')) iconButton.addClass('is-picker-open');
 			closeIconPicker = showIconPicker(iconButton, {
 				value: this.fieldValues['taskIcon'],
 				query,
 				onSelect: iconId => {
 					closeIconPicker = null;
+					iconButton.removeClass('is-picker-open');
 					selectItem(iconId);
 				},
 				onClear: () => {
 					closeIconPicker = null;
+					iconButton.removeClass('is-picker-open');
 					delete this.fieldValues['taskIcon'];
 					refreshIconPreview();
 					this.markEdited();
 				},
 				onClose: () => {
 					closeIconPicker = null;
+					iconButton.removeClass('is-picker-open');
 				},
 			});
 		};
@@ -5577,6 +5694,11 @@ export class TaskEditorContent {
 
 		const refreshSwatch = (hex: string) => {
 			swatch.empty();
+			if (container.hasClass('operon-editor-desktop-property-value')) {
+				swatch.setText(hex.toUpperCase());
+				swatch.toggleClass('has-color', !!hex);
+				return;
+			}
 			if (hex) {
 				const swatchDot = swatch.createSpan('operon-color-swatch-dot');
 				swatchDot.style.background = hex;
@@ -6199,6 +6321,7 @@ export class TaskEditorContent {
 				this.updateExistingSubtaskParent(operonId, null);
 				this.refreshWorkflowPickerSurfaceValues();
 			});
+			if (group.hasClass('operon-editor-desktop-property-value')) this.setupDesktopSubtaskLayout(selectedWrap);
 		};
 
 		const syncParentLinks = (nextIds: string[]) => {

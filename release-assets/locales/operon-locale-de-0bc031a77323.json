@@ -1,8 +1,8 @@
 {
   "schemaVersion": 1,
   "locale": "de",
-  "keyCount": 3540,
-  "keyFingerprint": "f5ffe8a848bfda113aa3f85eec4af9212d4ee1057dafb7c2ce0846e72c748c2a",
+  "keyCount": 3541,
+  "keyFingerprint": "63ef0f0fb348525914ac49ec3607971413eae40b0cb0a39b010dfe6e542ee7a0",
   "translations": {
     "buttons": {
       "addFileSubtask": "Datei-Unteraufgabe hinzufügen",
@@ -3275,6 +3275,7 @@
       "linkLabel": "Link:",
       "links": "Links",
       "more": "Mehr",
+      "moreValues": "{{count}} weitere",
       "namedColors": "Benannte Farben",
       "newOperonTaskFile": "Neue Operon-Aufgabendatei",
       "noColorSelected": "Keine Farbe ausgewählt",
@@ -3585,5 +3586,5 @@
       "toggleDescendantPreview": "Vorschau untergeordneter Aufgaben umschalten"
     }
   },
-  "sourceVersion": "fc17d91422a8938c021d01dcb50f7e3abab7a7879081cd71b82400b399965780"
+  "sourceVersion": "ff5461c683adb7c0029b9bfe0dd2d62e8e3cc1cb86496d72bdd18c0f4c094484"
 }

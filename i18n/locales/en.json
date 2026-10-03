@@ -2725,6 +2725,7 @@
 		"relatedPlaceholder": "[[Project Note]]",
 		"openParentTask": "Open parent task",
 		"editSubtask": "Edit subtask",
+		"moreValues": "{{count}} more",
 		"showLess": "Show less",
 		"showMoreSubtasksOne": "Show {{count}} more subtask",
 		"showMoreSubtasksMany": "Show {{count}} more subtasks",

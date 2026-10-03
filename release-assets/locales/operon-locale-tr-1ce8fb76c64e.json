@@ -1,8 +1,8 @@
 {
   "schemaVersion": 1,
   "locale": "tr",
-  "keyCount": 3540,
-  "keyFingerprint": "f5ffe8a848bfda113aa3f85eec4af9212d4ee1057dafb7c2ce0846e72c748c2a",
+  "keyCount": 3541,
+  "keyFingerprint": "63ef0f0fb348525914ac49ec3607971413eae40b0cb0a39b010dfe6e542ee7a0",
   "translations": {
     "buttons": {
       "addFileSubtask": "Dosya Tipi Alt Görev Ekle",
@@ -3275,6 +3275,7 @@
       "linkLabel": "Link:",
       "links": "Linkler",
       "more": "Daha Fazla",
+      "moreValues": "{{count}} daha",
       "namedColors": "Adlandırılmış renkler",
       "newOperonTaskFile": "Yeni Operon Dosya Tipi Görev",
       "noColorSelected": "Renk seçilmedi",
@@ -3585,5 +3586,5 @@
       "toggleDescendantPreview": "Alt görev önizlemesini aç/kapat"
     }
   },
-  "sourceVersion": "42c29c1c51dd008d78c81a7bb349371108e086e396b811e866e412f33d47c9cc"
+  "sourceVersion": "b1f76da1700b50739fc6e58e5cf232a14ac6ef082c2eda523a5a6e41b598ce93"
 }

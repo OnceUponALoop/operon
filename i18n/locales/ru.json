@@ -2725,6 +2725,7 @@
 		"relatedPlaceholder": "[[Заметка проекта]]",
 		"openParentTask": "Открыть родительскую задачу",
 		"editSubtask": "Редактировать подзадачу",
+		"moreValues": "Ещё {{count}}",
 		"showLess": "Показать меньше",
 		"showMoreSubtasksOne": "Показать ещё {{count}} подзадачу",
 		"showMoreSubtasksMany": "Показать ещё {{count}} подзадач",

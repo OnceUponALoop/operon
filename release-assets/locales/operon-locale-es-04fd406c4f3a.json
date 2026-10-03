@@ -1,8 +1,8 @@
 {
   "schemaVersion": 1,
   "locale": "es",
-  "keyCount": 3540,
-  "keyFingerprint": "f5ffe8a848bfda113aa3f85eec4af9212d4ee1057dafb7c2ce0846e72c748c2a",
+  "keyCount": 3541,
+  "keyFingerprint": "63ef0f0fb348525914ac49ec3607971413eae40b0cb0a39b010dfe6e542ee7a0",
   "translations": {
     "buttons": {
       "addFileSubtask": "Añadir subtarea de archivo",
@@ -3275,6 +3275,7 @@
       "linkLabel": "Enlace:",
       "links": "Enlaces",
       "more": "Más",
+      "moreValues": "{{count}} más",
       "namedColors": "Colores con nombre",
       "newOperonTaskFile": "Nuevo archivo de tarea de Operon",
       "noColorSelected": "Ningún color seleccionado",
@@ -3585,5 +3586,5 @@
       "toggleDescendantPreview": "Alternar vista previa de descendientes"
     }
   },
-  "sourceVersion": "f4f70f77a14233b41c5be137409a80bfdb90d0be8bcc22f8c621b37c38f54193"
+  "sourceVersion": "fe326baff1dea3ccc8cef9eba5979284a26099fc588dcc9092987f9b5d792c08"
 }

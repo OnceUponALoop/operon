@@ -2725,6 +2725,7 @@
 		"relatedPlaceholder": "[[Projekt-Notiz]]",
 		"openParentTask": "Übergeordnete Aufgabe öffnen",
 		"editSubtask": "Unteraufgabe bearbeiten",
+		"moreValues": "{{count}} weitere",
 		"showLess": "Weniger anzeigen",
 		"showMoreSubtasksOne": "{{count}} weitere Unteraufgabe anzeigen",
 		"showMoreSubtasksMany": "{{count}} weitere Unteraufgaben anzeigen",

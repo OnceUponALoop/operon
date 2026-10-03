@@ -2725,6 +2725,7 @@
 		"relatedPlaceholder": "[[プロジェクトノート]]",
 		"openParentTask": "親タスクを開く",
 		"editSubtask": "サブタスクを編集",
+		"moreValues": "さらに {{count}} 件",
 		"showLess": "表示を減らす",
 		"showMoreSubtasksOne": "さらに {{count}} 件のサブタスクを表示",
 		"showMoreSubtasksMany": "さらに {{count}} 件のサブタスクを表示",

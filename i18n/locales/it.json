@@ -2725,6 +2725,7 @@
 		"relatedPlaceholder": "[[Nota del progetto]]",
 		"openParentTask": "Apri attività principale",
 		"editSubtask": "Modifica sotto-attività",
+		"moreValues": "Altri {{count}}",
 		"showLess": "Mostra meno",
 		"showMoreSubtasksOne": "Mostra {{count}} altra sotto-attività",
 		"showMoreSubtasksMany": "Mostra altre {{count}} sotto-attività",

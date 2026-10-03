@@ -2725,6 +2725,7 @@
 		"relatedPlaceholder": "[[專案筆記]]",
 		"openParentTask": "開啟父任務",
 		"editSubtask": "編輯子任務",
+		"moreValues": "還有 {{count}} 項",
 		"showLess": "收起",
 		"showMoreSubtasksOne": "顯示另外 {{count}} 個子任務",
 		"showMoreSubtasksMany": "顯示另外 {{count}} 個子任務",
