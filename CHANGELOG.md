@@ -7,7 +7,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Security
+
+- Updated development dependencies to address known security vulnerabilities.
+
 ### Validation
+
+- Development and production dependency audits passed with **0** vulnerabilities.
+- Plugin and Runtime checks, strict lint, production build, and release guard passed, along with **3,806/3,806** local regression tests.
 
 ## [3.11.0] - 2026-10-01
 
