@@ -535,6 +535,7 @@ export class TaskEditorContent {
 	private descriptionCompactEditor: CompactMarkdownEditorSurface | null = null;
 	private noteCompactEditor: CompactMarkdownEditorSurface | null = null;
 	private descriptionCompactHostEl: HTMLElement | null = null;
+	private compactTextResizeObserver: ResizeObserver | null = null;
 	private noteCompactHostEl: HTMLElement | null = null;
 	private initialDescriptionFocusTimers: WindowTimeoutHandle[] = [];
 	private rootEl: HTMLElement | null = null;
@@ -1019,12 +1020,45 @@ export class TaskEditorContent {
 	}
 
 	private destroyCompactTextEditors(): void {
+		this.compactTextResizeObserver?.disconnect();
+		this.compactTextResizeObserver = null;
 		this.descriptionCompactEditor?.destroy();
 		this.noteCompactEditor?.destroy();
 		this.descriptionCompactEditor = null;
 		this.noteCompactEditor = null;
 		this.descriptionCompactHostEl = null;
 		this.noteCompactHostEl = null;
+	}
+
+	private autoSizeCompactTextarea(textarea: HTMLTextAreaElement): void {
+		const owner = textarea.ownerDocument.defaultView;
+		if (!owner) return;
+		const style = owner.getComputedStyle(textarea);
+		const borders = (Number.parseFloat(style.borderTopWidth) || 0)
+			+ (Number.parseFloat(style.borderBottomWidth) || 0);
+		textarea.setCssProps({ height: '0px' });
+		textarea.style.height = `${Math.ceil(textarea.scrollHeight + borders)}px`;
+	}
+
+	private observeCompactTextEditorWidths(): void {
+		this.compactTextResizeObserver?.disconnect();
+		const owner = this.descriptionCompactHostEl?.ownerDocument.defaultView;
+		const Observer = (owner as (Window & { ResizeObserver?: typeof ResizeObserver }) | null)?.ResizeObserver;
+		if (!Observer) return;
+		const widths = new WeakMap<Element, number>();
+		this.compactTextResizeObserver = new Observer(entries => {
+			if (this.disposed) return;
+			let changed = false;
+			for (const entry of entries) {
+				if (widths.get(entry.target) === entry.contentRect.width) continue;
+				widths.set(entry.target, entry.contentRect.width);
+				changed = true;
+			}
+			if (changed) this.refreshCompactTextEditorLayouts();
+		});
+		for (const host of [this.descriptionCompactHostEl, this.noteCompactHostEl]) {
+			if (host) this.compactTextResizeObserver.observe(host);
+		}
 	}
 
 	private refreshCompactTextEditorLayouts(): void {
@@ -2644,6 +2678,7 @@ export class TaskEditorContent {
 			text: t('taskEditor', 'notes'),
 		});
 		this.renderNote(notesGroup, false);
+		this.observeCompactTextEditorWidths();
 	}
 
 	private renderDescription(container: HTMLElement, showLabel = true): void {
@@ -2660,6 +2695,7 @@ export class TaskEditorContent {
 			sourcePath: this.getCompactTextSourcePath(),
 			placeholder: t('taskEditor', 'descriptionPlaceholder'),
 			ariaLabel: t('taskEditor', 'description'),
+			onTextareaLayout: textarea => this.autoSizeCompactTextarea(textarea),
 			onUserChange: draft => {
 				const value = draft.persistableValue;
 				if (value === this.description) return;
@@ -2895,6 +2931,7 @@ export class TaskEditorContent {
 			placeholder: t('taskEditor', 'notesPlaceholder'),
 			ariaLabel: t('taskEditor', 'notes'),
 			textPolicy: 'task-note',
+			onTextareaLayout: textarea => this.autoSizeCompactTextarea(textarea),
 			onUserChange: draft => {
 				const value = draft.persistableValue;
 				const previous = this.fieldValues['note'] ?? '';

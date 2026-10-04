@@ -11524,29 +11524,39 @@ body .operon-task-editor button.operon-editor-tracking-session-action.is-danger:
 	transition: border-color 120ms ease, box-shadow 120ms ease;
 }
 
-.operon-task-editor-compact-text-host.is-description,
-.operon-task-editor-compact-text-host.is-description .operon-compact-markdown-editor,
-.operon-task-editor-compact-text-host.is-description .cm-editor,
-.operon-task-editor-compact-text-host.is-description .cm-content,
-.operon-task-editor-compact-text-host.is-description .operon-compact-markdown-editor-fallback {
-	min-height: 64px;
+/* These two fields grow with their content instead of using the shared compact cap. */
+.operon-task-editor-compact-text-host:is(.is-description, .is-notes),
+.operon-task-editor-compact-text-host:is(.is-description, .is-notes) :is(
+	.operon-compact-markdown-editor, .cm-editor, .cm-scroller, .cm-content,
+	.operon-compact-markdown-editor-fallback
+) {
+	height: auto;
+	min-height: 0;
+	max-height: none;
 }
 
-.operon-task-editor-compact-text-host.is-notes,
-.operon-task-editor-compact-text-host.is-notes .operon-compact-markdown-editor,
-.operon-task-editor-compact-text-host.is-notes .cm-editor,
-.operon-task-editor-compact-text-host.is-notes .cm-content,
-.operon-task-editor-compact-text-host.is-notes .operon-compact-markdown-editor-fallback {
-	min-height: 52px;
+.operon-task-editor-compact-text-host:is(.is-description, .is-notes) .cm-scroller {
+	overflow: visible;
 }
 
-.operon-task-editor:not(.operon-task-editor-mobile)
-	.operon-task-editor-compact-text-host:is(.is-description, .is-notes)
+.operon-task-editor-compact-text-host:is(.is-description, .is-notes)
 	.operon-compact-markdown-editor .cm-content,
-.operon-task-editor:not(.operon-task-editor-mobile)
-	.operon-task-editor-compact-text-host:is(.is-description, .is-notes)
+.operon-task-editor-compact-text-host:is(.is-description, .is-notes)
 	.operon-compact-markdown-editor-fallback {
-	padding-inline: 16px;
+	padding: 8px 16px;
+	line-height: 1.5;
+}
+
+.operon-task-editor-compact-text-host:is(.is-description, .is-notes)
+	.operon-compact-markdown-editor-fallback {
+	overflow: hidden;
+	resize: none;
+}
+
+/* A theme's active-line marker belongs to document editing, not these text fields. */
+body.active-line .operon-task-editor-compact-text-host
+	.operon-compact-markdown-editor .cm-line.cm-active::before {
+	display: none;
 }
 
 .operon-task-editor-compact-text-host:focus-within {
