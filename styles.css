@@ -10114,7 +10114,7 @@ body .operon-task-editor-modal.operon-task-editor-modal-file-body-wide .operon-t
 	font-family: var(--font-text);
 	font-size: 14px;
 	line-height: 1.7;
-	background: color-mix(in srgb, var(--background-secondary) 72%, var(--background-primary));
+	background: transparent;
 	user-select: none;
 	pointer-events: none;
 }
