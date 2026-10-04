@@ -3263,7 +3263,7 @@
       "groupCommands": "Aktionen",
       "groupConnections": "Verknüpfungen",
       "groupCustom": "Benutzerdefiniert",
-      "groupFile": "Datei",
+      "groupFile": "Zusätzlich",
       "groupOverview": "Überblick",
       "groupPlanning": "Planung",
       "hideFileBodyPanel": "Inhaltsbereich ausblenden",
@@ -3594,5 +3594,5 @@
       "toggleDescendantPreview": "Vorschau untergeordneter Aufgaben umschalten"
     }
   },
-  "sourceVersion": "5dd9c10723dac5a742e2ca191b3499f41efceb62c676bf5934df3337f66668be"
+  "sourceVersion": "680b239ed4ba0475bddd49864766a7c2bee0e4e4219f02cf00cccc347e8611ce"
 }

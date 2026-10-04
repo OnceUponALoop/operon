@@ -3263,7 +3263,7 @@
       "groupCommands": "コマンド",
       "groupConnections": "関連",
       "groupCustom": "カスタム",
-      "groupFile": "ファイル",
+      "groupFile": "追加",
       "groupOverview": "概要",
       "groupPlanning": "計画",
       "hideFileBodyPanel": "本文パネルを非表示",
@@ -3594,5 +3594,5 @@
       "toggleDescendantPreview": "子孫プレビューを切り替え"
     }
   },
-  "sourceVersion": "7ca5d53b8f1271825060e5ff769b6267a041ddf1cc6be917b688678ee13ea7c2"
+  "sourceVersion": "a824237b7c3d40610f58dfd5e18f17b4602ff3e24196df855a6822abe9dad3c4"
 }

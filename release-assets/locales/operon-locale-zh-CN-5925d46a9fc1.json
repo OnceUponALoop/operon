@@ -3263,7 +3263,7 @@
       "groupCommands": "命令",
       "groupConnections": "关联",
       "groupCustom": "自定义",
-      "groupFile": "文件",
+      "groupFile": "附加",
       "groupOverview": "概览",
       "groupPlanning": "计划",
       "hideFileBodyPanel": "隐藏内容面板",
@@ -3594,5 +3594,5 @@
       "toggleDescendantPreview": "切换子任务预览"
     }
   },
-  "sourceVersion": "6c55fd20f0428d49e2f8e8136b9ef24d82e7f0203564fa7b527047dd812c5593"
+  "sourceVersion": "2a1a5937ce902e3377c1b65da7bfd518518ca474c82df72269b502ebc322b3f0"
 }

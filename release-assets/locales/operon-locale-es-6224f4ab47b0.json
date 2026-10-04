@@ -3263,7 +3263,7 @@
       "groupCommands": "Comandos",
       "groupConnections": "Conexiones",
       "groupCustom": "Personalizado",
-      "groupFile": "Archivo",
+      "groupFile": "Adicional",
       "groupOverview": "Resumen",
       "groupPlanning": "Planificación",
       "hideFileBodyPanel": "Ocultar panel de contenido",
@@ -3594,5 +3594,5 @@
       "toggleDescendantPreview": "Alternar vista previa de descendientes"
     }
   },
-  "sourceVersion": "b38a627d93f8df804e2c758f625879e093f384e2b6ff5696873578cbb6374834"
+  "sourceVersion": "ab6749cf21834dda4aae8f788464b1f781563e4b2a2bd16c992db48abdd0d77b"
 }

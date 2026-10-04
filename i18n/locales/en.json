@@ -2577,7 +2577,7 @@
 		"groupActivity": "Activity",
 		"groupConnections": "Connections",
 		"groupCustom": "Custom",
-		"groupFile": "File",
+		"groupFile": "Additional",
 		"filePropertiesUnavailable": "File properties are unavailable because the source is missing, ambiguous, or invalid.",
 		"filePropertyReadOnly": "{{name}} is read-only because its current value cannot be edited safely.",
 		"addNote": "Add note",

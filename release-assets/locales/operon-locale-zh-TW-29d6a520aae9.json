@@ -3263,7 +3263,7 @@
       "groupCommands": "命令",
       "groupConnections": "關聯",
       "groupCustom": "自訂",
-      "groupFile": "檔案",
+      "groupFile": "額外",
       "groupOverview": "概覽",
       "groupPlanning": "規劃",
       "hideFileBodyPanel": "隱藏內容面板",
@@ -3594,5 +3594,5 @@
       "toggleDescendantPreview": "切換子任務預覽"
     }
   },
-  "sourceVersion": "97ffca06ebf763e0303cfb388aef94c38451b529f873f311fbcce1333ae193fb"
+  "sourceVersion": "aff6cebfb83e0cbbeb3a8f3525ad328d02e59d56930949481031454dd2d78231"
 }

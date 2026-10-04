@@ -3263,7 +3263,7 @@
       "groupCommands": "Komutlar",
       "groupConnections": "Bağlantılar",
       "groupCustom": "Özel",
-      "groupFile": "Dosya",
+      "groupFile": "Ek",
       "groupOverview": "Genel",
       "groupPlanning": "Planlama",
       "hideFileBodyPanel": "İçerik panelini gizle",
@@ -3594,5 +3594,5 @@
       "toggleDescendantPreview": "Alt görev önizlemesini aç/kapat"
     }
   },
-  "sourceVersion": "2f5b1479f903154e04174ef16c1dde487b06072926e56a862fcf6d7da2bb3229"
+  "sourceVersion": "59b1694abf8d762f77287eca33c47ec7ff09bcb984c03d072994fb361f9854bb"
 }

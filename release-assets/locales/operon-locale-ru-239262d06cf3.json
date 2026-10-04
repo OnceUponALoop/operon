@@ -3263,7 +3263,7 @@
       "groupCommands": "Команды",
       "groupConnections": "Связи",
       "groupCustom": "Пользовательские",
-      "groupFile": "Файл",
+      "groupFile": "Дополнительно",
       "groupOverview": "Обзор",
       "groupPlanning": "Планирование",
       "hideFileBodyPanel": "Скрыть панель содержимого",
@@ -3594,5 +3594,5 @@
       "toggleDescendantPreview": "Переключить предпросмотр потомков"
     }
   },
-  "sourceVersion": "17d8525134bce0b48e007fa974d411247997fe1d7560f92a7280a805211a1b95"
+  "sourceVersion": "037a955dcc4409680b5582c471f302d745930e518fa75f581aee848e035d6770"
 }

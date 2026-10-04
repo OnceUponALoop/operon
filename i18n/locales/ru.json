@@ -2577,7 +2577,7 @@
 		"groupActivity": "Действия",
 		"groupConnections": "Связи",
 		"groupCustom": "Пользовательские",
-		"groupFile": "Файл",
+		"groupFile": "Дополнительно",
 		"filePropertiesUnavailable": "Свойства недоступны: источник отсутствует, неоднозначен или некорректен.",
 		"filePropertyReadOnly": "{{name}} доступно только для чтения: текущее значение нельзя безопасно изменить.",
 		"addNote": "Добавить заметку",

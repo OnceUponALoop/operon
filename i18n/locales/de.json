@@ -2577,7 +2577,7 @@
 		"groupActivity": "Aktivität",
 		"groupConnections": "Verknüpfungen",
 		"groupCustom": "Benutzerdefiniert",
-		"groupFile": "Datei",
+		"groupFile": "Zusätzlich",
 		"filePropertiesUnavailable": "Dateieigenschaften sind nicht verfügbar: Die Quelle fehlt, ist mehrdeutig oder ungültig.",
 		"filePropertyReadOnly": "{{name}} ist schreibgeschützt, da der aktuelle Wert nicht sicher bearbeitet werden kann.",
 		"addNote": "Notiz hinzufügen",

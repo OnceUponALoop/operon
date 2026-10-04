@@ -2577,7 +2577,7 @@
 		"groupActivity": "Attività",
 		"groupConnections": "Collegamenti",
 		"groupCustom": "Personalizzato",
-		"groupFile": "File",
+		"groupFile": "Aggiuntive",
 		"filePropertiesUnavailable": "Proprietà non disponibili: la fonte è mancante, ambigua o non valida.",
 		"filePropertyReadOnly": "{{name}} è di sola lettura perché il valore attuale non può essere modificato in sicurezza.",
 		"addNote": "Aggiungi nota",

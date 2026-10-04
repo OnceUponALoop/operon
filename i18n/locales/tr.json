@@ -2577,7 +2577,7 @@
 		"groupActivity": "Etkinlik",
 		"groupConnections": "Bağlantılar",
 		"groupCustom": "Özel",
-		"groupFile": "Dosya",
+		"groupFile": "Ek",
 		"filePropertiesUnavailable": "Kaynak eksik, belirsiz veya geçersiz olduğu için dosya özellikleri kullanılamıyor.",
 		"filePropertyReadOnly": "{{name}}: mevcut değer güvenle düzenlenemediği için salt okunur.",
 		"addNote": "Not ekle",

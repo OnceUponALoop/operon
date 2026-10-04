@@ -2577,7 +2577,7 @@
 		"groupActivity": "Atividade",
 		"groupConnections": "Conexões",
 		"groupCustom": "Personalizado",
-		"groupFile": "Arquivo",
+		"groupFile": "Adicional",
 		"filePropertiesUnavailable": "Propriedades indisponíveis: a origem está ausente, ambígua ou inválida.",
 		"filePropertyReadOnly": "{{name}} é somente leitura porque o valor atual não pode ser editado com segurança.",
 		"addNote": "Adicionar nota",

@@ -2577,7 +2577,7 @@
 		"groupActivity": "活動",
 		"groupConnections": "關聯",
 		"groupCustom": "自訂",
-		"groupFile": "檔案",
+		"groupFile": "額外",
 		"filePropertiesUnavailable": "來源缺失、不明確或無效，無法使用檔案屬性。",
 		"filePropertyReadOnly": "{{name}} 的目前值無法安全編輯，因此為唯讀。",
 		"addNote": "新增筆記",
