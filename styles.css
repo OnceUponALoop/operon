@@ -36042,7 +36042,7 @@ body .operon-task-editor:not(.operon-task-editor-mobile) .operon-editor-desktop-
 	border-radius: var(--operon-task-editor-control-radius, 6px);
 }
 
-body .operon-task-editor:not(.operon-task-editor-mobile) .operon-editor-desktop-property-value :is(.operon-editor-picker-button, .operon-icon-trigger, .operon-color-swatch, .operon-editor-repeat-trigger, .operon-editor-repeat-skip, .operon-editor-estimate-reallocate, .operon-editor-subtasks-more, .operon-editor-compact-selection-chip, input):is(:hover, :focus-within, .is-picker-open) {
+body .operon-task-editor:not(.operon-task-editor-mobile) .operon-editor-desktop-property-value :is(.operon-editor-picker-button, .operon-icon-trigger, .operon-color-swatch, .operon-editor-repeat-trigger, .operon-editor-repeat-skip, .operon-editor-estimate-reallocate, .operon-editor-subtasks-more, .operon-editor-compact-selection-chip, input):is(:hover, :focus-visible, :has(:focus-visible), .is-picker-open) {
 	border-color: var(--operon-task-editor-workflow-value-hover-border);
 }
 
@@ -36067,7 +36067,7 @@ body .operon-task-editor:not(.operon-task-editor-mobile) .operon-editor-desktop-
 	box-shadow: none;
 }
 
-body .operon-task-editor:not(.operon-task-editor-mobile) .operon-editor-desktop-property-value :is(.operon-editor-compact-selection-chip, .operon-editor-picker-chip):is(:hover, :focus-within) :is(.operon-editor-compact-selection-chip-remove, .operon-editor-picker-chip-remove) {
+body .operon-task-editor:not(.operon-task-editor-mobile) .operon-editor-desktop-property-value :is(.operon-editor-compact-selection-chip, .operon-editor-picker-chip):is(:hover, :focus-visible, :has(:focus-visible)) :is(.operon-editor-compact-selection-chip-remove, .operon-editor-picker-chip-remove) {
 	opacity: 1;
 	pointer-events: auto;
 }
@@ -36076,7 +36076,7 @@ body .operon-task-editor:not(.operon-task-editor-mobile) .operon-editor-desktop-
 	color: var(--operon-blocked-by-state-color, var(--text-normal));
 }
 
-body .operon-task-editor:not(.operon-task-editor-mobile) .operon-editor-desktop-property-value .operon-editor-compact-selection-chip[data-blocked-by-state]:is(:hover, :focus-within) {
+body .operon-task-editor:not(.operon-task-editor-mobile) .operon-editor-desktop-property-value .operon-editor-compact-selection-chip[data-blocked-by-state]:is(:hover, :focus-visible, :has(:focus-visible)) {
 	border-color: var(--operon-blocked-by-state-color, var(--operon-task-editor-workflow-value-hover-border));
 }
 
@@ -36092,11 +36092,11 @@ body .operon-task-editor:not(.operon-task-editor-mobile) .operon-editor-desktop-
 	color: var(--text-error);
 }
 
-body .operon-task-editor:not(.operon-task-editor-mobile) .operon-editor-desktop-property-value .operon-editor-reminder-chip.is-unresolved:is(:hover, :focus-within) {
+body .operon-task-editor:not(.operon-task-editor-mobile) .operon-editor-desktop-property-value .operon-editor-reminder-chip.is-unresolved:is(:hover, :focus-visible, :has(:focus-visible)) {
 	border-color: var(--text-warning);
 }
 
-body .operon-task-editor:not(.operon-task-editor-mobile) .operon-editor-desktop-property-value .operon-editor-reminder-chip.is-invalid:is(:hover, :focus-within) {
+body .operon-task-editor:not(.operon-task-editor-mobile) .operon-editor-desktop-property-value .operon-editor-reminder-chip.is-invalid:is(:hover, :focus-visible, :has(:focus-visible)) {
 	border-color: var(--text-error);
 }
 
@@ -36185,7 +36185,7 @@ body .operon-task-editor:not(.operon-task-editor-mobile) button.operon-editor-de
 	cursor: pointer;
 }
 
-body .operon-task-editor:not(.operon-task-editor-mobile) .operon-editor-desktop-property-row:is(:hover, :focus-within, :has(.is-picker-open)) button.operon-editor-desktop-property-label {
+body .operon-task-editor:not(.operon-task-editor-mobile) .operon-editor-desktop-property-row:is(:hover, :has(:focus-visible), :has(.is-picker-open)) button.operon-editor-desktop-property-label {
 	box-shadow: inset 0 0 0 1px var(--operon-task-editor-workflow-value-border);
 }
 
@@ -36199,7 +36199,7 @@ body .operon-task-editor:not(.operon-task-editor-mobile) button.operon-editor-de
 	cursor: pointer;
 }
 
-body .operon-task-editor:not(.operon-task-editor-mobile) .operon-editor-desktop-property-row:is(:hover, :focus-within, :has(.is-picker-open)) .operon-editor-desktop-property-value :is(.operon-editor-picker-button, .operon-icon-trigger, .operon-color-swatch, .operon-editor-repeat-trigger, .operon-editor-estimate-input-shell, .operon-editor-subtasks-more, .operon-editor-value-token, .operon-editor-compact-selection-chip, .operon-editor-picker-chip, input) {
+body .operon-task-editor:not(.operon-task-editor-mobile) .operon-editor-desktop-property-row:is(:hover, :has(:focus-visible), :has(.is-picker-open)) .operon-editor-desktop-property-value :is(.operon-editor-picker-button, .operon-icon-trigger, .operon-color-swatch, .operon-editor-repeat-trigger, .operon-editor-estimate-input-shell, .operon-editor-subtasks-more, .operon-editor-value-token, .operon-editor-compact-selection-chip, .operon-editor-picker-chip, input) {
 	border-color: var(--operon-task-editor-workflow-value-border);
 }
 
@@ -36243,7 +36243,7 @@ body .operon-task-editor:not(.operon-task-editor-mobile) button.operon-editor-va
 	display: none;
 }
 
-body .operon-task-editor:not(.operon-task-editor-mobile) .operon-editor-desktop-property-row:is(:hover, :focus-within) .operon-editor-desktop-property-value :is(.operon-editor-value-clear, .operon-editor-compact-selection-chip-remove, .operon-editor-picker-chip-remove) {
+body .operon-task-editor:not(.operon-task-editor-mobile) .operon-editor-desktop-property-row:is(:hover, :has(:focus-visible)) .operon-editor-desktop-property-value :is(.operon-editor-value-clear, .operon-editor-compact-selection-chip-remove, .operon-editor-picker-chip-remove) {
 	opacity: 1;
 	pointer-events: auto;
 }
@@ -36319,7 +36319,7 @@ body .operon-task-editor:not(.operon-task-editor-mobile) .operon-editor-desktop-
 	box-shadow: none;
 }
 
-body .operon-task-editor:not(.operon-task-editor-mobile) .operon-editor-desktop-property-value .operon-editor-value-token:is(:hover, :focus-within, :has(.is-picker-open)) {
+body .operon-task-editor:not(.operon-task-editor-mobile) .operon-editor-desktop-property-value .operon-editor-value-token:is(:hover, :has(:focus-visible), :has(.is-picker-open)) {
 	border-color: var(--operon-task-editor-workflow-value-hover-border);
 }
 
