@@ -11555,6 +11555,8 @@ body .operon-task-editor button.operon-editor-tracking-session-action.is-danger:
 
 /* A theme's active-line marker belongs to document editing, not these text fields. */
 body.active-line .operon-task-editor-compact-text-host
+	.operon-compact-markdown-editor .cm-line.cm-active::before,
+body.active-line .operon-task-creator-compact-text-host:is(.is-description, .is-notes)
 	.operon-compact-markdown-editor .cm-line.cm-active::before {
 	display: none;
 }
