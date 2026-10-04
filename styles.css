@@ -35735,6 +35735,7 @@ body .operon-task-editor:not(.operon-task-editor-mobile) .operon-editor-desktop-
 	padding: 0 8px 0 15px;
 	justify-content: flex-start;
 	text-transform: none;
+	font-variant-caps: small-caps;
 	font-weight: var(--font-semibold);
 	letter-spacing: 0.05em;
 }
