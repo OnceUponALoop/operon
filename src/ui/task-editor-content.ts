@@ -278,6 +278,7 @@ export interface TaskEditorContentOptions {
 	onRequestDelete?: (task: ParsedTask, expectedDirectChildCount: number) => void | Promise<boolean | void>;
 	getDeleteDirectChildCount?: (task: ParsedTask) => number;
 	onOpenTask?: (operonId: string) => void;
+	onOpenSubtasksStats?: (operonId: string, anchor: HTMLElement) => (() => void) | null;
 	onMarkSubtaskDone?: (operonId: string) => Promise<boolean>;
 	onUpdateExistingSubtaskParent?: (childId: string, parentId: string | null) => void | Promise<void>;
 	getRepeatSkipDates?: (repeatSeriesId: string) => string[];
@@ -493,6 +494,9 @@ export class TaskEditorContent {
 	private onRequestSubtask: ((context: TaskEditorSubtaskRequest) => void | Promise<void>) | null = null;
 	private onRequestDelete: ((task: ParsedTask, expectedDirectChildCount: number) => void | Promise<boolean | void>) | null = null;
 	private getDeleteDirectChildCount: ((task: ParsedTask) => number) | null = null;
+	private refreshStatsCounters: (() => void) | null = null;
+	private closeStatsSubtasks: (() => void) | null = null;
+	private onOpenSubtasksStats: TaskEditorContentOptions['onOpenSubtasksStats'] = undefined;
 	private onOpenTask: ((operonId: string) => void) | null = null;
 	private onMarkSubtaskDone: ((operonId: string) => Promise<boolean>) | null = null;
 	private onUpdateExistingSubtaskParent: ((childId: string, parentId: string | null) => void | Promise<void>) | null = null;
@@ -631,6 +635,7 @@ export class TaskEditorContent {
 		this.onRequestDelete = options.onRequestDelete ?? null;
 		this.getDeleteDirectChildCount = options.getDeleteDirectChildCount ?? null;
 		this.onOpenTask = options.onOpenTask ?? null;
+		this.onOpenSubtasksStats = options.onOpenSubtasksStats;
 		this.onMarkSubtaskDone = options.onMarkSubtaskDone ?? null;
 		this.onUpdateExistingSubtaskParent = options.onUpdateExistingSubtaskParent ?? null;
 		this.getRepeatSkipDates = options.getRepeatSkipDates ?? null;
@@ -2198,6 +2203,9 @@ export class TaskEditorContent {
 	 * Clears the container first, then renders all sections.
 	 */
 	mountInto(container: HTMLElement): void {
+		this.closeStatsSubtasks?.();
+		this.closeStatsSubtasks = null;
+		this.refreshStatsCounters = null;
 		if (this.rootEl && this.rootEl !== container) cleanupOperonHoverTooltips(this.rootEl);
 		cleanupOperonHoverTooltips(container);
 		this.destroyCompactTextEditors();
@@ -2224,6 +2232,7 @@ export class TaskEditorContent {
 		this.indexUpdatesUnsubscribe = this.indexer.subscribeIndexUpdates(() => {
 			this.refreshMobileCoreButtons();
 			this.refreshRenderedBlockedBySelectionStates();
+			this.refreshStatsCounters?.();
    void this.refreshDesktopFileProperties();
 		});
 		this.pinnedCacheUnsubscribe?.();
@@ -2303,6 +2312,9 @@ export class TaskEditorContent {
 		this.clearMobileCoreToolbarState();
 		this.clearInitialDescriptionFocusTimers();
 
+		this.closeStatsSubtasks?.();
+		this.closeStatsSubtasks = null;
+		this.refreshStatsCounters = null;
 		cleanupOperonHoverTooltips(this.mainPanelEl);
 		this.mainPanelEl.empty();
 		if (Platform.isPhone) {
@@ -2357,6 +2369,9 @@ export class TaskEditorContent {
 				this.destroyCloseSaveInFlight = false;
 			});
 		}
+		this.closeStatsSubtasks?.();
+		this.closeStatsSubtasks = null;
+		this.refreshStatsCounters = null;
 		if (this.rootEl) {
 			closeFloatingPanelsForRoot(this.rootEl);
 			cleanupOperonHoverTooltips(this.rootEl);
@@ -2624,24 +2639,21 @@ export class TaskEditorContent {
 
 	// --- Renderers ---
 
-	private renderTopContextSection(container: HTMLElement, progressState: EditorProgressSectionState | null): void {
+	private renderTopContextSection(container: HTMLElement, _progressState: EditorProgressSectionState | null): void {
 		const section = container.createDiv('operon-editor-top-context-section');
 		const relations = section.createDiv('operon-editor-top-context-relations');
 		const updateVisibility = () => {
 			const hasRelations = relations.querySelector(
 				'.operon-editor-parent-card, .operon-editor-subtask-card, .operon-subtask-show-more',
 			) != null;
-			const hasProgress = section.querySelector('.operon-editor-progress') != null;
 			relations.hidden = !hasRelations;
-			section.hidden = !hasRelations && !hasProgress;
+			section.hidden = !hasRelations;
 		};
 
 		this.renderParentContext(relations, updateVisibility);
 		const subtaskHost = relations.createDiv('operon-editor-subtask-context-host');
 		this.renderSubtaskCards(subtaskHost);
 
-		const progressHost = section.createDiv('operon-editor-progress-context-host');
-		if (progressState) this.renderProgressSection(progressHost, progressState);
 		updateVisibility();
 	}
 
@@ -3416,12 +3428,17 @@ export class TaskEditorContent {
 	}
 
 	private renderTimeSummarySection(container: HTMLElement, state: EditorProgressSectionState | null): void {
-		if (!state?.hasAnyTimeData) return;
+		const summary = container.createDiv('operon-editor-time-summary');
+		this.renderStatsHeader(summary, state);
+	}
+
+	private renderTimeSummaryTable(summary: HTMLElement, state: EditorProgressSectionState | null): void {
+		summary.querySelector('.operon-editor-time-summary-table')?.remove();
+		if (!state) return;
 		const hasAnyDuration = state.ownDuration > 0 || (state.hasSubtasks && state.subtaskDuration > 0) || state.totalDuration > 0;
 		const hasAnyEstimate = state.ownEstimate > 0 || (state.hasSubtasks && state.subtaskEstimate > 0) || state.totalEstimate > 0;
-		if (!hasAnyDuration && !hasAnyEstimate) return;
 
-		const summary = container.createDiv('operon-editor-time-summary');
+		if (!hasAnyDuration && !hasAnyEstimate) return;
 		const table = summary.createDiv('operon-editor-time-summary-table');
 		const tableHeader = table.createDiv('operon-editor-time-summary-row is-header');
 		tableHeader.createDiv('operon-editor-time-summary-row-label operon-editor-time-summary-row-corner');
@@ -3497,35 +3514,61 @@ export class TaskEditorContent {
 		}
 	}
 
-	private renderProgressSection(container: HTMLElement, state: EditorProgressSectionState | null): void {
-		if (!state?.hasSubtasks && !state?.hasPlainCheckboxes) return;
-
-		const section = container.createDiv('operon-editor-progress');
-		const renderProgressRow = (done: number, total: number, label: string, percent: number, cls: string) => {
-			const row = section.createDiv(`operon-editor-progress-row ${cls}`);
-			const barTrack = row.createDiv('operon-editor-progress-bar-track');
-			const barFill = barTrack.createDiv('operon-editor-progress-bar-fill');
-			barFill.style.width = `${percent}%`;
-
-			const statsRow = row.createDiv('operon-editor-progress-stats');
-			const statsLeft = statsRow.createDiv('operon-editor-progress-stats-left');
-			statsLeft.createSpan({
-				text: t('taskEditor', 'progressDoneCount', { count: String(done) }),
-				cls: 'operon-editor-progress-counts',
-			});
-			statsLeft.createSpan({
-				text: ` / ${t('taskEditor', label, { count: String(total) })}`,
-				cls: 'operon-editor-progress-total',
-			});
-			statsRow.createSpan({ text: `${percent}%`, cls: 'operon-editor-progress-pct' });
+	private renderStatsHeader(summary: HTMLElement, state: EditorProgressSectionState | null): void {
+		const header = summary.createDiv('operon-editor-desktop-group-header operon-editor-stats-header');
+		const title = header.createEl('h6', { text: t('settings', 'pipelineColumnStats'), cls: 'operon-editor-core-title-badge operon-editor-desktop-group-title', attr: { tabindex: '-1' } });
+		const actions = header.createDiv('operon-editor-stats-actions');
+		const makeCounter = (kind: 'subtasks' | 'checkboxes', icon: string, label: string, open: (anchor: HTMLElement) => void) => {
+			const button = actions.createEl('button', { cls: `operon-editor-stats-counter is-${kind}`, attr: { type: 'button' } });
+			setIcon(button.createSpan('operon-editor-stats-counter-icon'), icon);
+			const text = button.createSpan('operon-editor-stats-counter-value');
+			this.bindTaskEditorTooltip(button, label);
+			button.addEventListener('click', () => { if (!this.disposed) open(button); });
+			return { button, text };
 		};
-
-		if (state.hasSubtasks) {
-			renderProgressRow(state.done, state.total, 'progressSubtasksCount', state.progressPct, 'is-subtasks');
-		}
-		if (state.hasPlainCheckboxes) {
-			renderProgressRow(state.checkboxDone, state.checkboxTotal, 'progressCheckboxesCount', state.checkboxProgressPct, 'is-checkboxes');
-		}
+		const subtasks = makeCounter('subtasks', 'list-tree', t('filterSets', 'dynamicSubtasksFilterTitle'), anchor => {
+			runAsyncAction('task editor stats subtasks open failed', async () => {
+				const id = this.getCurrentOperonId();
+				if (!id) return;
+				this.closeStatsSubtasks?.();
+				this.closeStatsSubtasks = this.onOpenSubtasksStats?.(id, anchor) ?? null;
+			});
+		});
+		const checkboxes = makeCounter('checkboxes', 'list-checks', t('taskEditor', 'showCheckboxes'), anchor => {
+			runAsyncAction('task editor stats checkboxes open failed', () => this.openTaskEditorCheckboxPopover(anchor));
+		});
+		let timeSignature: string | null = null;
+		const render = (next: EditorProgressSectionState | null) => {
+			const focused = summary.ownerDocument.activeElement;
+			const closingPopoverHadFocus = !next?.hasSubtasks && focused?.closest('.operon-subtasks-filter-popover') != null && this.rootEl?.contains(focused);
+			summary.hidden = !next;
+			const nextTimeSignature = JSON.stringify(next && [next.hasSubtasks, next.ownDuration, next.subtaskDuration, next.totalDuration, next.ownEstimate, next.subtaskEstimate, next.totalEstimate]);
+			if (timeSignature !== nextTimeSignature) {
+				timeSignature = nextTimeSignature;
+				this.renderTimeSummaryTable(summary, next);
+			}
+			for (const [control, available, done, total, percent, labelKey] of [
+				[subtasks, next?.hasSubtasks, next?.done ?? 0, next?.total ?? 0, next?.progressPct ?? 0, 'progressSubtasksCount'],
+				[checkboxes, next?.hasPlainCheckboxes, next?.checkboxDone ?? 0, next?.checkboxTotal ?? 0, next?.checkboxProgressPct ?? 0, 'progressCheckboxesCount'],
+			] as const) {
+				control.button.hidden = !available;
+				control.text.setText(`${done} / ${total} · ${percent}%`);
+				setAccessibleLabelWithoutTooltip(control.button, `${t('taskEditor', 'progressDoneCount', { count: String(done) })} / ${t('taskEditor', labelKey, { count: String(total) })} · ${percent}%`);
+			}
+			subtasks.button.disabled = !this.onOpenSubtasksStats;
+			if (!next?.hasSubtasks) {
+				this.closeStatsSubtasks?.();
+				this.closeStatsSubtasks = null;
+			}
+			if (closingPopoverHadFocus || (!next && focused != null && summary.contains(focused)) || [subtasks.button, checkboxes.button].some(button => button === focused && button.hidden)) {
+				const target = [subtasks.button, checkboxes.button].find(button => !button.hidden && !button.disabled);
+				if (target) target.focus({ preventScroll: true });
+				else if (next) title.focus({ preventScroll: true });
+				else this.focusDescriptionField(false);
+			}
+		};
+		render(state);
+		this.refreshStatsCounters = () => { if (!this.disposed && summary.isConnected) render(this.getProgressSectionState()); };
 	}
 
 	private renderDesktopPropertyGroups(container: HTMLElement): void {

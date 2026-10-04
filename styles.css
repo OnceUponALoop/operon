@@ -36363,3 +36363,73 @@ body .operon-task-editor:not(.operon-task-editor-mobile) .operon-editor-tracking
 		pointer-events: auto;
 	}
 }
+
+/* Stats shares desktop section geometry; counters replace progress bars. */
+.operon-task-editor:not(.operon-task-editor-mobile) .operon-editor-time-summary {
+	padding-block: 7px;
+	gap: 8px;
+}
+
+.operon-task-editor:not(.operon-task-editor-mobile) .operon-editor-stats-actions {
+	display: flex;
+	justify-content: flex-end;
+	flex-wrap: wrap;
+	gap: 6px;
+	min-width: 0;
+}
+
+body .operon-task-editor:not(.operon-task-editor-mobile) button.operon-editor-stats-counter {
+	display: inline-flex;
+	align-items: center;
+	gap: 6px;
+	box-sizing: border-box;
+	height: 30px;
+	min-height: 30px;
+	max-width: 100%;
+	padding: 0 8px;
+	border: 1px solid var(--background-modifier-border);
+	border-radius: var(--operon-task-editor-control-radius, 6px);
+	background: transparent;
+	box-shadow: none;
+	font-size: var(--font-ui-small, 13px);
+	font-variant-numeric: tabular-nums;
+	color: var(--text-muted);
+}
+
+body .operon-task-editor:not(.operon-task-editor-mobile) button.operon-editor-stats-counter[hidden] {
+	display: none;
+}
+
+body .operon-task-editor:not(.operon-task-editor-mobile) button.operon-editor-stats-counter:is(:hover, :focus-visible):not(:disabled) {
+	border-color: var(--operon-task-editor-accent, var(--interactive-accent));
+	color: var(--text-normal);
+}
+
+.operon-task-editor:not(.operon-task-editor-mobile) .operon-editor-stats-counter-icon {
+	display: inline-flex;
+	flex: 0 0 auto;
+}
+
+.operon-task-editor:not(.operon-task-editor-mobile) .operon-editor-stats-counter-icon svg {
+	width: 16px;
+	height: 16px;
+}
+
+.operon-task-editor:not(.operon-task-editor-mobile) .operon-editor-stats-counter-value {
+	min-width: 0;
+	overflow: hidden;
+	text-overflow: ellipsis;
+	white-space: nowrap;
+}
+
+.operon-task-editor:not(.operon-task-editor-mobile) .operon-subtasks-filter-popover {
+	width: min(640px, calc(100vw - 32px));
+	max-width: 100%;
+	max-height: min(560px, 70vh);
+	overflow: auto;
+	padding: 12px;
+}
+
+.operon-task-editor:not(.operon-task-editor-mobile) .operon-editor-time-summary[hidden] {
+	display: none;
+}
