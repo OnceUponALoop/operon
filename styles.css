@@ -36224,3 +36224,29 @@ body .operon-task-editor:not(.operon-task-editor-mobile) button.operon-editor-tr
 	width: 14px;
 	height: 14px;
 }
+
+/* Let property names use the spare row gap without moving the value column. */
+.operon-task-editor:not(.operon-task-editor-mobile) .operon-editor-desktop-property-row {
+	grid-template-columns: calc(var(--operon-task-editor-property-label-width, 21.25%) + 8px) minmax(0, 1fr);
+	gap: 2px;
+}
+
+body .operon-task-editor:not(.operon-task-editor-mobile) button.operon-editor-desktop-property-label {
+	padding-inline-end: 0;
+}
+
+/* Weekday details are transient; canonical date values stay untouched. */
+.operon-task-editor:not(.operon-task-editor-mobile) .operon-editor-weekday {
+	display: none;
+	min-width: 0;
+	overflow: hidden;
+	text-overflow: ellipsis;
+	white-space: nowrap;
+	color: var(--text-muted);
+}
+
+@media (hover: hover) {
+	.operon-task-editor:not(.operon-task-editor-mobile) :is(.operon-editor-desktop-property-row:hover, .operon-editor-picker-button:hover, .operon-editor-compact-selection-chip:hover) .operon-editor-weekday {
+		display: inline;
+	}
+}

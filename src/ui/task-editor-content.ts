@@ -54,6 +54,7 @@ import { formatRepeatRuleSummaryI18n } from '../core/repeat-rule-i18n';
 import { getAvailableReminderRuleAnchors } from './field-pickers/reminder-picker-model';
 import { formatUiTaskDatetime, formatUiTime } from '../core/ui-time-format';
 import { formatUiDate } from '../core/ui-date-format';
+import { getAppLocale } from '../core/obsidian-app';
 import { formatShortLocationCoordinate, parseLocationCoordinate } from '../core/location-coordinates';
 import { getLocationPlaceIndex } from '../core/location-source-resolver';
 import { TimeTracker, type TimeTrackerEvent } from '../systems/time-tracker';
@@ -962,6 +963,16 @@ export class TaskEditorContent {
 			}
 		}
 		button.createSpan({ text: options.text, cls: 'operon-editor-picker-button-text' });
+	}
+
+	private appendWeekdayHint(target: HTMLElement, value: string): void {
+		if (Platform.isPhone || !value) return;
+		const canonical = value.length === 10 ? `${value}T12:00:00`
+			: value.length === 16 ? `${value}:00` : value;
+		const date = parseLocalDatetime(canonical);
+		if (!date) return;
+		const weekday = new Intl.DateTimeFormat(getAppLocale(this.app), { weekday: 'long' }).format(date);
+		target.createSpan({ cls: 'operon-editor-weekday', text: ` - ${weekday}` });
 	}
 
 	private focusDescriptionField(selectAll = this.selectDescriptionOnMount): boolean {
@@ -2632,6 +2643,7 @@ export class TaskEditorContent {
 				colorRole: 'default',
 				linkTarget: null,
 			}, 'operon-editor-compact-selection-chip', { forceFull: true });
+			if (mapping.type === 'date' || mapping.type === 'datetime') this.appendWeekdayHint(chip, value);
 			options.onActivate?.(chip, value);
    if (!onRemove) { container.appendChild(chip); continue; }
 			const removeButton = chip.ownerDocument.win.createEl('button');
@@ -4399,6 +4411,7 @@ export class TaskEditorContent {
 					app: this.app,
 					settings: {
 						timeFormat: this.settings.timeFormat,
+						dateDisplayFormat: this.settings.dateDisplayFormat,
 						keyMappings: this.settings.keyMappings,
 					},
 					fieldKey,
@@ -4416,6 +4429,7 @@ export class TaskEditorContent {
 				}, `operon-editor-compact-selection-chip operon-editor-reminder-chip is-${display.state}`, {
 					forceFull: true,
 				});
+				if (fieldKey === 'reminderDatetimes' && display.state !== 'invalid') this.appendWeekdayHint(chip, rawValue);
 				setAccessibleLabelWithoutTooltip(chip, display.ariaLabel);
 				chip.dataset.fieldKey = fieldKey;
 				chip.dataset.reminderIndex = String(index);
@@ -4862,6 +4876,7 @@ export class TaskEditorContent {
 				showIcon: true,
 				text: value ? formatUiDate(value, this.settings) : placeholderText,
 			});
+			this.appendWeekdayHint(button, value);
 		};
 		this.registerSchedulingDraftRefresher(refresh);
 		refresh();
@@ -4931,6 +4946,7 @@ export class TaskEditorContent {
 					? formatUiTime(this.app, this.settings, value)
 					: label,
 			});
+			this.appendWeekdayHint(button, value);
 		};
 		this.registerSchedulingDraftRefresher(refresh);
 
