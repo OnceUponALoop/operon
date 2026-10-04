@@ -1297,8 +1297,6 @@ export class TaskEditorContent {
 		});
 		const titleRight = titleRow.createDiv('operon-task-editor-title-side is-right');
 		this.renderProjectSerialTitleChip(titleRight);
-		this.renderCopyOperonIdButton(titleRight);
-
 
 		const primaryFields = container.createDiv('operon-task-editor-primary-fields');
 
@@ -2630,15 +2628,19 @@ export class TaskEditorContent {
 		const section = container.createDiv('operon-editor-text-fields');
 
 		const descriptionGroup = section.createDiv('operon-editor-text-field-group is-description');
-		descriptionGroup.createEl('h6', {
-			cls: 'operon-editor-core-title-badge operon-editor-text-field-title',
+		const descriptionHeader = descriptionGroup.createDiv('operon-editor-desktop-group-header');
+		descriptionHeader.createEl('h6', {
+			cls: 'operon-editor-core-title-badge operon-editor-text-field-title operon-editor-desktop-group-title',
 			text: t('taskEditor', 'description'),
 		});
+		const descriptionActions = descriptionHeader.createDiv('operon-task-editor-workflow-actions operon-editor-description-actions');
+		this.renderCopyOperonIdButton(descriptionActions);
 		this.renderDescription(descriptionGroup, false);
 
 		const notesGroup = section.createDiv('operon-editor-text-field-group is-notes');
-		notesGroup.createEl('h6', {
-			cls: 'operon-editor-core-title-badge operon-editor-text-field-title',
+		const notesHeader = notesGroup.createDiv('operon-editor-desktop-group-header');
+		notesHeader.createEl('h6', {
+			cls: 'operon-editor-core-title-badge operon-editor-text-field-title operon-editor-desktop-group-title',
 			text: t('taskEditor', 'notes'),
 		});
 		this.renderNote(notesGroup, false);
@@ -3699,7 +3701,7 @@ export class TaskEditorContent {
 		if (!currentOperonId) return;
 
 		const copyLinkButton = container.createEl('button', {
-			cls: 'operon-task-editor-title-copy-id',
+			cls: 'operon-task-editor-title-copy-id operon-task-editor-workflow-action-button',
 			attr: { type: 'button' },
 		});
 		setIcon(copyLinkButton, 'file-box');
@@ -3709,7 +3711,7 @@ export class TaskEditorContent {
 		copyLinkButton.addEventListener('click', () => { void this.copyCurrentTaskWikilink(copyLinkButton); });
 
 		const copyCardButton = container.createEl('button', {
-			cls: 'operon-task-editor-title-copy-id operon-task-editor-copy-card',
+			cls: 'operon-task-editor-title-copy-id operon-task-editor-workflow-action-button operon-task-editor-copy-card',
 			attr: { type: 'button' },
 		});
 		setIcon(copyCardButton, 'id-card');
@@ -3719,7 +3721,7 @@ export class TaskEditorContent {
 		copyCardButton.addEventListener('click', () => { void this.copyCurrentTaskCardEmbed(copyCardButton); });
 
 		const copyOperonIdButton = container.createEl('button', {
-			cls: 'operon-task-editor-title-copy-id',
+			cls: 'operon-task-editor-title-copy-id operon-task-editor-workflow-action-button',
 			attr: {
 				type: 'button',
 			},

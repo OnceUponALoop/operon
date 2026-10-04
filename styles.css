@@ -36181,3 +36181,9 @@ body .operon-task-editor:not(.operon-task-editor-mobile) button.operon-editor-st
 .operon-task-editor:not(.operon-task-editor-mobile) .operon-editor-tracking-sessions-header {
 	margin-bottom: 0;
 }
+
+/* Description identity actions share section-header geometry and edit focus. */
+.operon-task-editor:not(.operon-task-editor-mobile) .is-description:is(:hover, :has(.operon-task-editor-compact-text-host:focus-within)) .operon-editor-description-actions {
+	opacity: 1;
+	pointer-events: auto;
+}
