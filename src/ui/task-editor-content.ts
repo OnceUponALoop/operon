@@ -260,6 +260,7 @@ export function scheduleTaskEditorReminderFocus(options: {
 }
 
 export interface TaskEditorSubtaskRequest {
+	requestedKind?: 'inline';
 	canCommit?: () => boolean;
 	parentOperonId: string;
 	parentDescription: string;
@@ -3676,7 +3677,7 @@ export class TaskEditorContent {
    action.addEventListener('click', () => this.openFilePropertyPicker(name));
    const row = group.createDiv('operon-editor-desktop-property-row'); row.dataset.propertyKey = entry.field.key;
    const label = row.createEl('button', { cls: 'operon-editor-desktop-property-label', attr: { type: 'button' } });
-   setIcon(label.createSpan('operon-editor-desktop-property-icon'), entry.field.icon); label.createSpan({ text: name });
+   setIcon(label.createSpan('operon-editor-desktop-property-icon'), entry.field.icon); label.createSpan({ text: name, cls: 'operon-editor-desktop-property-name' });
    const value = row.createDiv('operon-editor-desktop-property-value operon-editor-picker-selected operon-editor-custom-field-selection-row');
    this.filePropertyRows.set(name, { row, value, action });
    this.bindDesktopPropertyInteraction(row, label, value, () => this.openFilePropertyPicker(name, undefined, 'picker', label), () => this.openFilePropertyPicker(name, undefined, 'popover', value), () => { const current = this.fileProperties.get(name); return !!current && this.canEditFileProperty(current); });
@@ -3812,7 +3813,7 @@ export class TaskEditorContent {
 			row.dataset.propertyKey = field;
 			const label = row.createEl('button', { cls: 'operon-editor-desktop-property-label', attr: { type: 'button' } });
 			setIcon(label.createSpan('operon-editor-desktop-property-icon'), this.resolveWorkflowPickerIcon(field));
-			label.createSpan({ text: this.getWorkflowPickerLabel(field) });
+			label.createSpan({ text: this.getWorkflowPickerLabel(field), cls: 'operon-editor-desktop-property-name' });
 			const value = row.createDiv('operon-editor-desktop-property-value');
 			const core = DESKTOP_CORE_FIELDS.has(field);
 			this.desktopPropertyRows.set(field, { row, value, core, signature: '' });
@@ -4123,7 +4124,9 @@ export class TaskEditorContent {
 			else pinBtn.setText('📌');
 			const isPinned = getIsPinned();
 			const isAvailable = !!this.pinnedCache && !!this.taskOperonId;
-			pinBtn.createSpan({ text: isPinned ? t('buttons', 'unpin') : t('buttons', 'pin') });
+			const label = isPinned ? t('buttons', 'unpin') : t('buttons', 'pin');
+			setAccessibleLabelWithoutTooltip(pinBtn, label);
+			this.bindTaskEditorTooltip(pinBtn, label);
 			pinBtn.classList.toggle('is-active', isPinned);
 			pinBtn.disabled = !isAvailable;
 			pinBtn.setAttr('aria-pressed', String(isPinned));
@@ -4165,6 +4168,18 @@ export class TaskEditorContent {
 		subtaskBtn.addEventListener('click', () => {
 			void this.requestSubtask();
 		});
+
+		if (!Platform.isPhone && !this.isNewTask && this.fileBodyContext?.format === 'yaml') {
+			const inlineLabel = t('buttons', 'addInlineSubtask');
+			const inlineButton = container.createEl('button', {
+				cls: 'operon-editor-core-action-btn operon-editor-core-inline-subtask-action',
+				attr: { type: 'button' },
+			});
+			setIcon(inlineButton, resolveSubtaskActionIconForKind('inline'));
+			setAccessibleLabelWithoutTooltip(inlineButton, inlineLabel);
+			this.bindTaskEditorTooltip(inlineButton, inlineLabel);
+			inlineButton.addEventListener('click', () => { void this.requestSubtask('inline'); });
+		}
 	}
 
 	private readonly handleCheckboxSourceSaved = (filePath: string, content: string): void => {
@@ -5702,7 +5717,8 @@ export class TaskEditorContent {
 			button.empty();
 			const icon = getIcon(isRunning ? 'square' : 'play');
 			if (icon) button.appendChild(icon);
-			button.createSpan({ text: label });
+			setAccessibleLabelWithoutTooltip(button, label);
+			this.bindTaskEditorTooltip(button, label);
 			button.classList.toggle('is-running', isRunning);
 		};
 
@@ -5929,8 +5945,8 @@ export class TaskEditorContent {
 		});
 		const icon = getIcon('trash-2') ?? getIcon('trash');
 		if (icon) button.appendChild(icon);
-		button.createSpan({ text: t('buttons', 'remove') });
 		setAccessibleLabelWithoutTooltip(button, t('buttons', 'remove'));
+		this.bindTaskEditorTooltip(button, t('buttons', 'remove'));
 
 		button.addEventListener('click', () => {
 			void this.handleRemoveTaskClick();
@@ -6867,7 +6883,7 @@ export class TaskEditorContent {
 		return;
 	}
 
-	private async requestSubtask(): Promise<void> {
+	private async requestSubtask(requestedKind?: 'inline'): Promise<void> {
 		if (!this.description.trim()) {
 			new Notice(t('notifications', 'taskSaveFailed'));
 			return;
@@ -6885,6 +6901,7 @@ export class TaskEditorContent {
 
 		try {
 			await this.onRequestSubtask({
+				requestedKind,
 				parentOperonId: this.fieldValues['operonId'],
 				parentDescription: this.description,
 				parentFieldValues: { ...this.fieldValues },

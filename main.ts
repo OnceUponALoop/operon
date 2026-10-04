@@ -23254,6 +23254,10 @@ export default class OperonPlugin extends Plugin {
 		parentTask: ParsedTask,
 	): Promise<void> {
 		const indexed = this.indexer.getTask(request.parentOperonId);
+		if (request.requestedKind === 'inline' && indexed?.primary.format === 'yaml') {
+			this.openInlineSubtaskCreatorFromParent(request, parentTask);
+			return;
+		}
 		await dispatchSubtaskActionByParentKind(indexed, {
 			file: () => {
 				this.openFileSubtaskCreatorFromParent(request, parentTask);
