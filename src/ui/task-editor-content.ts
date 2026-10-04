@@ -3984,6 +3984,8 @@ export class TaskEditorContent {
 			cls: 'operon-editor-subtasks-more',
 			attr: { type: 'button', 'aria-expanded': String(this.desktopSubtasksExpanded) },
 		});
+		const buttonLabel = button.createSpan();
+		const buttonIcon = button.createSpan('operon-editor-subtasks-more-icon');
 		button.hidden = true;
 		let frame: number | null = null;
 		let stopped = false;
@@ -4003,7 +4005,8 @@ export class TaskEditorContent {
 			const hiddenCount = chips.length - visibleCount;
 			for (let index = visibleCount; index < chips.length; index += 1) chips[index].hidden = !this.desktopSubtasksExpanded;
 			button.hidden = hiddenCount === 0;
-			button.setText(this.desktopSubtasksExpanded ? t('taskEditor', 'showLess') : t('taskEditor', 'moreValues', { count: String(hiddenCount) }));
+			buttonLabel.setText(this.desktopSubtasksExpanded ? t('taskEditor', 'showLess') : t('taskEditor', 'moreValues', { count: String(hiddenCount) }));
+			setIcon(buttonIcon, this.desktopSubtasksExpanded ? 'chevron-up' : 'chevron-down');
 			button.setAttr('aria-expanded', String(this.desktopSubtasksExpanded));
 			setAccessibleLabelWithoutTooltip(button, this.desktopSubtasksExpanded ? t('taskEditor', 'showLess') : t('taskEditor', hiddenCount === 1 ? 'showMoreSubtasksOne' : 'showMoreSubtasksMany', { count: String(hiddenCount) }));
 			if (this.desktopSubtaskToggleNeedsFocus || (button.hidden && button.ownerDocument.activeElement === button) || (!this.desktopSubtasksExpanded && focusedChip >= visibleCount)) {
