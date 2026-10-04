@@ -3082,100 +3082,52 @@ export class TaskEditorContent {
 		this.renderStatsHeader(summary, state);
 	}
 
-	private renderTimeSummaryTable(summary: HTMLElement, state: EditorProgressSectionState | null): void {
-		summary.querySelector('.operon-editor-time-summary-table')?.remove();
+	private renderTimeSummaryCards(summary: HTMLElement, state: EditorProgressSectionState | null): void {
+		summary.querySelector('.operon-editor-time-summary-cards')?.remove();
 		if (!state) return;
-		const hasAnyDuration = state.ownDuration > 0 || (state.hasSubtasks && state.subtaskDuration > 0) || state.totalDuration > 0;
-		const hasAnyEstimate = state.ownEstimate > 0 || (state.hasSubtasks && state.subtaskEstimate > 0) || state.totalEstimate > 0;
-
-		if (!hasAnyDuration && !hasAnyEstimate) return;
-		const table = summary.createDiv('operon-editor-time-summary-table');
-		const tableHeader = table.createDiv('operon-editor-time-summary-row is-header');
-		tableHeader.createDiv('operon-editor-time-summary-row-label operon-editor-time-summary-row-corner');
-		for (const columnLabel of [
-			t('taskEditor', 'timeOwn'),
-			t('taskEditor', 'subtasks'),
-			t('taskEditor', 'timeTotal'),
-		]) {
-			tableHeader.createDiv({
-				text: columnLabel,
-				cls: 'operon-editor-time-summary-col-label',
-			});
-		}
-
-		const appendRow = (
-			label: string,
-			rowClass: string,
-			cells: Array<{ label: string; value: string | null; tone?: 'good' | 'bad' }>,
-		) => {
-			const row = table.createDiv(`operon-editor-time-summary-row ${rowClass}`.trim());
-			row.createDiv({ text: label, cls: 'operon-editor-time-summary-row-label' });
-			let hasVisibleValue = false;
-
-			for (const cell of cells) {
-				const cellEl = row.createDiv('operon-editor-time-summary-cell');
-				cellEl.dataset.colLabel = cell.label;
-				const valueEl = cellEl.createSpan('operon-editor-time-summary-cell-value');
-				if (cell.value == null) {
-					cellEl.addClass('is-empty');
-					valueEl.setText('\u00a0');
-				} else {
-					hasVisibleValue = true;
-					valueEl.setText(cell.value);
-				}
-				if (cell.tone) cellEl.addClass(`is-${cell.tone}`);
+		const cards = summary.createDiv('operon-editor-time-summary-cards');
+		for (const [kind, label, own, subtasks, total] of [
+			['duration', t('filterSets', 'fieldTrackedOn'), state.ownDuration, state.subtaskDuration, state.totalDuration],
+			['estimate', t('settings', 'chipEstimate'), state.ownEstimate, state.subtaskEstimate, state.totalEstimate],
+		] as const) {
+			if (total <= 0) continue;
+			const card = cards.createDiv(`operon-editor-time-card is-${kind}`);
+			const heading = card.createDiv('operon-editor-time-card-heading');
+			heading.createSpan({ cls: 'operon-editor-time-card-label', text: label });
+			heading.createSpan({ cls: 'operon-editor-time-card-total', text: formatDurationHuman(total, 'minutes') });
+			const breakdown = card.createDiv('operon-editor-time-card-breakdown');
+			for (const [scope, name, seconds] of [
+				['own', t('taskEditor', 'timeOwn'), own],
+				['subtasks', t('taskEditor', 'subtasks'), subtasks],
+			] as const) {
+				const item = breakdown.createSpan(`operon-editor-time-card-scope is-${scope}`);
+				item.createSpan({ text: name });
+				item.createSpan({ cls: 'operon-editor-time-card-value', text: kind === 'estimate' && seconds === 0 ? '—' : formatDurationHuman(seconds, 'minutes') });
 			}
-
-			if (!hasVisibleValue) row.addClass('is-muted');
-		};
-
-		if (hasAnyDuration) {
-			appendRow(t('taskEditor', 'timeDuration'), 'is-duration', [
-				{
-					label: t('taskEditor', 'timeOwn'),
-					value: state.ownDuration > 0 ? formatDurationHuman(state.ownDuration) : null,
-					tone: state.ownEstimate > 0
-						? (state.ownDuration < state.ownEstimate ? 'good' : state.ownDuration > state.ownEstimate ? 'bad' : undefined)
-						: undefined,
-				},
-				{
-					label: t('taskEditor', 'subtasks'),
-					value: state.hasSubtasks && state.subtaskDuration > 0 ? formatDurationHuman(state.subtaskDuration) : null,
-					tone: state.hasSubtasks && state.subtaskEstimate > 0
-						? (state.subtaskDuration < state.subtaskEstimate ? 'good' : state.subtaskDuration > state.subtaskEstimate ? 'bad' : undefined)
-						: undefined,
-				},
-				{
-					label: t('taskEditor', 'timeTotal'),
-					value: state.totalDuration > 0 ? formatDurationHuman(state.totalDuration) : null,
-					tone: state.totalEstimate > 0
-						? (state.totalDuration < state.totalEstimate ? 'good' : state.totalDuration > state.totalEstimate ? 'bad' : undefined)
-						: undefined,
-				},
-			]);
+			// Each bar shows its own composition, never a remaining-estimate segment.
+			const bar = card.createDiv({ cls: 'operon-editor-time-card-bar', attr: { 'aria-hidden': 'true' } });
+			const sum = own + subtasks;
+			const ownPercent = sum > 0 ? Math.max(0, Math.min(100, own / sum * 100)) : 0;
+			bar.setCssProps({ '--operon-stats-own-share': `${ownPercent}%` });
+			bar.createSpan('operon-editor-time-card-bar-own');
+			bar.createSpan('operon-editor-time-card-bar-subtasks');
+			bar.hidden = sum === 0;
 		}
-
-		if (hasAnyEstimate) {
-			appendRow(t('taskEditor', 'timeEstimation'), 'is-estimation', [
-				{ label: t('taskEditor', 'timeOwn'), value: state.ownEstimate > 0 ? formatDurationHuman(state.ownEstimate) : null },
-				{ label: t('taskEditor', 'subtasks'), value: state.hasSubtasks && state.subtaskEstimate > 0 ? formatDurationHuman(state.subtaskEstimate) : null },
-				{ label: t('taskEditor', 'timeTotal'), value: state.totalEstimate > 0 ? formatDurationHuman(state.totalEstimate) : null },
-			]);
-		}
+		if (!cards.childElementCount) cards.remove();
 	}
 
 	private renderStatsHeader(summary: HTMLElement, state: EditorProgressSectionState | null): void {
 		const header = summary.createDiv('operon-editor-desktop-group-header operon-editor-stats-header');
 		const title = header.createEl('h6', { text: t('settings', 'pipelineColumnStats'), cls: 'operon-editor-core-title-badge operon-editor-desktop-group-title', attr: { tabindex: '0' } });
 		const actions = header.createDiv('operon-editor-stats-actions');
-		const makeCounter = (kind: 'subtasks' | 'checkboxes', icon: string, label: string, open: (anchor: HTMLElement) => void) => {
+		const makeCounter = (kind: 'subtasks' | 'checkboxes', name: string, label: string, open: (anchor: HTMLElement) => void) => {
 			const button = actions.createEl('button', { cls: `operon-editor-stats-counter is-${kind}`, attr: { type: 'button' } });
-			setIcon(button.createSpan('operon-editor-stats-counter-icon'), icon);
+			const ring = button.createSpan({ cls: 'operon-editor-stats-counter-ring', attr: { 'aria-hidden': 'true' } });
 			const text = button.createSpan('operon-editor-stats-counter-value');
 			button.addEventListener('click', () => { if (!this.disposed) open(button); });
-			return { button, text, label, tooltip: '' };
+			return { button, ring, text, name, label, tooltip: '' };
 		};
-		const subtasks = makeCounter('subtasks', 'list-tree', t('filterSets', 'dynamicSubtasksFilterTitle'), anchor => {
+		const subtasks = makeCounter('subtasks', t('taskEditor', 'subtasks'), t('filterSets', 'dynamicSubtasksFilterTitle'), anchor => {
 			runAsyncAction('task editor stats subtasks open failed', async () => {
 				const id = this.getCurrentOperonId();
 				if (!id) return;
@@ -3183,7 +3135,7 @@ export class TaskEditorContent {
 				this.closeStatsSubtasks = this.onOpenSubtasksStats?.(id, anchor) ?? null;
 			});
 		});
-		const checkboxes = makeCounter('checkboxes', 'layout-list', t('taskEditor', 'showCheckboxes'), anchor => {
+		const checkboxes = makeCounter('checkboxes', t('settings', 'contextualMenuActionCheckboxes'), t('taskEditor', 'showCheckboxes'), anchor => {
 			runAsyncAction('task editor stats checkboxes open failed', () => this.openTaskEditorCheckboxPopover(anchor));
 		});
 		let timeSignature: string | null = null;
@@ -3194,14 +3146,15 @@ export class TaskEditorContent {
 			const nextTimeSignature = JSON.stringify(next && [next.hasSubtasks, next.ownDuration, next.subtaskDuration, next.totalDuration, next.ownEstimate, next.subtaskEstimate, next.totalEstimate]);
 			if (timeSignature !== nextTimeSignature) {
 				timeSignature = nextTimeSignature;
-				this.renderTimeSummaryTable(summary, next);
+				this.renderTimeSummaryCards(summary, next);
 			}
 			for (const [control, available, done, total, percent, labelKey] of [
 				[subtasks, next?.hasSubtasks, next?.done ?? 0, next?.total ?? 0, next?.progressPct ?? 0, 'progressSubtasksCount'],
 				[checkboxes, next?.hasPlainCheckboxes, next?.checkboxDone ?? 0, next?.checkboxTotal ?? 0, next?.checkboxProgressPct ?? 0, 'progressCheckboxesCount'],
 			] as const) {
 				control.button.hidden = !available;
-				control.text.setText(`${percent}%`);
+				control.text.setText(`${percent}% ${control.name}`);
+				control.ring.setCssProps({ '--operon-stats-progress': `${Math.max(0, Math.min(100, percent))}%` });
 				const counts = `${t('taskEditor', 'progressDoneCount', { count: String(done) })} / ${t('taskEditor', labelKey, { count: String(total) })}`;
 				const tooltip = `${control.label}\n${counts}`;
 				if (control.tooltip !== tooltip) {
