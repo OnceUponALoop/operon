@@ -7,12 +7,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Improved
+
+- Matched the **Task Editor** line-number area to the File Body background for a consistent editing surface.
+
 ### Security
 
 - Updated development dependencies to address known security vulnerabilities.
 
 ### Validation
 
+- Task Editor line-number background checks passed in **40/40** browser scenarios across light and dark themes, with strict lint, production build, and release guard also passing.
 - Development and production dependency audits passed with **0** vulnerabilities.
 - Plugin and Runtime checks, strict lint, production build, and release guard passed, along with **3,806/3,806** local regression tests.
 
