@@ -3183,7 +3183,7 @@ export class TaskEditorContent {
 				this.closeStatsSubtasks = this.onOpenSubtasksStats?.(id, anchor) ?? null;
 			});
 		});
-		const checkboxes = makeCounter('checkboxes', 'list-checks', t('taskEditor', 'showCheckboxes'), anchor => {
+		const checkboxes = makeCounter('checkboxes', 'layout-list', t('taskEditor', 'showCheckboxes'), anchor => {
 			runAsyncAction('task editor stats checkboxes open failed', () => this.openTaskEditorCheckboxPopover(anchor));
 		});
 		let timeSignature: string | null = null;
