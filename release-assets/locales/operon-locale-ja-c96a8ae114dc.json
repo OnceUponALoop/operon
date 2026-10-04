@@ -3534,7 +3534,7 @@
       "trackerStartButton": "開始",
       "trackerStopButton": "停止",
       "trackingDetails": "記録の詳細",
-      "trackingSessions": "記録セッション",
+      "trackingSessions": "セッション",
       "unassignedTracker": "（未割り当て）",
       "unassignedTrackerReadOnly": "未割り当てのタイマーが実行中です。編集する前に割り当ててください。",
       "untitledTask": "（無題）",
@@ -3592,5 +3592,5 @@
       "toggleDescendantPreview": "子孫プレビューを切り替え"
     }
   },
-  "sourceVersion": "0a94733fafd290df31db4d43331261fd07c9b835ce812ef46c991ebb83b7ed6f"
+  "sourceVersion": "6337d55c65ddd3d8e2f501cef263c2f35462daef4f5b5a8e1d25a784887a99e8"
 }

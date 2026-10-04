@@ -3534,7 +3534,7 @@
       "trackerStartButton": "Iniciar",
       "trackerStopButton": "Detener",
       "trackingDetails": "Detalles del registro",
-      "trackingSessions": "Sesiones de registro",
+      "trackingSessions": "Sesiones",
       "unassignedTracker": "(sin asignar)",
       "unassignedTrackerReadOnly": "Temporizador activo sin asignar. Asígnalo antes de editarlo.",
       "untitledTask": "(sin título)",
@@ -3592,5 +3592,5 @@
       "toggleDescendantPreview": "Alternar vista previa de descendientes"
     }
   },
-  "sourceVersion": "169f2a812138456bfcb1a54a671d336dbc4cc60df12ff35726533ac89d632222"
+  "sourceVersion": "56eebfd33a691c2640b8189bdeed7015ff13b12a783db21b850f3c4981fefc3a"
 }

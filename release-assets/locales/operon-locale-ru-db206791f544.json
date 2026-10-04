@@ -3534,7 +3534,7 @@
       "trackerStartButton": "Старт",
       "trackerStopButton": "Стоп",
       "trackingDetails": "Детали отслеживания",
-      "trackingSessions": "Сессии отслеживания",
+      "trackingSessions": "Сессии",
       "unassignedTracker": "(не назначено)",
       "unassignedTrackerReadOnly": "Активный неназначенный таймер. Назначьте его перед редактированием.",
       "untitledTask": "(без названия)",
@@ -3592,5 +3592,5 @@
       "toggleDescendantPreview": "Переключить предпросмотр потомков"
     }
   },
-  "sourceVersion": "521e8a9312a47de14a057deb9174b03e73e67d1db953507d74c67e3acc3d061a"
+  "sourceVersion": "b0fa0ef3f23bcb8c09c5d24eb65789fc8ec5b49cbde427a7a3d6ef261336bba5"
 }

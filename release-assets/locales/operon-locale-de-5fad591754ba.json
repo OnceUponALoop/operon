@@ -3534,7 +3534,7 @@
       "trackerStartButton": "Starten",
       "trackerStopButton": "Stoppen",
       "trackingDetails": "Erfassungsdetails",
-      "trackingSessions": "Erfassungssitzungen",
+      "trackingSessions": "Sitzungen",
       "unassignedTracker": "(nicht zugewiesen)",
       "unassignedTrackerReadOnly": "Aktiver nicht zugewiesener Timer. Weise ihn vor dem Bearbeiten einer Aufgabe zu.",
       "untitledTask": "(unbenannt)",
@@ -3592,5 +3592,5 @@
       "toggleDescendantPreview": "Vorschau untergeordneter Aufgaben umschalten"
     }
   },
-  "sourceVersion": "75792d804a575f1de03b7c895b87b2d3e5559c19ca8f2648be37ceb040b38028"
+  "sourceVersion": "e34e4ca11bc11f2bf5f88caf58bd1df25e68225bd84fba155e4782977b10df8e"
 }

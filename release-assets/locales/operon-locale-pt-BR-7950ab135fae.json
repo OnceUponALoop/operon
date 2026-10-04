@@ -3534,7 +3534,7 @@
       "trackerStartButton": "Iniciar",
       "trackerStopButton": "Fim",
       "trackingDetails": "Detalhes do rastreamento",
-      "trackingSessions": "Sessões de Rastreamento",
+      "trackingSessions": "Sessões",
       "unassignedTracker": "(sem atribuição)",
       "unassignedTrackerReadOnly": "Temporizador não atribuído ativo. Atribua-o antes de editar.",
       "untitledTask": "(sem título)",
@@ -3592,5 +3592,5 @@
       "toggleDescendantPreview": "Alternar visualização descendente"
     }
   },
-  "sourceVersion": "c1c307058acec1e6639dec87acafc0b6d350d77a5d3dd18ab75007eeab19bbb5"
+  "sourceVersion": "669637e31cbd0a5f85f94a29208fa7dfe350c67fe93421cb8424b0d5ffb861fb"
 }

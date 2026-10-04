@@ -35555,8 +35555,8 @@ body .operon-state-icon-setting:where(.operon-settings-scope, .operon-settings-s
 	height: 30px;
 	min-width: 0;
 	margin: 0;
-	/* Match the label padding, 16px icon and 8px gap, including the badge border. */
-	padding: 0 8px 0 31px;
+	/* Align text with the property icon center, including the badge border. */
+	padding: 0 8px 0 15px;
 	font-weight: var(--font-semibold);
 }
 
@@ -35860,7 +35860,7 @@ body .operon-task-editor:not(.operon-task-editor-mobile) .operon-editor-desktop-
 	height: 30px;
 	min-height: 30px;
 	margin: 0;
-	padding: 0 8px 0 31px;
+	padding: 0 8px 0 15px;
 	justify-content: flex-start;
 	text-transform: none;
 	font-weight: var(--font-semibold);

@@ -3534,7 +3534,7 @@
       "trackerStartButton": "Başlat",
       "trackerStopButton": "Durdur",
       "trackingDetails": "Takip Ayrıntıları",
-      "trackingSessions": "Zaman Oturumları",
+      "trackingSessions": "Oturumlar",
       "unassignedTracker": "(atanmamış zaman takibi)",
       "unassignedTrackerReadOnly": "Atanmamış aktif zamanlayıcı. Düzenlemek için önce bir göreve ata.",
       "untitledTask": "(adsız)",
@@ -3592,5 +3592,5 @@
       "toggleDescendantPreview": "Alt görev önizlemesini aç/kapat"
     }
   },
-  "sourceVersion": "b4a3b21cb968f5a661b26a8dfa4dfad46ce4d6af4a8dd2b8fdb0d3506a48eeeb"
+  "sourceVersion": "114ab7a2e3185fbecc00b135ae37eb5def948db0c83755a0a3df408215891163"
 }

@@ -3534,7 +3534,7 @@
       "trackerStartButton": "开始",
       "trackerStopButton": "停止",
       "trackingDetails": "追踪详情",
-      "trackingSessions": "追踪会话",
+      "trackingSessions": "会话",
       "unassignedTracker": "（未指派）",
       "unassignedTrackerReadOnly": "未分配的计时器正在运行。请先分配任务再编辑。",
       "untitledTask": "（无标题）",
@@ -3592,5 +3592,5 @@
       "toggleDescendantPreview": "切换子任务预览"
     }
   },
-  "sourceVersion": "e3b7c590ddbf4e072e540d5b35772bebcc64c5c745a8901ce9a2d83fffe0018a"
+  "sourceVersion": "228aff6bd459f348232922ff2b7b63995b51fb394e9f42d6ac0c14d4e5a929af"
 }

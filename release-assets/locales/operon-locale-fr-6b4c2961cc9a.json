@@ -3534,7 +3534,7 @@
       "trackerStartButton": "Démarrer",
       "trackerStopButton": "Arrêter",
       "trackingDetails": "Détails du suivi",
-      "trackingSessions": "Sessions de suivi",
+      "trackingSessions": "Sessions",
       "unassignedTracker": "(non assigné)",
       "unassignedTrackerReadOnly": "Minuteur actif non assigné. Assignez-le avant de le modifier.",
       "untitledTask": "(sans titre)",
@@ -3592,5 +3592,5 @@
       "toggleDescendantPreview": "Basculer l'aperçu des descendants"
     }
   },
-  "sourceVersion": "910ae05264e09c80ec6a65c3907b2aec656cca9338428e4ca3dc6e4b6e0b371b"
+  "sourceVersion": "92dbc4674630179b265876e57a0f90cc6359f90c7d16c1d21a72557f1690f0ba"
 }

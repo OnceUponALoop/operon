@@ -3534,7 +3534,7 @@
       "trackerStartButton": "開始",
       "trackerStopButton": "停止",
       "trackingDetails": "追蹤詳情",
-      "trackingSessions": "追蹤會話",
+      "trackingSessions": "會話",
       "unassignedTracker": "（未指派）",
       "unassignedTrackerReadOnly": "未指派的計時器正在執行。請先指派任務再編輯。",
       "untitledTask": "（無標題）",
@@ -3592,5 +3592,5 @@
       "toggleDescendantPreview": "切換子任務預覽"
     }
   },
-  "sourceVersion": "d57a51a4ef26dc03883faf72e107e1cfbb159c6fae29dd003626bad312187bf9"
+  "sourceVersion": "263dcfa534390657cbecfe4ea9bfaa5c0b98673523ac034f94524bcb1c81ac7f"
 }
