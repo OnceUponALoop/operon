@@ -3734,7 +3734,7 @@ export class TaskEditorContent {
 		copyOperonIdButton.addEventListener('click', () => {
 			void this.copyCurrentOperonId();
 		});
-		this.bindTaskEditorTooltip(copyOperonIdButton, t('contextMenu', 'copyOperonId'));
+		this.bindTaskEditorTooltip(copyOperonIdButton, `${t('contextMenu', 'copyOperonId')}\n${currentOperonId}`);
 	}
 
 	private renderFileBodyToggle(container: HTMLElement, extraClass = ''): void {
