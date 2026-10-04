@@ -5613,7 +5613,7 @@ export class TaskEditorContent {
 		const section = container.createDiv('operon-editor-tracking-sessions');
 		const header = section.createDiv('operon-editor-tracking-sessions-header');
 		const title = header.createEl('h6', { cls: 'operon-editor-core-title-badge operon-editor-tracking-sessions-title' });
-		this.appendCanonicalIcon(title, 'trackers', 'operon-editor-tracking-sessions-title-icon');
+		if (Platform.isPhone) this.appendCanonicalIcon(title, 'trackers', 'operon-editor-tracking-sessions-title-icon');
 		title.createSpan({ text: t('taskEditor', 'trackingSessions') });
 		const addButton = header.createEl('button', {
 			cls: 'operon-editor-core-action-btn operon-editor-tracking-sessions-add',

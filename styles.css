@@ -35981,12 +35981,12 @@ body .operon-task-editor:not(.operon-task-editor-mobile) .operon-editor-desktop-
 }
 
 /* Desktop property values: stable geometry with hover and keyboard affordances. */
-.operon-task-editor:not(.operon-task-editor-mobile) .operon-editor-desktop-group-header .operon-task-editor-workflow-actions {
+.operon-task-editor:not(.operon-task-editor-mobile) .operon-editor-desktop-group-header :is(.operon-task-editor-workflow-actions, .operon-editor-file-property-add) {
 	opacity: 0;
 	pointer-events: none;
 }
 
-.operon-task-editor:not(.operon-task-editor-mobile) .operon-editor-desktop-group-header:is(:hover, :has(:focus-visible), :has(.is-picker-open)) .operon-task-editor-workflow-actions {
+.operon-task-editor:not(.operon-task-editor-mobile) .operon-editor-desktop-group-header:is(:hover, :has(:focus-visible), :has(.is-picker-open)) :is(.operon-task-editor-workflow-actions, .operon-editor-file-property-add) {
 	opacity: 1;
 	pointer-events: auto;
 }
@@ -36109,7 +36109,7 @@ body .operon-task-editor:not(.operon-task-editor-mobile) .operon-editor-desktop-
 }
 
 @media (hover: none), (pointer: coarse) {
-	.operon-task-editor:not(.operon-task-editor-mobile) .operon-editor-desktop-group-header .operon-task-editor-workflow-actions,
+	.operon-task-editor:not(.operon-task-editor-mobile) .operon-editor-desktop-group-header :is(.operon-task-editor-workflow-actions, .operon-editor-file-property-add),
 	body .operon-task-editor:not(.operon-task-editor-mobile) .operon-editor-desktop-property-value :is(.operon-editor-compact-selection-chip-remove, .operon-editor-picker-chip-remove) {
 		opacity: 1;
 		pointer-events: auto;
@@ -36120,7 +36120,7 @@ body .operon-task-editor:not(.operon-task-editor-mobile) .operon-editor-desktop-
 	}
 }
 
-/* File property Add stays visible while the existing shortcuts follow header hover. */
+/* File property Add shares header hover while keeping its rightmost slot. */
 .operon-task-editor:not(.operon-task-editor-mobile) .operon-editor-desktop-file-header-actions {
 	display: flex;
 	align-items: flex-start;
@@ -36134,5 +36134,33 @@ body .operon-task-editor:not(.operon-task-editor-mobile) .operon-editor-desktop-
 }
 
 .operon-task-editor:not(.operon-task-editor-mobile) :is(.operon-editor-desktop-commands, .operon-editor-desktop-property-group:not(:has(.operon-editor-desktop-property-row:not([hidden])))) {
-	padding-block: 10px;
+	padding-block: 7px;
+}
+
+/* Desktop section headings share Overview's label column and text inset. */
+.operon-task-editor:not(.operon-task-editor-mobile) :is(.operon-editor-desktop-commands, .operon-editor-desktop-properties > .operon-editor-desktop-property-group, .operon-editor-desktop-property-group, .operon-editor-text-fields, .operon-editor-tracking-sessions) {
+	padding-block: 7px;
+}
+
+.operon-task-editor:not(.operon-task-editor-mobile) .operon-editor-desktop-group-header {
+	grid-template-columns: minmax(max(25%, calc(var(--font-ui-small, 12px) * 6 + 32px)), max-content) minmax(0, 1fr);
+}
+
+.operon-task-editor:not(.operon-task-editor-mobile) .operon-editor-core-title-badge {
+	box-sizing: border-box;
+	width: max-content;
+	min-width: max(25%, calc(var(--font-ui-small, 12px) * 6 + 32px));
+	max-width: 100%;
+	height: 30px;
+	min-height: 30px;
+	margin: 0;
+	padding: 0 8px 0 23px;
+	justify-content: flex-start;
+	text-transform: none;
+	font-weight: var(--font-semibold);
+	letter-spacing: 0.05em;
+}
+
+.operon-task-editor:not(.operon-task-editor-mobile) .operon-editor-desktop-group-title {
+	min-width: 100%;
 }
