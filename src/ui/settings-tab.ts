@@ -2061,10 +2061,10 @@ export class OperonSettingsTab extends PluginSettingTab {
 
 	private buildTaskEditorSettingsItems(entries: OperonSettingsSearchEntry[]): SettingDefinitionItem[] {
 		const groups = this.buildTaskSettingsGroups([
-			['taskEditorFileBodySection', ['taskEditorShowLineNumbers', 'taskEditorHighlightActiveLine'], containerEl => {
-				this.renderBoundToggleSetting(containerEl, t('settings', 'taskEditorShowLineNumbers'),
+			['taskEditorFileBodySection', ['taskEditorShowLineNumbers', 'taskEditorHighlightActiveLine'], (containerEl, key) => {
+				if (key === 'taskEditorShowLineNumbers') this.renderBoundToggleSetting(containerEl, t('settings', 'taskEditorShowLineNumbers'),
 					t('settings', 'taskEditorShowLineNumbersDesc'), 'taskEditorShowLineNumbers');
-				this.renderBoundToggleSetting(containerEl, t('settings', 'taskEditorHighlightActiveLine'),
+				if (key === 'taskEditorHighlightActiveLine') this.renderBoundToggleSetting(containerEl, t('settings', 'taskEditorHighlightActiveLine'),
 					t('settings', 'taskEditorHighlightActiveLineDesc'), 'taskEditorHighlightActiveLine');
 			}],
 		], entries, t('settings', 'subtabTaskEditor'), 'DOCS-021 Task Editor');

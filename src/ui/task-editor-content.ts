@@ -3108,7 +3108,7 @@ export class TaskEditorContent {
 			const breakdown = card.createDiv('operon-editor-time-card-breakdown');
 			for (const [scope, name, seconds] of [
 				['own', t('taskEditor', 'timeOwn'), own],
-				['subtasks', t('taskEditor', 'subtasks'), subtasks],
+				['subtasks', t('taskEditor', 'progressSubtasksCount', { count: String(state.total) }), subtasks],
 			] as const) {
 				const item = breakdown.createSpan(`operon-editor-time-card-scope is-${scope}`);
 				item.createSpan({ text: name });
@@ -3153,7 +3153,7 @@ export class TaskEditorContent {
 			const focused = summary.ownerDocument.activeElement;
 			const closingPopoverHadFocus = !next?.hasSubtasks && focused?.closest('.operon-subtasks-filter-popover') != null && this.rootEl?.contains(focused);
 			summary.hidden = !next || !(next.hasSubtasks || next.hasPlainCheckboxes || next.totalDuration > 0 || next.totalEstimate > 0);
-			const nextTimeSignature = JSON.stringify(next && [next.hasSubtasks, next.ownDuration, next.subtaskDuration, next.totalDuration, next.ownEstimate, next.subtaskEstimate, next.totalEstimate]);
+			const nextTimeSignature = JSON.stringify(next && [next.hasSubtasks, next.total, next.ownDuration, next.subtaskDuration, next.totalDuration, next.ownEstimate, next.subtaskEstimate, next.totalEstimate]);
 			if (timeSignature !== nextTimeSignature) {
 				timeSignature = nextTimeSignature;
 				this.renderTimeSummaryCards(summary, next);
