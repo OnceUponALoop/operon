@@ -12,6 +12,7 @@ import { readFileTaskPropertyDocument, fileTaskPropertyIdentityMatches, type Fil
 import { classifyFilePropertyCell, encodeFilePropertyColumnKey, isEmptyFilePropertyValue, isSupportedRawYamlPropertyValue, isWritableRawYamlPropertyName, rawYamlPropertyExpectationsEqual, readRawYamlPropertyExpectation, type RawYamlPropertyExpectation, type RawYamlPropertyValue } from '../core/raw-yaml-property';
 import { createVaultFilePropertySnapshot, createCachedTableFilePropertyTypeResolver, getTableFilePropertyTypeIcon, loadTableFilePropertyTypesFromConfig, type TableFilePropertyField } from './table/table-file-property';
 import { openTableFilePropertyPicker } from './table/table-file-property-editor';
+import { showTextFieldPopover } from './text-field-popover';
 import { showSearchableFieldPicker } from './field-pickers/searchable-field-picker';
 import { App, Component, MarkdownRenderer, Setting, Notice, getIcon, setIcon, stringifyYaml, TFile, Platform } from 'obsidian';
 import { OperonIndexer } from '../indexer/indexer';
@@ -49,6 +50,7 @@ import {
 } from '../core/blocked-by-visual-state';
 import { parseRepeatRule } from '../core/repeat-rule';
 import { REMINDER_RULE_ANCHORS } from '../core/reminder-rules';
+import { applyReminderListMutation } from '../core/reminder-list-mutation';
 import { formatRepeatRuleSummaryI18n } from '../core/repeat-rule-i18n';
 import { getAvailableReminderRuleAnchors } from './field-pickers/reminder-picker-model';
 import { formatUiTaskDatetime, formatUiTime } from '../core/ui-time-format';
@@ -530,6 +532,7 @@ export class TaskEditorContent {
  private filePropertyTypeResolver = createCachedTableFilePropertyTypeResolver();
  private filePropertyPickerName: string | null = null;
  private filePropertyPickerValue: string | null = null;
+ private propertyInteractionEpoch = 0;
  private submittedFileProperties = new Set<string>();
 	private desktopSubtaskLayoutCleanup: (() => void) | null = null;
 	private desktopSubtaskToggleNeedsFocus = false;
@@ -3672,10 +3675,11 @@ export class TaskEditorContent {
    bindOperonHoverTooltip(action, { content: action.disabled ? t('taskEditor', 'filePropertyReadOnly', { name }) : name, taskColor: this.getThemeColor() });
    action.addEventListener('click', () => this.openFilePropertyPicker(name));
    const row = group.createDiv('operon-editor-desktop-property-row'); row.dataset.propertyKey = entry.field.key;
-   const label = row.createDiv('operon-editor-desktop-property-label');
+   const label = row.createEl('button', { cls: 'operon-editor-desktop-property-label', attr: { type: 'button' } });
    setIcon(label.createSpan('operon-editor-desktop-property-icon'), entry.field.icon); label.createSpan({ text: name });
    const value = row.createDiv('operon-editor-desktop-property-value operon-editor-picker-selected operon-editor-custom-field-selection-row');
    this.filePropertyRows.set(name, { row, value, action });
+   this.bindDesktopPropertyInteraction(row, label, value, () => this.openFilePropertyPicker(name, undefined, 'picker', label), () => this.openFilePropertyPicker(name, undefined, 'popover', value), () => { const current = this.fileProperties.get(name); return !!current && this.canEditFileProperty(current); });
    this.refreshFilePropertyValue(name);
   }
   if (focusedName) {
@@ -3694,6 +3698,9 @@ export class TaskEditorContent {
   surface.row.hidden = !populated;
   surface.action.toggleClass('is-active', populated);
   surface.action.disabled = !this.canEditFileProperty(entry);
+  const label = surface.row.querySelector<HTMLButtonElement>('.operon-editor-desktop-property-label');
+  if (label) label.disabled = surface.action.disabled;
+  surface.value.toggleClass('is-readonly', surface.action.disabled);
   surface.row.querySelector<HTMLElement>('.operon-editor-desktop-property-icon')?.toggleClass('has-value', populated);
   const editable = this.canEditFileProperty(entry);
   const values = !populated ? [] : Array.isArray(entry.value) && editable ? entry.value as string[] : [this.formatFilePropertyValue(entry.value)];
@@ -3705,7 +3712,7 @@ export class TaskEditorContent {
   } : null, { values, onActivate: (chip, value) => {
    if (!editable) { chip.setAttr('tabindex', '0'); chip.setAttr('aria-label', `${t('taskEditor', 'filePropertyReadOnly', { name })} ${this.formatCustomFieldDisplayValue(display, value)}`); bindOperonHoverTooltip(chip, { content: t('taskEditor', 'filePropertyReadOnly', { name }), taskColor: this.getThemeColor() }); return; }
    chip.setAttr('tabindex', '0'); chip.setAttr('role', 'button'); setAccessibleLabelWithoutTooltip(chip, `${name}: ${this.formatCustomFieldDisplayValue(display, value)}`);
-   const open = () => this.openFilePropertyPicker(name, value);
+   const open = () => this.openFilePropertyPicker(name, value, 'popover', chip);
    chip.addEventListener('click', event => { if (!(event.target as HTMLElement).closest('button')) open(); });
    chip.addEventListener('keydown', event => { if (event.target === chip && (event.key === 'Enter' || event.key === ' ')) { event.preventDefault(); open(); } });
    if (this.filePropertyPickerName === name && this.filePropertyPickerValue === value) chip.addClass('is-picker-open');
@@ -3743,6 +3750,7 @@ export class TaskEditorContent {
 
  private openFilePropertyAddPicker(anchor: HTMLButtonElement): void {
   if (this.disposed || this.filePropertyUnavailable || this.closeFilePropertyAddPicker) return;
+  this.propertyInteractionEpoch += 1;
   this.closeFilePropertyPicker?.();
   const fields = this.getVaultFilePropertySnapshot().fields
    .filter(field => !this.fileProperties.has(field.propertyName) && isWritableRawYamlPropertyName(field.propertyName, this.settings.keyMappings))
@@ -3763,26 +3771,33 @@ export class TaskEditorContent {
   });
  }
 
- private openFilePropertyPicker(name: string, value?: string): void {
+ private openFilePropertyPicker(name: string, value?: string, textEditRoute: 'picker' | 'popover' = 'picker', anchor?: HTMLElement): void {
   const entry = this.fileProperties.get(name), surface = this.filePropertyRows.get(name);
   if (!entry || !surface || !this.canEditFileProperty(entry)) return;
+  const epoch = ++this.propertyInteractionEpoch;
+  for (const prior of this.filePropertyRows.values()) {
+   prior.action.removeClass('is-picker-open');
+   for (const element of Array.from(prior.row.querySelectorAll('.is-picker-open'))) element.removeClass('is-picker-open');
+  }
   this.closeFilePropertyPicker?.();
-  if (entry.field.type === 'checkbox') { this.setFilePropertyValue(name, entry.value !== true); surface.action.focus(); return; }
-  this.filePropertyPickerName = name; this.filePropertyPickerValue = value ?? null; surface.action.addClass('is-picker-open');
-  this.refreshFilePropertyValue(name);
+  const pickerAnchor = anchor ?? surface.action;
+  this.filePropertyPickerName = name; this.filePropertyPickerValue = value ?? null; pickerAnchor.addClass('is-picker-open'); surface.action.addClass('is-picker-open');
+  let closePicker: (() => void) | null = null;
   const close = () => {
+   if (this.closeFilePropertyPicker !== closePicker) return;
    this.closeFilePropertyPicker = null; this.filePropertyPickerName = null; this.filePropertyPickerValue = null;
-   surface.action.removeClass('is-picker-open'); this.refreshFilePropertyValue(name);
+   surface.action.removeClass('is-picker-open'); pickerAnchor.removeClass('is-picker-open'); this.refreshFilePropertyValue(name);
    if (!this.disposed) void this.refreshDesktopFileProperties();
-   if (!this.disposed && surface.action.isConnected) surface.action.focus({ preventScroll: true });
+   if (!this.disposed && this.propertyInteractionEpoch === epoch) (surface.row.hidden ? surface.action : pickerAnchor.isConnected ? pickerAnchor : surface.value).focus({ preventScroll: true });
   };
-  this.closeFilePropertyPicker = openTableFilePropertyPicker({
-   app: this.app, anchor: surface.action, field: entry.field, label: name,
+  closePicker = openTableFilePropertyPicker({
+   app: this.app, anchor: pickerAnchor, field: entry.field, label: name, textEditRoute,
    cellValue: { present: entry.baseline?.present ?? true, rawValue: entry.value, normalizedValue: isEmptyFilePropertyValue(entry.value) ? '' : String(entry.value) },
    candidates: this.getVaultFilePropertySnapshot().getCandidates(entry.field.key), settings: this.settings, sourcePath: this.fileBodyContext?.filePath ?? '', lifecycleOwner: surface.action, preserveListValues: true,
    onMutation: mutation => { this.setFilePropertyValue(name, mutation.kind === 'delete' ? entry.field.type === 'text' ? '' : entry.field.type === 'list' ? [] : null : mutation.value); },
    onClose: close,
   });
+  this.closeFilePropertyPicker = closePicker;
  }
 
 	private renderDesktopPropertyGroup(root: HTMLElement, key: string, keys: readonly string[]): void {
@@ -3795,15 +3810,17 @@ export class TaskEditorContent {
 		for (const field of keys) {
 			const row = group.createDiv('operon-editor-desktop-property-row');
 			row.dataset.propertyKey = field;
-			const label = row.createDiv('operon-editor-desktop-property-label');
+			const label = row.createEl('button', { cls: 'operon-editor-desktop-property-label', attr: { type: 'button' } });
 			setIcon(label.createSpan('operon-editor-desktop-property-icon'), this.resolveWorkflowPickerIcon(field));
 			label.createSpan({ text: this.getWorkflowPickerLabel(field) });
 			const value = row.createDiv('operon-editor-desktop-property-value');
 			const core = DESKTOP_CORE_FIELDS.has(field);
 			this.desktopPropertyRows.set(field, { row, value, core, signature: '' });
+			this.bindDesktopPropertyInteraction(row, label, value, () => this.openWorkflowPickerFromAction(field, label), () => this.openDesktopPropertyValue(field, value, label), () => field !== 'datetimeEnd' || !!this.fieldValues['datetimeStart']);
 			if (core) {
 				row.addClass('operon-editor-desktop-core-property');
 				this.renderDesktopCoreProperty(value, field);
+				this.addDesktopCoreClear(value, field);
 				for (const input of Array.from(value.querySelectorAll('input'))) setAccessibleLabelWithoutTooltip(input, this.getWorkflowPickerLabel(field));
 				row.addEventListener('focusout', () => {
 					getOwnerWindow(row).requestAnimationFrame(() => {
@@ -3812,6 +3829,79 @@ export class TaskEditorContent {
 				});
 			}
 		}
+	}
+
+	private bindDesktopPropertyInteraction(
+		row: HTMLElement, label: HTMLButtonElement, value: HTMLElement,
+		openLabel: () => void, openValue: () => void, canEdit: () => boolean,
+	): void {
+		setAccessibleLabelWithoutTooltip(label, label.textContent ?? '');
+		label.addEventListener('click', () => { if (!this.disposed && canEdit()) openLabel(); });
+		value.addEventListener('click', () => { if (canEdit()) this.propertyInteractionEpoch += 1; }, true);
+		value.tabIndex = 0;
+		value.setAttribute('role', 'group');
+		setAccessibleLabelWithoutTooltip(value, label.textContent ?? '');
+		value.addEventListener('click', event => {
+			if (this.disposed || !canEdit() || event.defaultPrevented) return;
+			const target = event.target as HTMLElement;
+			if (target.closest('button, input, select, textarea, a, [contenteditable="true"], [role="button"]')) return;
+			openValue();
+		});
+		value.addEventListener('keydown', event => {
+			if (event.target !== value || (event.key !== 'Enter' && event.key !== ' ')) return;
+			event.preventDefault();
+			if (!this.disposed && canEdit()) openValue();
+		});
+		row.addClass('operon-editor-interactive-property-row');
+	}
+
+	private openDesktopPropertyValue(key: string, value: HTMLElement, label: HTMLButtonElement): void {
+		const custom = getCustomFieldMapping(this.settings.keyMappings, key);
+		if (custom?.type === 'text') {
+			this.closeActiveWorkflowActionPicker();
+			const epoch = ++this.propertyInteractionEpoch;
+			value.addClass('is-picker-open');
+			let closePicker: (() => void) | null = null;
+			closePicker = showTextFieldPopover({
+				app: this.app, anchor: value, title: this.getWorkflowPickerLabel(key),
+				initialValue: this.fieldValues[key] ?? '', allowEmptyCommit: true,
+				lifecycleOwner: value, editor: { kind: 'compact-markdown', sourcePath: this.existingTask?.filePath ?? '' },
+				onCommit: text => this.commitWorkflowActionPayload({ [key]: text }),
+				onClose: () => {
+					if (this.workflowActionPickerClose !== closePicker) return;
+					this.workflowActionPickerClose = null; value.removeClass('is-picker-open');
+					if (!this.disposed && this.propertyInteractionEpoch === epoch) {
+						const target = value.closest<HTMLElement>('.operon-editor-desktop-property-row')?.hidden ? this.workflowActionButtons.get(key) : value.isConnected ? value : label;
+						target?.focus({ preventScroll: true });
+					}
+				},
+			});
+			this.workflowActionPickerClose = closePicker;
+			return;
+		}
+		const control = value.querySelector<HTMLButtonElement>('.operon-icon-trigger, .operon-color-swatch, .operon-editor-repeat-trigger, .operon-editor-picker-button');
+		if (DESKTOP_CORE_FIELDS.has(key) && control && !control.disabled) control.click();
+		else this.openWorkflowPickerFromAction(key, label);
+	}
+
+	private addDesktopCoreClear(value: HTMLElement, key: string): void {
+		const control = value.querySelector<HTMLElement>('.operon-icon-trigger, .operon-color-swatch, .operon-editor-repeat-trigger, .operon-editor-estimate-input-shell, .operon-editor-picker-button');
+		if (!control?.parentElement) return;
+		const token = control.ownerDocument.win.createDiv('operon-editor-value-token');
+		control.parentElement.insertBefore(token, control); token.appendChild(control);
+		const clear = token.createEl('button', { cls: 'operon-editor-value-clear', attr: { type: 'button' } });
+		setIcon(clear, 'x'); setAccessibleLabelWithoutTooltip(clear, t('taskEditor', 'removeValue', { value: this.getWorkflowPickerLabel(key) }));
+		clear.addEventListener('click', event => {
+			event.preventDefault(); event.stopPropagation();
+			if (!this.hasWorkflowPickerValue(key)) return;
+			const patch: Record<string, string> = { [key]: '' };
+			if (key === 'repeat') {
+				Object.assign(patch, { datetimeRepeatEnd: '', repeatSeriesId: '', repeatOccurrenceDate: '' });
+				this.inlineCompletionMode = DEFAULT_INLINE_REPEAT_COMPLETION_MODE;
+			}
+			this.commitWorkflowActionPayload(patch);
+			this.workflowActionButtons.get(key)?.focus({ preventScroll: true });
+		});
 	}
 
 	private renderDesktopCoreProperty(value: HTMLElement, key: string): void {
@@ -3833,6 +3923,11 @@ export class TaskEditorContent {
 			const hasValue = this.hasWorkflowPickerValue(key);
 			this.refreshDesktopPropertyIcon(key, entry.row, hasValue);
 			entry.row.hidden = !hasValue && !(entry.core && entry.row.contains(entry.row.ownerDocument.activeElement));
+			const label = entry.row.querySelector<HTMLButtonElement>('.operon-editor-desktop-property-label');
+			if (label) label.disabled = (key === 'datetimeEnd' && !this.fieldValues['datetimeStart']) || (key === 'subtasks' && !this.getCurrentOperonId());
+			entry.value.toggleClass('is-readonly', label?.disabled ?? false);
+			const clear = entry.value.querySelector<HTMLButtonElement>('.operon-editor-value-clear');
+			if (clear) clear.hidden = !hasValue;
 			if (entry.core) continue;
 			const signature = JSON.stringify([
 				key === 'subtasks' ? this.getWorkflowSubtaskIds() : key === 'tags' ? this.tags : this.fieldValues[key],
@@ -4327,6 +4422,7 @@ export class TaskEditorContent {
 	}
 
 	private openWorkflowPickerFromAction(key: string, button: HTMLButtonElement): void {
+		this.propertyInteractionEpoch += 1;
 		if (button.hasClass('is-locked')) {
 			new Notice(t('taskEditor', 'subtasksSaveFirst'));
 			return;
@@ -4402,6 +4498,10 @@ export class TaskEditorContent {
 	private closeActiveWorkflowActionPicker(): void {
 		const current = this.workflowActionPickerClose;
 		this.workflowActionPickerClose = null;
+		for (const entry of this.desktopPropertyRows.values()) {
+			entry.value.removeClass('is-picker-open');
+			entry.row.querySelector('.operon-editor-desktop-property-label')?.removeClass('is-picker-open');
+		}
 		for (const button of this.workflowActionButtons.values()) {
 			button.removeClass('is-picker-open');
 		}
@@ -4598,7 +4698,7 @@ export class TaskEditorContent {
 					label: display.text,
 					icon: this.resolveWorkflowPickerIcon(fieldKey),
 					iconOnly: false,
-					interactive: true,
+					interactive: !group.hasClass('operon-editor-desktop-property-value'),
 					colorRole: 'default',
 					linkTarget: null,
 				}, `operon-editor-compact-selection-chip operon-editor-reminder-chip is-${display.state}`, {
@@ -4616,6 +4716,23 @@ export class TaskEditorContent {
 					event.preventDefault();
 					openEditPicker(chip, index, rawValue);
 				});
+				if (group.hasClass('operon-editor-desktop-property-value')) {
+					chip.setAttr('role', 'button'); chip.tabIndex = 0;
+					chip.addEventListener('keydown', event => {
+						if (event.target !== chip || (event.key !== 'Enter' && event.key !== ' ')) return;
+						event.preventDefault(); openEditPicker(chip, index, rawValue);
+					});
+					const remove = chip.createEl('button', { cls: 'operon-editor-compact-selection-chip-remove', attr: { type: 'button' } });
+					setIcon(remove, 'x'); setAccessibleLabelWithoutTooltip(remove, t('taskEditor', 'removeValue', { value: display.text }));
+					remove.addEventListener('click', event => {
+						event.preventDefault(); event.stopPropagation();
+						closePicker?.();
+						const result = applyReminderListMutation({ fieldKey, currentValue: this.fieldValues[fieldKey], mutation: { action: 'remove', current: { index, rawValue } } });
+						if (!result.ok) { new Notice(t('reminders', 'staleItem')); return; }
+						if (result.changed) this.commitWorkflowActionPayload({ [fieldKey]: result.fieldValue });
+						this.workflowActionButtons.get(fieldKey)?.focus({ preventScroll: true });
+					});
+				}
 				selectedWrap.appendChild(chip);
 			}
 		};

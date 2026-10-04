@@ -36164,3 +36164,91 @@ body .operon-task-editor:not(.operon-task-editor-mobile) .operon-editor-desktop-
 .operon-task-editor:not(.operon-task-editor-mobile) .operon-editor-desktop-group-title {
 	min-width: 100%;
 }
+
+/* Desktop property rows expose the same picker entry and value hover affordance. */
+body .operon-task-editor:not(.operon-task-editor-mobile) button.operon-editor-desktop-property-label {
+	width: fit-content;
+	max-width: 100%;
+	height: auto;
+	min-height: 36px;
+	margin: 0;
+	padding: 0;
+	border: 0;
+	border-radius: var(--operon-task-editor-control-radius, 6px);
+	background: transparent;
+	box-shadow: none;
+	text-align: start;
+	font: inherit;
+	color: var(--text-muted);
+	cursor: pointer;
+}
+
+body .operon-task-editor:not(.operon-task-editor-mobile) .operon-editor-desktop-property-row:is(:hover, :focus-within, :has(.is-picker-open)) button.operon-editor-desktop-property-label {
+	box-shadow: inset 0 0 0 1px var(--operon-task-editor-workflow-value-border);
+}
+
+body .operon-task-editor:not(.operon-task-editor-mobile) button.operon-editor-desktop-property-label:focus-visible {
+	outline: 2px solid var(--operon-task-editor-accent, var(--interactive-accent));
+	outline-offset: 2px;
+}
+
+.operon-task-editor:not(.operon-task-editor-mobile) .operon-editor-desktop-property-value:not(.is-readonly),
+.operon-task-editor:not(.operon-task-editor-mobile) .operon-editor-desktop-property-value:not(.is-readonly) :is(.operon-editor-compact-selection-chip, .operon-editor-picker-chip) {
+	cursor: pointer;
+}
+
+body .operon-task-editor:not(.operon-task-editor-mobile) .operon-editor-desktop-property-row:is(:hover, :focus-within, :has(.is-picker-open)) .operon-editor-desktop-property-value :is(.operon-editor-picker-button, .operon-icon-trigger, .operon-color-swatch, .operon-editor-repeat-trigger, .operon-editor-estimate-input-shell, .operon-editor-compact-selection-chip, .operon-editor-picker-chip, input) {
+	border-color: var(--operon-task-editor-workflow-value-border);
+}
+
+.operon-task-editor:not(.operon-task-editor-mobile) .operon-editor-value-token {
+	display: inline-flex;
+	align-items: center;
+	width: fit-content;
+	max-width: 100%;
+	min-width: 0;
+}
+
+body .operon-task-editor:not(.operon-task-editor-mobile) button.operon-editor-value-clear {
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	flex: 0 0 20px;
+	width: 20px;
+	height: 26px;
+	min-height: 0;
+	padding: 0;
+	border: 0;
+	border-radius: var(--operon-task-editor-control-radius, 6px);
+	background: transparent;
+	box-shadow: none;
+	color: var(--text-muted);
+	opacity: 0;
+	pointer-events: none;
+	cursor: pointer;
+}
+
+.operon-task-editor:not(.operon-task-editor-mobile) .operon-editor-value-clear svg {
+	width: 12px;
+	height: 12px;
+}
+
+body .operon-task-editor:not(.operon-task-editor-mobile) button.operon-editor-value-clear[hidden] {
+	display: none;
+}
+
+body .operon-task-editor:not(.operon-task-editor-mobile) .operon-editor-desktop-property-row:is(:hover, :focus-within) .operon-editor-desktop-property-value :is(.operon-editor-value-clear, .operon-editor-compact-selection-chip-remove, .operon-editor-picker-chip-remove) {
+	opacity: 1;
+	pointer-events: auto;
+}
+
+@media (hover: none), (pointer: coarse) {
+	body .operon-task-editor:not(.operon-task-editor-mobile) button.operon-editor-value-clear {
+		opacity: 1;
+		pointer-events: auto;
+	}
+}
+
+body .operon-task-editor:not(.operon-task-editor-mobile) button.operon-editor-desktop-property-label:disabled {
+	cursor: default;
+}

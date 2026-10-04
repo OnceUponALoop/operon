@@ -29,6 +29,8 @@ import { resolveTableColumnCellAccent } from './table-column-color';
 import { renderTableTextValueDisplay } from './table-description-cell';
 import { formatTableIconOnlyTooltipContent, renderTableIconOnlyCell } from './table-icon-only-cell';
 import { createCompactTaskMarkdownTooltipContent } from '../operon-hover-tooltip';
+import { showSearchableOptionPicker } from '../field-pickers/searchable-option-picker';
+import { resolveSurfaceFloatingHostOptions } from '../field-pickers/common';
 import { showTextFieldPopover } from '../text-field-popover';
 import { buildTableFilePropertyTextMutation, resolveTableTextEditRoute } from './table-text-edit-route';
 
@@ -79,6 +81,7 @@ export function openTableFilePropertyPicker(options: {
 	lifecycleOwner?: Node;
 	sessionKey?: string;
  preserveListValues?: boolean;
+ textEditRoute?: 'picker' | 'popover';
 	onFocusReturn?: () => void;
 	onMutation: (mutation: RawYamlPropertyMutation) => void;
 	onClose?: () => void;
@@ -95,6 +98,13 @@ export function openTableFilePropertyPicker(options: {
 	};
 	const normalizedValue = options.cellValue.normalizedValue;
 	switch (options.field.type) {
+		case 'checkbox':
+			return showSearchableOptionPicker(options.anchor, {
+				...('ownerDocument' in options.anchor ? resolveSurfaceFloatingHostOptions(options.anchor) : {}),
+				value: normalizedValue, options: [{value: 'true', label: 'true'}, {value: 'false', label: 'false'}],
+				placeholder: options.label, ariaLabel: options.label, noMatchesText: t('taskEditor', 'noAvailableFileProperties'),
+				onSelect: option => options.onMutation({kind: 'set', value: option.value === 'true'}), onClose: options.onClose,
+			});
 		case 'list': {
 			const current = Array.isArray(options.cellValue.rawValue)
 				&& options.cellValue.rawValue.every(value => typeof value === 'string')
@@ -141,7 +151,7 @@ export function openTableFilePropertyPicker(options: {
 			});
 		case 'text':
 		default:
-			if (resolveTableTextEditRoute(normalizedValue, true) === 'popover') {
+			if (options.textEditRoute === 'popover' || (options.textEditRoute !== 'picker' && resolveTableTextEditRoute(normalizedValue, true) === 'popover')) {
 				return showTextFieldPopover({
 					app: options.app,
 					anchor: options.anchor,
