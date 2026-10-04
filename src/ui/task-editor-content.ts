@@ -29,6 +29,7 @@ import {
 	shouldTriggerOneShotAutomation,
 } from '../types/pipeline';
 import { serializeTask } from '../core/serializer';
+import { parseTaskLine } from '../core/parser';
 import {
 	getManagedTaskFieldType,
 	isManagedTaskFieldCanonicalKey,
@@ -882,6 +883,25 @@ export class TaskEditorContent {
 		return cursorOffset;
 	}
 
+	private resolveFileBodyCursorOffset(): number {
+		const context = this.fileBodyContext;
+		const fallback = Math.min(Math.max(context?.cursorOffset ?? 0, 0), this.fileBodyDraft.length);
+		if (context?.format !== 'inline') return fallback;
+
+		// Resolve against the current body without changing the source identity used by saves.
+		const operonId = this.getCurrentOperonId();
+		const lines = this.fileBodyDraft.split('\n');
+		let targetLine: number | null = null;
+		for (let index = 0; index < lines.length; index++) {
+			const task = parseTaskLine(lines[index], index, context.filePath, this.settings.keyMappings);
+			if (!task || !(operonId ? task.operonId === operonId : task.rawLine === this.existingTask?.rawLine)) continue;
+			// An absent or ambiguous task must not redirect focus to another task.
+			if (targetLine !== null) return fallback;
+			targetLine = index;
+		}
+		return targetLine === null ? fallback : this.getBodyCursorOffset(this.fileBodyDraft, targetLine);
+	}
+
 	private async refreshFileBodyDraftFromSource(): Promise<void> {
 		if (!this.fileBodyContext || this.isFileBodyDirty) return;
 		const file = this.app.vault.getAbstractFileByPath(this.fileBodyContext.filePath);
@@ -1294,7 +1314,7 @@ export class TaskEditorContent {
 			placeholder: t('taskEditor', 'fileBodyPlaceholder'),
 			className: 'operon-task-editor-file-source-editor',
 			file: sourceFile instanceof TFile ? sourceFile : null,
-			cursorOffset: this.fileBodyContext?.cursorOffset ?? 0,
+			cursorOffset: this.resolveFileBodyCursorOffset(),
 			lineNumberOffset: this.fileBodyContext?.lineNumberOffset ?? 0,
 			showLineNumbers: this.settings.taskEditorShowLineNumbers,
 			showActiveLine: this.settings.taskEditorHighlightActiveLine,
