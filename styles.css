@@ -36235,6 +36235,31 @@ body .operon-task-editor:not(.operon-task-editor-mobile) button.operon-editor-de
 	padding-inline-end: 0;
 }
 
+/* Date values stay on one line; only a visible weekday competes for their space. */
+.operon-task-editor:not(.operon-task-editor-mobile) .operon-editor-picker-button:has(> .operon-editor-weekday) > .operon-editor-picker-button-text {
+	white-space: nowrap;
+	text-overflow: ellipsis;
+}
+
+@media (hover: hover) {
+	.operon-task-editor:not(.operon-task-editor-mobile) .operon-editor-desktop-property-row:hover :is(.operon-editor-picker-button, .operon-editor-compact-selection-chip):has(> .operon-editor-weekday) > :is(.operon-editor-picker-button-text, .operon-inline-compact-chip-label) {
+		flex: 0 0 auto;
+	}
+
+	.operon-task-editor:not(.operon-task-editor-mobile) .operon-editor-desktop-property-row:hover .operon-editor-picker-button:has(> .operon-editor-weekday) > .operon-editor-picker-button-text {
+		max-width: calc(100% - 8px);
+	}
+
+	.operon-task-editor:not(.operon-task-editor-mobile) .operon-editor-desktop-property-row:hover .operon-editor-compact-selection-chip:has(> .operon-editor-weekday) > .operon-inline-compact-chip-label {
+		max-width: calc(100% - 3px);
+	}
+
+	.operon-task-editor:not(.operon-task-editor-mobile) .operon-editor-desktop-property-row:hover .operon-editor-compact-selection-chip:has(> .operon-editor-weekday):has(> .operon-editor-compact-selection-chip-remove) > .operon-inline-compact-chip-label {
+		/* Reserve the 16px clear action and both 3px gaps. */
+		max-width: calc(100% - 22px);
+	}
+}
+
 /* Weekday details are transient; canonical date values stay untouched. */
 .operon-task-editor:not(.operon-task-editor-mobile) .operon-editor-weekday {
 	display: none;
