@@ -8810,6 +8810,10 @@ body .operon-floating-panel.operon-reminder-rules-picker-panel button.operon-rem
 	width: min(94vw, calc(var(--operon-task-editor-file-column-width) + var(--operon-task-editor-main-column-width) + var(--operon-task-editor-split-gap) + var(--operon-task-editor-horizontal-padding)));
 }
 
+.operon-task-editor-modal.operon-task-editor-modal-file-body-wide.operon-task-editor-modal-has-file-body-context:not(.operon-task-editor-modal-has-file-body) {
+	width: min(94vw, calc(var(--operon-task-editor-main-column-width) - var(--operon-task-editor-split-transfer) + var(--operon-task-editor-horizontal-padding)));
+}
+
 .operon-task-editor-modal .modal-content {
 	padding: 0;
 	height: 100%;
@@ -9866,8 +9870,10 @@ body .operon-task-editor button.operon-task-editor-title-file-toggle.is-active {
 }
 
 .operon-task-editor-modal.operon-task-editor-modal-file-body-wide .operon-task-editor-shell.has-file-body .operon-task-editor-main-panel {
-	width: var(--operon-task-editor-main-column-width);
-	max-width: var(--operon-task-editor-main-column-width);
+	/* Keep the panel and key track stable while the file body opens or closes. */
+	--operon-task-editor-property-label-width: calc(21.25% + var(--operon-task-editor-split-transfer) * 0.2125);
+	width: calc(var(--operon-task-editor-main-column-width) - var(--operon-task-editor-split-transfer));
+	max-width: calc(var(--operon-task-editor-main-column-width) - var(--operon-task-editor-split-transfer));
 	margin-left: auto;
 	height: 100%;
 	max-height: 100%;
@@ -9884,19 +9890,6 @@ body .operon-task-editor button.operon-task-editor-title-file-toggle.is-active {
 	max-height: 100%;
 	min-height: 0;
 	overflow: hidden;
-}
-
-.operon-task-editor-modal.operon-task-editor-modal-file-body-wide .operon-task-editor-shell.has-file-body.is-file-body-visible .operon-task-editor-main-panel {
-	/* Preserve the key track's pre-transfer width; only the value track contracts. */
-	--operon-task-editor-property-label-width: calc(21.25% + var(--operon-task-editor-split-transfer) * 0.2125);
-	width: calc(var(--operon-task-editor-main-column-width) - var(--operon-task-editor-split-transfer));
-	max-width: calc(var(--operon-task-editor-main-column-width) - var(--operon-task-editor-split-transfer));
-	margin-left: auto;
-	height: 100%;
-	max-height: 100%;
-	min-height: 0;
-	min-width: 0;
-	overflow-y: auto;
 }
 
 .operon-task-editor-modal.operon-task-editor-modal-file-body-wide .operon-task-editor-shell.has-file-body .operon-task-editor-file-panel {
