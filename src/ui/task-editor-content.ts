@@ -269,6 +269,7 @@ export interface TaskEditorSubtaskRequest {
 }
 
 export interface TaskEditorContentOptions {
+	onSetShowLineNumbers?: (visible: boolean) => Promise<void>;
 	focusDescriptionOnMount?: boolean;
 	selectDescriptionOnMount?: boolean;
 	subtaskActionKind?: 'inline' | 'file';
@@ -498,6 +499,9 @@ export class TaskEditorContent {
 	private trackerUnsubscribe: (() => void) | null = null;
 	private indexUpdatesUnsubscribe: (() => void) | null = null;
 	private refreshCorePinControl: (() => void) | null = null;
+	private onSetShowLineNumbers: TaskEditorContentOptions['onSetShowLineNumbers'];
+	private lineNumbersSavePending = false;
+	private refreshLineNumbersControl: (() => void) | null = null;
 	private bodyDropdowns: HTMLElement[] = [];
 	private refreshCoreTrackerControl: (() => void) | null = null;
 	private refreshTrackingSessionsSection: (() => void) | null = null;
@@ -618,6 +622,7 @@ export class TaskEditorContent {
 		this.onRequestDelete = options.onRequestDelete ?? null;
 		this.getDeleteDirectChildCount = options.getDeleteDirectChildCount ?? null;
 		this.onOpenSubtasksStats = options.onOpenSubtasksStats;
+		this.onSetShowLineNumbers = options.onSetShowLineNumbers;
 		this.onUpdateExistingSubtaskParent = options.onUpdateExistingSubtaskParent ?? null;
 		this.getRepeatSkipDates = options.getRepeatSkipDates ?? null;
 		this.onUpdateRepeatSkips = options.onUpdateRepeatSkips ?? null;
@@ -2231,6 +2236,7 @@ export class TaskEditorContent {
 		this.schedulingDraftRefreshers.clear();
 		this.mobileCoreButtonRefreshers.clear();
 		this.refreshCorePinControl = null;
+		this.refreshLineNumbersControl = null;
 		this.clearMobileCoreToolbarState();
 		this.clearInitialDescriptionFocusTimers();
 		window.removeEventListener('resize', this.mobileResizeHandler);
@@ -2299,6 +2305,7 @@ export class TaskEditorContent {
 		this.syncTrackingFieldsFromIndex();
 		this.schedulingDraftRefreshers.clear();
 		this.refreshCorePinControl = null;
+		this.refreshLineNumbersControl = null;
 		this.refreshCoreTrackerControl = null;
 		this.refreshEstimateReallocationControl = null;
 		this.refreshTrackingSessionsSection = null;
@@ -2406,6 +2413,7 @@ export class TaskEditorContent {
 		this.schedulingDraftRefreshers.clear();
 		this.mobileCoreButtonRefreshers.clear();
 		this.refreshCorePinControl = null;
+		this.refreshLineNumbersControl = null;
 		this.refreshCoreTrackerControl = null;
 		this.refreshEstimateReallocationControl = null;
 		this.workflowActionsEl = null;
@@ -3761,6 +3769,41 @@ export class TaskEditorContent {
 			: false;
 
 		this.renderCoreTrackerActionButton(container);
+		if (!Platform.isPhone && this.onSetShowLineNumbers) {
+			const button = container.createEl('button', {
+				cls: 'operon-editor-core-action-btn operon-editor-core-line-numbers-action',
+				attr: { type: 'button' },
+			});
+			setIcon(button, 'list-ordered');
+			const label = t('settings', 'taskEditorShowLineNumbers');
+			setAccessibleLabelWithoutTooltip(button, label);
+			this.bindTaskEditorTooltip(button, label);
+			this.refreshLineNumbersControl = () => {
+				const visible = this.settings.taskEditorShowLineNumbers;
+				button.classList.toggle('is-active', visible);
+				button.setAttr('aria-pressed', String(visible));
+				button.setAttr('aria-disabled', String(this.lineNumbersSavePending));
+				this.embeddedBodyEditor?.setFilePanelLineNumbers(visible);
+			};
+			button.addEventListener('focus', () => this.refreshLineNumbersControl?.());
+			button.addEventListener('click', () => {
+				runAsyncAction('task editor line numbers setting save failed', async () => {
+					if (this.disposed || this.lineNumbersSavePending || !this.onSetShowLineNumbers) return;
+					this.lineNumbersSavePending = true;
+					this.refreshLineNumbersControl?.();
+					try {
+						await this.onSetShowLineNumbers(!this.settings.taskEditorShowLineNumbers);
+					} catch (error) {
+						new Notice(t('settings', 'settingsWriteProtected'));
+						throw error;
+					} finally {
+						this.lineNumbersSavePending = false;
+						if (!this.disposed) this.refreshLineNumbersControl?.();
+					}
+				});
+			});
+			this.refreshLineNumbersControl();
+		}
 
 		const pinBtn = container.createEl('button', {
 			cls: 'operon-editor-core-action-btn',

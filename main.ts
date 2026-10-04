@@ -23852,6 +23852,9 @@ export default class OperonPlugin extends Plugin {
 			};
 		const baseOptions = {
 			...this.getTaskEditorSubtaskOptions(task),
+			onSetShowLineNumbers: async (visible: boolean): Promise<void> => {
+				await this.storage.updateSettings({ taskEditorShowLineNumbers: visible });
+			},
 			onRequestDelete: async (
 				parsedTask: ParsedTask,
 				expectedDirectChildCount: number,
