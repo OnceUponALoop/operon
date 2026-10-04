@@ -842,6 +842,8 @@
 		"taskCreatorToolbarPinned": "Fixado",
 		"taskEditorShowLineNumbers": "Mostrar números de linha no Editor de Tarefa",
 		"taskEditorShowLineNumbersDesc": "Exibir números de linha da origem no painel do corpo do arquivo do Editor de Tarefa.",
+		"taskEditorHighlightActiveLine": "Destacar a linha ativa no Task Editor",
+		"taskEditorHighlightActiveLineDesc": "Destacar a linha que contém o cursor no painel de conteúdo do arquivo do Task Editor.",
 		"workspaceTweaksWorkspaceSection": "Aparência do espaço de trabalho",
 		"workspaceTweaksHideScrollbars": "Ocultar Barras de Rolagem",
 		"workspaceTweaksHideScrollbarsDesc": "Oculta as barras de rolagem em todo o espaço de trabalho Obsidian mantendo o comportamento normal de rolagem.",

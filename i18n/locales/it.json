@@ -842,6 +842,8 @@
 		"taskCreatorToolbarPinned": "Fissata",
 		"taskEditorShowLineNumbers": "Mostra numeri di riga nell'Editor attività",
 		"taskEditorShowLineNumbersDesc": "Mostra i numeri di riga di origine nel pannello contenuto del file dell'Editor attività.",
+		"taskEditorHighlightActiveLine": "Evidenzia la riga attiva in Task Editor",
+		"taskEditorHighlightActiveLineDesc": "Evidenzia la riga contenente il cursore nel pannello del contenuto del file di Task Editor.",
 		"workspaceTweaksWorkspaceSection": "Aspetto dello spazio di lavoro",
 		"workspaceTweaksHideScrollbars": "Nascondi barre di scorrimento",
 		"workspaceTweaksHideScrollbarsDesc": "Nascondi le barre di scorrimento in tutta l'area di lavoro di Obsidian mantenendo il comportamento di scorrimento normale.",

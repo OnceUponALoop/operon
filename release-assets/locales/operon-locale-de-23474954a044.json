@@ -1,8 +1,8 @@
 {
   "schemaVersion": 1,
   "locale": "de",
-  "keyCount": 3547,
-  "keyFingerprint": "d198b84580b03a324c5e711bae3075dd5566c063a381dc69b591bdf1fc94a76f",
+  "keyCount": 3549,
+  "keyFingerprint": "45933455f878f77dab1f4ed24c9ae668b63b93f586d63b00a3180246d29e8a67",
   "translations": {
     "buttons": {
       "addFileSubtask": "Datei-Unteraufgabe hinzufügen",
@@ -2667,6 +2667,8 @@
       "taskCreatorToolbarTooltip_taskImage": "Aufgabenbild",
       "taskCreatorToolbarTooltip_taskType": "Aufgabentyp",
       "taskEditorFileBodySection": "Dateiinhalt",
+      "taskEditorHighlightActiveLine": "Aktive Zeile im Task Editor hervorheben",
+      "taskEditorHighlightActiveLineDesc": "Die Zeile mit dem Cursor im Dateiinhalt des Task Editors hervorheben.",
       "taskEditorMobileCoreTools": "Sichtbarkeit und Reihenfolge der Werkzeuge",
       "taskEditorMobileCoreToolsDesc": "Die Symbolleiste des mobilen Aufgaben-Editors steuert, welche Kern-Symbole auf Telefonen erscheinen, und passt ihre Reihenfolge an. „Zur Quelle“ bleibt vorne und „Entfernen“ bleibt hinten, sofern sichtbar.",
       "taskEditorMobileCoreToolsMoveDown": "Nach unten",
@@ -3592,5 +3594,5 @@
       "toggleDescendantPreview": "Vorschau untergeordneter Aufgaben umschalten"
     }
   },
-  "sourceVersion": "e34e4ca11bc11f2bf5f88caf58bd1df25e68225bd84fba155e4782977b10df8e"
+  "sourceVersion": "5dd9c10723dac5a742e2ca191b3499f41efceb62c676bf5934df3337f66668be"
 }

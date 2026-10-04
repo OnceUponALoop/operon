@@ -842,6 +842,8 @@
 		"taskCreatorToolbarPinned": "Épinglée",
 		"taskEditorShowLineNumbers": "Afficher les numéros de ligne dans l'éditeur de tâche",
 		"taskEditorShowLineNumbersDesc": "Afficher les numéros de ligne source dans le panneau de contenu du fichier de l'éditeur de tâche.",
+		"taskEditorHighlightActiveLine": "Surligner la ligne active dans Task Editor",
+		"taskEditorHighlightActiveLineDesc": "Surligner la ligne contenant le curseur dans le panneau du contenu du fichier de Task Editor.",
 		"workspaceTweaksWorkspaceSection": "Apparence de l’espace de travail",
 		"workspaceTweaksHideScrollbars": "Hide Scrollbars",
 		"workspaceTweaksHideScrollbarsDesc": "Masque les barres de défilement dans tout le workspace Obsidian tout en conservant le défilement normal.",

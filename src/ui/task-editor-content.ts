@@ -1287,6 +1287,7 @@ export class TaskEditorContent {
 				: this.fileBodyContext?.cursorOffset ?? 0,
 			lineNumberOffset: this.fileBodyContext?.lineNumberOffset ?? 0,
 			showLineNumbers: this.settings.taskEditorShowLineNumbers,
+			showActiveLine: this.settings.taskEditorHighlightActiveLine,
 			onChange: (value) => this.handleFileBodyChanged(value),
 			onEscape: () => {
 				if (!(this.fileBodyWide ?? this.isWideFileBodyViewport())) {

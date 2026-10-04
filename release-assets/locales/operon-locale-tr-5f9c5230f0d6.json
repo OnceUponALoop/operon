@@ -1,8 +1,8 @@
 {
   "schemaVersion": 1,
   "locale": "tr",
-  "keyCount": 3547,
-  "keyFingerprint": "d198b84580b03a324c5e711bae3075dd5566c063a381dc69b591bdf1fc94a76f",
+  "keyCount": 3549,
+  "keyFingerprint": "45933455f878f77dab1f4ed24c9ae668b63b93f586d63b00a3180246d29e8a67",
   "translations": {
     "buttons": {
       "addFileSubtask": "Dosya Tipi Alt Görev Ekle",
@@ -2667,6 +2667,8 @@
       "taskCreatorToolbarTooltip_taskImage": "Görev Görseli",
       "taskCreatorToolbarTooltip_taskType": "Görev Türü",
       "taskEditorFileBodySection": "Dosya İçeriği",
+      "taskEditorHighlightActiveLine": "Task Editor’da aktif satırı vurgula",
+      "taskEditorHighlightActiveLineDesc": "Task Editor dosya gövdesi panelinde imlecin bulunduğu satırı vurgula.",
       "taskEditorMobileCoreTools": "Araç Çubuğu Görünürlüğü ve Sırası",
       "taskEditorMobileCoreToolsDesc": "Mobil Görev Editörü Araç Çubuğu, telefonda hangi temel simgelerin görüneceğini ve sıralarını belirler. Görünür olduklarında Kaynağa Git başta, Kaldır sonda kalır.",
       "taskEditorMobileCoreToolsMoveDown": "Aşağı taşı",
@@ -3592,5 +3594,5 @@
       "toggleDescendantPreview": "Alt görev önizlemesini aç/kapat"
     }
   },
-  "sourceVersion": "114ab7a2e3185fbecc00b135ae37eb5def948db0c83755a0a3df408215891163"
+  "sourceVersion": "2f5b1479f903154e04174ef16c1dde487b06072926e56a862fcf6d7da2bb3229"
 }

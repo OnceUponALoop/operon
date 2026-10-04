@@ -840,6 +840,8 @@
 		"taskCreatorToolbarPinned": "Angeheftet",
 		"taskEditorShowLineNumbers": "Zeilennummern im Aufgaben-Editor anzeigen",
 		"taskEditorShowLineNumbersDesc": "Quell-Zeilennummern im Dateiinhaltsbereich des Aufgaben-Editors anzeigen.",
+		"taskEditorHighlightActiveLine": "Aktive Zeile im Task Editor hervorheben",
+		"taskEditorHighlightActiveLineDesc": "Die Zeile mit dem Cursor im Dateiinhalt des Task Editors hervorheben.",
 		"workspaceTweaksWorkspaceSection": "Arbeitsbereich-Darstellung",
 		"workspaceTweaksHideScrollbars": "Hide Scrollbars",
 		"workspaceTweaksHideScrollbarsDesc": "Blendet Scrollbars im gesamten Obsidian-Workspace aus, während normales Scrollen erhalten bleibt.",

@@ -2061,9 +2061,11 @@ export class OperonSettingsTab extends PluginSettingTab {
 
 	private buildTaskEditorSettingsItems(entries: OperonSettingsSearchEntry[]): SettingDefinitionItem[] {
 		const groups = this.buildTaskSettingsGroups([
-			['taskEditorFileBodySection', ['taskEditorShowLineNumbers'], containerEl => {
+			['taskEditorFileBodySection', ['taskEditorShowLineNumbers', 'taskEditorHighlightActiveLine'], containerEl => {
 				this.renderBoundToggleSetting(containerEl, t('settings', 'taskEditorShowLineNumbers'),
 					t('settings', 'taskEditorShowLineNumbersDesc'), 'taskEditorShowLineNumbers');
+				this.renderBoundToggleSetting(containerEl, t('settings', 'taskEditorHighlightActiveLine'),
+					t('settings', 'taskEditorHighlightActiveLineDesc'), 'taskEditorHighlightActiveLine');
 			}],
 		], entries, t('settings', 'subtabTaskEditor'), 'DOCS-021 Task Editor');
 		const heading = t('settings', 'taskEditorWorkflowPickers');
@@ -4535,6 +4537,7 @@ export class OperonSettingsTab extends PluginSettingTab {
 
 	private renderInterfaceTaskEditorTab(containerEl: HTMLElement): void {
 		this.renderBoundToggleSetting(containerEl, t('settings', 'taskEditorShowLineNumbers'), t('settings', 'taskEditorShowLineNumbersDesc'), 'taskEditorShowLineNumbers');
+		this.renderBoundToggleSetting(containerEl, t('settings', 'taskEditorHighlightActiveLine'), t('settings', 'taskEditorHighlightActiveLineDesc'), 'taskEditorHighlightActiveLine');
 		const workflowPickersTitle = t('settings', 'taskEditorWorkflowPickers');
 		const sectionEl = renderNativeSettingsGroupedSection(
 			containerEl,

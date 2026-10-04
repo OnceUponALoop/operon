@@ -1,8 +1,8 @@
 {
   "schemaVersion": 1,
   "locale": "es",
-  "keyCount": 3547,
-  "keyFingerprint": "d198b84580b03a324c5e711bae3075dd5566c063a381dc69b591bdf1fc94a76f",
+  "keyCount": 3549,
+  "keyFingerprint": "45933455f878f77dab1f4ed24c9ae668b63b93f586d63b00a3180246d29e8a67",
   "translations": {
     "buttons": {
       "addFileSubtask": "Añadir subtarea de archivo",
@@ -2667,6 +2667,8 @@
       "taskCreatorToolbarTooltip_taskImage": "Imagen de tarea",
       "taskCreatorToolbarTooltip_taskType": "Tipo de tarea",
       "taskEditorFileBodySection": "Contenido del archivo",
+      "taskEditorHighlightActiveLine": "Resaltar la línea activa en Task Editor",
+      "taskEditorHighlightActiveLineDesc": "Resaltar la línea que contiene el cursor en el panel del contenido del archivo de Task Editor.",
       "taskEditorMobileCoreTools": "Visibilidad y orden de herramientas",
       "taskEditorMobileCoreToolsDesc": "La barra de herramientas del Editor de tareas móvil controla qué iconos esenciales aparecen en los teléfonos y ajusta su orden. Ir al origen permanece primero y Quitar permanece último cuando están visibles.",
       "taskEditorMobileCoreToolsMoveDown": "Mover hacia abajo",
@@ -3592,5 +3594,5 @@
       "toggleDescendantPreview": "Alternar vista previa de descendientes"
     }
   },
-  "sourceVersion": "56eebfd33a691c2640b8189bdeed7015ff13b12a783db21b850f3c4981fefc3a"
+  "sourceVersion": "b38a627d93f8df804e2c758f625879e093f384e2b6ff5696873578cbb6374834"
 }

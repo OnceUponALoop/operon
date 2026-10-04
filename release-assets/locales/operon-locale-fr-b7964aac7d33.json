@@ -1,8 +1,8 @@
 {
   "schemaVersion": 1,
   "locale": "fr",
-  "keyCount": 3547,
-  "keyFingerprint": "d198b84580b03a324c5e711bae3075dd5566c063a381dc69b591bdf1fc94a76f",
+  "keyCount": 3549,
+  "keyFingerprint": "45933455f878f77dab1f4ed24c9ae668b63b93f586d63b00a3180246d29e8a67",
   "translations": {
     "buttons": {
       "addFileSubtask": "Ajouter une sous-tâche-fichier",
@@ -2667,6 +2667,8 @@
       "taskCreatorToolbarTooltip_taskImage": "Image de tâche",
       "taskCreatorToolbarTooltip_taskType": "Type de tâche",
       "taskEditorFileBodySection": "Contenu du fichier",
+      "taskEditorHighlightActiveLine": "Surligner la ligne active dans Task Editor",
+      "taskEditorHighlightActiveLineDesc": "Surligner la ligne contenant le curseur dans le panneau du contenu du fichier de Task Editor.",
       "taskEditorMobileCoreTools": "Visibilité et ordre des outils",
       "taskEditorMobileCoreToolsDesc": "La barre d'outils de l'éditeur de tâche mobile détermine quelles icônes essentielles apparaissent sur les téléphones et ajuste leur ordre. Les actions Aller à la source et Retirer restent respectivement en première et dernière position lorsqu'elles sont visibles.",
       "taskEditorMobileCoreToolsMoveDown": "Déplacer vers le bas",
@@ -3592,5 +3594,5 @@
       "toggleDescendantPreview": "Basculer l'aperçu des descendants"
     }
   },
-  "sourceVersion": "92dbc4674630179b265876e57a0f90cc6359f90c7d16c1d21a72557f1690f0ba"
+  "sourceVersion": "3aac34ec789450cddb1c9792eddb5122848de5be612476b51d94f129ce3f74c0"
 }

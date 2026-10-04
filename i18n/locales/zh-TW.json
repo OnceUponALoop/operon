@@ -842,6 +842,8 @@
 		"taskCreatorToolbarPinned": "已固定",
 		"taskEditorShowLineNumbers": "在任務編輯器中顯示行號",
 		"taskEditorShowLineNumbersDesc": "在任務編輯器的檔案正文面板中顯示源行號。",
+		"taskEditorHighlightActiveLine": "在 Task Editor 中醒目顯示目前行",
+		"taskEditorHighlightActiveLineDesc": "在 Task Editor 的檔案本文面板中醒目顯示游標所在的行。",
 		"workspaceTweaksWorkspaceSection": "工作區外觀",
 		"workspaceTweaksHideScrollbars": "隱藏捲軸",
 		"workspaceTweaksHideScrollbarsDesc": "在整個 Obsidian 工作區隱藏捲軸，同時保持正常的滾動行為。",

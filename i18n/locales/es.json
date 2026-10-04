@@ -842,6 +842,8 @@
 		"taskCreatorToolbarPinned": "Fijado",
 		"taskEditorShowLineNumbers": "Mostrar números de línea en el Editor de tareas",
 		"taskEditorShowLineNumbersDesc": "Mostrar los números de línea de origen en el panel de cuerpo del archivo del Editor de tareas.",
+		"taskEditorHighlightActiveLine": "Resaltar la línea activa en Task Editor",
+		"taskEditorHighlightActiveLineDesc": "Resaltar la línea que contiene el cursor en el panel del contenido del archivo de Task Editor.",
 		"workspaceTweaksWorkspaceSection": "Apariencia del espacio de trabajo",
 		"workspaceTweaksHideScrollbars": "Ocultar barras de desplazamiento",
 		"workspaceTweaksHideScrollbarsDesc": "Ocultar las barras de desplazamiento en todo el espacio de trabajo de Obsidian manteniendo el comportamiento normal de desplazamiento.",

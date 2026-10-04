@@ -10318,6 +10318,16 @@ body .operon-task-editor-file-panel .operon-task-editor-file-source-editor.markd
 	background: var(--operon-file-active-line-bg);
 }
 
+/* The file-body preference also overrides active-line styles supplied by themes. */
+.operon-task-editor-file-source-editor.is-active-line-disabled {
+	--operon-file-active-line-bg: transparent;
+}
+
+body.active-line .operon-task-editor-file-source-editor.is-active-line-disabled
+	.cm-line.cm-active::before {
+	display: none;
+}
+
 .operon-task-editor-file-source-editor .cm-placeholder {
 	color: var(--text-faint);
 }

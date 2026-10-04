@@ -842,6 +842,8 @@
 		"taskCreatorToolbarPinned": "Pinned",
 		"taskEditorShowLineNumbers": "Show line numbers in Task Editor",
 		"taskEditorShowLineNumbersDesc": "Display source line numbers in the Task Editor file body panel.",
+		"taskEditorHighlightActiveLine": "Highlight active line in Task Editor",
+		"taskEditorHighlightActiveLineDesc": "Highlight the line containing the cursor in the Task Editor file body panel.",
 		"workspaceTweaksWorkspaceSection": "Workspace Appearance",
 		"workspaceTweaksHideScrollbars": "Hide Scrollbars",
 		"workspaceTweaksHideScrollbarsDesc": "Hide scrollbars across the Obsidian workspace while keeping normal scrolling behavior.",

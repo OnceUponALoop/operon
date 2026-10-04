@@ -306,6 +306,7 @@ export const OPERON_SETTINGS_SEARCH_REGISTRY: readonly OperonSettingsSearchEntry
 	section('ui', 'interfaceStateIcons', 'fallbackFinishedStateIcon', 'settings', 'fallbackFinishedStateIcon', 'fallbackFinishedStateIconDesc', ['state icons', 'fallback icons']),
 	section('ui', 'interfaceStateIcons', 'fallbackCancelledStateIcon', 'settings', 'fallbackCancelledStateIcon', 'fallbackCancelledStateIconDesc', ['state icons', 'fallback icons']),
 	e('ui', 'interfaceTaskEditor', 'taskEditorShowLineNumbers', 'settings', 'taskEditorShowLineNumbers', 'taskEditorShowLineNumbersDesc', 'toggle', ['task editor', 'line numbers', 'source line numbers', 'file body line numbers']),
+	e('ui', 'interfaceTaskEditor', 'taskEditorHighlightActiveLine', 'settings', 'taskEditorHighlightActiveLine', 'taskEditorHighlightActiveLineDesc', 'toggle', ['task editor', 'highlight', 'active line', 'current line', 'file body']),
 	section('ui', 'interfaceTaskEditor', 'taskEditorWorkflowPickers', 'settings', 'taskEditorWorkflowPickers', 'taskEditorWorkflowPickersDesc', ['task editor', 'task editor pickers', 'workflow pickers']),
 	section('ui', 'interfaceLocationMap', 'locationPlaceVisualProperties', 'settings', 'locationPlaceVisualPropertiesSection', 'locationPlaceVisualPropertiesSectionDesc', ['location', 'map', 'place note visuals', 'marker icon', 'marker color']),
 	e('ui', 'interfaceLocationMap', 'locationPlaceIconPropertyName', 'settings', 'locationPlaceIconPropertyName', 'locationPlaceIconPropertyNameDesc', 'text', ['location', 'map', 'place note icon', 'marker icon', 'icon property']),

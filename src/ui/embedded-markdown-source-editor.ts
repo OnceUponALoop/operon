@@ -356,6 +356,7 @@ function resolveEmbeddedMarkdownViewClass(app: App): OperonEmbeddedMarkdownViewC
 				);
 			}
 			if (this.isFilePanelSourceEditor()) {
+				this.editorEl.toggleClass('is-active-line-disabled', options.showActiveLine === false);
 				if (this.shouldShowLineNumbers()) {
 					this.installFilePanelLineNumberRail();
 				} else {

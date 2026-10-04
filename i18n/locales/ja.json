@@ -842,6 +842,8 @@
 		"taskCreatorToolbarPinned": "ピン留め",
 		"taskEditorShowLineNumbers": "タスクエディターに行番号を表示",
 		"taskEditorShowLineNumbersDesc": "タスクエディターのファイル本文パネルにソースの行番号を表示します。",
+		"taskEditorHighlightActiveLine": "Task Editor でアクティブ行を強調表示",
+		"taskEditorHighlightActiveLineDesc": "Task Editor のファイル本文パネルで、カーソルのある行を強調表示します。",
 		"workspaceTweaksWorkspaceSection": "ワークスペースの外観",
 		"workspaceTweaksHideScrollbars": "スクロールバーを非表示",
 		"workspaceTweaksHideScrollbarsDesc": "通常のスクロール動作を保ちつつ、Obsidian ワークスペース全体でスクロールバーを非表示にします。",

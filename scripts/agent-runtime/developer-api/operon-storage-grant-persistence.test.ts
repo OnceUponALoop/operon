@@ -182,6 +182,8 @@ function stripTaskCardDefaults(data: OperonDataPackageV1, verify = false): void 
  delete (data.automation.taskAutomationPolicy as Partial<typeof data.automation.taskAutomationPolicy>).keepInlineTasksWithParent;
  if (verify) assert.equal(data.ui.taskUiPreferences.assigneeImageProperty, '');
  delete (data.ui.taskUiPreferences as Partial<typeof data.ui.taskUiPreferences>).assigneeImageProperty;
+ if (verify) assert.equal(data.ui.taskUiPreferences.taskEditorHighlightActiveLine, true);
+ delete (data.ui.taskUiPreferences as Partial<typeof data.ui.taskUiPreferences>).taskEditorHighlightActiveLine;
  // Keep sealed legacy fixtures unchanged while verifying the new opt-in default.
  if (verify) assert.equal(data.ui.taskCreationProfile.inheritPropertiesOnParentLink, false);
  delete (data.ui.taskCreationProfile as Partial<typeof data.ui.taskCreationProfile>).inheritPropertiesOnParentLink;

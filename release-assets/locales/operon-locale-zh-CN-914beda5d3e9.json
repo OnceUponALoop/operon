@@ -1,8 +1,8 @@
 {
   "schemaVersion": 1,
   "locale": "zh-CN",
-  "keyCount": 3547,
-  "keyFingerprint": "d198b84580b03a324c5e711bae3075dd5566c063a381dc69b591bdf1fc94a76f",
+  "keyCount": 3549,
+  "keyFingerprint": "45933455f878f77dab1f4ed24c9ae668b63b93f586d63b00a3180246d29e8a67",
   "translations": {
     "buttons": {
       "addFileSubtask": "添加文件子任务",
@@ -2667,6 +2667,8 @@
       "taskCreatorToolbarTooltip_taskImage": "任务图像",
       "taskCreatorToolbarTooltip_taskType": "任务类型",
       "taskEditorFileBodySection": "文件正文",
+      "taskEditorHighlightActiveLine": "在 Task Editor 中突出显示当前行",
+      "taskEditorHighlightActiveLineDesc": "在 Task Editor 的文件正文面板中突出显示光标所在的行。",
       "taskEditorMobileCoreTools": "工具栏显示与顺序",
       "taskEditorMobileCoreToolsDesc": "“移动端任务编辑器工具栏”控制手机上出现哪些核心图标并调整其顺序。可见时，“前往源文件”始终在最前，“移除”始终在最后。",
       "taskEditorMobileCoreToolsMoveDown": "下移",
@@ -3592,5 +3594,5 @@
       "toggleDescendantPreview": "切换子任务预览"
     }
   },
-  "sourceVersion": "228aff6bd459f348232922ff2b7b63995b51fb394e9f42d6ac0c14d4e5a929af"
+  "sourceVersion": "6c55fd20f0428d49e2f8e8136b9ef24d82e7f0203564fa7b527047dd812c5593"
 }

@@ -44,7 +44,7 @@ export function sourcePackage(version: SourceVersion = '3.8.0'): OperonDataPacka
 	return JSON.parse(readSealedFixture(`data-${version}.json`)) as OperonDataPackageV1;
 }
 
-/** Compare saved user choices, not the two new optional 3.9 fields or release-notes bookkeeping. */
+/** Compare saved user choices while checking defaults of newly introduced fields separately. */
 export function assertPersonalSettingsPreserved(actual: OperonDataPackageV1, expected: OperonDataPackageV1): void {
 	const slices = (value: OperonDataPackageV1): Record<string, unknown> => ({
 		schemaVersion: value.schemaVersion,
@@ -54,7 +54,7 @@ export function assertPersonalSettingsPreserved(actual: OperonDataPackageV1, exp
 		ui: {
 			...value.ui,
 			taskCreationProfile: withoutNewFields(value.ui.taskCreationProfile, ['inheritPropertiesOnParentLink']),
-			taskUiPreferences: withoutNewFields(value.ui.taskUiPreferences, ['assigneeImageProperty']),
+			taskUiPreferences: withoutNewFields(value.ui.taskUiPreferences, ['assigneeImageProperty', 'taskEditorHighlightActiveLine']),
 		},
 		automation: { ...value.automation, taskAutomationPolicy: withoutNewFields(value.automation.taskAutomationPolicy, ['keepInlineTasksWithParent']) },
 		integrations: value.integrations,
@@ -66,6 +66,8 @@ export function assertPersonalSettingsPreserved(actual: OperonDataPackageV1, exp
 	}
 	assert.equal(actual.automation.taskAutomationPolicy.keepInlineTasksWithParent ?? false,
 		expected.automation.taskAutomationPolicy.keepInlineTasksWithParent ?? false, 'Existing inline placement preference must be preserved; missing defaults off');
+	assert.equal(actual.ui.taskUiPreferences.taskEditorHighlightActiveLine ?? true,
+		expected.ui.taskUiPreferences.taskEditorHighlightActiveLine ?? true, 'Active-line preference must be preserved; missing defaults on');
 	const expectedSlices = slices(expected);
 	for (const [key, value] of Object.entries(slices(actual))) {
 		assert.equal(sha256(JSON.stringify(value)), sha256(JSON.stringify(expectedSlices[key])), `User settings changed: ${key}`);

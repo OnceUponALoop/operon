@@ -1,8 +1,8 @@
 {
   "schemaVersion": 1,
   "locale": "ru",
-  "keyCount": 3547,
-  "keyFingerprint": "d198b84580b03a324c5e711bae3075dd5566c063a381dc69b591bdf1fc94a76f",
+  "keyCount": 3549,
+  "keyFingerprint": "45933455f878f77dab1f4ed24c9ae668b63b93f586d63b00a3180246d29e8a67",
   "translations": {
     "buttons": {
       "addFileSubtask": "Добавить файловую подзадачу",
@@ -2667,6 +2667,8 @@
       "taskCreatorToolbarTooltip_taskImage": "Изображение задачи",
       "taskCreatorToolbarTooltip_taskType": "Тип задачи",
       "taskEditorFileBodySection": "Содержимое файла",
+      "taskEditorHighlightActiveLine": "Выделять активную строку в Task Editor",
+      "taskEditorHighlightActiveLineDesc": "Выделять строку с курсором на панели содержимого файла в Task Editor.",
       "taskEditorMobileCoreTools": "Видимость и порядок инструментов",
       "taskEditorMobileCoreToolsDesc": "Панель инструментов мобильного редактора задач управляет тем, какие основные значки появляются на телефонах, и настраивает их порядок. «Перейти к источнику» всегда остаётся первым, а «Удалить» — последним, если видимо.",
       "taskEditorMobileCoreToolsMoveDown": "Переместить вниз",
@@ -3592,5 +3594,5 @@
       "toggleDescendantPreview": "Переключить предпросмотр потомков"
     }
   },
-  "sourceVersion": "b0fa0ef3f23bcb8c09c5d24eb65789fc8ec5b49cbde427a7a3d6ef261336bba5"
+  "sourceVersion": "17d8525134bce0b48e007fa974d411247997fe1d7560f92a7280a805211a1b95"
 }

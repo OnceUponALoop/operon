@@ -842,6 +842,8 @@
 		"taskCreatorToolbarPinned": "Sabitlenmiş",
 		"taskEditorShowLineNumbers": "Görev Editörü'nde satır numaralarını göster",
 		"taskEditorShowLineNumbersDesc": "Görev Editörü dosya gövdesi panelinde kaynak satır numaralarını gösterir.",
+		"taskEditorHighlightActiveLine": "Task Editor’da aktif satırı vurgula",
+		"taskEditorHighlightActiveLineDesc": "Task Editor dosya gövdesi panelinde imlecin bulunduğu satırı vurgula.",
 		"workspaceTweaksWorkspaceSection": "Çalışma Alanı Görünümü",
 		"workspaceTweaksHideScrollbars": "Hide Scrollbars",
 		"workspaceTweaksHideScrollbarsDesc": "Normal kaydırma davranışını koruyarak Obsidian workspace genelindeki scrollbarları gizler.",

@@ -17,6 +17,7 @@ export type TaskUiPreferenceStoreSettings = Pick<
 	OperonSettings,
 	| 'taskCreatorToolbar'
 	| 'taskEditorShowLineNumbers'
+	| 'taskEditorHighlightActiveLine'
 	| 'taskEditorWorkflowPickers'
 	| 'taskEditorMobileCoreTools'
 	| 'inlineExpandedTaskChips'
@@ -68,6 +69,7 @@ function cloneSettings(settings: TaskUiPreferenceStoreSettings): TaskUiPreferenc
 	return {
 		taskCreatorToolbar: settings.taskCreatorToolbar.map(item => ({ ...item })),
 		taskEditorShowLineNumbers: settings.taskEditorShowLineNumbers,
+		taskEditorHighlightActiveLine: settings.taskEditorHighlightActiveLine,
 		taskEditorWorkflowPickers: settings.taskEditorWorkflowPickers.map(item => ({ ...item })),
 		taskEditorMobileCoreTools: settings.taskEditorMobileCoreTools.map(item => ({ ...item })),
 		inlineExpandedTaskChips: { ...settings.inlineExpandedTaskChips },
@@ -145,6 +147,7 @@ function readStoreData(
 	return {
 		taskCreatorToolbar: readArray(raw.taskCreatorToolbar, fallback.taskCreatorToolbar),
 		taskEditorShowLineNumbers: readBoolean(raw.taskEditorShowLineNumbers, fallback.taskEditorShowLineNumbers),
+		taskEditorHighlightActiveLine: readBoolean(raw.taskEditorHighlightActiveLine, fallback.taskEditorHighlightActiveLine),
 		taskEditorWorkflowPickers: normalizeTaskEditorWorkflowPickers(
 			raw.taskEditorWorkflowPickers,
 			raw.taskEditorWorkflowPickers === undefined

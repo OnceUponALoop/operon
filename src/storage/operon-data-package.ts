@@ -103,6 +103,7 @@ export const OPERON_DATA_PACKAGE_OWNED_SETTINGS_KEYS = [
 	'contextualMenuMobileAutoHideMs',
 	'taskCreatorToolbar',
 	'taskEditorShowLineNumbers',
+	'taskEditorHighlightActiveLine',
 	'taskEditorWorkflowPickers',
 	'taskEditorMobileCoreTools',
 	'inlineExpandedTaskChips',
@@ -202,6 +203,7 @@ export const OPERON_DATA_PACKAGE_OWNED_SETTINGS_KEYS = [
 const TASK_UI_PREFERENCE_PACKAGE_KEYS = [
 	'taskCreatorToolbar',
 	'taskEditorShowLineNumbers',
+	'taskEditorHighlightActiveLine',
 	'taskEditorWorkflowPickers',
 	'taskEditorMobileCoreTools',
 	'inlineExpandedTaskChips',
@@ -562,6 +564,7 @@ export function buildOperonDataPackageFromSettings(
 				version: 1,
 				taskCreatorToolbar: cloneUnknown(normalized.taskCreatorToolbar),
 				taskEditorShowLineNumbers: normalized.taskEditorShowLineNumbers,
+				taskEditorHighlightActiveLine: normalized.taskEditorHighlightActiveLine,
 				taskEditorWorkflowPickers: cloneUnknown(normalized.taskEditorWorkflowPickers),
 				taskEditorMobileCoreTools: cloneUnknown(normalized.taskEditorMobileCoreTools),
 				inlineExpandedTaskChips: cloneUnknown(normalized.inlineExpandedTaskChips),

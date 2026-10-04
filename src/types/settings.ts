@@ -1662,6 +1662,8 @@ export interface OperonSettings extends TaskCardSettings {
 	taskCreatorToolbar: TaskCreatorToolbarItem[];
 	/** If true, the Task Editor file body source panel shows source line numbers. */
 	taskEditorShowLineNumbers: boolean;
+	/** If true, highlight the current source line in the Task Editor file body. */
+	taskEditorHighlightActiveLine: boolean;
 	/** Ordered, user-customizable picker rows shown in the Task Editor workflow area. */
 	taskEditorWorkflowPickers: TaskEditorWorkflowPickerItem[];
 	/** Ordered, phone-only core action icons shown in the Task Editor compact toolbar. */
@@ -2230,6 +2232,7 @@ export const DEFAULT_SETTINGS: OperonSettings = {
 	estimateAutoReallocation: false,
 	taskCreatorToolbar: buildDefaultTaskCreatorToolbarItems(),
 	taskEditorShowLineNumbers: false,
+	taskEditorHighlightActiveLine: true,
 	taskEditorWorkflowPickers: buildDefaultTaskEditorWorkflowPickerItems(),
 	taskEditorMobileCoreTools: buildDefaultTaskEditorMobileCoreToolItems(),
 	inlineTaskCompactChips: buildDefaultInlineTaskCompactChipItems(),
@@ -4311,6 +4314,9 @@ export function migrateSettings(raw: unknown): OperonSettings {
 		: Object.keys(src).length === 0
 			? DEFAULT_SETTINGS.taskEditorShowLineNumbers
 			: true;
+	out.taskEditorHighlightActiveLine = typeof src.taskEditorHighlightActiveLine === 'boolean'
+		? src.taskEditorHighlightActiveLine
+		: DEFAULT_SETTINGS.taskEditorHighlightActiveLine;
 	out.taskEditorWorkflowPickers = normalizeTaskEditorWorkflowPickers(
 		src.taskEditorWorkflowPickers,
 		'taskEditorWorkflowPickers' in src || Object.keys(src).length === 0

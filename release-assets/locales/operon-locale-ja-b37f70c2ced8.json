@@ -1,8 +1,8 @@
 {
   "schemaVersion": 1,
   "locale": "ja",
-  "keyCount": 3547,
-  "keyFingerprint": "d198b84580b03a324c5e711bae3075dd5566c063a381dc69b591bdf1fc94a76f",
+  "keyCount": 3549,
+  "keyFingerprint": "45933455f878f77dab1f4ed24c9ae668b63b93f586d63b00a3180246d29e8a67",
   "translations": {
     "buttons": {
       "addFileSubtask": "ファイルサブタスクを追加",
@@ -2667,6 +2667,8 @@
       "taskCreatorToolbarTooltip_taskImage": "タスク画像",
       "taskCreatorToolbarTooltip_taskType": "タスクタイプ",
       "taskEditorFileBodySection": "ファイル本文",
+      "taskEditorHighlightActiveLine": "Task Editor でアクティブ行を強調表示",
+      "taskEditorHighlightActiveLineDesc": "Task Editor のファイル本文パネルで、カーソルのある行を強調表示します。",
       "taskEditorMobileCoreTools": "ツールバーの表示と順序",
       "taskEditorMobileCoreToolsDesc": "モバイルタスクエディターツールバーは、スマートフォンに表示されるコアアイコンを制御し、順序を調整します。表示時、「ソースへ移動」は常に先頭、「削除」は常に末尾になります。",
       "taskEditorMobileCoreToolsMoveDown": "下へ移動",
@@ -3592,5 +3594,5 @@
       "toggleDescendantPreview": "子孫プレビューを切り替え"
     }
   },
-  "sourceVersion": "6337d55c65ddd3d8e2f501cef263c2f35462daef4f5b5a8e1d25a784887a99e8"
+  "sourceVersion": "7ca5d53b8f1271825060e5ff769b6267a041ddf1cc6be917b688678ee13ea7c2"
 }

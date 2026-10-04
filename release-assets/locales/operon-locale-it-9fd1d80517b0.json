@@ -1,8 +1,8 @@
 {
   "schemaVersion": 1,
   "locale": "it",
-  "keyCount": 3547,
-  "keyFingerprint": "d198b84580b03a324c5e711bae3075dd5566c063a381dc69b591bdf1fc94a76f",
+  "keyCount": 3549,
+  "keyFingerprint": "45933455f878f77dab1f4ed24c9ae668b63b93f586d63b00a3180246d29e8a67",
   "translations": {
     "buttons": {
       "addFileSubtask": "Aggiungi sotto-attività-file",
@@ -2667,6 +2667,8 @@
       "taskCreatorToolbarTooltip_taskImage": "Immagine attività",
       "taskCreatorToolbarTooltip_taskType": "Tipo di attività",
       "taskEditorFileBodySection": "Contenuto del file",
+      "taskEditorHighlightActiveLine": "Evidenzia la riga attiva in Task Editor",
+      "taskEditorHighlightActiveLineDesc": "Evidenzia la riga contenente il cursore nel pannello del contenuto del file di Task Editor.",
       "taskEditorMobileCoreTools": "Visibilità e ordine degli strumenti",
       "taskEditorMobileCoreToolsDesc": "La barra degli strumenti Editor attività mobile controlla quali icone principali appaiono sui telefoni e regola il loro ordine. Vai all'origine rimane primo e Rimuovi rimane ultimo quando visibili.",
       "taskEditorMobileCoreToolsMoveDown": "Sposta in basso",
@@ -3592,5 +3594,5 @@
       "toggleDescendantPreview": "Alterna anteprima discendenti"
     }
   },
-  "sourceVersion": "1548676276a8f0c8537de77d81edf8474fa3f56bd60b8545e2feb4e0b2c5a67c"
+  "sourceVersion": "f0315812372589daf9b0df51f669963006385ca219d2f1f0aa35e6746fe2a14f"
 }
