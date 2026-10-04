@@ -12798,6 +12798,7 @@ body .operon-task-editor button.operon-task-editor-workflow-action-button.is-loc
 .operon-task-editor:not(.operon-task-editor-mobile) .operon-task-editor-workflow-values .operon-editor-compact-selection-chip {
 	min-height: 28px;
 	padding: 0 9px;
+	gap: 3px;
 	border-color: var(--operon-task-editor-workflow-value-border);
 	background: transparent;
 	background-color: transparent;
@@ -12819,7 +12820,7 @@ body .operon-task-editor button.operon-task-editor-workflow-action-button.is-loc
 .operon-task-editor:not(.operon-task-editor-mobile) .operon-task-editor-workflow-values .operon-editor-compact-selection-chip-remove {
 	width: 16px;
 	height: 16px;
-	margin-left: 1px;
+	margin-left: 0;
 	border: none;
 	border-radius: 0;
 	background: transparent;
