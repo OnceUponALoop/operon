@@ -1283,9 +1283,7 @@ export class TaskEditorContent {
 			placeholder: t('taskEditor', 'fileBodyPlaceholder'),
 			className: 'operon-task-editor-file-source-editor',
 			file: sourceFile instanceof TFile ? sourceFile : null,
-			cursorOffset: this.fileBodyContext?.format === 'inline'
-				? 0
-				: this.fileBodyContext?.cursorOffset ?? 0,
+			cursorOffset: this.fileBodyContext?.cursorOffset ?? 0,
 			lineNumberOffset: this.fileBodyContext?.lineNumberOffset ?? 0,
 			showLineNumbers: this.settings.taskEditorShowLineNumbers,
 			showActiveLine: this.settings.taskEditorHighlightActiveLine,
@@ -3761,7 +3759,7 @@ export class TaskEditorContent {
 			? t('taskEditor', 'hideFileBodyPanel')
 			: t('taskEditor', 'showFileBodyPanel'));
 		button.addEventListener('click', () => {
-			this.setFileBodyVisible(!this.isFileBodyVisible);
+			this.setFileBodyVisible(!this.isFileBodyVisible, !this.isFileBodyVisible && this.fileBodyContext?.format === 'inline');
 		});
 		this.fileBodyToggleButtonEl = button;
 	}
