@@ -357,9 +357,11 @@ type EditorProgressSectionState = {
 	checkboxProgressPct: number;
 	ownDuration: number;
 	subtaskDuration: number;
+	trackedSubtaskCount: number;
 	totalDuration: number;
 	ownEstimate: number;
 	subtaskEstimate: number;
+	estimatedSubtaskCount: number;
 	totalEstimate: number;
 	hasAnyTimeData: boolean;
 };
@@ -3096,6 +3098,17 @@ export class TaskEditorContent {
 			totalEstimate,
 		].some(value => value > 0);
 
+		// Count each descendant's own contribution, never its rolled-up child totals.
+		const timeDescendants = hasSubtasks && hasAnyTimeData
+			? (statsProgress ? this.getProgressDescendantTasks(operonId) : allDesc)
+			: [];
+		let trackedSubtaskCount = 0;
+		let estimatedSubtaskCount = 0;
+		for (const descendant of timeDescendants) {
+			if (parseInt(descendant.fieldValues['duration'] ?? '0', 10) > 0) trackedSubtaskCount++;
+			if (parseInt(descendant.fieldValues['estimate'] ?? '0', 10) > 0) estimatedSubtaskCount++;
+		}
+
 		if (!hasSubtasks && !hasAnyTimeData && !hasPlainCheckboxes) return null;
 
 		return {
@@ -3109,9 +3122,11 @@ export class TaskEditorContent {
 			checkboxProgressPct,
 			ownDuration,
 			subtaskDuration,
+			trackedSubtaskCount,
 			totalDuration,
 			ownEstimate,
 			subtaskEstimate,
+			estimatedSubtaskCount,
 			totalEstimate,
 			hasAnyTimeData,
 		};
@@ -3126,9 +3141,9 @@ export class TaskEditorContent {
 		summary.querySelector('.operon-editor-time-summary-cards')?.remove();
 		if (!state) return;
 		const cards = summary.createDiv('operon-editor-time-summary-cards');
-		for (const [kind, label, own, subtasks, total] of [
-			['duration', t('filterSets', 'fieldTrackedOn'), state.ownDuration, state.subtaskDuration, state.totalDuration],
-			['estimate', t('settings', 'chipEstimate'), state.ownEstimate, state.subtaskEstimate, state.totalEstimate],
+		for (const [kind, label, own, subtasks, total, contributorCount] of [
+			['duration', t('filterSets', 'fieldTrackedOn'), state.ownDuration, state.subtaskDuration, state.totalDuration, state.trackedSubtaskCount],
+			['estimate', t('settings', 'chipEstimate'), state.ownEstimate, state.subtaskEstimate, state.totalEstimate, state.estimatedSubtaskCount],
 		] as const) {
 			if (total <= 0) continue;
 			const card = cards.createDiv(`operon-editor-time-card is-${kind}`);
@@ -3138,7 +3153,7 @@ export class TaskEditorContent {
 			const breakdown = card.createDiv('operon-editor-time-card-breakdown');
 			for (const [scope, name, seconds] of [
 				['own', t('taskEditor', 'timeOwn'), own],
-				['subtasks', t('taskEditor', 'progressSubtasksCount', { count: String(state.total) }), subtasks],
+				['subtasks', t('taskEditor', 'progressSubtasksCount', { count: String(contributorCount) }), subtasks],
 			] as const) {
 				const item = breakdown.createSpan(`operon-editor-time-card-scope is-${scope}`);
 				item.createSpan({ text: name });
@@ -3183,7 +3198,7 @@ export class TaskEditorContent {
 			const focused = summary.ownerDocument.activeElement;
 			const closingPopoverHadFocus = !next?.hasSubtasks && focused?.closest('.operon-subtasks-filter-popover') != null && this.rootEl?.contains(focused);
 			summary.hidden = !next || !(next.hasSubtasks || next.hasPlainCheckboxes || next.totalDuration > 0 || next.totalEstimate > 0);
-			const nextTimeSignature = JSON.stringify(next && [next.hasSubtasks, next.total, next.ownDuration, next.subtaskDuration, next.totalDuration, next.ownEstimate, next.subtaskEstimate, next.totalEstimate]);
+			const nextTimeSignature = JSON.stringify(next && [next.trackedSubtaskCount, next.estimatedSubtaskCount, next.ownDuration, next.subtaskDuration, next.totalDuration, next.ownEstimate, next.subtaskEstimate, next.totalEstimate]);
 			if (timeSignature !== nextTimeSignature) {
 				timeSignature = nextTimeSignature;
 				this.renderTimeSummaryCards(summary, next);
