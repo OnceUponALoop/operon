@@ -3172,9 +3172,8 @@ export class TaskEditorContent {
 			const button = actions.createEl('button', { cls: `operon-editor-stats-counter is-${kind}`, attr: { type: 'button' } });
 			setIcon(button.createSpan('operon-editor-stats-counter-icon'), icon);
 			const text = button.createSpan('operon-editor-stats-counter-value');
-			this.bindTaskEditorTooltip(button, label);
 			button.addEventListener('click', () => { if (!this.disposed) open(button); });
-			return { button, text };
+			return { button, text, label, tooltip: '' };
 		};
 		const subtasks = makeCounter('subtasks', 'list-tree', t('filterSets', 'dynamicSubtasksFilterTitle'), anchor => {
 			runAsyncAction('task editor stats subtasks open failed', async () => {
@@ -3202,8 +3201,14 @@ export class TaskEditorContent {
 				[checkboxes, next?.hasPlainCheckboxes, next?.checkboxDone ?? 0, next?.checkboxTotal ?? 0, next?.checkboxProgressPct ?? 0, 'progressCheckboxesCount'],
 			] as const) {
 				control.button.hidden = !available;
-				control.text.setText(`${done} / ${total} · ${percent}%`);
-				setAccessibleLabelWithoutTooltip(control.button, `${t('taskEditor', 'progressDoneCount', { count: String(done) })} / ${t('taskEditor', labelKey, { count: String(total) })} · ${percent}%`);
+				control.text.setText(`${percent}%`);
+				const counts = `${t('taskEditor', 'progressDoneCount', { count: String(done) })} / ${t('taskEditor', labelKey, { count: String(total) })}`;
+				const tooltip = `${control.label}\n${counts}`;
+				if (control.tooltip !== tooltip) {
+					this.bindTaskEditorTooltip(control.button, tooltip);
+					control.tooltip = tooltip;
+				}
+				setAccessibleLabelWithoutTooltip(control.button, `${counts} · ${percent}%`);
 			}
 			subtasks.button.disabled = !this.onOpenSubtasksStats;
 			if (!next?.hasSubtasks) {
