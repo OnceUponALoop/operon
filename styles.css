@@ -35840,14 +35840,17 @@ body .operon-state-icon-setting:where(.operon-settings-scope, .operon-settings-s
 }
 
 .operon-task-editor:not(.operon-task-editor-mobile) .operon-editor-desktop-group-title {
-	display: flex;
-	align-items: center;
-	justify-content: center;
+	display: block;
+	line-height: 28px;
+	white-space: nowrap;
+	overflow: hidden;
+	text-overflow: ellipsis;
 	box-sizing: border-box;
-	height: 36px;
+	height: 30px;
 	min-width: 0;
 	margin: 0;
-	padding: 0 8px;
+	/* Match the 16px icon and 8px gap, including the badge border. */
+	padding: 0 8px 0 23px;
 	font-weight: var(--font-semibold);
 }
 
@@ -35887,6 +35890,7 @@ body .operon-state-icon-setting:where(.operon-settings-scope, .operon-settings-s
 .operon-task-editor:not(.operon-task-editor-mobile) .operon-editor-desktop-property-value {
 	min-width: 0;
 	max-width: 100%;
+	text-align: start;
 }
 
 .operon-task-editor:not(.operon-task-editor-mobile) .operon-editor-desktop-property-value :is(.operon-editor-inline-label, .operon-appearance-label, .setting-item-info, .operon-editor-picker-anchor) {
@@ -35904,6 +35908,7 @@ body .operon-state-icon-setting:where(.operon-settings-scope, .operon-settings-s
 
 .operon-task-editor:not(.operon-task-editor-mobile) .operon-editor-desktop-property-value .setting-item-control {
 	justify-content: flex-start;
+	text-align: start;
 }
 
 .operon-task-editor:not(.operon-task-editor-mobile) .operon-editor-desktop-property-value :is(.operon-editor-picker-stack, .operon-editor-contexts-stack, .operon-editor-tags-stack, .operon-editor-inline-input) {
@@ -35924,6 +35929,7 @@ body .operon-state-icon-setting:where(.operon-settings-scope, .operon-settings-s
 
 .operon-task-editor:not(.operon-task-editor-mobile) .operon-editor-desktop-commands {
 	border-top: none;
+	margin-bottom: 12px;
 }
 
 .operon-task-editor:not(.operon-task-editor-mobile) .operon-editor-desktop-commands .operon-editor-core-actions {
@@ -35944,13 +35950,43 @@ body .operon-state-icon-setting:where(.operon-settings-scope, .operon-settings-s
 	--operon-task-editor-core-danger-border: color-mix(in srgb, var(--color-red) 42%, var(--background-modifier-border));
 }
 
+.operon-task-editor:not(.operon-task-editor-mobile) .operon-editor-desktop-properties {
+	gap: 12px;
+}
+
+body .operon-task-editor:not(.operon-task-editor-mobile) .operon-editor-desktop-group-header button.operon-task-editor-workflow-action-button {
+	flex-basis: 34px;
+	width: 34px;
+	height: 30px;
+	min-height: 30px;
+	box-sizing: border-box;
+}
+
+body .operon-task-editor:not(.operon-task-editor-mobile) .operon-editor-desktop-group-header button.operon-editor-core-action-btn {
+	height: 30px;
+	min-height: 30px;
+	box-sizing: border-box;
+}
+
+.operon-task-editor:not(.operon-task-editor-mobile) .operon-editor-desktop-property-value :is(.operon-editor-picker-selected, .operon-editor-contexts-selected, .operon-editor-tags-selected) {
+	display: flex;
+	flex-wrap: wrap;
+	justify-content: flex-start;
+	text-align: start;
+	gap: 6px;
+}
+
+.operon-task-editor:not(.operon-task-editor-mobile) .operon-editor-desktop-property-value :is(.operon-editor-picker-selected, .operon-editor-contexts-selected, .operon-editor-tags-selected).is-empty {
+	display: none;
+}
+
 /* Desktop property values: stable geometry with hover and keyboard affordances. */
 .operon-task-editor:not(.operon-task-editor-mobile) .operon-editor-desktop-group-header .operon-task-editor-workflow-actions {
 	opacity: 0;
 	pointer-events: none;
 }
 
-.operon-task-editor:not(.operon-task-editor-mobile) .operon-editor-desktop-group-header:is(:hover, :focus-within, :has(.is-picker-open)) .operon-task-editor-workflow-actions {
+.operon-task-editor:not(.operon-task-editor-mobile) .operon-editor-desktop-group-header:is(:hover, :has(:focus-visible), :has(.is-picker-open)) .operon-task-editor-workflow-actions {
 	opacity: 1;
 	pointer-events: auto;
 }
@@ -35986,6 +36022,7 @@ body .operon-task-editor:not(.operon-task-editor-mobile) .operon-editor-desktop-
 }
 
 body .operon-task-editor:not(.operon-task-editor-mobile) .operon-editor-desktop-property-value :is(.operon-editor-picker-button, .operon-icon-trigger, .operon-color-swatch, .operon-editor-repeat-trigger, .operon-editor-repeat-skip, .operon-editor-estimate-reallocate, .operon-editor-subtasks-more, .operon-editor-compact-selection-chip, input) {
+	text-align: start;
 	width: fit-content;
 	min-width: 0;
 	max-width: 100%;
