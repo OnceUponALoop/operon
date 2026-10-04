@@ -23216,10 +23216,6 @@ export default class OperonPlugin extends Plugin {
 			onRequestSubtask: async (request) => {
 				await this.handleSubtaskRequest(request, task);
 			},
-				onOpenTask: (operonId: string) => {
-					this.openEditorForId(operonId);
-				},
-				onMarkSubtaskDone: (operonId: string) => this.markTaskDoneById(operonId),
 				onUpdateExistingSubtaskParent: async (childId: string, parentId: string | null) => {
 				await this.writeParentToExistingChildTask(childId, parentId);
 			},

@@ -42,7 +42,6 @@ import { deriveCountModeRepeatEndFromFieldValues } from '../core/task-field-patc
 import { t } from '../core/i18n';
 import { formatTaskNotice } from '../core/task-notice';
 import { localNow, localToday } from '../core/local-time';
-import { resolveTaskDateTone, resolveTaskDateToneColor } from '../core/task-date-tone';
 import {
 	resolveBlockedByAggregateVisualState,
 	resolveBlockedByVisualStateColor,
@@ -103,7 +102,6 @@ import {
 	type CompactMarkdownEditorSurface,
 } from './compact-markdown-editor-surface';
 import type { CompactEditorKeyIntent } from './compact-editor-key-intent';
-import { renderCompactTaskMarkdown } from './compact-task-markdown-renderer';
 import { showTagPicker } from './field-pickers/tag-picker';
 import { showContextsPicker } from './field-pickers/contexts-picker';
 import { showAssigneesPicker } from './field-pickers/assignees-picker';
@@ -122,7 +120,7 @@ import { getConfiguredKeyMappingIcon } from '../core/key-mapping-icons';
 import { getVisiblePropertyName } from '../core/yaml-fields';
 import { resolveTaskEditorProgressFromStats } from '../core/task-stats-read-model';
 import { resolveSubtaskActionIconForKind, resolveSubtaskActionLabelKeyForKind } from '../core/subtask-action';
-import { createInlineTaskCompactChipElement, InlineTaskCompactChipEntry } from './compact-task-layout';
+import { createInlineTaskCompactChipElement } from './compact-task-layout';
 import { createProjectSerialChipElement } from './project-serial-chip';
 import { INLINE_TASK_COMPACT_FALLBACK_ICONS, InlineTaskCompactChipKey, TASK_CREATOR_FALLBACK_FIELD_ICONS, TaskEditorWorkflowPickerItem } from '../types/settings';
 import { openTaskFieldPicker } from './task-field-picker-dispatch';
@@ -277,9 +275,7 @@ export interface TaskEditorContentOptions {
 	onRequestSubtask?: (context: TaskEditorSubtaskRequest) => void | Promise<void>;
 	onRequestDelete?: (task: ParsedTask, expectedDirectChildCount: number) => void | Promise<boolean | void>;
 	getDeleteDirectChildCount?: (task: ParsedTask) => number;
-	onOpenTask?: (operonId: string) => void;
 	onOpenSubtasksStats?: (operonId: string, anchor: HTMLElement) => (() => void) | null;
-	onMarkSubtaskDone?: (operonId: string) => Promise<boolean>;
 	onUpdateExistingSubtaskParent?: (childId: string, parentId: string | null) => void | Promise<void>;
 	getRepeatSkipDates?: (repeatSeriesId: string) => string[];
 	onUpdateRepeatSkips?: (request: TaskEditorRepeatSkipUpdateRequest) => Promise<TaskEditorRepeatSkipUpdateResult> | TaskEditorRepeatSkipUpdateResult;
@@ -336,7 +332,6 @@ type PersistReason = 'autosave' | 'explicit-save' | 'estimate-reallocation' | 'c
 type TaskEditorWorkflowSyncResult =
 	| { ok: true }
 	| { ok: false; reason: 'terminal-conflict' | 'workflow-resolution-failed' };
-type RelationContextChipKey = Extract<InlineTaskCompactChipKey, 'priority' | 'status' | 'dateScheduled' | 'dateDue' | 'dateCompleted' | 'dateCancelled' | 'duration' | 'totalDuration'>;
 
 const TASK_EDITOR_DAY_PICKER_DATE_KEYS = new Set<string>([
 	'dateStarted',
@@ -373,13 +368,6 @@ interface TaskEditorSemanticSnapshot {
 	fieldValues: Record<string, string>;
 	fileBodyDraft: string | null;
 	inlineCompletionMode: InlineRepeatCompletionMode;
-}
-
-function formatDuration(seconds: number): string {
-	const h = Math.floor(seconds / 3600);
-	const m = Math.floor((seconds % 3600) / 60);
-	if (h > 0) return `${h}h ${m}m`;
-	return `${m}m`;
 }
 
 function formatTaskEditorDatetime(app: App, settings: OperonSettings, value: string): string {
@@ -497,8 +485,6 @@ export class TaskEditorContent {
 	private refreshStatsCounters: (() => void) | null = null;
 	private closeStatsSubtasks: (() => void) | null = null;
 	private onOpenSubtasksStats: TaskEditorContentOptions['onOpenSubtasksStats'] = undefined;
-	private onOpenTask: ((operonId: string) => void) | null = null;
-	private onMarkSubtaskDone: ((operonId: string) => Promise<boolean>) | null = null;
 	private onUpdateExistingSubtaskParent: ((childId: string, parentId: string | null) => void | Promise<void>) | null = null;
 	private getRepeatSkipDates: ((repeatSeriesId: string) => string[]) | null = null;
 	private onUpdateRepeatSkips: ((request: TaskEditorRepeatSkipUpdateRequest) => Promise<TaskEditorRepeatSkipUpdateResult> | TaskEditorRepeatSkipUpdateResult) | null = null;
@@ -516,10 +502,6 @@ export class TaskEditorContent {
 	private refreshCoreTrackerControl: (() => void) | null = null;
 	private refreshTrackingSessionsSection: (() => void) | null = null;
 	private refreshEstimateReallocationControl: (() => void) | null = null;
-	private refreshParentContextSection: (() => void) | null = null;
-	private subtaskCardOrder: string[] = [];
-	private subtaskCardsExpanded = false;
-	private subtaskCompletionInProgress = false;
 	private schedulingDraftRefreshers = new Set<() => void>();
 	private workflowExpanded = false;
 	private workflowActionsEl: HTMLElement | null = null;
@@ -634,9 +616,7 @@ export class TaskEditorContent {
 		this.onRequestSubtask = options.onRequestSubtask ?? null;
 		this.onRequestDelete = options.onRequestDelete ?? null;
 		this.getDeleteDirectChildCount = options.getDeleteDirectChildCount ?? null;
-		this.onOpenTask = options.onOpenTask ?? null;
 		this.onOpenSubtasksStats = options.onOpenSubtasksStats;
-		this.onMarkSubtaskDone = options.onMarkSubtaskDone ?? null;
 		this.onUpdateExistingSubtaskParent = options.onUpdateExistingSubtaskParent ?? null;
 		this.getRepeatSkipDates = options.getRepeatSkipDates ?? null;
 		this.onUpdateRepeatSkips = options.onUpdateRepeatSkips ?? null;
@@ -1319,7 +1299,6 @@ export class TaskEditorContent {
 		this.renderProjectSerialTitleChip(titleRight);
 		this.renderCopyOperonIdButton(titleRight);
 
-		this.renderTopContextSection(container, progressState);
 
 		const primaryFields = container.createDiv('operon-task-editor-primary-fields');
 
@@ -2290,7 +2269,6 @@ export class TaskEditorContent {
 		this.refreshCorePinControl = null;
 		this.refreshCoreTrackerControl = null;
 		this.refreshEstimateReallocationControl = null;
-		this.refreshParentContextSection = null;
 		this.refreshTrackingSessionsSection = null;
 		this.workflowActionsEl = null;
 		this.workflowRowsEl = null;
@@ -2398,7 +2376,6 @@ export class TaskEditorContent {
 		this.refreshCorePinControl = null;
 		this.refreshCoreTrackerControl = null;
 		this.refreshEstimateReallocationControl = null;
-		this.refreshParentContextSection = null;
 		this.workflowActionsEl = null;
 		this.workflowRowsEl = null;
 		this.clearDesktopSubtaskLayout();
@@ -2639,171 +2616,6 @@ export class TaskEditorContent {
 
 	// --- Renderers ---
 
-	private renderTopContextSection(container: HTMLElement, _progressState: EditorProgressSectionState | null): void {
-		const section = container.createDiv('operon-editor-top-context-section');
-		const relations = section.createDiv('operon-editor-top-context-relations');
-		const updateVisibility = () => {
-			const hasRelations = relations.querySelector(
-				'.operon-editor-parent-card, .operon-editor-subtask-card, .operon-subtask-show-more',
-			) != null;
-			relations.hidden = !hasRelations;
-			section.hidden = !hasRelations;
-		};
-
-		this.renderParentContext(relations, updateVisibility);
-		const subtaskHost = relations.createDiv('operon-editor-subtask-context-host');
-		this.renderSubtaskCards(subtaskHost);
-
-		updateVisibility();
-	}
-
-	private renderParentContext(container: HTMLElement, onRender?: () => void): void {
-		const host = container.createDiv('operon-editor-parent-context-host');
-		const render = (): void => {
-			cleanupOperonHoverTooltips(host);
-			host.empty();
-			const parentId = this.fieldValues['parentTask'];
-			if (!parentId) {
-				onRender?.();
-				return;
-			}
-
-			const parent = this.indexer.getTask(parentId);
-			if (!parent) {
-				onRender?.();
-				return;
-			}
-
-			const parentEl = host.createDiv('operon-editor-parent-card');
-			parentEl.style.setProperty('--operon-relation-context-color', this.resolveRelationContextColor(parent, 'parent'));
-			const line1 = parentEl.createDiv('operon-parent-line-1');
-			const iconWrap = line1.createSpan('operon-parent-header-icon');
-			const parentIcon = getIcon('arrow-big-up');
-			if (parentIcon) {
-				iconWrap.appendChild(parentIcon);
-			} else {
-				iconWrap.setText('↑');
-			}
-			const parentTitle = line1.createSpan('operon-parent-inline-title');
-			renderCompactTaskMarkdown(parentTitle, {
-				value: parent.description || parentId,
-				mode: 'visual-only',
-			});
-
-			if (this.onOpenTask) {
-				const editBtn = line1.createEl('button', {
-					cls: 'operon-parent-edit-btn',
-					attr: { type: 'button' },
-				});
-				setIcon(editBtn, 'settings-2');
-				setAccessibleLabelWithoutTooltip(editBtn, t('taskEditor', 'openParentTask'));
-				bindOperonHoverTooltip(editBtn, {
-					content: t('taskEditor', 'openParentTask'),
-					taskColor: this.resolveRelationContextColor(parent, 'parent'),
-				});
-				editBtn.addEventListener('click', (e) => {
-					e.stopPropagation();
-					this.onOpenTask?.(parentId);
-				});
-			}
-
-			const parentChips = this.buildRelationContextChipEntries(parent);
-			if (parentChips.length > 0) {
-				const line2 = parentEl.createDiv('operon-parent-line-2');
-				this.renderRelationContextChips(line2, parent, parentChips, 'operon-parent-chip');
-			}
-			onRender?.();
-		};
-
-		this.refreshParentContextSection = render;
-		render();
-	}
-
-	private buildRelationContextChipEntries(task: IndexedTask): InlineTaskCompactChipEntry[] {
-		const entries: InlineTaskCompactChipEntry[] = [];
-		for (const key of this.getRelationContextChipKeys(task)) {
-			const entry = this.createRelationContextChipEntry(task, key);
-			if (entry) entries.push(entry);
-		}
-		return entries;
-	}
-
-	private getRelationContextChipKeys(task: IndexedTask): RelationContextChipKey[] {
-		if (task.fieldValues['dateCancelled']?.trim() || task.checkbox === 'cancelled') {
-			return ['priority', 'dateCancelled', 'duration', 'totalDuration'];
-		}
-		if (task.fieldValues['dateCompleted']?.trim() || task.checkbox === 'done') {
-			return ['priority', 'dateCompleted', 'duration', 'totalDuration'];
-		}
-		return ['priority', 'status', 'dateScheduled', 'dateDue', 'duration', 'totalDuration'];
-	}
-
-	private createRelationContextChipEntry(task: IndexedTask, key: RelationContextChipKey): InlineTaskCompactChipEntry | null {
-		const rawValue = task.fieldValues[key]?.trim() ?? '';
-		let label = rawValue;
-		if (key === 'duration' || key === 'totalDuration') {
-			const seconds = Number.parseInt(rawValue, 10);
-			if (!Number.isFinite(seconds) || seconds <= 0) return null;
-			label = formatDuration(seconds);
-		} else if (!rawValue) {
-			return null;
-		} else if (TASK_EDITOR_DAY_PICKER_DATE_KEYS.has(key)) {
-			label = formatUiDate(rawValue, this.settings);
-		}
-
-		const entry: InlineTaskCompactChipEntry = {
-			key,
-			label,
-			icon: this.resolveCompactChipIcon(key),
-			iconOnly: false,
-			interactive: false,
-			colorRole: key === 'priority' ? 'priority' : key === 'status' ? 'status' : 'default',
-			linkTarget: null,
-		};
-		if (key === 'dateScheduled' || key === 'dateDue') {
-			entry.iconTone = resolveTaskDateTone(key, rawValue, task.fieldValues);
-		}
-		return entry;
-	}
-
-	private renderRelationContextChips(
-		container: HTMLElement,
-		task: IndexedTask,
-		entries: InlineTaskCompactChipEntry[],
-		extraClass: string,
-	): void {
-		for (const entry of entries) {
-			const chip = createInlineTaskCompactChipElement(entry, `operon-relation-context-chip ${extraClass}`, { forceFull: true });
-			this.applyRelationContextChipVisualStyles(chip, entry, task);
-			container.appendChild(chip);
-		}
-	}
-
-	private applyRelationContextChipVisualStyles(
-		chip: HTMLElement,
-		entry: InlineTaskCompactChipEntry,
-		task: IndexedTask,
-	): void {
-		if (entry.colorRole === 'priority') {
-			const def = this.settings.priorities.find(priority => priority.label === task.fieldValues['priority']);
-			if (def) chip.style.setProperty('--operon-inline-chip-icon-color', def.color);
-		}
-		if (entry.colorRole === 'status') {
-			const status = resolveWorkflowStatus(this.settings.pipelines, task.fieldValues['status']);
-			chip.style.setProperty('--operon-inline-chip-icon-color', status?.definition.color ?? '#6b7280');
-		}
-		const dateToneColor = resolveTaskDateToneColor(entry.iconTone ?? 'default');
-		if (dateToneColor) chip.setCssProps({ '--operon-inline-chip-icon-color': dateToneColor });
-	}
-
-	private resolveRelationContextColor(task: IndexedTask, role: 'parent' | 'child'): string {
-		const color = (task.fieldValues['taskColor'] ?? '').trim().replace(/^#/, '');
-		if (/^([0-9a-fA-F]{6})$/.test(color)) return `#${color}`;
-		return role === 'parent'
-			? 'var(--color-red)'
-			: 'var(--operon-task-editor-accent, var(--interactive-accent))';
-	}
-
 	private getProgressDescendantTasks(operonId: string): IndexedTask[] {
 		const descendants: IndexedTask[] = [];
 		for (const descendantId of this.indexer.secondary.getAllDescendantIds(operonId)) {
@@ -2812,207 +2624,6 @@ export class TaskEditorContent {
 			if (task) descendants.push(task);
 		}
 		return descendants;
-	}
-
-	private renderSubtaskCards(container: HTMLElement): void {
-		const operonId = this.existingTask?.operonId;
-		if (!operonId) return;
-
-		const childIds = this.indexer.secondary.getChildIds(operonId);
-		if (!childIds || childIds.size === 0) return;
-
-		const SUBTASK_PREVIEW_COUNT = 1;
-
-		const tasks = [...childIds]
-			.map(id => this.indexer.getTask(id))
-			.filter((c): c is IndexedTask => !!c);
-		const orderedTasks = this.reconcileSubtaskCardOrder(tasks);
-
-		const hiddenCards: HTMLElement[] = [];
-
-		for (let i = 0; i < orderedTasks.length; i++) {
-			const child = orderedTasks[i];
-			const cardEl = container.createDiv('operon-editor-subtask-card');
-			cardEl.dataset.operonId = child.operonId;
-			cardEl.style.setProperty('--operon-relation-context-color', this.resolveRelationContextColor(child, 'child'));
-
-			const line1 = cardEl.createDiv('operon-subtask-line-1');
-			const iconWrap = line1.createSpan('operon-subtask-header-icon');
-			const subtaskIcon = getIcon('arrow-big-down');
-			if (subtaskIcon) {
-				iconWrap.appendChild(subtaskIcon);
-			} else {
-				iconWrap.setText('↓');
-			}
-			const childTitle = line1.createSpan('operon-subtask-inline-title');
-			renderCompactTaskMarkdown(childTitle, {
-				value: child.description || child.operonId,
-				mode: 'visual-only',
-			});
-
-			if (this.onOpenTask || (child.checkbox === 'open' && this.onMarkSubtaskDone)) {
-				const actions = line1.createDiv('operon-subtask-actions');
-				if (child.checkbox === 'open' && this.onMarkSubtaskDone) {
-					const markDoneLabel = t('settings', 'contextualMenuActionMarkDone');
-					const markDoneBtn = actions.createEl('button', {
-						cls: 'operon-subtask-action-btn operon-subtask-mark-done-btn',
-						attr: { type: 'button' },
-					});
-					setIcon(markDoneBtn, 'check');
-					setAccessibleLabelWithoutTooltip(markDoneBtn, markDoneLabel);
-					bindOperonHoverTooltip(markDoneBtn, {
-						content: markDoneLabel,
-						taskColor: this.resolveRelationContextColor(child, 'child'),
-					});
-					markDoneBtn.addEventListener('click', (event) => {
-						event.preventDefault();
-						event.stopPropagation();
-						void this.handleSubtaskMarkDone(child.operonId, markDoneBtn);
-					});
-				}
-
-				if (this.onOpenTask) {
-					const editBtn = actions.createEl('button', {
-						cls: 'operon-subtask-action-btn operon-subtask-edit-btn',
-						attr: { type: 'button' },
-					});
-					setIcon(editBtn, 'settings-2');
-					setAccessibleLabelWithoutTooltip(editBtn, t('taskEditor', 'editSubtask'));
-					bindOperonHoverTooltip(editBtn, {
-						content: t('taskEditor', 'editSubtask'),
-						taskColor: this.resolveRelationContextColor(child, 'child'),
-					});
-					editBtn.addEventListener('click', (e) => {
-						e.stopPropagation();
-						this.onOpenTask?.(child.operonId);
-					});
-				}
-			}
-
-			const childChips = this.buildRelationContextChipEntries(child);
-			if (childChips.length > 0) {
-				const line2 = cardEl.createDiv('operon-subtask-line-2');
-				this.renderRelationContextChips(line2, child, childChips, 'operon-subtask-chip');
-			}
-
-			if (i >= SUBTASK_PREVIEW_COUNT && !this.subtaskCardsExpanded) {
-				cardEl.setAttribute('hidden', '');
-				hiddenCards.push(cardEl);
-			} else if (i >= SUBTASK_PREVIEW_COUNT) {
-				hiddenCards.push(cardEl);
-			}
-		}
-
-		if (hiddenCards.length > 0) {
-			const bar = container.createDiv('operon-subtask-show-more');
-			const label = bar.createSpan('operon-subtask-show-more-label');
-			const chevron = bar.createSpan('operon-subtask-show-more-chevron');
-			const refresh = () => {
-				if (this.subtaskCardsExpanded) {
-					label.textContent = t('taskEditor', 'showLess');
-					const icon = getIcon('chevron-up');
-					chevron.empty();
-					if (icon) chevron.appendChild(icon);
-				} else {
-					label.textContent = t('taskEditor', hiddenCards.length === 1 ? 'showMoreSubtasksOne' : 'showMoreSubtasksMany', {
-						count: String(hiddenCards.length),
-					});
-					const icon = getIcon('chevron-down');
-					chevron.empty();
-					if (icon) chevron.appendChild(icon);
-				}
-			};
-			refresh();
-
-			bar.addEventListener('click', () => {
-				this.subtaskCardsExpanded = !this.subtaskCardsExpanded;
-				for (const card of hiddenCards) {
-					if (this.subtaskCardsExpanded) card.removeAttribute('hidden');
-					else card.setAttribute('hidden', '');
-				}
-				refresh();
-			});
-		}
-	}
-
-	private reconcileSubtaskCardOrder(tasks: IndexedTask[]): IndexedTask[] {
-		const tasksById = new Map(tasks.map(task => [task.operonId, task]));
-		const retainedOrder = this.subtaskCardOrder.filter(id => tasksById.has(id));
-		const retainedIds = new Set(retainedOrder);
-		const appendedOrder = tasks
-			.filter(task => !retainedIds.has(task.operonId))
-			.sort((a, b) => b.datetimeModified.localeCompare(a.datetimeModified))
-			.map(task => task.operonId);
-		this.subtaskCardOrder = [...retainedOrder, ...appendedOrder];
-		return this.subtaskCardOrder
-			.map(id => tasksById.get(id))
-			.filter((task): task is IndexedTask => !!task);
-	}
-
-	private getCurrentCanonicalStateFromIndex(): TaskEditorCanonicalState | null {
-		const indexed = this.getCurrentIndexedTask();
-		if (!indexed) return null;
-		return {
-			description: indexed.description,
-			checkbox: indexed.checkbox,
-			tags: [...indexed.tags],
-			fieldValues: {
-				...indexed.fieldValues,
-				operonId: indexed.operonId,
-			},
-		};
-	}
-
-	private restoreFocusAfterSubtaskCompletion(operonId: string): void {
-		const cards = Array.from(this.mainPanelEl?.querySelectorAll<HTMLElement>('.operon-editor-subtask-card') ?? []);
-		const completedCard = cards.find(card => card.dataset.operonId === operonId);
-		const target = completedCard?.querySelector<HTMLButtonElement>('.operon-subtask-edit-btn')
-			?? this.mainPanelEl?.querySelector<HTMLButtonElement>('.operon-subtask-mark-done-btn')
-			?? this.mainPanelEl?.querySelector<HTMLButtonElement>('.operon-subtask-edit-btn');
-		target?.focus({ preventScroll: true });
-	}
-
-	private async handleSubtaskMarkDone(operonId: string, button: HTMLButtonElement): Promise<void> {
-		const markDone = this.onMarkSubtaskDone;
-		if (!markDone || this.subtaskCompletionInProgress) return;
-		const restoreFocus = button.ownerDocument.activeElement === button;
-		const buttons = new Set<HTMLButtonElement>([
-			button,
-			...Array.from(this.mainPanelEl?.querySelectorAll<HTMLButtonElement>('.operon-subtask-mark-done-btn') ?? []),
-		]);
-
-		this.subtaskCompletionInProgress = true;
-		for (const actionButton of buttons) actionButton.disabled = true;
-		button.setAttribute('aria-busy', 'true');
-		this.suspendAutoSave();
-		try {
-			const saved = await this.flushPendingEdits();
-			if (!saved) return;
-			const submitted = {
-				description: this.description,
-				checkbox: this.checkbox,
-				tags: [...this.tags],
-				fieldValues: { ...this.fieldValues },
-			};
-			const completed = await markDone(operonId);
-			const refreshedChild = this.indexer.getTask(operonId);
-			if (!completed && refreshedChild?.checkbox === 'open') return;
-
-			const canonical = this.getCurrentCanonicalStateFromIndex();
-			if (canonical) this.applyCanonicalSaveCommit(canonical, submitted);
-			await this.refreshAfterExternalTaskMutation(false);
-			if (restoreFocus) this.restoreFocusAfterSubtaskCompletion(operonId);
-		} catch (error) {
-			console.error('Operon: Task Editor subtask completion failed', error);
-			new Notice(t('notifications', 'taskSaveFailed'));
-		} finally {
-			this.subtaskCompletionInProgress = false;
-			for (const actionButton of buttons) {
-				if (actionButton.isConnected) actionButton.disabled = false;
-			}
-			if (button.isConnected) button.removeAttribute('aria-busy');
-			this.resumeAutoSave();
-		}
 	}
 
 	private renderDescriptionNoteSection(container: HTMLElement): void {
@@ -3516,7 +3127,7 @@ export class TaskEditorContent {
 
 	private renderStatsHeader(summary: HTMLElement, state: EditorProgressSectionState | null): void {
 		const header = summary.createDiv('operon-editor-desktop-group-header operon-editor-stats-header');
-		const title = header.createEl('h6', { text: t('settings', 'pipelineColumnStats'), cls: 'operon-editor-core-title-badge operon-editor-desktop-group-title', attr: { tabindex: '-1' } });
+		const title = header.createEl('h6', { text: t('settings', 'pipelineColumnStats'), cls: 'operon-editor-core-title-badge operon-editor-desktop-group-title', attr: { tabindex: '0' } });
 		const actions = header.createDiv('operon-editor-stats-actions');
 		const makeCounter = (kind: 'subtasks' | 'checkboxes', icon: string, label: string, open: (anchor: HTMLElement) => void) => {
 			const button = actions.createEl('button', { cls: `operon-editor-stats-counter is-${kind}`, attr: { type: 'button' } });
@@ -3541,7 +3152,7 @@ export class TaskEditorContent {
 		const render = (next: EditorProgressSectionState | null) => {
 			const focused = summary.ownerDocument.activeElement;
 			const closingPopoverHadFocus = !next?.hasSubtasks && focused?.closest('.operon-subtasks-filter-popover') != null && this.rootEl?.contains(focused);
-			summary.hidden = !next;
+			summary.hidden = false;
 			const nextTimeSignature = JSON.stringify(next && [next.hasSubtasks, next.ownDuration, next.subtaskDuration, next.totalDuration, next.ownEstimate, next.subtaskEstimate, next.totalEstimate]);
 			if (timeSignature !== nextTimeSignature) {
 				timeSignature = nextTimeSignature;
@@ -3560,11 +3171,10 @@ export class TaskEditorContent {
 				this.closeStatsSubtasks?.();
 				this.closeStatsSubtasks = null;
 			}
-			if (closingPopoverHadFocus || (!next && focused != null && summary.contains(focused)) || [subtasks.button, checkboxes.button].some(button => button === focused && button.hidden)) {
+			if (closingPopoverHadFocus || [subtasks.button, checkboxes.button].some(button => button === focused && button.hidden)) {
 				const target = [subtasks.button, checkboxes.button].find(button => !button.hidden && !button.disabled);
 				if (target) target.focus({ preventScroll: true });
-				else if (next) title.focus({ preventScroll: true });
-				else this.focusDescriptionField(false);
+				else title.focus({ preventScroll: true });
 			}
 		};
 		render(state);
@@ -5505,7 +5115,6 @@ export class TaskEditorContent {
 			}
 
 			this.syncTrackingFieldsFromIndex();
-			this.refreshParentContextSection?.();
 			this.refreshEstimateReallocationControl?.();
 			if (!applyResult.complete) {
 				new Notice(t('taskEditor', 'estimateReallocationUnavailable'));
@@ -5832,7 +5441,9 @@ export class TaskEditorContent {
 			list.empty();
 
 			const sessions = this.getCurrentTaskSessions();
+			list.hidden = !Platform.isPhone && sessions.length === 0;
 			if (sessions.length === 0) {
+				if (!Platform.isPhone) return;
 				list.createDiv({
 					cls: 'operon-editor-tracking-sessions-empty',
 					text: t('taskEditor', 'noTrackingSessions'),
