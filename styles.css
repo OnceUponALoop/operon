@@ -8788,6 +8788,8 @@ body .operon-floating-panel.operon-reminder-rules-picker-panel button.operon-rem
 .operon-task-editor-modal {
 	--operon-task-editor-accent: var(--interactive-accent);
 	--operon-task-editor-modal-radius: 6px;
+	--operon-task-editor-header-action-width: 34px;
+	--operon-task-editor-split-transfer: calc(var(--operon-task-editor-header-action-width) * 1.5);
 	--operon-task-editor-main-column-width: 568px;
 	--operon-task-editor-file-column-width: 652px;
 	--operon-task-editor-file-column-min-width: 480px;
@@ -9885,8 +9887,10 @@ body .operon-task-editor button.operon-task-editor-title-file-toggle.is-active {
 }
 
 .operon-task-editor-modal.operon-task-editor-modal-file-body-wide .operon-task-editor-shell.has-file-body.is-file-body-visible .operon-task-editor-main-panel {
-	width: var(--operon-task-editor-main-column-width);
-	max-width: var(--operon-task-editor-main-column-width);
+	/* Preserve the key track's pre-transfer width; only the value track contracts. */
+	--operon-task-editor-property-label-width: calc(21.25% + var(--operon-task-editor-split-transfer) * 0.2125);
+	width: calc(var(--operon-task-editor-main-column-width) - var(--operon-task-editor-split-transfer));
+	max-width: calc(var(--operon-task-editor-main-column-width) - var(--operon-task-editor-split-transfer));
 	margin-left: auto;
 	height: 100%;
 	max-height: 100%;
@@ -9908,6 +9912,11 @@ body .operon-task-editor button.operon-task-editor-title-file-toggle.is-active {
 }
 
 .operon-task-editor-modal.operon-task-editor-modal-file-body-wide .operon-task-editor-shell.has-file-body.is-file-body-visible .operon-task-editor-file-panel {
+	width: min(
+		calc(var(--operon-task-editor-file-column-width) + var(--operon-task-editor-split-transfer)),
+		calc(100% - var(--operon-task-editor-main-column-width) + var(--operon-task-editor-split-transfer) - var(--operon-task-editor-split-gap))
+	);
+	max-width: calc(100% - var(--operon-task-editor-main-column-width) + var(--operon-task-editor-split-transfer) - var(--operon-task-editor-split-gap));
 	display: flex;
 	flex-direction: column;
 	border: 1px solid color-mix(in srgb, var(--background-modifier-border) 80%, transparent);
@@ -35648,8 +35657,8 @@ body .operon-state-icon-setting:where(.operon-settings-scope, .operon-settings-s
 }
 
 body .operon-task-editor:not(.operon-task-editor-mobile) .operon-editor-desktop-group-header button.operon-task-editor-workflow-action-button {
-	flex-basis: 34px;
-	width: 34px;
+	flex-basis: var(--operon-task-editor-header-action-width, 34px);
+	width: var(--operon-task-editor-header-action-width, 34px);
 	height: 30px;
 	min-height: 30px;
 	box-sizing: border-box;
