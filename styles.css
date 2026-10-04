@@ -35942,6 +35942,8 @@ body .operon-task-editor:not(.operon-task-editor-mobile) .operon-editor-desktop-
 
 body .operon-task-editor:not(.operon-task-editor-mobile) .operon-editor-desktop-property-value .operon-editor-subtasks-more {
 	display: inline-flex;
+	width: 100%;
+	justify-content: center;
 	align-items: center;
 	gap: 6px;
 }
@@ -36182,4 +36184,43 @@ body .operon-task-editor:not(.operon-task-editor-mobile) button.operon-editor-st
 .operon-task-editor:not(.operon-task-editor-mobile) .is-description:is(:hover, :has(.operon-task-editor-compact-text-host:focus-within)) .operon-editor-description-actions {
 	opacity: 1;
 	pointer-events: auto;
+}
+
+/* Session disclosure spans the same width as the session cards. */
+body .operon-task-editor:not(.operon-task-editor-mobile) button.operon-editor-tracking-sessions-more {
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	gap: 6px;
+	box-sizing: border-box;
+	width: 100%;
+	min-height: var(--operon-task-editor-property-control-height, 30px);
+	padding: 0 9px;
+	border: 1px solid var(--operon-task-editor-tracking-border, var(--background-modifier-border));
+	border-radius: var(--operon-task-editor-control-radius, 6px);
+	background: transparent;
+	box-shadow: none;
+	color: var(--text-normal);
+	font-size: var(--operon-task-editor-property-font-size, var(--font-ui-small));
+	cursor: pointer;
+	filter: none;
+	transform: none;
+}
+
+body .operon-task-editor:not(.operon-task-editor-mobile) button.operon-editor-tracking-sessions-more:is(:hover, :focus-visible) {
+	border-color: var(--operon-task-editor-workflow-value-hover-border, var(--interactive-accent));
+}
+
+body .operon-task-editor:not(.operon-task-editor-mobile) button.operon-editor-tracking-sessions-more:focus-visible {
+	outline: 1px solid var(--operon-task-editor-workflow-value-hover-border, var(--interactive-accent));
+	outline-offset: 2px;
+}
+
+body .operon-task-editor:not(.operon-task-editor-mobile) button.operon-editor-tracking-sessions-more[hidden] {
+	display: none;
+}
+
+.operon-task-editor:not(.operon-task-editor-mobile) .operon-editor-tracking-sessions-more svg {
+	width: 14px;
+	height: 14px;
 }

@@ -512,6 +512,7 @@ export class TaskEditorContent {
 	private workflowRowsEl: HTMLElement | null = null;
 	private desktopPropertyRows = new Map<string, { row: HTMLElement; value: HTMLElement; core: boolean; signature: string }>();
 	private desktopSubtasksExpanded = false;
+	private desktopSessionsExpanded = false;
  private fileProperties = new Map<string, EditorFileProperty>();
  private filePropertyRows = new Map<string, { row: HTMLElement; value: HTMLElement; action: HTMLButtonElement }>();
  private filePropertyRoot: HTMLElement | null = null;
@@ -5453,6 +5454,12 @@ export class TaskEditorContent {
 		addButton.createSpan({ text: t('taskEditor', 'addSession') });
 
 		const list = section.createDiv('operon-editor-tracking-sessions-list');
+		const more = Platform.isPhone ? null : section.createEl('button', {
+			cls: 'operon-editor-tracking-sessions-more',
+			attr: { type: 'button', 'aria-expanded': 'false' },
+		});
+		const moreLabel = more?.createSpan();
+		const moreIcon = more?.createSpan();
 
 		const openAddModal = async () => {
 			const operonId = await this.ensureTaskReadyForTracking();
@@ -5483,6 +5490,20 @@ export class TaskEditorContent {
 			list.empty();
 
 			const sessions = this.getCurrentTaskSessions();
+			if (sessions.length <= 3) this.desktopSessionsExpanded = false;
+			if (more) {
+				const hadFocus = more.ownerDocument.activeElement === more;
+				more.hidden = sessions.length <= 3;
+				const label = this.desktopSessionsExpanded ? t('taskEditor', 'showLess') : t('taskEditor', 'moreValues', { count: String(Math.max(0, sessions.length - 3)) });
+				moreLabel?.setText(label);
+				if (moreIcon) setIcon(moreIcon, this.desktopSessionsExpanded ? 'chevron-up' : 'chevron-down');
+				more.setAttr('aria-expanded', String(this.desktopSessionsExpanded));
+				setAccessibleLabelWithoutTooltip(more, `${t('taskEditor', 'trackingSessions')}: ${label}`);
+				if (hadFocus && more.hidden) {
+					if (addButton.disabled) this.focusDescriptionField(false);
+					else addButton.focus({ preventScroll: true });
+				}
+			}
 			list.hidden = !Platform.isPhone && sessions.length === 0;
 			if (sessions.length === 0) {
 				if (!Platform.isPhone) return;
@@ -5493,11 +5514,16 @@ export class TaskEditorContent {
 				return;
 			}
 
-			for (const session of sessions) {
+			for (const session of !more || this.desktopSessionsExpanded ? sessions : sessions.slice(0, 3)) {
 				this.renderTrackingSessionRow(list, session);
 			}
 		};
 
+		more?.addEventListener('click', () => {
+			if (this.disposed) return;
+			this.desktopSessionsExpanded = !this.desktopSessionsExpanded;
+			refresh();
+		});
 		this.refreshTrackingSessionsSection = refresh;
 		refresh();
 	}
