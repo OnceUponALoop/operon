@@ -1,8 +1,8 @@
 {
   "schemaVersion": 1,
   "locale": "de",
-  "keyCount": 3544,
-  "keyFingerprint": "f2ff95341fae263d54efeae1d6ef9ab2e4aa1fd5d442449d1cc5246156436d3a",
+  "keyCount": 3547,
+  "keyFingerprint": "d198b84580b03a324c5e711bae3075dd5566c063a381dc69b591bdf1fc94a76f",
   "translations": {
     "buttons": {
       "addFileSubtask": "Datei-Unteraufgabe hinzufügen",
@@ -3079,6 +3079,7 @@
     },
     "taskEditor": {
       "activeTrackerReadOnly": "Aktiver Timer für {{task}}. Stoppe ihn vor dem Bearbeiten.",
+      "addFileProperty": "Vorhandene Eigenschaft hinzufügen",
       "addNote": "Notiz hinzufügen",
       "addSession": "Erfassungssitzung hinzufügen",
       "appearance": "Erscheinungsbild",
@@ -3281,6 +3282,7 @@
       "moreValues": "{{count}} weitere",
       "namedColors": "Benannte Farben",
       "newOperonTaskFile": "Neue Operon-Aufgabendatei",
+      "noAvailableFileProperties": "Keine verfügbaren Eigenschaften.",
       "noColorSelected": "Keine Farbe ausgewählt",
       "noMatchingMarkdownFiles": "Keine passenden Markdown-Dateien",
       "noMatchingRepeatingFileTaskSeries": "Keine passende Serie wiederkehrender Datei-Aufgaben",
@@ -3468,6 +3470,7 @@
       "searchBlockingTasks": "Blockierende Aufgaben suchen",
       "searchColor": "Farbe suchen",
       "searchContexts": "Kontexte suchen",
+      "searchFileProperties": "Vorhandene Eigenschaften suchen…",
       "searchIcon": "Symbol suchen",
       "searchLinks": "Links suchen oder URL einfügen",
       "searchOpenTasks": "Offene Aufgaben suchen…",
@@ -3589,5 +3592,5 @@
       "toggleDescendantPreview": "Vorschau untergeordneter Aufgaben umschalten"
     }
   },
-  "sourceVersion": "05f3979b8544e55ef263cccddf65f551df6e8abcadcda3458612daf543779c50"
+  "sourceVersion": "75792d804a575f1de03b7c895b87b2d3e5559c19ca8f2648be37ceb040b38028"
 }

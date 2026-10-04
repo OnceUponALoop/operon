@@ -1,8 +1,8 @@
 {
   "schemaVersion": 1,
   "locale": "tr",
-  "keyCount": 3544,
-  "keyFingerprint": "f2ff95341fae263d54efeae1d6ef9ab2e4aa1fd5d442449d1cc5246156436d3a",
+  "keyCount": 3547,
+  "keyFingerprint": "d198b84580b03a324c5e711bae3075dd5566c063a381dc69b591bdf1fc94a76f",
   "translations": {
     "buttons": {
       "addFileSubtask": "Dosya Tipi Alt Görev Ekle",
@@ -3079,6 +3079,7 @@
     },
     "taskEditor": {
       "activeTrackerReadOnly": "{{task}} için aktif zamanlayıcı. Düzenlemek için önce durdur.",
+      "addFileProperty": "Mevcut property ekle",
       "addNote": "Not ekle",
       "addSession": "Oturum ekle",
       "appearance": "Görünüm",
@@ -3281,6 +3282,7 @@
       "moreValues": "{{count}} daha",
       "namedColors": "Adlandırılmış renkler",
       "newOperonTaskFile": "Yeni Operon Dosya Tipi Görev",
+      "noAvailableFileProperties": "Eklenebilir property yok.",
       "noColorSelected": "Renk seçilmedi",
       "noMatchingMarkdownFiles": "Eşleşen Markdown dosyası yok",
       "noMatchingRepeatingFileTaskSeries": "Eşleşen yinelenen dosya görevi serisi yok",
@@ -3468,6 +3470,7 @@
       "searchBlockingTasks": "Engellenen görev ara",
       "searchColor": "Renk ara",
       "searchContexts": "Bağlam ara",
+      "searchFileProperties": "Mevcut property’lerde ara…",
       "searchIcon": "Simge ara",
       "searchLinks": "Link ara veya URL yapıştır",
       "searchOpenTasks": "Açık görev ara...",
@@ -3589,5 +3592,5 @@
       "toggleDescendantPreview": "Alt görev önizlemesini aç/kapat"
     }
   },
-  "sourceVersion": "19b7c28bbd05c6b491af15501885ac5fa3ee82255e7c7e00960ffd41e910037e"
+  "sourceVersion": "b4a3b21cb968f5a661b26a8dfa4dfad46ce4d6af4a8dd2b8fdb0d3506a48eeeb"
 }

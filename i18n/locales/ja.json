@@ -2566,6 +2566,9 @@
 		"invalidReminder": "無効なリマインダー"
 	},
 	"taskEditor": {
+		"addFileProperty": "既存のプロパティを追加",
+		"searchFileProperties": "既存のプロパティを検索…",
+		"noAvailableFileProperties": "追加できるプロパティはありません。",
 		"groupCommands": "コマンド",
 		"groupOverview": "概要",
 		"groupPlanning": "計画",

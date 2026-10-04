@@ -37,11 +37,11 @@ export function canApplyFileTaskPropertyChanges(frontmatter: Record<string, unkn
  return changes.length > 0 && changes.every(change => {
   if (seen.has(change.propertyName)) return false;
   seen.add(change.propertyName);
-  if (!isWritableRawYamlPropertyName(change.propertyName, mappings) || !change.expected.present || !isSupportedRawYamlPropertyValue(change.value)) return false;
+  if (!isWritableRawYamlPropertyName(change.propertyName, mappings) || !isSupportedRawYamlPropertyValue(change.value)) return false;
   if (typeof change.value === 'number' && !Number.isFinite(change.value)) return false;
   if (Array.isArray(change.value) && change.value.some(value => typeof value !== 'string')) return false;
   const current = readRawYamlPropertyExpectation(frontmatter, change.propertyName);
-  return current !== null && current.present && rawYamlPropertyExpectationsEqual(current, change.expected);
+  return current !== null && rawYamlPropertyExpectationsEqual(current, change.expected);
  });
 }
 

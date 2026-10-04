@@ -1,8 +1,8 @@
 {
   "schemaVersion": 1,
   "locale": "ja",
-  "keyCount": 3544,
-  "keyFingerprint": "f2ff95341fae263d54efeae1d6ef9ab2e4aa1fd5d442449d1cc5246156436d3a",
+  "keyCount": 3547,
+  "keyFingerprint": "d198b84580b03a324c5e711bae3075dd5566c063a381dc69b591bdf1fc94a76f",
   "translations": {
     "buttons": {
       "addFileSubtask": "ファイルサブタスクを追加",
@@ -3079,6 +3079,7 @@
     },
     "taskEditor": {
       "activeTrackerReadOnly": "{{task}} のタイマーが実行中です。編集する前に停止してください。",
+      "addFileProperty": "既存のプロパティを追加",
       "addNote": "ノートを追加",
       "addSession": "セッションを追加",
       "appearance": "外観",
@@ -3281,6 +3282,7 @@
       "moreValues": "さらに {{count}} 件",
       "namedColors": "名前付きカラー",
       "newOperonTaskFile": "新しい Operon タスクファイル",
+      "noAvailableFileProperties": "追加できるプロパティはありません。",
       "noColorSelected": "カラーが選択されていません",
       "noMatchingMarkdownFiles": "一致する Markdown ファイルはありません",
       "noMatchingRepeatingFileTaskSeries": "一致する繰り返しファイルタスクシリーズはありません",
@@ -3468,6 +3470,7 @@
       "searchBlockingTasks": "ブロックしているタスクを検索",
       "searchColor": "カラーを検索",
       "searchContexts": "コンテキストを検索",
+      "searchFileProperties": "既存のプロパティを検索…",
       "searchIcon": "アイコンを検索",
       "searchLinks": "リンクを検索または URL を貼り付け",
       "searchOpenTasks": "未完了タスクを検索...",
@@ -3589,5 +3592,5 @@
       "toggleDescendantPreview": "子孫プレビューを切り替え"
     }
   },
-  "sourceVersion": "cf16ffc9393958f7c55d768b639b4aff6de512c6faaa52615d03690e9817e2ab"
+  "sourceVersion": "0a94733fafd290df31db4d43331261fd07c9b835ce812ef46c991ebb83b7ed6f"
 }

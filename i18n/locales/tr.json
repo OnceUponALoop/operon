@@ -2566,6 +2566,9 @@
 		"invalidReminder": "Geçersiz hatırlatıcı"
 	},
 	"taskEditor": {
+		"addFileProperty": "Mevcut property ekle",
+		"searchFileProperties": "Mevcut property’lerde ara…",
+		"noAvailableFileProperties": "Eklenebilir property yok.",
 		"groupCommands": "Komutlar",
 		"groupOverview": "Genel",
 		"groupPlanning": "Planlama",

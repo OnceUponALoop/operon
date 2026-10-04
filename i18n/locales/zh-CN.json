@@ -2566,6 +2566,9 @@
 		"invalidReminder": "无效提醒"
 	},
 	"taskEditor": {
+		"addFileProperty": "添加现有属性",
+		"searchFileProperties": "搜索现有属性…",
+		"noAvailableFileProperties": "没有可用属性。",
 		"groupCommands": "命令",
 		"groupOverview": "概览",
 		"groupPlanning": "计划",

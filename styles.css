@@ -36119,3 +36119,20 @@ body .operon-task-editor:not(.operon-task-editor-mobile) .operon-editor-desktop-
 		border-color: var(--operon-task-editor-workflow-value-border);
 	}
 }
+
+/* File property Add stays visible while the existing shortcuts follow header hover. */
+.operon-task-editor:not(.operon-task-editor-mobile) .operon-editor-desktop-file-header-actions {
+	display: flex;
+	align-items: flex-start;
+	justify-content: flex-end;
+	gap: 8px;
+	min-width: 0;
+}
+
+.operon-task-editor:not(.operon-task-editor-mobile) .operon-editor-desktop-file-header-actions .operon-task-editor-workflow-actions {
+	flex: 1 1 auto;
+}
+
+.operon-task-editor:not(.operon-task-editor-mobile) :is(.operon-editor-desktop-commands, .operon-editor-desktop-property-group:not(:has(.operon-editor-desktop-property-row:not([hidden])))) {
+	padding-block: 10px;
+}

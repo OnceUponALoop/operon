@@ -2566,6 +2566,9 @@
 		"invalidReminder": "Недопустимое напоминание"
 	},
 	"taskEditor": {
+		"addFileProperty": "Добавить существующее свойство",
+		"searchFileProperties": "Поиск существующих свойств…",
+		"noAvailableFileProperties": "Нет доступных свойств.",
 		"groupCommands": "Команды",
 		"groupOverview": "Обзор",
 		"groupPlanning": "Планирование",

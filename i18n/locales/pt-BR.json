@@ -2566,6 +2566,9 @@
 		"invalidReminder": "Lembrete inválido"
 	},
 	"taskEditor": {
+		"addFileProperty": "Adicionar propriedade existente",
+		"searchFileProperties": "Pesquisar propriedades existentes…",
+		"noAvailableFileProperties": "Nenhuma propriedade disponível.",
 		"groupCommands": "Comandos",
 		"groupOverview": "Visão geral",
 		"groupPlanning": "Planejamento",

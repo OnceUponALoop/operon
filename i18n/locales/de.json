@@ -2566,6 +2566,9 @@
 		"invalidReminder": "Ungültige Erinnerung"
 	},
 	"taskEditor": {
+		"addFileProperty": "Vorhandene Eigenschaft hinzufügen",
+		"searchFileProperties": "Vorhandene Eigenschaften suchen…",
+		"noAvailableFileProperties": "Keine verfügbaren Eigenschaften.",
 		"groupCommands": "Aktionen",
 		"groupOverview": "Überblick",
 		"groupPlanning": "Planung",

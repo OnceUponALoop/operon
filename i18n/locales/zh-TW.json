@@ -2566,6 +2566,9 @@
 		"invalidReminder": "無效提醒"
 	},
 	"taskEditor": {
+		"addFileProperty": "新增現有屬性",
+		"searchFileProperties": "搜尋現有屬性…",
+		"noAvailableFileProperties": "沒有可用屬性。",
 		"groupCommands": "命令",
 		"groupOverview": "概覽",
 		"groupPlanning": "規劃",

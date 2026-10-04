@@ -1,8 +1,8 @@
 {
   "schemaVersion": 1,
   "locale": "es",
-  "keyCount": 3544,
-  "keyFingerprint": "f2ff95341fae263d54efeae1d6ef9ab2e4aa1fd5d442449d1cc5246156436d3a",
+  "keyCount": 3547,
+  "keyFingerprint": "d198b84580b03a324c5e711bae3075dd5566c063a381dc69b591bdf1fc94a76f",
   "translations": {
     "buttons": {
       "addFileSubtask": "Añadir subtarea de archivo",
@@ -3079,6 +3079,7 @@
     },
     "taskEditor": {
       "activeTrackerReadOnly": "Temporizador activo para {{task}}. Detenlo antes de editarlo.",
+      "addFileProperty": "Añadir propiedad existente",
       "addNote": "Añadir nota",
       "addSession": "Añadir sesión",
       "appearance": "Apariencia",
@@ -3281,6 +3282,7 @@
       "moreValues": "{{count}} más",
       "namedColors": "Colores con nombre",
       "newOperonTaskFile": "Nuevo archivo de tarea de Operon",
+      "noAvailableFileProperties": "No hay propiedades disponibles.",
       "noColorSelected": "Ningún color seleccionado",
       "noMatchingMarkdownFiles": "No hay archivos Markdown coincidentes",
       "noMatchingRepeatingFileTaskSeries": "No hay series de tareas de archivo recurrentes coincidentes",
@@ -3468,6 +3470,7 @@
       "searchBlockingTasks": "Buscar tareas bloqueantes",
       "searchColor": "Buscar color",
       "searchContexts": "Buscar contextos",
+      "searchFileProperties": "Buscar propiedades existentes…",
       "searchIcon": "Buscar icono",
       "searchLinks": "Buscar enlaces o pegar URL",
       "searchOpenTasks": "Buscar tareas abiertas...",
@@ -3589,5 +3592,5 @@
       "toggleDescendantPreview": "Alternar vista previa de descendientes"
     }
   },
-  "sourceVersion": "430c061df2dc60193afae0c3a2f96c5aba5d24d9583c09c9c9c62b60051413c5"
+  "sourceVersion": "169f2a812138456bfcb1a54a671d336dbc4cc60df12ff35726533ac89d632222"
 }

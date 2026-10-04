@@ -1,8 +1,8 @@
 {
   "schemaVersion": 1,
   "locale": "zh-TW",
-  "keyCount": 3544,
-  "keyFingerprint": "f2ff95341fae263d54efeae1d6ef9ab2e4aa1fd5d442449d1cc5246156436d3a",
+  "keyCount": 3547,
+  "keyFingerprint": "d198b84580b03a324c5e711bae3075dd5566c063a381dc69b591bdf1fc94a76f",
   "translations": {
     "buttons": {
       "addFileSubtask": "新增檔案子任務",
@@ -3079,6 +3079,7 @@
     },
     "taskEditor": {
       "activeTrackerReadOnly": "{{task}} 的計時器正在執行。請先停止再編輯。",
+      "addFileProperty": "新增現有屬性",
       "addNote": "新增筆記",
       "addSession": "新增會話",
       "appearance": "外觀",
@@ -3281,6 +3282,7 @@
       "moreValues": "還有 {{count}} 項",
       "namedColors": "命名顏色",
       "newOperonTaskFile": "新建 Operon 任務檔案",
+      "noAvailableFileProperties": "沒有可用屬性。",
       "noColorSelected": "未選擇顏色",
       "noMatchingMarkdownFiles": "沒有匹配的 Markdown 檔案",
       "noMatchingRepeatingFileTaskSeries": "沒有匹配的重複檔案任務系列",
@@ -3468,6 +3470,7 @@
       "searchBlockingTasks": "搜尋阻止的任務",
       "searchColor": "搜尋顏色",
       "searchContexts": "搜尋上下文",
+      "searchFileProperties": "搜尋現有屬性…",
       "searchIcon": "搜尋圖示",
       "searchLinks": "搜尋連結或貼上 URL",
       "searchOpenTasks": "搜尋未完成任務……",
@@ -3589,5 +3592,5 @@
       "toggleDescendantPreview": "切換子任務預覽"
     }
   },
-  "sourceVersion": "538c1ed014defac1a863ec5ee88e695de522b0b47eb1a9a17578cabee05db4c8"
+  "sourceVersion": "d57a51a4ef26dc03883faf72e107e1cfbb159c6fae29dd003626bad312187bf9"
 }

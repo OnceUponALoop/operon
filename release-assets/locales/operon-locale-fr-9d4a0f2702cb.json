@@ -1,8 +1,8 @@
 {
   "schemaVersion": 1,
   "locale": "fr",
-  "keyCount": 3544,
-  "keyFingerprint": "f2ff95341fae263d54efeae1d6ef9ab2e4aa1fd5d442449d1cc5246156436d3a",
+  "keyCount": 3547,
+  "keyFingerprint": "d198b84580b03a324c5e711bae3075dd5566c063a381dc69b591bdf1fc94a76f",
   "translations": {
     "buttons": {
       "addFileSubtask": "Ajouter une sous-tâche-fichier",
@@ -3079,6 +3079,7 @@
     },
     "taskEditor": {
       "activeTrackerReadOnly": "Minuteur actif pour {{task}}. Arrêtez-le avant de le modifier.",
+      "addFileProperty": "Ajouter une propriété existante",
       "addNote": "Ajouter une note",
       "addSession": "Ajouter une session",
       "appearance": "Apparence",
@@ -3281,6 +3282,7 @@
       "moreValues": "{{count}} de plus",
       "namedColors": "Couleurs nommées",
       "newOperonTaskFile": "Nouveau fichier de tâche Operon",
+      "noAvailableFileProperties": "Aucune propriété disponible.",
       "noColorSelected": "Aucune couleur sélectionnée",
       "noMatchingMarkdownFiles": "Aucun fichier Markdown correspondant",
       "noMatchingRepeatingFileTaskSeries": "Aucune série de tâches-fichiers récurrentes correspondante",
@@ -3468,6 +3470,7 @@
       "searchBlockingTasks": "Rechercher des tâches bloquantes",
       "searchColor": "Rechercher une couleur",
       "searchContexts": "Rechercher des contextes",
+      "searchFileProperties": "Rechercher des propriétés existantes…",
       "searchIcon": "Icône de recherche",
       "searchLinks": "Rechercher des liens ou coller une URL",
       "searchOpenTasks": "Rechercher des tâches ouvertes...",
@@ -3589,5 +3592,5 @@
       "toggleDescendantPreview": "Basculer l'aperçu des descendants"
     }
   },
-  "sourceVersion": "0a088475c8178d9b1f7aff86166786c6b2046bc9b03e1e02d9800242ac555249"
+  "sourceVersion": "910ae05264e09c80ec6a65c3907b2aec656cca9338428e4ca3dc6e4b6e0b371b"
 }

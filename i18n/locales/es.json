@@ -2566,6 +2566,9 @@
 		"invalidReminder": "Recordatorio no válido"
 	},
 	"taskEditor": {
+		"addFileProperty": "Añadir propiedad existente",
+		"searchFileProperties": "Buscar propiedades existentes…",
+		"noAvailableFileProperties": "No hay propiedades disponibles.",
 		"groupCommands": "Comandos",
 		"groupOverview": "Resumen",
 		"groupPlanning": "Planificación",

@@ -222,6 +222,20 @@ export function isEmptyTableFilePropertyValue(value: unknown): boolean {
 	return isEmptyFilePropertyValue(value);
 }
 
+/** Read all cached Markdown properties, including notes that are not Operon tasks. */
+export function createVaultFilePropertySnapshot(
+	app: App,
+	typeResolver: TableFilePropertyTypeResolver,
+	options: TableFilePropertySnapshotOptions = {},
+): TableFilePropertySnapshot {
+	const entries = app.vault.getMarkdownFiles().map(file => ({
+		path: file.path,
+		file,
+		frontmatter: new Map(Object.entries(app.metadataCache.getFileCache(file)?.frontmatter ?? {})),
+	}));
+	return buildTableFilePropertySnapshot(entries, 0, 0, typeResolver.getRevision?.() ?? 0, typeResolver, options);
+}
+
 export function createTableFilePropertyIndex(
 	app: App,
 	options: CreateTableFilePropertyIndexOptions = {},

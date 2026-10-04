@@ -1,8 +1,8 @@
 {
   "schemaVersion": 1,
   "locale": "it",
-  "keyCount": 3544,
-  "keyFingerprint": "f2ff95341fae263d54efeae1d6ef9ab2e4aa1fd5d442449d1cc5246156436d3a",
+  "keyCount": 3547,
+  "keyFingerprint": "d198b84580b03a324c5e711bae3075dd5566c063a381dc69b591bdf1fc94a76f",
   "translations": {
     "buttons": {
       "addFileSubtask": "Aggiungi sotto-attività-file",
@@ -3079,6 +3079,7 @@
     },
     "taskEditor": {
       "activeTrackerReadOnly": "Timer attivo per {{task}}. Arrestalo prima di modificarlo.",
+      "addFileProperty": "Aggiungi proprietà esistente",
       "addNote": "Aggiungi nota",
       "addSession": "Aggiungi sessione",
       "appearance": "Aspetto",
@@ -3281,6 +3282,7 @@
       "moreValues": "Altri {{count}}",
       "namedColors": "Colori con nome",
       "newOperonTaskFile": "Nuovo file di attività Operon",
+      "noAvailableFileProperties": "Nessuna proprietà disponibile.",
       "noColorSelected": "Nessun colore selezionato",
       "noMatchingMarkdownFiles": "Nessun file Markdown corrispondente",
       "noMatchingRepeatingFileTaskSeries": "Nessuna serie di attività-file ricorrenti corrispondente",
@@ -3468,6 +3470,7 @@
       "searchBlockingTasks": "Cerca attività bloccanti",
       "searchColor": "Cerca colore",
       "searchContexts": "Cerca contesti",
+      "searchFileProperties": "Cerca proprietà esistenti…",
       "searchIcon": "Cerca icona",
       "searchLinks": "Cerca collegamenti o incolla URL",
       "searchOpenTasks": "Cerca attività aperte...",
@@ -3589,5 +3592,5 @@
       "toggleDescendantPreview": "Alterna anteprima discendenti"
     }
   },
-  "sourceVersion": "6c1ddf1b50b72ef5ebc1b989470972772339d6e421d008d43717fab06a05ef42"
+  "sourceVersion": "76d5dd12d28b49e48c5b4b28b919c423c00788c27d35448171c8cba2b5090cec"
 }

@@ -1,8 +1,8 @@
 {
   "schemaVersion": 1,
   "locale": "ru",
-  "keyCount": 3544,
-  "keyFingerprint": "f2ff95341fae263d54efeae1d6ef9ab2e4aa1fd5d442449d1cc5246156436d3a",
+  "keyCount": 3547,
+  "keyFingerprint": "d198b84580b03a324c5e711bae3075dd5566c063a381dc69b591bdf1fc94a76f",
   "translations": {
     "buttons": {
       "addFileSubtask": "Добавить файловую подзадачу",
@@ -3079,6 +3079,7 @@
     },
     "taskEditor": {
       "activeTrackerReadOnly": "Активный таймер для {{task}}. Остановите его перед редактированием.",
+      "addFileProperty": "Добавить существующее свойство",
       "addNote": "Добавить заметку",
       "addSession": "Добавить сессию",
       "appearance": "Внешний вид",
@@ -3281,6 +3282,7 @@
       "moreValues": "Ещё {{count}}",
       "namedColors": "Именованные цвета",
       "newOperonTaskFile": "Новый файл задачи Operon",
+      "noAvailableFileProperties": "Нет доступных свойств.",
       "noColorSelected": "Цвет не выбран",
       "noMatchingMarkdownFiles": "Совпадающих файлов Markdown нет",
       "noMatchingRepeatingFileTaskSeries": "Совпадающих серий повторяющихся файловых задач нет",
@@ -3468,6 +3470,7 @@
       "searchBlockingTasks": "Поиск блокирующих задач",
       "searchColor": "Поиск цвета",
       "searchContexts": "Поиск контекстов",
+      "searchFileProperties": "Поиск существующих свойств…",
       "searchIcon": "Поиск значка",
       "searchLinks": "Поиск ссылок или вставка URL",
       "searchOpenTasks": "Поиск открытых задач...",
@@ -3589,5 +3592,5 @@
       "toggleDescendantPreview": "Переключить предпросмотр потомков"
     }
   },
-  "sourceVersion": "909441fe98988a17081eec6c2fd8fe31d4074ec2e9e2bbef0cd620ac63062b5b"
+  "sourceVersion": "521e8a9312a47de14a057deb9174b03e73e67d1db953507d74c67e3acc3d061a"
 }

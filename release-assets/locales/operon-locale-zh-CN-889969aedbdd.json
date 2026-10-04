@@ -1,8 +1,8 @@
 {
   "schemaVersion": 1,
   "locale": "zh-CN",
-  "keyCount": 3544,
-  "keyFingerprint": "f2ff95341fae263d54efeae1d6ef9ab2e4aa1fd5d442449d1cc5246156436d3a",
+  "keyCount": 3547,
+  "keyFingerprint": "d198b84580b03a324c5e711bae3075dd5566c063a381dc69b591bdf1fc94a76f",
   "translations": {
     "buttons": {
       "addFileSubtask": "添加文件子任务",
@@ -3079,6 +3079,7 @@
     },
     "taskEditor": {
       "activeTrackerReadOnly": "{{task}} 的计时器正在运行。请先停止再编辑。",
+      "addFileProperty": "添加现有属性",
       "addNote": "添加笔记",
       "addSession": "添加会话",
       "appearance": "外观",
@@ -3281,6 +3282,7 @@
       "moreValues": "还有 {{count}} 项",
       "namedColors": "命名颜色",
       "newOperonTaskFile": "新建 Operon 任务文件",
+      "noAvailableFileProperties": "没有可用属性。",
       "noColorSelected": "未选择颜色",
       "noMatchingMarkdownFiles": "没有匹配的 Markdown 文件",
       "noMatchingRepeatingFileTaskSeries": "没有匹配的重复文件任务系列",
@@ -3468,6 +3470,7 @@
       "searchBlockingTasks": "搜索阻止的任务",
       "searchColor": "搜索颜色",
       "searchContexts": "搜索上下文",
+      "searchFileProperties": "搜索现有属性…",
       "searchIcon": "搜索图标",
       "searchLinks": "搜索链接或粘贴 URL",
       "searchOpenTasks": "搜索未完成任务……",
@@ -3589,5 +3592,5 @@
       "toggleDescendantPreview": "切换子任务预览"
     }
   },
-  "sourceVersion": "1aad687690a767050d03ca6471fcfda59de1ced31ea3777305b296cf662c570c"
+  "sourceVersion": "e3b7c590ddbf4e072e540d5b35772bebcc64c5c745a8901ce9a2d83fffe0018a"
 }
