@@ -1,8 +1,8 @@
 {
   "schemaVersion": 1,
   "locale": "pt-BR",
-  "keyCount": 3549,
-  "keyFingerprint": "45933455f878f77dab1f4ed24c9ae668b63b93f586d63b00a3180246d29e8a67",
+  "keyCount": 3550,
+  "keyFingerprint": "71226da74e971e9e093af4fab345b810b712fd9c0c992e92e977f36e3b40e3ae",
   "translations": {
     "buttons": {
       "addFileSubtask": "Adicionar subtarefa em arquivo",
@@ -2824,6 +2824,7 @@
       "workspaceTweaksPropertiesScopeOperonFileTasks": "Apenas tarefas em arquivo Operon",
       "workspaceTweaksPropertiesSection": "Painel de propriedades",
       "workspaceTweaksRemovePropertiesExcludedFolder": "Remover pasta excluída",
+      "workspaceTweaksShowScrollbars": "Mostrar barras de rolagem",
       "workspaceTweaksWorkspaceSection": "Aparência do espaço de trabalho"
     },
     "table": {
@@ -3594,5 +3595,5 @@
       "toggleDescendantPreview": "Alternar visualização descendente"
     }
   },
-  "sourceVersion": "2e08a68454ca5f42e5903eec482d11b9b4cd17517794a64c184f38e23018acfc"
+  "sourceVersion": "b6568ccf196cc7ee6b2a48f08a004b28908ec05cc8e23b29eed6ff27adbff435"
 }

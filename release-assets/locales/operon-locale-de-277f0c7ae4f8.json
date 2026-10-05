@@ -1,8 +1,8 @@
 {
   "schemaVersion": 1,
   "locale": "de",
-  "keyCount": 3549,
-  "keyFingerprint": "45933455f878f77dab1f4ed24c9ae668b63b93f586d63b00a3180246d29e8a67",
+  "keyCount": 3550,
+  "keyFingerprint": "71226da74e971e9e093af4fab345b810b712fd9c0c992e92e977f36e3b40e3ae",
   "translations": {
     "buttons": {
       "addFileSubtask": "Datei-Unteraufgabe hinzufügen",
@@ -2824,6 +2824,7 @@
       "workspaceTweaksPropertiesScopeOperonFileTasks": "Nur Operon-Datei-Aufgaben",
       "workspaceTweaksPropertiesSection": "Eigenschaftenbereich",
       "workspaceTweaksRemovePropertiesExcludedFolder": "Ausgeschlossenen Ordner entfernen",
+      "workspaceTweaksShowScrollbars": "Bildlaufleisten anzeigen",
       "workspaceTweaksWorkspaceSection": "Arbeitsbereich-Darstellung"
     },
     "table": {
@@ -3594,5 +3595,5 @@
       "toggleDescendantPreview": "Vorschau untergeordneter Aufgaben umschalten"
     }
   },
-  "sourceVersion": "680b239ed4ba0475bddd49864766a7c2bee0e4e4219f02cf00cccc347e8611ce"
+  "sourceVersion": "d9d9c02786ace85db34c5dc6553eea859546ed7402656932ad82b68c89f6d796"
 }

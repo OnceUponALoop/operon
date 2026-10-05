@@ -272,6 +272,7 @@ export interface TaskEditorSubtaskRequest {
 
 export interface TaskEditorContentOptions {
 	onSetShowLineNumbers?: (visible: boolean) => Promise<void>;
+	onSetHideScrollbars?: (hidden: boolean) => Promise<void>;
 	focusDescriptionOnMount?: boolean;
 	selectDescriptionOnMount?: boolean;
 	subtaskActionKind?: 'inline' | 'file';
@@ -504,6 +505,9 @@ export class TaskEditorContent {
 	private indexUpdatesUnsubscribe: (() => void) | null = null;
 	private refreshCorePinControl: (() => void) | null = null;
 	private onSetShowLineNumbers: TaskEditorContentOptions['onSetShowLineNumbers'];
+	private onSetHideScrollbars: TaskEditorContentOptions['onSetHideScrollbars'];
+	private scrollbarsSavePending = false;
+	private scrollbarsObserver: MutationObserver | null = null;
 	private lineNumbersSavePending = false;
 	private refreshLineNumbersControl: (() => void) | null = null;
 	private bodyDropdowns: HTMLElement[] = [];
@@ -628,6 +632,7 @@ export class TaskEditorContent {
 		this.getDeleteDirectChildCount = options.getDeleteDirectChildCount ?? null;
 		this.onOpenSubtasksStats = options.onOpenSubtasksStats;
 		this.onSetShowLineNumbers = options.onSetShowLineNumbers;
+		this.onSetHideScrollbars = options.onSetHideScrollbars;
 		this.onUpdateExistingSubtaskParent = options.onUpdateExistingSubtaskParent ?? null;
 		this.getRepeatSkipDates = options.getRepeatSkipDates ?? null;
 		this.onUpdateRepeatSkips = options.onUpdateRepeatSkips ?? null;
@@ -2270,6 +2275,8 @@ export class TaskEditorContent {
 		this.mobileCoreButtonRefreshers.clear();
 		this.refreshCorePinControl = null;
 		this.refreshLineNumbersControl = null;
+		this.scrollbarsObserver?.disconnect();
+		this.scrollbarsObserver = null;
 		this.clearMobileCoreToolbarState();
 		this.clearInitialDescriptionFocusTimers();
 		window.removeEventListener('resize', this.mobileResizeHandler);
@@ -2339,6 +2346,8 @@ export class TaskEditorContent {
 		this.schedulingDraftRefreshers.clear();
 		this.refreshCorePinControl = null;
 		this.refreshLineNumbersControl = null;
+		this.scrollbarsObserver?.disconnect();
+		this.scrollbarsObserver = null;
 		this.refreshCoreTrackerControl = null;
 		this.refreshEstimateReallocationControl = null;
 		this.refreshTrackingSessionsSection = null;
@@ -2447,6 +2456,8 @@ export class TaskEditorContent {
 		this.mobileCoreButtonRefreshers.clear();
 		this.refreshCorePinControl = null;
 		this.refreshLineNumbersControl = null;
+		this.scrollbarsObserver?.disconnect();
+		this.scrollbarsObserver = null;
 		this.refreshCoreTrackerControl = null;
 		this.refreshEstimateReallocationControl = null;
 		this.workflowActionsEl = null;
@@ -3851,6 +3862,55 @@ export class TaskEditorContent {
 				});
 			});
 			this.refreshLineNumbersControl();
+		}
+
+
+		if (!Platform.isPhone && this.onSetHideScrollbars) {
+			const button = container.createEl('button', {
+				cls: 'operon-editor-core-action-btn operon-editor-core-scrollbars-action',
+				attr: { type: 'button' },
+			});
+			setIcon(button, 'mouse');
+			let tooltip = '';
+			const refresh = () => {
+				if (this.disposed) return;
+				const hidden = this.settings.workspaceTweaksHideScrollbars;
+				button.classList.toggle('is-active', hidden);
+				button.setAttr('aria-pressed', String(hidden));
+				button.setAttr('aria-disabled', String(this.scrollbarsSavePending));
+				const label = hidden ? t('settings', 'workspaceTweaksShowScrollbars') : t('settings', 'workspaceTweaksHideScrollbars');
+				setAccessibleLabelWithoutTooltip(button, label);
+				if (tooltip !== label) {
+					tooltip = label;
+					this.bindTaskEditorTooltip(button, label);
+				}
+			};
+			button.addEventListener('focus', refresh);
+			button.addEventListener('mouseenter', refresh);
+			button.addEventListener('click', () => {
+				runAsyncAction('task editor scrollbars setting save failed', async () => {
+					if (this.disposed || this.scrollbarsSavePending || !this.onSetHideScrollbars) return;
+					this.scrollbarsSavePending = true;
+					refresh();
+					try {
+						await this.onSetHideScrollbars(!this.settings.workspaceTweaksHideScrollbars);
+					} catch (error) {
+						new Notice(t('settings', 'settingsWriteProtected'));
+						throw error;
+					} finally {
+						this.scrollbarsSavePending = false;
+						refresh();
+					}
+				});
+			});
+			// Tweaks applies its shared setting to the document body, including external changes.
+			const Observer = button.ownerDocument.defaultView?.MutationObserver;
+			this.scrollbarsObserver?.disconnect();
+			if (Observer) {
+				this.scrollbarsObserver = new Observer(refresh);
+				this.scrollbarsObserver.observe(button.ownerDocument.body, { attributes: true, attributeFilter: ['class'] });
+			}
+			refresh();
 		}
 
 		const pinBtn = container.createEl('button', {

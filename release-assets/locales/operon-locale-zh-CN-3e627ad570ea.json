@@ -1,8 +1,8 @@
 {
   "schemaVersion": 1,
   "locale": "zh-CN",
-  "keyCount": 3549,
-  "keyFingerprint": "45933455f878f77dab1f4ed24c9ae668b63b93f586d63b00a3180246d29e8a67",
+  "keyCount": 3550,
+  "keyFingerprint": "71226da74e971e9e093af4fab345b810b712fd9c0c992e92e977f36e3b40e3ae",
   "translations": {
     "buttons": {
       "addFileSubtask": "添加文件子任务",
@@ -2824,6 +2824,7 @@
       "workspaceTweaksPropertiesScopeOperonFileTasks": "仅 Operon 文件任务",
       "workspaceTweaksPropertiesSection": "属性面板",
       "workspaceTweaksRemovePropertiesExcludedFolder": "移除排除的文件夹",
+      "workspaceTweaksShowScrollbars": "显示滚动条",
       "workspaceTweaksWorkspaceSection": "工作区外观"
     },
     "table": {
@@ -3594,5 +3595,5 @@
       "toggleDescendantPreview": "切换子任务预览"
     }
   },
-  "sourceVersion": "2a1a5937ce902e3377c1b65da7bfd518518ca474c82df72269b502ebc322b3f0"
+  "sourceVersion": "31b3a6ecf8060dc7984a51d0c02ad92114e82039df9ca8e3ccbb8783643a8850"
 }

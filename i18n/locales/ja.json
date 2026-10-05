@@ -846,6 +846,7 @@
 		"taskEditorHighlightActiveLineDesc": "Task Editor のファイル本文パネルで、カーソルのある行を強調表示します。",
 		"workspaceTweaksWorkspaceSection": "ワークスペースの外観",
 		"workspaceTweaksHideScrollbars": "スクロールバーを非表示",
+		"workspaceTweaksShowScrollbars": "スクロールバーを表示",
 		"workspaceTweaksHideScrollbarsDesc": "通常のスクロール動作を保ちつつ、Obsidian ワークスペース全体でスクロールバーを非表示にします。",
 		"workspaceTweaksCompactSidebarTabIcons": "コンパクトなサイドバータブアイコン",
 		"workspaceTweaksCompactSidebarTabIconsDesc": "サイドバーのタブ見出しを細くし、ホバーすると全体を表示します。デスクトップのみ。",

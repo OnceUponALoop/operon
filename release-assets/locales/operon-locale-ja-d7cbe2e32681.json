@@ -1,8 +1,8 @@
 {
   "schemaVersion": 1,
   "locale": "ja",
-  "keyCount": 3549,
-  "keyFingerprint": "45933455f878f77dab1f4ed24c9ae668b63b93f586d63b00a3180246d29e8a67",
+  "keyCount": 3550,
+  "keyFingerprint": "71226da74e971e9e093af4fab345b810b712fd9c0c992e92e977f36e3b40e3ae",
   "translations": {
     "buttons": {
       "addFileSubtask": "ファイルサブタスクを追加",
@@ -2824,6 +2824,7 @@
       "workspaceTweaksPropertiesScopeOperonFileTasks": "Operon ファイルタスクのみ",
       "workspaceTweaksPropertiesSection": "プロパティパネル",
       "workspaceTweaksRemovePropertiesExcludedFolder": "除外フォルダーを削除",
+      "workspaceTweaksShowScrollbars": "スクロールバーを表示",
       "workspaceTweaksWorkspaceSection": "ワークスペースの外観"
     },
     "table": {
@@ -3594,5 +3595,5 @@
       "toggleDescendantPreview": "子孫プレビューを切り替え"
     }
   },
-  "sourceVersion": "a824237b7c3d40610f58dfd5e18f17b4602ff3e24196df855a6822abe9dad3c4"
+  "sourceVersion": "29dda27d69077913705ef7274dedde43d3e527f42988bf9c42dcabd35d7ba5a0"
 }

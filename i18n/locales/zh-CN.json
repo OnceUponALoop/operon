@@ -846,6 +846,7 @@
 		"taskEditorHighlightActiveLineDesc": "在 Task Editor 的文件正文面板中突出显示光标所在的行。",
 		"workspaceTweaksWorkspaceSection": "工作区外观",
 		"workspaceTweaksHideScrollbars": "隐藏滚动条",
+		"workspaceTweaksShowScrollbars": "显示滚动条",
 		"workspaceTweaksHideScrollbarsDesc": "在整个 Obsidian 工作区隐藏滚动条，同时保持正常的滚动行为。",
 		"workspaceTweaksCompactSidebarTabIcons": "紧凑侧边栏标签图标",
 		"workspaceTweaksCompactSidebarTabIconsDesc": "缩窄侧栏标签页的图标和标题区域，悬停时显示完整区域。仅限桌面端。",

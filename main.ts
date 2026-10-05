@@ -23855,6 +23855,10 @@ export default class OperonPlugin extends Plugin {
 			onSetShowLineNumbers: async (visible: boolean): Promise<void> => {
 				await this.storage.updateSettings({ taskEditorShowLineNumbers: visible });
 			},
+			onSetHideScrollbars: async (hidden: boolean): Promise<void> => {
+				await this.storage.updateSettings({ workspaceTweaksHideScrollbars: hidden });
+				this.applyWorkspaceTweaks();
+			},
 			onRequestDelete: async (
 				parsedTask: ParsedTask,
 				expectedDirectChildCount: number,

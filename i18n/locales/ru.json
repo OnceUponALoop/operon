@@ -846,6 +846,7 @@
 		"taskEditorHighlightActiveLineDesc": "Выделять строку с курсором на панели содержимого файла в Task Editor.",
 		"workspaceTweaksWorkspaceSection": "Оформление рабочего пространства",
 		"workspaceTweaksHideScrollbars": "Скрыть полосы прокрутки",
+		"workspaceTweaksShowScrollbars": "Показать полосы прокрутки",
 		"workspaceTweaksHideScrollbarsDesc": "Скрыть полосы прокрутки во всём рабочем пространстве Obsidian, сохраняя обычное поведение прокрутки.",
 		"workspaceTweaksCompactSidebarTabIcons": "Компактные значки вкладок боковой панели",
 		"workspaceTweaksCompactSidebarTabIconsDesc": "Сужает заголовки вкладок боковых панелей и раскрывает их при наведении. Только на компьютере.",

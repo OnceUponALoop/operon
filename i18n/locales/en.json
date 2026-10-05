@@ -846,6 +846,7 @@
 		"taskEditorHighlightActiveLineDesc": "Highlight the line containing the cursor in the Task Editor file body panel.",
 		"workspaceTweaksWorkspaceSection": "Workspace Appearance",
 		"workspaceTweaksHideScrollbars": "Hide Scrollbars",
+		"workspaceTweaksShowScrollbars": "Show Scrollbars",
 		"workspaceTweaksHideScrollbarsDesc": "Hide scrollbars across the Obsidian workspace while keeping normal scrolling behavior.",
 		"workspaceTweaksCompactSidebarTabIcons": "Compact Sidebar Tab Icons",
 		"workspaceTweaksCompactSidebarTabIconsDesc": "Slim side dock tab icon/header strips and reveal the full tab area on hover. Desktop only.",

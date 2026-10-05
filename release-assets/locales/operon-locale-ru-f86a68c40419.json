@@ -1,8 +1,8 @@
 {
   "schemaVersion": 1,
   "locale": "ru",
-  "keyCount": 3549,
-  "keyFingerprint": "45933455f878f77dab1f4ed24c9ae668b63b93f586d63b00a3180246d29e8a67",
+  "keyCount": 3550,
+  "keyFingerprint": "71226da74e971e9e093af4fab345b810b712fd9c0c992e92e977f36e3b40e3ae",
   "translations": {
     "buttons": {
       "addFileSubtask": "Добавить файловую подзадачу",
@@ -2824,6 +2824,7 @@
       "workspaceTweaksPropertiesScopeOperonFileTasks": "Только файловые задачи Operon",
       "workspaceTweaksPropertiesSection": "Панель свойств",
       "workspaceTweaksRemovePropertiesExcludedFolder": "Удалить исключённую папку",
+      "workspaceTweaksShowScrollbars": "Показать полосы прокрутки",
       "workspaceTweaksWorkspaceSection": "Оформление рабочего пространства"
     },
     "table": {
@@ -3594,5 +3595,5 @@
       "toggleDescendantPreview": "Переключить предпросмотр потомков"
     }
   },
-  "sourceVersion": "037a955dcc4409680b5582c471f302d745930e518fa75f581aee848e035d6770"
+  "sourceVersion": "50203b9d12c4bc7ce7d0fe7d8d7a26d6c3703cb6b15ce24d2ddcd8a4e0dc9b42"
 }

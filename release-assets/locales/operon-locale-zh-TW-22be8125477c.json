@@ -1,8 +1,8 @@
 {
   "schemaVersion": 1,
   "locale": "zh-TW",
-  "keyCount": 3549,
-  "keyFingerprint": "45933455f878f77dab1f4ed24c9ae668b63b93f586d63b00a3180246d29e8a67",
+  "keyCount": 3550,
+  "keyFingerprint": "71226da74e971e9e093af4fab345b810b712fd9c0c992e92e977f36e3b40e3ae",
   "translations": {
     "buttons": {
       "addFileSubtask": "新增檔案子任務",
@@ -2824,6 +2824,7 @@
       "workspaceTweaksPropertiesScopeOperonFileTasks": "僅 Operon 檔案任務",
       "workspaceTweaksPropertiesSection": "屬性面板",
       "workspaceTweaksRemovePropertiesExcludedFolder": "移除排除的資料夾",
+      "workspaceTweaksShowScrollbars": "顯示捲動條",
       "workspaceTweaksWorkspaceSection": "工作區外觀"
     },
     "table": {
@@ -3594,5 +3595,5 @@
       "toggleDescendantPreview": "切換子任務預覽"
     }
   },
-  "sourceVersion": "aff6cebfb83e0cbbeb3a8f3525ad328d02e59d56930949481031454dd2d78231"
+  "sourceVersion": "40c20cb54517c4778ce72a4d842065bbaedbd669c6c09fe03a723e71bfc188d3"
 }

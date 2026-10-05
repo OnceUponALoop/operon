@@ -844,6 +844,7 @@
 		"taskEditorHighlightActiveLineDesc": "Die Zeile mit dem Cursor im Dateiinhalt des Task Editors hervorheben.",
 		"workspaceTweaksWorkspaceSection": "Arbeitsbereich-Darstellung",
 		"workspaceTweaksHideScrollbars": "Hide Scrollbars",
+		"workspaceTweaksShowScrollbars": "Bildlaufleisten anzeigen",
 		"workspaceTweaksHideScrollbarsDesc": "Blendet Scrollbars im gesamten Obsidian-Workspace aus, während normales Scrollen erhalten bleibt.",
 		"workspaceTweaksCompactSidebarTabIcons": "Compact Sidebar Tab Icons",
 		"workspaceTweaksCompactSidebarTabIconsDesc": "Verschmälert die Tab-Kopfleisten der Seitenleisten und zeigt sie beim Darüberfahren vollständig. Nur auf dem Desktop.",

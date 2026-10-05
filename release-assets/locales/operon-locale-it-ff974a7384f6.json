@@ -1,8 +1,8 @@
 {
   "schemaVersion": 1,
   "locale": "it",
-  "keyCount": 3549,
-  "keyFingerprint": "45933455f878f77dab1f4ed24c9ae668b63b93f586d63b00a3180246d29e8a67",
+  "keyCount": 3550,
+  "keyFingerprint": "71226da74e971e9e093af4fab345b810b712fd9c0c992e92e977f36e3b40e3ae",
   "translations": {
     "buttons": {
       "addFileSubtask": "Aggiungi sotto-attività-file",
@@ -2824,6 +2824,7 @@
       "workspaceTweaksPropertiesScopeOperonFileTasks": "Solo attività-file Operon",
       "workspaceTweaksPropertiesSection": "Pannello delle proprietà",
       "workspaceTweaksRemovePropertiesExcludedFolder": "Rimuovi cartella esclusa",
+      "workspaceTweaksShowScrollbars": "Mostra barre di scorrimento",
       "workspaceTweaksWorkspaceSection": "Aspetto dello spazio di lavoro"
     },
     "table": {
@@ -3594,5 +3595,5 @@
       "toggleDescendantPreview": "Alterna anteprima discendenti"
     }
   },
-  "sourceVersion": "f24c7c994a3e001a1eedb1f1c64b2821bf1234dbcb6f31eaf0566990d5f037e4"
+  "sourceVersion": "542880eb089d892e3714da4113910fc5ab1758dfd45fff6bfd302d84a9ac3ac9"
 }

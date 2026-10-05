@@ -846,6 +846,7 @@
 		"taskEditorHighlightActiveLineDesc": "Resaltar la línea que contiene el cursor en el panel del contenido del archivo de Task Editor.",
 		"workspaceTweaksWorkspaceSection": "Apariencia del espacio de trabajo",
 		"workspaceTweaksHideScrollbars": "Ocultar barras de desplazamiento",
+		"workspaceTweaksShowScrollbars": "Mostrar barras de desplazamiento",
 		"workspaceTweaksHideScrollbarsDesc": "Ocultar las barras de desplazamiento en todo el espacio de trabajo de Obsidian manteniendo el comportamiento normal de desplazamiento.",
 		"workspaceTweaksCompactSidebarTabIcons": "Iconos de pestaña compactos en la barra lateral",
 		"workspaceTweaksCompactSidebarTabIconsDesc": "Reduce las cabeceras de pestañas laterales y muestra el área completa al pasar el cursor. Solo en escritorio.",

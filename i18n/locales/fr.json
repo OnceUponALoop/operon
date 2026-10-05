@@ -846,6 +846,7 @@
 		"taskEditorHighlightActiveLineDesc": "Surligner la ligne contenant le curseur dans le panneau du contenu du fichier de Task Editor.",
 		"workspaceTweaksWorkspaceSection": "Apparence de l’espace de travail",
 		"workspaceTweaksHideScrollbars": "Hide Scrollbars",
+		"workspaceTweaksShowScrollbars": "Afficher les barres de défilement",
 		"workspaceTweaksHideScrollbarsDesc": "Masque les barres de défilement dans tout le workspace Obsidian tout en conservant le défilement normal.",
 		"workspaceTweaksCompactSidebarTabIcons": "Compact Sidebar Tab Icons",
 		"workspaceTweaksCompactSidebarTabIconsDesc": "Réduit les en-têtes des onglets latéraux et les affiche entièrement au survol. Sur ordinateur uniquement.",
