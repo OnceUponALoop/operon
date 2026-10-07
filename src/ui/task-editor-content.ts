@@ -5646,10 +5646,11 @@ export class TaskEditorContent {
 			duration.createSpan({ text: formatDurationHuman(session.durationSeconds) });
 		}
 		const body = row.createDiv('operon-editor-tracking-session-body');
-		body.createDiv({
+		const range = body.createDiv({
 			cls: 'operon-editor-tracking-session-range',
 			text: `${this.formatSessionTimestamp(session.start)} - ${this.formatSessionEnd(session.start, session.end)}`,
 		});
+		this.appendWeekdayHint(range, session.start);
 		if (!desktop) body.createDiv({
 			cls: 'operon-editor-tracking-session-duration',
 			text: formatDurationHuman(session.durationSeconds),
