@@ -5637,18 +5637,25 @@ export class TaskEditorContent {
 	}
 
 	private renderTrackingSessionRow(container: HTMLElement, session: TrackerSession): void {
+		const desktop = !Platform.isPhone;
 		const row = container.createDiv('operon-editor-tracking-session-row');
+		if (desktop) row.addClass('operon-editor-desktop-property-row');
+		const duration = desktop ? row.createDiv('operon-editor-desktop-property-label operon-editor-session-duration') : null;
+		if (duration) {
+			this.appendCanonicalIcon(duration, 'duration', 'operon-editor-desktop-property-icon has-value');
+			duration.createSpan({ text: formatDurationHuman(session.durationSeconds) });
+		}
 		const body = row.createDiv('operon-editor-tracking-session-body');
 		body.createDiv({
 			cls: 'operon-editor-tracking-session-range',
 			text: `${this.formatSessionTimestamp(session.start)} - ${this.formatSessionEnd(session.start, session.end)}`,
 		});
-		body.createDiv({
+		if (!desktop) body.createDiv({
 			cls: 'operon-editor-tracking-session-duration',
 			text: formatDurationHuman(session.durationSeconds),
 		});
 
-		const actions = row.createDiv('operon-editor-tracking-session-actions');
+		const actions = (desktop ? body : row).createDiv('operon-editor-tracking-session-actions');
 		const edit = this.createSessionActionButton(actions, 'pencil', t('taskEditor', 'editSession'));
 		edit.addEventListener('click', () => {
 			new TrackerSessionEditModal(this.app, {
@@ -5700,6 +5707,8 @@ export class TaskEditorContent {
 				},
 			}).open();
 		});
+
+		if (desktop) return;
 
 		const del = this.createSessionActionButton(actions, 'trash-2', t('taskEditor', 'removeSession'));
 		del.addClass('is-danger');
@@ -6928,7 +6937,8 @@ export class TaskEditorContent {
 		const date = parseLocalDatetime(value);
 		if (!date) return value;
 		const dateKey = value.substring(0, 10);
-		return `${formatTrackerDayHeader(this.app, dateKey)}, ${formatUiTime(this.app, this.settings, value)}`;
+		const dateLabel = Platform.isPhone ? formatTrackerDayHeader(this.app, dateKey) : formatUiDate(dateKey, this.settings);
+		return `${dateLabel}, ${formatUiTime(this.app, this.settings, value)}`;
 	}
 
 	private formatSessionEnd(start: string, end: string): string {

@@ -11030,6 +11030,64 @@ body .operon-task-editor button.operon-editor-tracking-sessions-add:disabled {
 	box-shadow: 0 0 0 2px var(--operon-task-editor-tracking-focus-ring);
 }
 
+
+/* Desktop sessions follow the same property/value columns as task metadata. */
+.operon-task-editor:not(.operon-task-editor-mobile) .operon-editor-tracking-session-row {
+	padding: 0;
+	border: 0;
+	box-shadow: none;
+}
+
+.operon-task-editor:not(.operon-task-editor-mobile) .operon-editor-session-duration {
+	padding-inline: 8px 0;
+}
+
+.operon-task-editor:not(.operon-task-editor-mobile) .operon-editor-tracking-session-body {
+	flex-direction: row;
+	align-items: center;
+	gap: 4px;
+	width: fit-content;
+	max-width: 100%;
+	box-sizing: border-box;
+	min-height: var(--operon-task-editor-property-control-height, 30px);
+	padding: 0 4px 0 8px;
+	border: 1px solid transparent;
+	border-radius: var(--operon-task-editor-control-radius, 6px);
+}
+
+.operon-task-editor:not(.operon-task-editor-mobile) .operon-editor-tracking-session-range {
+	min-width: 0;
+	font: inherit;
+	overflow-wrap: anywhere;
+}
+
+.operon-task-editor:not(.operon-task-editor-mobile) .operon-editor-tracking-session-row:is(:hover, :focus-within) .operon-editor-tracking-session-body {
+	border-color: var(--background-modifier-border);
+}
+
+body .operon-task-editor:not(.operon-task-editor-mobile) .operon-editor-tracking-session-action {
+	opacity: 0;
+	pointer-events: none;
+	width: 22px;
+	min-width: 22px;
+	height: 26px;
+	min-height: 26px;
+	border: 0;
+	box-shadow: none;
+}
+
+body .operon-task-editor:not(.operon-task-editor-mobile) .operon-editor-tracking-session-row:is(:hover, :focus-within) .operon-editor-tracking-session-action {
+	opacity: 1;
+	pointer-events: auto;
+}
+
+@media (hover: none) {
+	body .operon-task-editor:not(.operon-task-editor-mobile) .operon-editor-tracking-session-action {
+		opacity: 1;
+		pointer-events: auto;
+	}
+}
+
 .operon-editor-tracking-session-body {
 	display: flex;
 	flex-direction: column;
