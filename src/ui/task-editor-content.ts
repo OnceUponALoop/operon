@@ -991,6 +991,15 @@ export class TaskEditorContent {
 		button.createSpan({ text: options.text, cls: 'operon-editor-picker-button-text' });
 	}
 
+	private bindTruncatedTextTooltip(target: HTMLElement | null): void {
+		if (!target || Platform.isPhone) return;
+		bindOperonHoverTooltip(target, {
+			content: target.textContent ?? '',
+			taskColor: this.getThemeColor(),
+			shouldOpen: () => target.clientWidth > 0 && target.scrollWidth > target.clientWidth + 1,
+		});
+	}
+
 	private appendWeekdayHint(target: HTMLElement, value: string): void {
 		if (Platform.isPhone || !value) return;
 		const canonical = value.length === 10 ? `${value}T12:00:00`
@@ -2674,6 +2683,7 @@ export class TaskEditorContent {
 				colorRole: 'default',
 				linkTarget: null,
 			}, 'operon-editor-compact-selection-chip', { forceFull: true });
+			this.bindTruncatedTextTooltip(chip.querySelector<HTMLElement>('.operon-inline-compact-chip-label'));
 			if (mapping.type === 'date' || mapping.type === 'datetime') this.appendWeekdayHint(chip, value);
 			options.onActivate?.(chip, value);
    if (!onRemove) { container.appendChild(chip); continue; }
@@ -2856,6 +2866,7 @@ export class TaskEditorContent {
 				colorRole: 'default',
 				linkTarget: null,
 			}, 'operon-editor-compact-selection-chip', { forceFull: true });
+			this.bindTruncatedTextTooltip(chip.querySelector<HTMLElement>('.operon-inline-compact-chip-label'));
 			if (canonicalKey === 'assignees' && value.trim().startsWith('[[') && value.trim().endsWith(']]')) {
 				const target = value.trim().slice(2, -2).split('|')[0];
 				bindAssigneeChipImage(chip, { key: canonicalKey, linkTarget: target }, this.app, this.getCompactTextSourcePath(), this.settings.assigneeImageProperty);
@@ -2899,6 +2910,7 @@ export class TaskEditorContent {
 			colorRole: 'default',
 			linkTarget: null,
 		}, 'operon-editor-compact-selection-chip', { forceFull: true });
+		this.bindTruncatedTextTooltip(chip.querySelector<HTMLElement>('.operon-inline-compact-chip-label'));
 		const removeButton = chip.ownerDocument.win.createEl('button');
 		removeButton.type = 'button';
 		removeButton.className = 'operon-editor-compact-selection-chip-remove';
@@ -3553,6 +3565,7 @@ export class TaskEditorContent {
 		openLabel: () => void, openValue: () => void, canEdit: () => boolean,
 	): void {
 		setAccessibleLabelWithoutTooltip(label, label.textContent ?? '');
+		this.bindTruncatedTextTooltip(label.querySelector<HTMLElement>('.operon-editor-desktop-property-name'));
 		label.addEventListener('click', () => { if (!this.disposed && canEdit()) openLabel(); });
 		value.addEventListener('click', () => { if (canEdit()) this.propertyInteractionEpoch += 1; }, true);
 		value.tabIndex = 0;
@@ -4645,6 +4658,7 @@ export class TaskEditorContent {
 					colorRole: 'default',
 					linkTarget: null,
 				}, 'operon-editor-compact-selection-chip operon-editor-managed-task-data-chip', { forceFull: true });
+				this.bindTruncatedTextTooltip(chip.querySelector<HTMLElement>('.operon-inline-compact-chip-label'));
 				const removeButton = chip.ownerDocument.win.createEl('button');
 				removeButton.type = 'button';
 				removeButton.className = 'operon-editor-compact-selection-chip-remove';
@@ -6128,6 +6142,7 @@ export class TaskEditorContent {
 				locationMarkerIcon: match?.taskIcon ?? null,
 				locationMarkerColor: match?.taskColor ?? null,
 			}, 'operon-editor-compact-selection-chip', { forceFull: true });
+			this.bindTruncatedTextTooltip(chip.querySelector<HTMLElement>('.operon-inline-compact-chip-label'));
 			chip.style.setProperty('--operon-inline-chip-icon-color', match?.taskColor ?? this.getThemeColor());
 			const removeButton = chip.ownerDocument.win.createEl('button');
 			removeButton.type = 'button';
@@ -6290,6 +6305,7 @@ export class TaskEditorContent {
 					colorRole: 'default',
 					linkTarget: null,
 				}, 'operon-editor-compact-selection-chip', { forceFull: true });
+				this.bindTruncatedTextTooltip(chip.querySelector<HTMLElement>('.operon-inline-compact-chip-label'));
 				const removeButton = chip.ownerDocument.win.createEl('button');
 				removeButton.type = 'button';
 				removeButton.className = 'operon-editor-compact-selection-chip-remove';
