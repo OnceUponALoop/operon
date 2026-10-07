@@ -1,6 +1,7 @@
 import { App, Modal, Platform } from 'obsidian';
 import { createFloatingPanel, closeFloatingPanelsForRoot, requestFloatingInputFocus } from './field-pickers/common';
 import { t } from '../core/i18n';
+import { setAccessibleLabelWithoutTooltip } from './accessibility-label';
 import type { FilterSet } from '../types/settings';
 import type { EmbedFilterDeps, FilterSurfaceInstance } from './embed-filter-processor';
 import {
@@ -110,7 +111,7 @@ export function showSubtasksFilterPopover(anchor: HTMLElement, options: Subtasks
 	});
 	panel.tabIndex = -1;
 	panel.setAttribute('role', 'dialog');
-	panel.setAttribute('aria-label', t('filterSets', 'dynamicSubtasksFilterTitle'));
+	setAccessibleLabelWithoutTooltip(panel, t('filterSets', 'dynamicSubtasksFilterTitle'));
 	instance = createFilterSurfaceInstance(panel.createDiv('operon-subtasks-filter'));
 	const refresh = () => {
 		if (closed || !instance) return;
