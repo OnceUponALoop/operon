@@ -9349,11 +9349,6 @@ body.operon-subtasks-filter-modal-open .hover-popover {
 	justify-content: flex-end;
 }
 
-.operon-task-editor-project-serial-chip {
-	flex: 0 0 auto;
-	max-width: 140px;
-}
-
 .operon-task-editor-title {
 	display: inline-flex;
 	align-items: center;
@@ -12246,7 +12241,8 @@ body :is(.operon-editor-desktop-core-property, .operon-editor-desktop-commands) 
 	padding: 2px 0 4px;
 }
 
-body .operon-task-editor button.operon-task-editor-workflow-action-button {
+body .operon-task-editor button.operon-task-editor-workflow-action-button,
+body .operon-task-editor span.operon-editor-project-serial {
 	display: inline-flex;
 	align-items: center;
 	justify-content: center;
@@ -12274,7 +12270,8 @@ body .operon-task-editor button.operon-task-editor-workflow-action-button {
 
 body .operon-task-editor button.operon-task-editor-workflow-action-button:hover,
 body .operon-task-editor button.operon-task-editor-workflow-action-button:focus-visible,
-body .operon-task-editor button.operon-task-editor-workflow-action-button.is-picker-open {
+body .operon-task-editor button.operon-task-editor-workflow-action-button.is-picker-open,
+body .operon-task-editor span.operon-editor-project-serial:hover {
 	border-color: color-mix(in srgb, var(--operon-task-editor-accent, var(--interactive-accent)) 36%, var(--background-modifier-border));
 	background: transparent;
 	background-color: transparent;
@@ -12315,6 +12312,23 @@ body .operon-task-editor button.operon-task-editor-workflow-action-button.is-loc
 	width: 16px;
 	height: 16px;
 	flex: 0 0 16px;
+}
+
+body .operon-task-editor .operon-editor-description-actions .operon-editor-project-serial {
+	--operon-task-editor-header-action-width: auto;
+	max-width: 100%;
+	min-width: 0;
+	gap: 6px;
+	padding: 0 8px;
+	font-size: var(--font-ui-small);
+	cursor: default;
+}
+
+.operon-editor-project-serial-label {
+	min-width: 0;
+	overflow: hidden;
+	text-overflow: ellipsis;
+	white-space: nowrap;
 }
 
 .operon-task-editor-workflow-values {
@@ -35531,7 +35545,8 @@ body .operon-state-icon-setting:where(.operon-settings-scope, .operon-settings-s
 	gap: 12px;
 }
 
-body .operon-task-editor:not(.operon-task-editor-mobile) .operon-editor-desktop-group-header button.operon-task-editor-workflow-action-button {
+body .operon-task-editor:not(.operon-task-editor-mobile) .operon-editor-desktop-group-header button.operon-task-editor-workflow-action-button,
+body .operon-task-editor:not(.operon-task-editor-mobile) .operon-editor-desktop-group-header span.operon-editor-project-serial {
 	flex-basis: var(--operon-task-editor-header-action-width, 34px);
 	width: var(--operon-task-editor-header-action-width, 34px);
 	height: 30px;

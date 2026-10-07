@@ -123,7 +123,6 @@ import { getVisiblePropertyName } from '../core/yaml-fields';
 import { resolveTaskEditorProgressFromStats } from '../core/task-stats-read-model';
 import { resolveSubtaskActionIconForKind, resolveSubtaskActionLabelKeyForKind } from '../core/subtask-action';
 import { createInlineTaskCompactChipElement } from './compact-task-layout';
-import { createProjectSerialChipElement } from './project-serial-chip';
 import { INLINE_TASK_COMPACT_FALLBACK_ICONS, InlineTaskCompactChipKey, TASK_CREATOR_FALLBACK_FIELD_ICONS, TaskEditorWorkflowPickerItem } from '../types/settings';
 import { openTaskFieldPicker } from './task-field-picker-dispatch';
 import { getManagedTaskDataFieldPicker, type ManagedTaskDataFieldPicker } from './task-data-field-picker';
@@ -1372,8 +1371,7 @@ export class TaskEditorContent {
 			text: this.isNewTask ? t('modals', 'newTask') : t('modals', 'editTask'),
 			cls: 'operon-task-editor-title',
 		});
-		const titleRight = titleRow.createDiv('operon-task-editor-title-side is-right');
-		this.renderProjectSerialTitleChip(titleRight);
+		titleRow.createDiv('operon-task-editor-title-side is-right');
 
 		const primaryFields = container.createDiv('operon-task-editor-primary-fields');
 
@@ -1389,16 +1387,16 @@ export class TaskEditorContent {
 		this.renderActions(container);
 	}
 
-	private renderProjectSerialTitleChip(container: HTMLElement): void {
+	private renderProjectSerialControl(container: HTMLElement): void {
 		const operonId = this.taskOperonId?.trim();
 		if (!operonId) return;
 		const display = this.getProjectSerialDisplay?.(operonId) ?? null;
 		if (!display) return;
-		container.appendChild(createProjectSerialChipElement(
-			display,
-			'operon-task-editor-project-serial-chip operon-task-chip',
-			{ keyMappings: this.settings.keyMappings, owner: container },
-		));
+		const serial = container.createSpan('operon-task-editor-workflow-action-button operon-editor-project-serial');
+		const icon = serial.createSpan({ attr: { 'aria-hidden': 'true' } });
+		setIcon(icon, getConfiguredKeyMappingIcon('operonId', this.settings.keyMappings) || 'fingerprint');
+		serial.createSpan({ cls: 'operon-editor-project-serial-label', text: display.label });
+		this.bindTaskEditorTooltip(serial, display.label);
 	}
 
 	private renderMobileTaskEditorBody(container: HTMLElement): void {
@@ -2721,6 +2719,7 @@ export class TaskEditorContent {
 			text: t('taskEditor', 'description'),
 		});
 		const descriptionActions = descriptionHeader.createDiv('operon-task-editor-workflow-actions operon-editor-description-actions');
+		this.renderProjectSerialControl(descriptionActions);
 		this.renderCopyOperonIdButton(descriptionActions);
 		this.renderDescription(descriptionGroup, false);
 
