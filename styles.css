@@ -11042,6 +11042,11 @@ body .operon-task-editor button.operon-editor-tracking-sessions-add:disabled {
 	padding-inline: 8px 0;
 }
 
+.operon-task-editor:not(.operon-task-editor-mobile) .operon-editor-tracking-session-row:hover .operon-editor-session-duration {
+	font-weight: var(--font-bold, 700);
+	text-decoration: none;
+}
+
 .operon-task-editor:not(.operon-task-editor-mobile) .operon-editor-tracking-session-body {
 	flex-direction: row;
 	align-items: center;
