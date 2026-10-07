@@ -956,7 +956,7 @@ export class TaskEditorContent {
 	private bindTaskEditorTooltip(target: HTMLElement, content: string): void {
 		bindOperonHoverTooltip(target, {
 			content,
-			taskColor: this.getThemeColor(),
+			taskColor: () => this.getThemeColor(),
 		});
 	}
 
@@ -995,7 +995,7 @@ export class TaskEditorContent {
 		if (!target || Platform.isPhone) return;
 		bindOperonHoverTooltip(target, {
 			content: target.textContent ?? '',
-			taskColor: this.getThemeColor(),
+			taskColor: () => this.getThemeColor(),
 			shouldOpen: () => target.clientWidth > 0 && target.scrollWidth > target.clientWidth + 1,
 		});
 	}
@@ -3401,7 +3401,7 @@ export class TaskEditorContent {
    const action = actions.createEl('button', { cls: 'operon-task-editor-workflow-action-button', attr: { type: 'button' } });
    setIcon(action, entry.field.icon); setAccessibleLabelWithoutTooltip(action, name);
    action.disabled = !this.canEditFileProperty(entry);
-   bindOperonHoverTooltip(action, { content: action.disabled ? t('taskEditor', 'filePropertyReadOnly', { name }) : name, taskColor: this.getThemeColor() });
+   bindOperonHoverTooltip(action, { content: action.disabled ? t('taskEditor', 'filePropertyReadOnly', { name }) : name, taskColor: () => this.getThemeColor() });
    action.addEventListener('click', () => this.openFilePropertyPicker(name));
    const row = group.createDiv('operon-editor-desktop-property-row'); row.dataset.propertyKey = entry.field.key;
    const label = row.createEl('button', { cls: 'operon-editor-desktop-property-label', attr: { type: 'button' } });
@@ -3439,7 +3439,7 @@ export class TaskEditorContent {
    this.setFilePropertyValue(name, next);
    surface.action.focus({ preventScroll: true });
   } : null, { values, onActivate: (chip, value) => {
-   if (!editable) { chip.setAttr('tabindex', '0'); chip.setAttr('aria-label', `${t('taskEditor', 'filePropertyReadOnly', { name })} ${this.formatCustomFieldDisplayValue(display, value)}`); bindOperonHoverTooltip(chip, { content: t('taskEditor', 'filePropertyReadOnly', { name }), taskColor: this.getThemeColor() }); return; }
+   if (!editable) { chip.setAttr('tabindex', '0'); chip.setAttr('aria-label', `${t('taskEditor', 'filePropertyReadOnly', { name })} ${this.formatCustomFieldDisplayValue(display, value)}`); bindOperonHoverTooltip(chip, { content: t('taskEditor', 'filePropertyReadOnly', { name }), taskColor: () => this.getThemeColor() }); return; }
    chip.setAttr('tabindex', '0'); chip.setAttr('role', 'button'); setAccessibleLabelWithoutTooltip(chip, `${name}: ${this.formatCustomFieldDisplayValue(display, value)}`);
    const open = () => this.openFilePropertyPicker(name, value, 'popover', chip);
    chip.addEventListener('click', event => { if (!(event.target as HTMLElement).closest('button')) open(); });
@@ -4544,7 +4544,7 @@ export class TaskEditorContent {
 				if (fieldKey === 'reminderRules') bindOperonHoverTooltip(chip, {
 					title: display.tooltipTitle,
 					content: display.tooltipContent,
-					taskColor: this.getThemeColor(),
+					taskColor: () => this.getThemeColor(),
 				});
 				chip.addEventListener('click', event => {
 					event.preventDefault();
@@ -5045,7 +5045,7 @@ export class TaskEditorContent {
 				content: key === 'datetimeEnd' && !hasStart
 					? t('taskEditor', 'datetimeEndRequiresStart')
 					: '',
-				taskColor: this.getThemeColor(),
+				taskColor: () => this.getThemeColor(),
 			});
 			this.setPickerButtonContent(button, {
 				canonicalKey: key,
@@ -5166,8 +5166,8 @@ export class TaskEditorContent {
 			const proposal = this.getEstimateReallocationProposal();
 			const tooltip = this.getEstimateReallocationTooltip();
 			button.disabled = !proposal;
-			bindOperonHoverTooltip(button, { content: tooltip, taskColor: this.getThemeColor() });
-			bindOperonHoverTooltip(actions, { content: tooltip, taskColor: this.getThemeColor() });
+			bindOperonHoverTooltip(button, { content: tooltip, taskColor: () => this.getThemeColor() });
+			bindOperonHoverTooltip(actions, { content: tooltip, taskColor: () => this.getThemeColor() });
 		};
 		button.addEventListener('click', () => {
 			void this.handleEstimateReallocationClick();
@@ -5368,7 +5368,7 @@ export class TaskEditorContent {
 			skipButton.disabled = true;
 			bindOperonHoverTooltip(skipButton, {
 				content: t('taskEditor', 'repeatSkipUnavailable'),
-				taskColor: this.getThemeColor(),
+				taskColor: () => this.getThemeColor(),
 			});
 			if (!raw) {
 				trigger.empty();
@@ -5409,7 +5409,7 @@ export class TaskEditorContent {
 					: canManageFutureSkips
 						? ''
 						: t('taskEditor', 'repeatSkipUnavailable'),
-				taskColor: this.getThemeColor(),
+				taskColor: () => this.getThemeColor(),
 			});
 		};
 
@@ -6563,7 +6563,7 @@ export class TaskEditorContent {
 			anchor.addClass('is-locked');
 			bindOperonHoverTooltip(anchor, {
 				content: t('taskEditor', 'subtasksSaveFirst'),
-				taskColor: this.getThemeColor(),
+				taskColor: () => this.getThemeColor(),
 			});
 			anchor.addEventListener('click', event => {
 				event.preventDefault();
@@ -6673,7 +6673,7 @@ export class TaskEditorContent {
 			parentAnchor.classList.toggle('is-locked', !!selectedParentId);
 			bindOperonHoverTooltip(parentAnchor, {
 				content: selectedParentId ? t('taskEditor', 'parentTaskClearFirst') : '',
-				taskColor: this.getThemeColor(),
+				taskColor: () => this.getThemeColor(),
 			});
 			if (!selectedParentId) return;
 			const task = this.indexer.getTask(selectedParentId);

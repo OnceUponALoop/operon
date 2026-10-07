@@ -9391,7 +9391,7 @@ body .operon-task-editor button.operon-task-editor-title-file-toggle {
 }
 
 body .operon-task-editor button.operon-task-editor-title-file-toggle {
-	color: var(--operon-task-editor-accent, var(--interactive-accent));
+	color: var(--text-muted);
 }
 
 .operon-task-editor-title-file-toggle svg {
