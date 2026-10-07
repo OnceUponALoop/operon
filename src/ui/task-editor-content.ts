@@ -3278,7 +3278,7 @@ export class TaskEditorContent {
 			this.renderDesktopPropertyGroup(root, group.key, keys);
 		}
 		const customKeys = items.filter(item => !assigned.has(item.key)).map(item => item.key);
-		if (customKeys.length > 0) this.renderDesktopPropertyGroup(root, 'custom', customKeys);
+		this.renderDesktopPropertyGroup(root, 'custom', customKeys);
   this.mountDesktopFileProperties(root);
 		this.refreshDesktopPropertyRows();
 	}
@@ -3537,6 +3537,14 @@ export class TaskEditorContent {
 		header.createDiv({ text: t('taskEditor', `group${key.charAt(0).toUpperCase()}${key.slice(1)}`), cls: 'operon-editor-core-title-badge operon-editor-desktop-group-title' });
 		const actions = header.createDiv('operon-task-editor-workflow-actions');
 		this.renderWorkflowPickerActions(actions, keys.map(field => ({ key: field, visible: true })), false);
+		if (key === 'custom') {
+			const add = actions.createEl('button', { cls: 'operon-task-editor-workflow-action-button', attr: { type: 'button' } });
+			setIcon(add, 'plus');
+			setAccessibleLabelWithoutTooltip(add, t('taskEditor', 'addFileProperty'));
+			this.bindTaskEditorTooltip(add, t('taskEditor', 'addFileProperty'));
+			add.addEventListener('click', () => this.openCustomPropertyAddPicker(add, keys));
+		}
+
 		for (const field of keys) {
 			const row = group.createDiv('operon-editor-desktop-property-row');
 			row.dataset.propertyKey = field;
@@ -3563,6 +3571,38 @@ export class TaskEditorContent {
 				});
 			}
 		}
+	}
+
+	private openCustomPropertyAddPicker(anchor: HTMLButtonElement, keys: readonly string[]): void {
+		if (this.disposed) return;
+		this.closeActiveWorkflowActionPicker();
+		this.propertyInteractionEpoch += 1;
+		const fields = keys.filter(key => {
+			const mapping = getCustomFieldMapping(this.settings.keyMappings, key);
+			return mapping && isProjectedCustomFieldType(mapping) && !this.hasWorkflowPickerValue(key);
+		}).map(key => ({ field: key, label: this.getWorkflowPickerLabel(key), icon: this.resolveWorkflowPickerIcon(key) }));
+		let selected: string | null = null;
+		anchor.addClass('is-picker-open');
+		const closePicker = showSearchableFieldPicker(anchor, {
+			...resolveSurfaceFloatingHostOptions(anchor), value: null, fields,
+			placeholder: t('taskEditor', 'searchFileProperties'),
+			ariaLabel: t('taskEditor', 'addFileProperty'),
+			noMatchesText: t('taskEditor', 'noAvailableFileProperties'),
+			onSelect: option => { selected = option.field; },
+			onClose: () => {
+				anchor.removeClass('is-picker-open');
+				if (this.workflowActionPickerClose === closePicker) this.workflowActionPickerClose = null;
+				const key = selected;
+				const epoch = this.propertyInteractionEpoch;
+				getOwnerWindow(anchor).requestAnimationFrame(() => {
+					if (this.disposed || !anchor.isConnected || epoch !== this.propertyInteractionEpoch) return;
+					const button = key ? this.workflowActionButtons.get(key) : null;
+					if (key && button?.isConnected) this.openWorkflowPickerFromAction(key, button);
+					else anchor.focus({ preventScroll: true });
+				});
+			},
+		});
+		this.workflowActionPickerClose = closePicker;
 	}
 
 	private bindDesktopPropertyInteraction(
