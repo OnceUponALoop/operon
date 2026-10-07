@@ -4172,10 +4172,11 @@ export class TaskEditorContent {
 	}
 
 	private getWorkflowPickerLabel(key: string): string {
+		if (key === 'estimate') return t('settings', 'chipEstimate');
 		const coreLabels: Record<string, string> = {
 			taskIcon: 'taskIcon', taskColor: 'taskColor', status: 'status', priority: 'priority',
 			dateStarted: 'started', dateDue: 'dueDate', dateScheduled: 'scheduled',
-			datetimeStart: 'datetimeStart', datetimeEnd: 'datetimeEnd', estimate: 'estimateMinutesShort',
+			datetimeStart: 'datetimeStart', datetimeEnd: 'datetimeEnd',
 			repeat: 'repeat', dateCompleted: 'finished', dateCancelled: 'cancelled',
 		};
 		if (coreLabels[key]) return t('taskEditor', coreLabels[key]);
@@ -4527,7 +4528,7 @@ export class TaskEditorContent {
 				setAccessibleLabelWithoutTooltip(chip, display.ariaLabel);
 				chip.dataset.fieldKey = fieldKey;
 				chip.dataset.reminderIndex = String(index);
-				bindOperonHoverTooltip(chip, {
+				if (fieldKey === 'reminderRules') bindOperonHoverTooltip(chip, {
 					title: display.tooltipTitle,
 					content: display.tooltipContent,
 					taskColor: this.getThemeColor(),
