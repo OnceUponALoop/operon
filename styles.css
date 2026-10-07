@@ -16562,7 +16562,7 @@ body :is(
 }
 
 .operon-time-session-history-session-card:hover .operon-time-session-history-session-play.is-terminal-task,
-.operon-time-session-history-session-card:focus-within .operon-time-session-history-session-play.is-terminal-task,
+.operon-time-session-history-session-card:has(:focus-visible) .operon-time-session-history-session-play.is-terminal-task,
 .operon-time-session-history-session-play.is-terminal-task:focus-visible {
 	opacity: 1;
 	pointer-events: auto;
@@ -16587,8 +16587,8 @@ body :is(
 
 .operon-time-session-history-session-card:hover .operon-time-session-history-session-settings,
 .operon-time-session-history-session-card:hover .operon-time-session-history-session-count,
-.operon-time-session-history-session-card:focus-within .operon-time-session-history-session-settings,
-.operon-time-session-history-session-card:focus-within .operon-time-session-history-session-count,
+.operon-time-session-history-session-card:has(:focus-visible) .operon-time-session-history-session-settings,
+.operon-time-session-history-session-card:has(:focus-visible) .operon-time-session-history-session-count,
 .operon-time-session-history-session-settings:focus-visible {
 	opacity: 1;
 	pointer-events: auto;
@@ -16651,7 +16651,7 @@ body :is(
 
 .operon-time-session-history-view button.operon-time-session-history-session-interval-button:hover,
 .operon-time-session-history-session-card:hover .operon-time-session-history-session-interval-button,
-.operon-time-session-history-session-card:focus-within .operon-time-session-history-session-interval-button,
+.operon-time-session-history-session-card:has(:focus-visible) .operon-time-session-history-session-interval-button,
 .operon-time-session-history-view button.operon-time-session-history-session-interval-button:focus-visible {
 	background: transparent;
 	background-image: none;
@@ -16688,14 +16688,14 @@ body :is(
 
 .operon-time-session-history-view button.operon-time-session-history-session-interval-button:hover .operon-time-session-history-session-interval-primary,
 .operon-time-session-history-session-card:hover .operon-time-session-history-session-interval-primary,
-.operon-time-session-history-session-card:focus-within .operon-time-session-history-session-interval-primary,
+.operon-time-session-history-session-card:has(:focus-visible) .operon-time-session-history-session-interval-primary,
 .operon-time-session-history-view button.operon-time-session-history-session-interval-button:focus-visible .operon-time-session-history-session-interval-primary {
 	display: none;
 }
 
 .operon-time-session-history-view button.operon-time-session-history-session-interval-button:hover .operon-time-session-history-session-interval-detail,
 .operon-time-session-history-session-card:hover .operon-time-session-history-session-interval-detail,
-.operon-time-session-history-session-card:focus-within .operon-time-session-history-session-interval-detail,
+.operon-time-session-history-session-card:has(:focus-visible) .operon-time-session-history-session-interval-detail,
 .operon-time-session-history-view button.operon-time-session-history-session-interval-button:focus-visible .operon-time-session-history-session-interval-detail {
 	display: inline-flex;
 }
