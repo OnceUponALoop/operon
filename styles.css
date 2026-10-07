@@ -11157,6 +11157,11 @@ body .operon-task-editor button.operon-editor-tracking-session-action:is(:hover,
 	transform: none;
 }
 
+body .operon-task-editor:not(.operon-task-editor-mobile) button.operon-editor-tracking-session-action:hover:not(:focus-visible) {
+	border-color: transparent;
+	box-shadow: none;
+}
+
 body .operon-task-editor button.operon-editor-tracking-session-action.is-danger:is(:hover, :focus-visible) {
 	border-color: var(--operon-task-editor-tracking-danger-border);
 	color: var(--operon-task-editor-tracking-danger);
