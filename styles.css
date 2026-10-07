@@ -35953,6 +35953,7 @@ body .operon-task-editor:not(.operon-task-editor-mobile) button.operon-editor-va
 	display: none;
 }
 
+body .operon-task-editor:not(.operon-task-editor-mobile) .operon-editor-desktop-property-row.is-list-property .operon-editor-desktop-property-value :is(.operon-editor-compact-selection-chip-remove, .operon-editor-picker-chip-remove),
 body .operon-task-editor:not(.operon-task-editor-mobile) .operon-editor-desktop-property-row:is(:hover, :has(:focus-visible)) .operon-editor-desktop-property-value :is(.operon-editor-value-clear, .operon-editor-compact-selection-chip-remove, .operon-editor-picker-chip-remove) {
 	opacity: 1;
 	pointer-events: auto;

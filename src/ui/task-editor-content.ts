@@ -3404,6 +3404,7 @@ export class TaskEditorContent {
    bindOperonHoverTooltip(action, { content: action.disabled ? t('taskEditor', 'filePropertyReadOnly', { name }) : name, taskColor: () => this.getThemeColor() });
    action.addEventListener('click', () => this.openFilePropertyPicker(name));
    const row = group.createDiv('operon-editor-desktop-property-row'); row.dataset.propertyKey = entry.field.key;
+   row.toggleClass('is-list-property', entry.field.type === 'list');
    const label = row.createEl('button', { cls: 'operon-editor-desktop-property-label', attr: { type: 'button' } });
    setIcon(label.createSpan('operon-editor-desktop-property-icon'), entry.field.icon); label.createSpan({ text: name, cls: 'operon-editor-desktop-property-name' });
    const value = row.createDiv('operon-editor-desktop-property-value operon-editor-picker-selected operon-editor-custom-field-selection-row');
@@ -3539,6 +3540,10 @@ export class TaskEditorContent {
 		for (const field of keys) {
 			const row = group.createDiv('operon-editor-desktop-property-row');
 			row.dataset.propertyKey = field;
+			const listField = ['contexts', 'tags', 'links', 'assignees', 'subtasks', 'blocking', 'blockedBy', 'related', 'reminderDatetimes', 'reminderRules'].includes(field)
+				|| getCustomFieldMapping(this.settings.keyMappings, field)?.type === 'list'
+				|| getManagedTaskDataFieldPicker(field, this.settings.keyMappings)?.type === 'list';
+			row.toggleClass('is-list-property', listField);
 			const label = row.createEl('button', { cls: 'operon-editor-desktop-property-label', attr: { type: 'button' } });
 			setIcon(label.createSpan('operon-editor-desktop-property-icon'), this.resolveWorkflowPickerIcon(field));
 			label.createSpan({ text: this.getWorkflowPickerLabel(field), cls: 'operon-editor-desktop-property-name' });
