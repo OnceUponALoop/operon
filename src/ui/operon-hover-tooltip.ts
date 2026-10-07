@@ -150,7 +150,7 @@ export function bindOperonHoverTooltip(
 
 	if (!options.title && !options.content && !options.contentEl && !options.contentElFactory) return;
 	const ownerWindow = getOwnerWindow(target);
-	let dismissedInEditor = false;
+	let dismissedByAction = false;
 
 	const close = (): void => {
 		ownerWindow.removeEventListener('scroll', close, true);
@@ -163,15 +163,22 @@ export function bindOperonHoverTooltip(
 	};
 
 	const dismiss = (): void => {
-		dismissedInEditor = !!target.closest('.operon-task-editor');
+		dismissedByAction = true;
+		getOwnerDocument(target).addEventListener('keydown', resetKeyboardDismissal, true);
 		close();
 	};
 	const resetKeyboardDismissal = (event: KeyboardEvent): void => {
-		if (event.key === 'Tab') dismissedInEditor = false;
+		if (event.key !== 'Tab') return;
+		dismissedByAction = false;
+		getOwnerDocument(target).removeEventListener('keydown', resetKeyboardDismissal, true);
 	};
 	const open = (event?: Event): void => {
-		if (event?.type === 'mouseenter') dismissedInEditor = false;
-		if (dismissedInEditor) return;
+		if (event?.type === 'mouseenter') {
+			dismissedByAction = false;
+			getOwnerDocument(target).removeEventListener('keydown', resetKeyboardDismissal, true);
+		}
+		if (dismissedByAction) return;
+		if (event?.type === 'focusin' && !target.matches(':focus-visible') && !target.querySelector(':focus-visible')) return;
 		if (options.shouldOpen && !options.shouldOpen()) {
 			close();
 			return;
@@ -206,7 +213,7 @@ export function bindOperonHoverTooltip(
 		target.removeEventListener('mouseenter', open);
 		target.removeEventListener('mouseleave', close);
 		target.removeEventListener('pointerdown', dismiss, true);
-		target.removeEventListener('keydown', resetKeyboardDismissal);
+		getOwnerDocument(target).removeEventListener('keydown', resetKeyboardDismissal, true);
 		target.removeEventListener('click', dismiss, true);
 		target.removeEventListener('focusin', open);
 		target.removeEventListener('focusout', close);
@@ -217,7 +224,6 @@ export function bindOperonHoverTooltip(
 	target.addEventListener('mouseenter', open);
 	target.addEventListener('mouseleave', close);
 	target.addEventListener('pointerdown', dismiss, true);
-	target.addEventListener('keydown', resetKeyboardDismissal);
 	target.addEventListener('click', dismiss, true);
 	target.addEventListener('focusin', open);
 	target.addEventListener('focusout', close);
@@ -286,8 +292,28 @@ export function createOperonHoverTooltipShell(options: OperonHoverTooltipOptions
 	if (taskColor) wrapper.setCssProps({ '--operon-live-hover-border': taskColor });
 	wrapper.dataset.tooltipHorizontal = options.preferredHorizontal ?? 'auto';
 	wrapper.dataset.tooltipVertical = options.preferredVertical ?? 'auto';
-	wrapper.addEventListener('mouseenter', () => updateTooltipPlacement(wrapper));
+	const ownerDocument = getOwnerDocument(wrapper);
+	const resetDismissal = (): void => {
+		wrapper.classList.remove('is-tooltip-dismissed');
+		ownerDocument.removeEventListener('keydown', onKeyboardNavigation, true);
+	};
+	const onKeyboardNavigation = (event: KeyboardEvent): void => {
+		if (event.key === 'Tab') resetDismissal();
+	};
+	const dismiss = (): void => {
+		wrapper.classList.add('is-tooltip-dismissed');
+		ownerDocument.addEventListener('keydown', onKeyboardNavigation, true);
+	};
+	wrapper.addEventListener('mouseenter', () => {
+		resetDismissal();
+		updateTooltipPlacement(wrapper);
+	});
 	wrapper.addEventListener('focusin', () => updateTooltipPlacement(wrapper));
+	wrapper.addEventListener('pointerdown', dismiss, true);
+	wrapper.addEventListener('click', dismiss, true);
+	(wrapper as BoundTooltipTarget)._operonHoverCleanup = () => {
+		ownerDocument.removeEventListener('keydown', onKeyboardNavigation, true);
+	};
 	return wrapper;
 }
 

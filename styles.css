@@ -5542,8 +5542,8 @@ body .operon-searchable-option-picker-panel .operon-searchable-option-picker-ite
 }
 
 .operon-hover-tooltip-shell.is-tooltip-open .operon-hover-tooltip,
-.operon-hover-tooltip-shell:hover .operon-hover-tooltip,
-.operon-hover-tooltip-shell:focus-within .operon-hover-tooltip {
+.operon-hover-tooltip-shell:not(.is-tooltip-dismissed):hover .operon-hover-tooltip,
+.operon-hover-tooltip-shell:not(.is-tooltip-dismissed):has(:focus-visible) .operon-hover-tooltip {
 	opacity: 1;
 	--operon-tooltip-shift-y: 0px;
 	pointer-events: auto;
