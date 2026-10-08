@@ -93,6 +93,13 @@ function parseOrdinalDay(raw: string): number | null {
 	return Number.isInteger(day) && day >= 1 && day <= 31 ? day : null;
 }
 
+function parseOrdinalDays(raw: string): number[] | null {
+	const tokens = raw.trim().split(/\s*,\s*(?:and\s+)?|\s+and\s+/u);
+	const days = tokens.map(parseOrdinalDay);
+	if (!days.length || days.some(day => day === null)) return null;
+	return [...new Set(days as number[])].sort((left, right) => left - right);
+}
+
 function parseSetpos(raw: string): number | null {
 	switch (raw.trim()) {
 		case 'first':
@@ -215,19 +222,6 @@ export function parseTasksRecurrenceToOperon(
 		}, anchor.date);
 	}
 
-	const monthlyDayMatch = /^every(?:\s+(\d+))?\s+months?\s+on\s+the\s+(\d{1,2}(?:st|nd|rd|th))$/u.exec(ruleText);
-	if (monthlyDayMatch) {
-		const interval = parseInterval(monthlyDayMatch[1]);
-		const day = parseOrdinalDay(monthlyDayMatch[2]);
-		if (!interval || !day) return unsupported(leftover);
-		return serialize({
-			mode: 'schedule',
-			freq: 'month',
-			interval,
-			monthdays: [day],
-		}, anchor.date);
-	}
-
 	const monthlyLastWeekdayMatch = new RegExp(`^every(?:\\s+(\\d+))?\\s+months?\\s+on\\s+the\\s+last\\s+(${WEEKDAY_NAMES})$`, 'u').exec(ruleText);
 	if (monthlyLastWeekdayMatch) {
 		const interval = parseInterval(monthlyLastWeekdayMatch[1]);
@@ -257,10 +251,24 @@ export function parseTasksRecurrenceToOperon(
 		}, anchor.date);
 	}
 
+	const monthlyDayMatch = /^every(?:\s+(\d+))?\s+months?\s+on\s+the\s+(.+)$/u.exec(ruleText);
+	if (monthlyDayMatch) {
+		const interval = parseInterval(monthlyDayMatch[1]);
+		const days = parseOrdinalDays(monthlyDayMatch[2]);
+		if (!interval || !days) return unsupported(leftover);
+		return serialize({
+			mode: 'schedule',
+			freq: 'month',
+			interval,
+			monthdays: days,
+		}, anchor.date);
+	}
+
 	const simpleMonthMatch = /^every(?:\s+(\d+))?\s+months?$/u.exec(ruleText);
 	if (simpleMonthMatch) {
 		const interval = parseInterval(simpleMonthMatch[1]);
 		if (!interval) return unsupported(leftover);
+		if (anchor.day > 28) return unsupported(`${leftover} (month-end date adjustment cannot be preserved)`);
 		return serialize({
 			mode: 'schedule',
 			freq: 'month',
@@ -269,16 +277,16 @@ export function parseTasksRecurrenceToOperon(
 		}, anchor.date);
 	}
 
-	const yearlyMonthDayMatch = new RegExp(`^every\\s+(${MONTH_NAMES})\\s+on\\s+the\\s+(\\d{1,2}(?:st|nd|rd|th))$`, 'u').exec(ruleText);
+	const yearlyMonthDayMatch = new RegExp(`^every\\s+(${MONTH_NAMES})\\s+on\\s+the\\s+(.+)$`, 'u').exec(ruleText);
 	if (yearlyMonthDayMatch) {
 		const month = MONTH_BY_NAME[yearlyMonthDayMatch[1]];
-		const day = parseOrdinalDay(yearlyMonthDayMatch[2]);
-		if (!month || !day) return unsupported(leftover);
+		const days = parseOrdinalDays(yearlyMonthDayMatch[2]);
+		if (!month || !days) return unsupported(leftover);
 		return serialize({
 			mode: 'schedule',
 			freq: 'year',
 			interval: 1,
-			monthdays: [day],
+			monthdays: days,
 			month,
 		}, anchor.date);
 	}
@@ -287,6 +295,7 @@ export function parseTasksRecurrenceToOperon(
 	if (simpleYearMatch) {
 		const interval = parseInterval(simpleYearMatch[1]);
 		if (!interval) return unsupported(leftover);
+		if (anchor.month === 2 && anchor.day === 29) return unsupported(`${leftover} (leap-day date adjustment cannot be preserved)`);
 		return serialize({
 			mode: 'schedule',
 			freq: 'year',

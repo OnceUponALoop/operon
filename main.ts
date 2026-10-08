@@ -31636,6 +31636,7 @@ export default class OperonPlugin extends Plugin {
 		const conversionSourceLine = normalizedCheckboxLine ?? options.line;
 		const tasksEmojiConversion = convertTasksEmojiLineToOperon(conversionSourceLine, {
 			priorities: this.settings.priorities ?? DEFAULT_PRIORITIES,
+			legacyCustomCheckboxFallback: true,
 		});
 
 		if (tasksEmojiConversion.kind === 'converted') {

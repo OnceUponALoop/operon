@@ -158,7 +158,9 @@ export function applyTasksEmojiConversionToParsedTask(options: ApplyTasksEmojiCo
 	ensureRepeatSeriesId(options.task, options.repeatSeriesIdFactory);
 
 	if (options.leftovers.length > 0) {
-		setParsedTaskField(options.task, 'note', `Tasks syntax leftovers: ${options.leftovers.join(' | ')}`, 'text');
+		const existingNote = options.task.fields.find(field => field.key === 'note')?.value ?? '';
+		const explanation = `Tasks syntax leftovers: ${options.leftovers.join(' | ')}`;
+		setParsedTaskField(options.task, 'note', existingNote ? `${existingNote}\n${explanation}` : explanation, 'text');
 	}
 
 	return { ok: true };
