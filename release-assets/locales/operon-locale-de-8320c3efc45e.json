@@ -1,8 +1,8 @@
 {
   "schemaVersion": 1,
   "locale": "de",
-  "keyCount": 3600,
-  "keyFingerprint": "4c086fb049144b0114b0d03e7a8e014e8169038ea8c39de2b88f3350afbda287",
+  "keyCount": 3602,
+  "keyFingerprint": "76733abb454d783ebd0c3a21c6424cf8f77913c2830e2bbb14fcaac5c72df2b7",
   "translations": {
     "buttons": {
       "addFileSubtask": "Datei-Unteraufgabe hinzufügen",
@@ -2793,10 +2793,12 @@
       "tasksBulkRetryCleanup": "Bereinigung wiederholen",
       "tasksBulkRetryInspect": "Erneut prüfen",
       "tasksBulkRetryRefresh": "Ansichten erneut aktualisieren",
+      "tasksBulkReviewUnchanged": "Unveränderte Dateien prüfen",
       "tasksBulkRolledBack": "Keine Konvertierung verbleibt; Quellen wurden wiederhergestellt.",
       "tasksBulkScan": "Scannen",
       "tasksBulkScanning": "Scannen",
       "tasksBulkSettlementPending": "Quellen wurden verarbeitet, aber die Ansichtsaktualisierung steht aus. Konvertierung nicht wiederholen.",
+      "tasksBulkSkippedSource": "Weicht vom Scan ab und wird übersprungen: {{path}}",
       "tasksBulkSourceUnavailable": "Quelle nicht verfügbar: {{reason}}",
       "tasksBulkStopped": "Konvertierung wurde nicht angewendet.",
       "tasksBulkSubfolders": "Unterordner einschließen",
@@ -3645,5 +3647,5 @@
       "toggleDescendantPreview": "Vorschau untergeordneter Aufgaben umschalten"
     }
   },
-  "sourceVersion": "f24939bc418f35c1d823e103b15a0acb03b6375d6dd8495b27a515d9f78f5f87"
+  "sourceVersion": "07da584d1a7e1ae245c1df7028229d1a5c2cadc10fea5c0d1cca1b22568bf1b1"
 }

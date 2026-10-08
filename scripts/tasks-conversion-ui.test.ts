@@ -121,7 +121,7 @@ test('Settings entry is searchable render action without a persisted settings ke
 class TestElement {
  parentElement: TestElement | null = null;
  tagName: string; children: TestElement[] = []; dataset: Record<string, string> = {}; textContent = ''; disabled = false;
- checked = false; open = false; scrollTop = 0; attrs: Record<string, string> = {}; listeners = new Map<string, Array<() => void>>();
+ checked = false; open = false; scrollTop = 0; scrollLeft = 0; offsetHeight = 0; scrollHeight = 0; clientHeight = 0; focusVisible = true; cssProps: Record<string, string> = {}; attrs: Record<string, string> = {}; listeners = new Map<string, Array<() => void>>();
  constructor(tag: string, readonly ownerDocument: { activeElement: TestElement | null }) { this.tagName = tag.toUpperCase(); }
  createEl(tag: string, options: any = {}): any {
   const child = new TestElement(tag, this.ownerDocument); child.textContent = options.text ?? '';
@@ -130,6 +130,8 @@ class TestElement {
  }
  createSpan(options: any): any { return this.createEl('span', options); }
  createDiv(options: any = {}): any { return this.createEl('div', options); }
+ matches(selector: string): boolean { return selector === ':focus-visible' && this.focusVisible; }
+ setCssProps(props: Record<string, string>): void { Object.assign(this.cssProps, props); }
  setText(text: string): void { this.textContent = text; }
  setAttribute(key: string, value: string): void { this.attrs[key] = value; if (key === 'data-focus-key') this.dataset.focusKey = value; }
  addClass(): void {} removeClass(): void {} addEventListener(key: string, fn: () => void): void { this.listeners.set(key, [...(this.listeners.get(key) ?? []), fn]); }
@@ -524,4 +526,77 @@ test('plugin reuses its conversion session and refuses access while unloading', 
  h.startupReady = true; h.agentRuntimeLifecycle = { getPhase: () => 'ready' }; h.tasksConversionController = c;
  assert.equal(h.getTasksBulkConversion(), c); assert.equal(h.getTasksBulkConversion(), c);
  h.agentRuntimeLifecycle.getPhase = () => 'unloading'; assert.equal(h.getTasksBulkConversion(), null);
+});
+
+
+test('pointer scan does not transfer focus and preserves the outer Settings scroll through progress and completion', async () => {
+ const { f, c } = controller(); await c.initialize(); c.updateScope(f.scope);
+ const { root, doc, button } = settingsFixture(c);
+ const page = new TestElement('div', doc); page.children.push(root); root.parentElement = page;
+ page.scrollTop = 500; page.scrollLeft = 12; page.scrollHeight = 700; page.clientHeight = 400; root.offsetHeight = 140;
+ const empty = root.empty.bind(root);
+ root.empty = () => { empty(); page.scrollTop = 0; page.scrollLeft = 0; doc.activeElement = null; };
+ const scanButton = button('Scan'); scanButton.focusVisible = false; scanButton.focus();
+ await c.scan(); assert.equal(doc.activeElement, null); assert.equal(page.scrollTop, 500); assert.equal(page.scrollLeft, 12);
+ assert.equal(root.cssProps['--operon-conversion-min-height'], '340px');
+ page.scrollTop = 0; c.dismissConfirmation(); c.requestConfirmation(c.preview!);
+ assert.equal(root.cssProps['--operon-conversion-min-height'], '0px'); c.dismissConfirmation(); page.scrollTop = 500;
+ const apply = button('Apply'); apply.focusVisible = false; apply.focus(); c.requestConfirmation(c.preview!);
+ assert.equal(doc.activeElement, null); assert.equal(page.scrollTop, 500);
+});
+
+
+test('source conflict offers a fresh confirmation for unchanged files and replans cross-file dependencies', async () => {
+ const { f, c } = controller(fixture({ 'A.md': '- [ ] A 🆔 A', 'B.md': '- [ ] B ⛔ A', 'C.md': '- [ ] C 🆔 C' }));
+ await c.initialize(); c.updateScope(f.scope); await c.scan(); const original = c.preview!;
+ f.adapter.files.set('A.md', '- [ ] Changed A 🆔 A');
+ c.requestConfirmation(original); await c.confirm(original);
+ assert.deepEqual(f.adapter.writes, []); assert.deepEqual(c.result?.sourceConflicts, ['A.md']);
+ assert.ok(c.result?.message?.includes('A.md:1'));
+ const { button, root } = settingsFixture(c); assert.ok(button('ReviewUnchanged'));
+ c.reviewUnchangedSources(); const revised = c.preview!;
+ assert.equal(c.confirmation, revised); assert.equal(revised.selectedKeys.length, 2);
+ assert.deepEqual(revised.operonIds, original.operonIds.slice(1));
+ assert.equal(revised.scan.timestamp, original.scan.timestamp);
+ assert.ok(!revised.changes.find(file => file.path === 'B.md')!.after.includes('{{blockedBy::'));
+ assert.ok(root.allText.includes('Skipped because')); assert.deepEqual(f.adapter.writes, []);
+ await c.confirm(original); assert.deepEqual(f.adapter.writes, []);
+ await c.confirm(revised); assert.equal(c.result?.status, 'committed'); assert.equal(c.counts.converted, 2);
+ assert.equal(await f.adapter.read('A.md'), '- [ ] Changed A 🆔 A');
+ assert.equal(f.adapter.writes.filter(path => path === 'A.md').length, 0);
+ for (const change of revised.changes) assert.equal(await f.adapter.read(change.path), change.after);
+});
+test('fresh scans of an unchanged dependency source with frontmatter and punctuation apply without a false conflict', async () => {
+ const content = '---\nType: Test\n---\n,\n# Dependencies\n- [ ] First 🆔 example1\n- [ ] Next ⛔ example1, absent 📅 2026-10-12\n';
+ const { f, c } = controller(fixture({ 'Dependencies.md': content }));
+ await c.initialize(); c.updateScope(f.scope); await c.scan(); await c.scan();
+ c.requestConfirmation(c.preview!); await c.confirm(c.preview!);
+ assert.equal(c.result?.status, 'committed'); assert.equal(c.counts.converted, 2);
+});
+test('all changed files yield an empty revised scope and no write or stale confirmation', async () => {
+ const { f, c } = controller(); await c.initialize(); c.updateScope(f.scope); await c.scan();
+ for (const { path } of c.preview!.changes) f.adapter.files.set(path, 'User edit');
+ await c.apply(); assert.equal(c.result?.sourceConflicts?.length, 2); c.reviewUnchangedSources();
+ assert.equal(c.preview?.selectedKeys.length, 0); assert.equal(c.confirmation, null); assert.deepEqual(f.adapter.writes, []);
+});
+
+
+test('real adapter skips a conflicted source only after renewed confirmation and keeps unrelated bytes', async () => {
+ const root = await mkdtemp('/private/tmp/operon-conflict-continuation-');
+ try {
+  const adapter = new DiskAdapter(root);
+  const originals = { 'A.md': '- [ ] A 🆔 A\r\n', 'B.md': '- [ ] B ⛔ A\r\n', 'Unrelated.txt': 'Preserve these bytes\r\n' };
+  for (const [file, content] of Object.entries(originals)) await adapter.write(file, content);
+  const { c } = controller(wiredFixture(adapter)); await c.initialize();
+  c.updateScope({ files: ['A.md', 'B.md'], folders: [], includeSubfolders: false }); await c.scan();
+  const changed = '- [ ] A edited 🆔 A\r\n'; await adapter.write('A.md', changed); adapter.writes = [];
+  c.requestConfirmation(c.preview!); await c.confirm(c.preview!); assert.equal(adapter.writes.length, 0);
+  assert.deepEqual(c.result?.sourceConflicts, ['A.md']); c.reviewUnchangedSources();
+  const revised = c.preview!; assert.equal(revised.changes.length, 1); assert.equal(adapter.writes.length, 0);
+  c.dismissConfirmation(); await c.confirm(revised); assert.equal(adapter.writes.length, 0);
+  c.requestConfirmation(revised); await c.confirm(revised); assert.equal(c.result?.status, 'committed');
+  assert.equal(await adapter.read('A.md'), changed); assert.equal(await adapter.read('B.md'), revised.changes[0].after);
+  assert.equal(await adapter.read('Unrelated.txt'), originals['Unrelated.txt']);
+  assert.ok(adapter.writes.every(file => file === 'B.md' || file.startsWith('.test-config/plugins/operon/state/tasks-conversion/')));
+ } finally { await rm(root, { recursive: true, force: true }); }
 });

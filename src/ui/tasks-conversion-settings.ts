@@ -49,8 +49,14 @@ export class TasksConversionSettings {
  private render(): void {
   if (this.closed) return;
   const c = this.controller, doc = this.contentEl.ownerDocument;
-  const focused = this.contentEl.contains(doc.activeElement) ? (doc.activeElement as HTMLElement | null)?.dataset?.focusKey : undefined;
-  const scroll = this.contentEl.scrollTop;
+  const active = doc.activeElement as HTMLElement | null;
+  const focused = active && this.contentEl.contains(active) && active.matches(':focus-visible') ? active.dataset.focusKey : undefined;
+  const scroll: Array<{ element: HTMLElement; top: number; left: number }> = [];
+  for (let element: HTMLElement | null = this.contentEl; element; element = element.parentElement) {
+   scroll.push({ element, top: element.scrollTop, left: element.scrollLeft });
+  }
+  // Keep this mounted surface from collapsing beneath the Settings viewport.
+  this.contentEl.setCssProps({ '--operon-conversion-min-height': `${this.contentEl.offsetHeight}px` });
   this.contentEl.empty();
   if (c.error) this.contentEl.createEl('p', { text: c.error === 'settlement-pending' ? text('SettlementPending') : text('Error', { reason: c.error }), attr: { role: 'alert' } });
   if (c.busy) {
@@ -68,12 +74,15 @@ export class TasksConversionSettings {
    if (c.result) { this.renderCounts(this.contentEl); if (c.settlementPending.length) this.button(this.contentEl, 'RetryRefresh', () => c.retrySettlement()); }
    this.button(this.contentEl, 'RetryInspect', () => c.initialize());
   }
-  this.contentEl.scrollTop = scroll;
+  this.contentEl.setCssProps({ '--operon-conversion-min-height': '0px' });
+  const extra = Math.max(0, ...scroll.map(({ element, top }) => top - Math.max(0, element.scrollHeight - element.clientHeight)));
+  if (extra) this.contentEl.setCssProps({ '--operon-conversion-min-height': `${this.contentEl.offsetHeight + extra}px` });
   const controls = Array.from(this.contentEl.querySelectorAll<HTMLElement>('[data-focus-key]')).filter(el => !(el as HTMLButtonElement).disabled);
   const target = focused ? controls.find(el => el.dataset.focusKey === focused) : null;
   const fallback = controls.find(el => el.dataset.focusKey === (c.busy ? 'Cancel' : c.confirmation ? 'Dismiss' : c.result && !c.blocked ? 'New' : c.preview ? 'Apply' : 'AddFiles'))
    ?? controls.find(el => el.tagName === 'BUTTON' && !(el as HTMLButtonElement).disabled);
   if (focused) (target ?? fallback)?.focus({ preventScroll: true });
+  for (const { element, top, left } of scroll) { element.scrollTop = top; element.scrollLeft = left; }
  }
  private renderScope(): void {
   const c = this.controller, section = this.contentEl.createDiv({ cls: 'operon-tasks-conversion-section' });
@@ -102,7 +111,7 @@ export class TasksConversionSettings {
   const section = this.contentEl.createDiv({ cls: 'operon-tasks-conversion-section' });
   const vars = { count: String(preview.selectedKeys.length), files: String(preview.changes.length) };
   section.createEl('p', { text: text(preview.selectedKeys.length ? 'Summary' : 'Empty', vars), attr: { role: 'status', 'aria-live': 'polite' } });
-  const issues: string[] = [];
+  const issues = c.skippedSources.map(path => text('SkippedSource', { path }));
   for (const file of preview.scan.files) if (file.error) issues.push(`${file.path} · ${file.error === 'excluded' ? text('Excluded') : text('SourceUnavailable', { reason: file.error })}`);
   for (const row of preview.rows) {
    const reasons = [...row.warnings];
@@ -129,6 +138,7 @@ export class TasksConversionSettings {
   this.renderCounts(section);
   if (result.message) section.createEl('p', { text: text('Details', { reason: result.message }) });
   if (c.settlementPending.length) this.button(section, 'RetryRefresh', () => c.retrySettlement());
+  if (result.sourceConflicts?.length) this.button(section, 'ReviewUnchanged', () => c.reviewUnchangedSources(), c.blocked);
   if (!c.inspection) this.button(section, 'RetryInspect', () => c.initialize());
   this.button(section, 'New', () => c.reset(), c.blocked || !!c.settlementPending.length);
  }

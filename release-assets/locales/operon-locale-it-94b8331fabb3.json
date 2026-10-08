@@ -1,8 +1,8 @@
 {
   "schemaVersion": 1,
   "locale": "it",
-  "keyCount": 3600,
-  "keyFingerprint": "4c086fb049144b0114b0d03e7a8e014e8169038ea8c39de2b88f3350afbda287",
+  "keyCount": 3602,
+  "keyFingerprint": "76733abb454d783ebd0c3a21c6424cf8f77913c2830e2bbb14fcaac5c72df2b7",
   "translations": {
     "buttons": {
       "addFileSubtask": "Aggiungi sotto-attività-file",
@@ -2793,10 +2793,12 @@
       "tasksBulkRetryCleanup": "Riprova pulizia",
       "tasksBulkRetryInspect": "Verifica di nuovo",
       "tasksBulkRetryRefresh": "Riprova aggiornamento",
+      "tasksBulkReviewUnchanged": "Rivedi i file invariati",
       "tasksBulkRolledBack": "Nessuna conversione restante; le fonti sono state ripristinate.",
       "tasksBulkScan": "Analizza",
       "tasksBulkScanning": "Analisi",
       "tasksBulkSettlementPending": "Le fonti sono state elaborate, ma le viste devono essere aggiornate. Non ripetere la conversione.",
+      "tasksBulkSkippedSource": "Ignorato perché diverso dalla scansione: {{path}}",
       "tasksBulkSourceUnavailable": "Fonte non disponibile: {{reason}}",
       "tasksBulkStopped": "La conversione non è stata applicata.",
       "tasksBulkSubfolders": "Includi sottocartelle",
@@ -3645,5 +3647,5 @@
       "toggleDescendantPreview": "Alterna anteprima discendenti"
     }
   },
-  "sourceVersion": "8d71aab8d33be909c07dfbb205b1d364d972a02a8f5ea4041c92aaecaf5834f2"
+  "sourceVersion": "cce2dad27e7592f9a3d2e54569c2045a94266ef2fe2a184ad42e9426d913a8dc"
 }

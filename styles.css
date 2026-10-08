@@ -35758,6 +35758,8 @@ body .operon-state-icon-setting:where(.operon-settings-scope, .operon-settings-s
 
 /* Settings Tasks bulk conversion. */
 .operon-tasks-conversion-settings {
+ box-sizing: border-box;
+ min-height: var(--operon-conversion-min-height, 0px);
  padding: 0 var(--setting-items-padding-x, 24px) var(--size-4-4);
  font-size: var(--font-ui-small);
  line-height: var(--line-height-normal);

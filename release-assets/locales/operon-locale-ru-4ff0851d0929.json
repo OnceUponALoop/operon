@@ -1,8 +1,8 @@
 {
   "schemaVersion": 1,
   "locale": "ru",
-  "keyCount": 3600,
-  "keyFingerprint": "4c086fb049144b0114b0d03e7a8e014e8169038ea8c39de2b88f3350afbda287",
+  "keyCount": 3602,
+  "keyFingerprint": "76733abb454d783ebd0c3a21c6424cf8f77913c2830e2bbb14fcaac5c72df2b7",
   "translations": {
     "buttons": {
       "addFileSubtask": "Добавить файловую подзадачу",
@@ -2793,10 +2793,12 @@
       "tasksBulkRetryCleanup": "Повторить очистку",
       "tasksBulkRetryInspect": "Проверить снова",
       "tasksBulkRetryRefresh": "Повторить обновление",
+      "tasksBulkReviewUnchanged": "Проверить неизменённые файлы",
       "tasksBulkRolledBack": "Преобразование отменено; источники восстановлены.",
       "tasksBulkScan": "Сканировать",
       "tasksBulkScanning": "Сканирование",
       "tasksBulkSettlementPending": "Источники обработаны, но представления ещё не обновлены. Не повторяйте преобразование.",
+      "tasksBulkSkippedSource": "Пропущен из-за отличия от результата сканирования: {{path}}",
       "tasksBulkSourceUnavailable": "Источник недоступен: {{reason}}",
       "tasksBulkStopped": "Преобразование не применено.",
       "tasksBulkSubfolders": "Включить подпапки",
@@ -3645,5 +3647,5 @@
       "toggleDescendantPreview": "Переключить предпросмотр потомков"
     }
   },
-  "sourceVersion": "48561013308f3344effdc5b02a292add8b48386031623eb2623eebca89f2d08e"
+  "sourceVersion": "3537bac1ce096caad1c78a2e2e32dec8286c152398b23051d13e1ba6023bb2bb"
 }

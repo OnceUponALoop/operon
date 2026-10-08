@@ -2207,7 +2207,9 @@
 		"tasksBulkConfirmApply": "Преобразовать",
 		"tasksBulkDismiss": "Назад",
 		"tasksBulkIssues": "Предупреждения ({{count}})",
-		"tasksBulkUnavailable": "Преобразование доступно, когда Operon готов."
+		"tasksBulkUnavailable": "Преобразование доступно, когда Operon готов.",
+		"tasksBulkReviewUnchanged": "Проверить неизменённые файлы",
+		"tasksBulkSkippedSource": "Пропущен из-за отличия от результата сканирования: {{path}}"
 	},
 	"buttons": {
 		"ok": "ОК",

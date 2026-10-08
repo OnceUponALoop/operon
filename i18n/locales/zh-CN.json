@@ -2207,7 +2207,9 @@
 		"tasksBulkConfirmApply": "转换",
 		"tasksBulkDismiss": "返回",
 		"tasksBulkIssues": "警告（{{count}}）",
-		"tasksBulkUnavailable": "Operon 准备就绪后即可转换。"
+		"tasksBulkUnavailable": "Operon 准备就绪后即可转换。",
+		"tasksBulkReviewUnchanged": "检查未更改的文件",
+		"tasksBulkSkippedSource": "因与扫描时不同而跳过：{{path}}"
 	},
 	"buttons": {
 		"ok": "确定",

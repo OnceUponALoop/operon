@@ -1,8 +1,8 @@
 {
   "schemaVersion": 1,
   "locale": "zh-TW",
-  "keyCount": 3600,
-  "keyFingerprint": "4c086fb049144b0114b0d03e7a8e014e8169038ea8c39de2b88f3350afbda287",
+  "keyCount": 3602,
+  "keyFingerprint": "76733abb454d783ebd0c3a21c6424cf8f77913c2830e2bbb14fcaac5c72df2b7",
   "translations": {
     "buttons": {
       "addFileSubtask": "新增檔案子任務",
@@ -2793,10 +2793,12 @@
       "tasksBulkRetryCleanup": "重試清理",
       "tasksBulkRetryInspect": "重新檢查",
       "tasksBulkRetryRefresh": "重試重新整理檢視",
+      "tasksBulkReviewUnchanged": "檢查未變更的檔案",
       "tasksBulkRolledBack": "轉換已撤銷，來源已還原。",
       "tasksBulkScan": "掃描",
       "tasksBulkScanning": "正在掃描",
       "tasksBulkSettlementPending": "來源已處理，但檢視仍需重新整理。請勿重複轉換。",
+      "tasksBulkSkippedSource": "因與掃描時不同而略過：{{path}}",
       "tasksBulkSourceUnavailable": "來源無法使用：{{reason}}",
       "tasksBulkStopped": "未套用轉換。",
       "tasksBulkSubfolders": "包含子資料夾",
@@ -3645,5 +3647,5 @@
       "toggleDescendantPreview": "切換子任務預覽"
     }
   },
-  "sourceVersion": "2fb15781cd472f3e44d94023bc5cd0cfd62ad50937a1fa7dde92b4f0b6dab8cb"
+  "sourceVersion": "a5b2580a6edb9a213588cfed22cc3ba47350af979b21232607b6ff89f7c8aed6"
 }

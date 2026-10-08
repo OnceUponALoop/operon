@@ -1,8 +1,8 @@
 {
   "schemaVersion": 1,
   "locale": "tr",
-  "keyCount": 3600,
-  "keyFingerprint": "4c086fb049144b0114b0d03e7a8e014e8169038ea8c39de2b88f3350afbda287",
+  "keyCount": 3602,
+  "keyFingerprint": "76733abb454d783ebd0c3a21c6424cf8f77913c2830e2bbb14fcaac5c72df2b7",
   "translations": {
     "buttons": {
       "addFileSubtask": "Dosya Tipi Alt Görev Ekle",
@@ -2793,10 +2793,12 @@
       "tasksBulkRetryCleanup": "Temizliği tekrar dene",
       "tasksBulkRetryInspect": "Yeniden kontrol et",
       "tasksBulkRetryRefresh": "Görünüm yenilemesini tekrar dene",
+      "tasksBulkReviewUnchanged": "Değişmeyen dosyalarla devam et",
       "tasksBulkRolledBack": "Dönüşüm uygulanmadı; kaynaklar eski durumuna döndürüldü.",
       "tasksBulkScan": "Tara",
       "tasksBulkScanning": "Taranıyor",
       "tasksBulkSettlementPending": "Kaynaklar işlendi, ancak görünüm yenilemesi bekliyor. Dönüşümü tekrarlamayın.",
+      "tasksBulkSkippedSource": "Taramadan farklı olduğu için atlandı: {{path}}",
       "tasksBulkSourceUnavailable": "Kaynak kullanılamıyor: {{reason}}",
       "tasksBulkStopped": "Dönüşüm uygulanmadı.",
       "tasksBulkSubfolders": "Alt klasörleri dahil et",
@@ -3645,5 +3647,5 @@
       "toggleDescendantPreview": "Alt görev önizlemesini aç/kapat"
     }
   },
-  "sourceVersion": "77de9ecc43e995645a9a81a870f3a51620ee93a986b4767ffb5aeefdae50a858"
+  "sourceVersion": "0bdc2f71169e02fba51121dd7e7d7960929dd98e1c633c94597adb55315e1d1f"
 }

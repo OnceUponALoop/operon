@@ -2207,7 +2207,9 @@
 		"tasksBulkConfirmApply": "Converti",
 		"tasksBulkDismiss": "Indietro",
 		"tasksBulkIssues": "Avvisi ({{count}})",
-		"tasksBulkUnavailable": "La conversione sarà disponibile quando Operon sarà pronto."
+		"tasksBulkUnavailable": "La conversione sarà disponibile quando Operon sarà pronto.",
+		"tasksBulkReviewUnchanged": "Rivedi i file invariati",
+		"tasksBulkSkippedSource": "Ignorato perché diverso dalla scansione: {{path}}"
 	},
 	"buttons": {
 		"ok": "OK",

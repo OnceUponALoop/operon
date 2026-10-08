@@ -38,6 +38,7 @@ export class TasksConversionController {
  scope: TasksConversionScope = { files: [], folders: [], includeSubfolders: true };
  preview: TasksConversionPreview | null = null;
  confirmation: TasksConversionPreview | null = null;
+ skippedSources: string[] = [];
  inspection: TasksConversionInspection | null = null;
  result: TasksConversionResult | null = null;
  busy = false;
@@ -70,7 +71,7 @@ export class TasksConversionController {
  updateScope(scope: TasksConversionScope): void {
   if (this.busy || this.blocked) return;
   this.scope = { files: [...new Set(scope.files)].sort(), folders: [...new Set(scope.folders)].sort(), includeSubfolders: scope.includeSubfolders };
-  this.preview = null; this.confirmation = null; this.result = null; this.error = null; this.emit();
+  this.skippedSources = []; this.preview = null; this.confirmation = null; this.result = null; this.error = null; this.emit();
  }
  select(keys: readonly string[]): void {
   if (this.busy || this.blocked || this.result || !this.preview) return;
@@ -88,7 +89,7 @@ export class TasksConversionController {
  async scan(): Promise<void> {
   if (this.blocked || (!this.scope.files.length && !this.scope.folders.length)) return;
   await this.run('scan', async () => {
-   this.result = null; this.preview = null;
+   this.skippedSources = []; this.result = null; this.preview = null;
    const scan = await this.deps.service.scan(this.scope, { signal: this.abort!.signal, onProgress: progress => { this.progress = progress; this.emit(); } });
    if (!this.cancelled && this.available) this.preview = this.deps.service.preview(scan);
   });
@@ -104,6 +105,14 @@ export class TasksConversionController {
     await this.inspectAndSettle(this.result.paths);
    }, preview.changes);
   });
+ }
+ reviewUnchangedSources(): void {
+  if (this.busy || this.blocked || !this.available || !this.preview || this.result?.status !== 'not-applied' || !this.result.sourceConflicts?.length) return;
+  const conflicts = new Set(this.result.sourceConflicts);
+  const preview = this.deps.service.preview(this.preview.scan, this.preview.rows.filter(row => row.selected && !conflicts.has(row.path)).map(row => row.key));
+  this.skippedSources = [...new Set([...this.skippedSources, ...conflicts])];
+  this.preview = preview; this.result = null; this.error = null; this.confirmation = null;
+  this.confirmation = preview.selectedKeys.length && !preview.errors.length ? preview : null; this.emit();
  }
  async resolve(action: 'restore' | 'keep' | 'cleanup'): Promise<void> {
   const inspection = this.inspection;
@@ -133,7 +142,7 @@ export class TasksConversionController {
  }
  reset(): void {
   if (this.busy || this.blocked || this.settlementPending.length) return;
-  this.preview = null; this.confirmation = null; this.result = null; this.verifiedCounts = null; this.error = null; this.progress = null; this.emit();
+  this.skippedSources = []; this.preview = null; this.confirmation = null; this.result = null; this.verifiedCounts = null; this.error = null; this.progress = null; this.emit();
  }
  private async inspectAndSettle(paths: readonly string[], refresh = true): Promise<void> {
   const written = refresh && (!!this.result?.sourcesTouched || !!this.result?.sourcesCommitted || !!this.result && ['committed', 'rolled-back', 'restored', 'kept', 'recovery-required'].includes(this.result.status));

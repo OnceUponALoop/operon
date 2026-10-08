@@ -1,8 +1,8 @@
 {
   "schemaVersion": 1,
   "locale": "pt-BR",
-  "keyCount": 3600,
-  "keyFingerprint": "4c086fb049144b0114b0d03e7a8e014e8169038ea8c39de2b88f3350afbda287",
+  "keyCount": 3602,
+  "keyFingerprint": "76733abb454d783ebd0c3a21c6424cf8f77913c2830e2bbb14fcaac5c72df2b7",
   "translations": {
     "buttons": {
       "addFileSubtask": "Adicionar subtarefa em arquivo",
@@ -2793,10 +2793,12 @@
       "tasksBulkRetryCleanup": "Tentar limpeza novamente",
       "tasksBulkRetryInspect": "Verificar novamente",
       "tasksBulkRetryRefresh": "Tentar atualização novamente",
+      "tasksBulkReviewUnchanged": "Revisar arquivos sem alterações",
       "tasksBulkRolledBack": "Nenhuma conversão restante; as fontes foram restauradas.",
       "tasksBulkScan": "Analisar",
       "tasksBulkScanning": "Analisando",
       "tasksBulkSettlementPending": "As fontes foram processadas, mas falta atualizar as visualizações. Não repita a conversão.",
+      "tasksBulkSkippedSource": "Ignorado por diferir da verificação: {{path}}",
       "tasksBulkSourceUnavailable": "Fonte indisponível: {{reason}}",
       "tasksBulkStopped": "A conversão não foi aplicada.",
       "tasksBulkSubfolders": "Incluir subpastas",
@@ -3645,5 +3647,5 @@
       "toggleDescendantPreview": "Alternar visualização descendente"
     }
   },
-  "sourceVersion": "5634c3cf54afe942ec176dedf6f238bf7b07555e51d8166f04d81a3f4427da87"
+  "sourceVersion": "fb72ece9421e1ea63cce77cda2d5963e9eedeedb5789d03259e597c153887c63"
 }

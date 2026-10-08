@@ -1,8 +1,8 @@
 {
   "schemaVersion": 1,
   "locale": "es",
-  "keyCount": 3600,
-  "keyFingerprint": "4c086fb049144b0114b0d03e7a8e014e8169038ea8c39de2b88f3350afbda287",
+  "keyCount": 3602,
+  "keyFingerprint": "76733abb454d783ebd0c3a21c6424cf8f77913c2830e2bbb14fcaac5c72df2b7",
   "translations": {
     "buttons": {
       "addFileSubtask": "Añadir subtarea de archivo",
@@ -2793,10 +2793,12 @@
       "tasksBulkRetryCleanup": "Reintentar limpieza",
       "tasksBulkRetryInspect": "Comprobar de nuevo",
       "tasksBulkRetryRefresh": "Reintentar actualización",
+      "tasksBulkReviewUnchanged": "Revisar archivos sin cambios",
       "tasksBulkRolledBack": "No queda ninguna conversión; se restauraron las fuentes.",
       "tasksBulkScan": "Analizar",
       "tasksBulkScanning": "Analizando",
       "tasksBulkSettlementPending": "Las fuentes se procesaron, pero las vistas aún deben actualizarse. No repitas la conversión.",
+      "tasksBulkSkippedSource": "Omitido porque difiere del escaneo: {{path}}",
       "tasksBulkSourceUnavailable": "Fuente no disponible: {{reason}}",
       "tasksBulkStopped": "La conversión no se aplicó.",
       "tasksBulkSubfolders": "Incluir subcarpetas",
@@ -3645,5 +3647,5 @@
       "toggleDescendantPreview": "Alternar vista previa de descendientes"
     }
   },
-  "sourceVersion": "0b225d0b035e893e5ade3813fbd55da381b56d5ea2dec6326abc3f0b00483ef3"
+  "sourceVersion": "f95e6b33fcf88d68110276df6cc516b9133d1b541e8d917f29de5fa3f89de1fc"
 }

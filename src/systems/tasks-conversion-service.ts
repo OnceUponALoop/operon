@@ -33,6 +33,8 @@ export type TasksConversionOutcome = 'committed' | 'not-applied' | 'cancelled' |
 	| 'recovery-required' | 'kept' | 'restored' | 'cleanup-pending';
 export interface TasksConversionResult {
 	status: TasksConversionOutcome; taskCount: number; paths: string[]; message?: string; recordId?: string;
+	/** Confirmed preflight differences; no source or recovery writes have begun. */
+	sourceConflicts?: string[];
 	/** All planned source writes passed final verification, even if evidence cleanup failed. */
 	sourcesCommitted?: boolean;
 	/** A verified restore touched source files, including a pending evidence cleanup. */
@@ -135,9 +137,16 @@ export class TasksConversionService {
 					if (!settingsMatch()) {
 						return this.result('not-applied', record, 'Conversion settings changed; scan again');
 					}
-					for (const change of record.changes) if (await port.read(change.path) !== change.before) {
-						return this.result('not-applied', record, `Source changed: ${change.path}`);
+					const conflicts: string[] = [], details: string[] = [];
+					for (const change of record.changes) {
+						const current = await port.read(change.path);
+						if (current === change.before) continue;
+						let offset = 0;
+						while (offset < Math.min(current.length, change.before.length) && current[offset] === change.before[offset]) offset++;
+						conflicts.push(change.path);
+						details.push(`${change.path}:${change.before.slice(0, offset).split('\n').length}`);
 					}
+					if (conflicts.length) return { ...this.result('not-applied', record, `Source differs from scan: ${details.join('; ')}`), sourceConflicts: conflicts };
 					const inventory = await port.identities(record.keyMappings, undefined, scope), used = reserved(inventory);
 					if (!inventory.isCurrent() || inventory.unavailablePaths.length) return this.result('not-applied', record, 'Identity inventory is incomplete or changed');
 					const usedSeries = new Set([...inventory.reservedSeriesIds, ...inventory.sources.flatMap(source => source.repeatSeriesIds)]);

@@ -2207,7 +2207,9 @@
 		"tasksBulkConfirmApply": "Dönüştür",
 		"tasksBulkDismiss": "Vazgeç",
 		"tasksBulkIssues": "Uyarılar ({{count}})",
-		"tasksBulkUnavailable": "Operon hazır olduğunda dönüşüm kullanılabilir."
+		"tasksBulkUnavailable": "Operon hazır olduğunda dönüşüm kullanılabilir.",
+		"tasksBulkReviewUnchanged": "Değişmeyen dosyalarla devam et",
+		"tasksBulkSkippedSource": "Taramadan farklı olduğu için atlandı: {{path}}"
 	},
 	"buttons": {
 		"ok": "Tamam",

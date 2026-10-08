@@ -1,8 +1,8 @@
 {
   "schemaVersion": 1,
   "locale": "ja",
-  "keyCount": 3600,
-  "keyFingerprint": "4c086fb049144b0114b0d03e7a8e014e8169038ea8c39de2b88f3350afbda287",
+  "keyCount": 3602,
+  "keyFingerprint": "76733abb454d783ebd0c3a21c6424cf8f77913c2830e2bbb14fcaac5c72df2b7",
   "translations": {
     "buttons": {
       "addFileSubtask": "ファイルサブタスクを追加",
@@ -2793,10 +2793,12 @@
       "tasksBulkRetryCleanup": "削除を再試行",
       "tasksBulkRetryInspect": "再確認",
       "tasksBulkRetryRefresh": "表示の更新を再試行",
+      "tasksBulkReviewUnchanged": "変更のないファイルを確認",
       "tasksBulkRolledBack": "変換は残っていません。ソースを復元しました。",
       "tasksBulkScan": "スキャン",
       "tasksBulkScanning": "スキャン中",
       "tasksBulkSettlementPending": "ソースは処理済みですが、表示の更新が必要です。変換を繰り返さないでください。",
+      "tasksBulkSkippedSource": "スキャン時と異なるためスキップ: {{path}}",
       "tasksBulkSourceUnavailable": "ソースを利用できません: {{reason}}",
       "tasksBulkStopped": "変換を適用していません。",
       "tasksBulkSubfolders": "サブフォルダーを含める",
@@ -3645,5 +3647,5 @@
       "toggleDescendantPreview": "子孫プレビューを切り替え"
     }
   },
-  "sourceVersion": "d39bc814d19ff38dd551ee92f03532f256d774760fd104979982085e5db3bbea"
+  "sourceVersion": "0abee9bf8e1b7f96d0532183215cd00b369781993b5e7972c738ce18b5aa91b4"
 }

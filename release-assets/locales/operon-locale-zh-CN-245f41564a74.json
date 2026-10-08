@@ -1,8 +1,8 @@
 {
   "schemaVersion": 1,
   "locale": "zh-CN",
-  "keyCount": 3600,
-  "keyFingerprint": "4c086fb049144b0114b0d03e7a8e014e8169038ea8c39de2b88f3350afbda287",
+  "keyCount": 3602,
+  "keyFingerprint": "76733abb454d783ebd0c3a21c6424cf8f77913c2830e2bbb14fcaac5c72df2b7",
   "translations": {
     "buttons": {
       "addFileSubtask": "添加文件子任务",
@@ -2793,10 +2793,12 @@
       "tasksBulkRetryCleanup": "重试清理",
       "tasksBulkRetryInspect": "重新检查",
       "tasksBulkRetryRefresh": "重试刷新视图",
+      "tasksBulkReviewUnchanged": "检查未更改的文件",
       "tasksBulkRolledBack": "转换已撤销，源已恢复。",
       "tasksBulkScan": "扫描",
       "tasksBulkScanning": "正在扫描",
       "tasksBulkSettlementPending": "源已处理，但视图仍需刷新。请勿重复转换。",
+      "tasksBulkSkippedSource": "因与扫描时不同而跳过：{{path}}",
       "tasksBulkSourceUnavailable": "源不可用：{{reason}}",
       "tasksBulkStopped": "未应用转换。",
       "tasksBulkSubfolders": "包含子文件夹",
@@ -3645,5 +3647,5 @@
       "toggleDescendantPreview": "切换子任务预览"
     }
   },
-  "sourceVersion": "98fbb5c375ba6ce709a1efb9014c0346eccaacfac0791470f09fca235e6759f8"
+  "sourceVersion": "d5f5b2a7a408f1dff58a20446b2d9c84cb0431796dedeea89bad07b6d36cceca"
 }
