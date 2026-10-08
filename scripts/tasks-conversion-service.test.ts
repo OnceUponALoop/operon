@@ -50,8 +50,8 @@ export function wiredFixture(adapter: MemoryAdapter) {
 	const settings = structuredClone(DEFAULT_SETTINGS);
 	const buffers = new Map<string, string>();
 	const references: string[] = [], reservedSeriesIds: string[] = [];
-	const listeners = new Set<() => void>();
-	adapter.files.changed = name => { if (name.endsWith('.md')) for (const listener of listeners) listener(); };
+	const listeners = new Set<(file: TFile) => void>();
+	adapter.files.changed = name => { if (name.endsWith('.md')) for (const listener of listeners) listener(file(name)); };
 	const files = new Map<string, TFile>();
 	const file = (name: string) => {
 		let value = files.get(name);
@@ -60,8 +60,8 @@ export function wiredFixture(adapter: MemoryAdapter) {
 	};
 	const app = { vault: {
 		configDir: '.test-config', adapter,
-		on: (_event: string, listener: () => void) => { listeners.add(listener); return listener; },
-		offref: (listener: () => void) => listeners.delete(listener),
+		on: (_event: string, listener: (file: TFile) => void) => { listeners.add(listener); return listener; },
+		offref: (listener: (file: TFile) => void) => listeners.delete(listener),
 		getMarkdownFiles: () => [...adapter.files.keys()].filter(name => name.endsWith('.md')).map(file),
 		getAbstractFileByPath: (name: string) => adapter.files.has(name) ? file(name) : null,
 		read: (source: TFile) => adapter.read(source.path),
@@ -81,7 +81,9 @@ export function wiredFixture(adapter: MemoryAdapter) {
 		const snapshot = JSON.stringify([references, reservedSeriesIds]);
 		return { externalReferences: [...references], reservedSeriesIds: [...reservedSeriesIds],
 			isCurrent: () => snapshot === JSON.stringify([references, reservedSeriesIds]) };
-	});
+	}, undefined, () => ({ sources: [...adapter.files].filter(([name]) => name.endsWith('.md')).flatMap(([name, content]) => {
+		try { return collectTasksConversionIdentities(name, content, settings.keyMappings); } catch { return collectTasksConversionIdentities(name, content, settings.keyMappings, true); }
+	}), externalReferences: [...references], reservedSeriesIds: [...reservedSeriesIds] }));
 	const store = new TasksConversionRecoveryStore(adapter as unknown as DataAdapter, app.vault.configDir);
 	let counter = 0, series = 0;
 	const fresh = () => new TasksConversionService(host, store, {
@@ -164,6 +166,41 @@ test('settings exclusions, missing files and dirty buffers are reported without 
 	assert.equal(scan.rows.length, 0); assert.equal(scan.files.length, 4);
 	assert.ok(scan.files.every(source => !!source.error)); assert.deepEqual(f.adapter.writes, []);
 });
+for (const unrelated of ['---\nUnclosed', '---\nTitle: %invalid YAML\n---\nNote', '---\noperonId: { nested: invalid }\n---\nTemplate']) {
+	test(`selected conversion never reads unrelated malformed frontmatter: ${unrelated}`, async () => {
+		const f = fixture({ 'A.md': '- [ ] Repeat 🔁 every day 📅 2026-10-08', 'Template.md': unrelated });
+		const read = f.adapter.read.bind(f.adapter), reads: string[] = [];
+		f.buffers.set('Template.md', 'Unsaved unrelated editor');
+		f.adapter.read = async name => { reads.push(name); if (name === 'Template.md') throw new Error('Unrelated file must not be read'); return read(name); };
+		const scan = await f.service.scan({ files: ['A.md'], folders: [], includeSubfolders: true });
+		assert.deepEqual(f.adapter.writes, []);
+		const preview = f.service.preview(scan);
+		f.adapter.afterWrite = name => { if (name.endsWith('active.json')) f.adapter.files.set('Template.md', `${unrelated}\nUnrelated edit`); };
+		assert.equal((await f.service.apply(preview, { finalizeOnSuccess: true })).status, 'committed');
+		assert.equal(await read('A.md'), preview.changes[0].after);
+		assert.equal(reads.includes('Template.md'), false);
+		assert.equal((await f.store.load()).kind, 'empty');
+	});
+}
+test('selected closed frontmatter remains opaque and byte-for-byte unchanged', async () => {
+	const header = '---\r\nTitle: %invalid YAML\r\noperonId: { nested: invalid }\r\n---\r\n';
+	const f = fixture({ 'A.md': `${header}- [ ] A 📅 2026-10-08\r\n` }), preview = await f.preview();
+	assert.equal(preview.operonIds.length, 1);
+	assert.ok(preview.changes[0].after.startsWith(header));
+	assert.equal((await f.service.apply(preview, { finalizeOnSuccess: true })).status, 'committed');
+	assert.equal(await f.adapter.read('A.md'), preview.changes[0].after);
+});
+test('cancellation rolls back selected files without reading unrelated broken notes', async () => {
+	const f = fixture({ 'A.md': '- [ ] A 🆔 A', 'B.md': '- [ ] B ⛔ A', 'Template.md': '---\nUnclosed' });
+	const read = f.adapter.read.bind(f.adapter);
+	f.adapter.read = async name => { if (name === 'Template.md') throw new Error('Unrelated read'); return read(name); };
+	const preview = f.service.preview(await f.service.scan({ files: ['A.md', 'B.md'], folders: [], includeSubfolders: true }));
+	let allowed = true;
+	const result = await f.service.apply(preview, { canCommit: () => allowed, onProgress: progress => { if (progress.phase === 'apply') allowed = false; } });
+	assert.equal(result.status, 'rolled-back');
+	for (const change of preview.changes) assert.equal(await read(change.path), change.before);
+	assert.equal((await f.store.load()).kind, 'empty');
+});
 test('CRLF, final newline and all non-task content are preserved', async () => {
 	const before = '# Header\r\n\r\n- [ ] A 🆔 A\r\nUnrelated `data`\r\n';
 	const f = fixture({ 'A.md': before }); const p = await f.preview();
@@ -198,7 +235,7 @@ test('preview is immutable and cannot be applied by a foreign service', async ()
 	assert.throws(() => f.service.preview(p.scan, ['not-a-task']));
 	assert.equal((await f.fresh().apply(p)).status, 'not-applied'); assert.deepEqual(f.adapter.writes, []);
 });
-for (const modification of ['content', 'same-size', 'missing', 'dirty', 'settings', 'identity', 'series', 'inventory']) {
+for (const modification of ['content', 'same-size', 'missing', 'dirty', 'settings', 'identity', 'series']) {
 	test(`preflight ${modification} causes zero writes for the entire selection`, async () => {
 		const f = fixture({ 'A.md': '- [ ] A 🆔 A 🔁 every day 📅 2026-10-08', 'B.md': '- [ ] B ⛔ A' }), p = await f.preview();
 		if (modification === 'content') f.adapter.files.set('B.md', `${await f.adapter.read('B.md')} edited`);
@@ -208,7 +245,6 @@ for (const modification of ['content', 'same-size', 'missing', 'dirty', 'setting
 		if (modification === 'settings') f.settings.defaultPriority = 'Changed';
 		if (modification === 'identity') f.adapter.files.set('Other.md', `- [ ] Other {{operonId:: ${p.operonIds[0]}}}`);
 		if (modification === 'series') f.reservedSeriesIds.push(p.repeatSeriesIds[0]);
-		if (modification === 'inventory') f.adapter.files.set('Other.md', '---\nUnclosed');
 		assert.equal((await f.service.apply(p)).status, 'not-applied'); assert.deepEqual(f.adapter.writes, []);
 	});
 }
@@ -377,6 +413,12 @@ test('identity inspection includes mapped YAML, duplicate fields and reciprocal 
 	assert.deepEqual(identities[1].operonIds, ['bbbbbbb', 'ccccccc']);
 });
 
+test('RAM index reserves a selected file task identity without parsing its frontmatter for conversion', async () => {
+	const f = fixture({ 'A.md': '---\noperonId: a000001\n---\n- [ ] A 🆔 A' }), preview = await f.preview();
+	assert.deepEqual(preview.operonIds, ['a000002']);
+	assert.equal((await f.service.apply(preview)).status, 'committed');
+	assert.ok((await f.adapter.read('A.md')).startsWith('---\noperonId: a000001\n---\n'));
+});
 test('scan reserves IDs in the actual indexer scope, including comments and indented lines', async () => {
 	const f = fixture({ 'A.md': '- [ ] A 🆔 A', 'Other.md': '<!--\n- [ ] Hidden {{operonId:: a000001}}\n-->\n    - [ ] Code {{operonId:: a000002}}' });
 	const p = await f.preview(); assert.deepEqual(p.operonIds, ['a000003']);
@@ -438,12 +480,56 @@ test('late unsaved buffer change is preserved and cannot be overwritten by rollb
 	assert.equal(f.buffers.get('A.md'), 'Late unsaved user edit');
 	assert.equal(f.adapter.writes.filter(file => file === 'A.md').length, 1);
 });
-test('identity inventory detects a file appearing during its read snapshot', async () => {
+test('unrelated file creation during selected source reads does not block conversion', async () => {
 	const f = fixture(), p = await f.preview(); const read = f.adapter.read.bind(f.adapter);
 	let reads = 0;
 	f.adapter.read = async file => { const value = await read(file); if (file === 'B.md' && ++reads === 2) f.adapter.files.set('New.md', '- [ ] Other {{operonId:: zzzzzzz}}'); return value; };
-	assert.equal((await f.service.apply(p)).status, 'not-applied'); assert.deepEqual(f.adapter.writes, []);
+	assert.equal((await f.service.apply(p)).status, 'committed');
+	for (const change of p.changes) assert.equal(await read(change.path), change.after);
 });
+for (const collision of [false, true]) {
+	test(`pending RAM index updates settle before selected writes: collision=${collision}`, async () => {
+		const f = fixture({ 'A.md': '- [ ] A 📅 2026-10-08' });
+		let cached: ReturnType<typeof collectTasksConversionIdentities> = [], pending = false, settlements = 0;
+		const host = createTasksConversionHost(f.app, f.writer, () => f.settings, { matches: () => true, synchronize: () => true },
+			async () => { throw new Error('Conversion must not request full-vault inventory'); }, undefined,
+			() => ({ sources: cached, externalReferences: [], reservedSeriesIds: [] }), async () => {
+				settlements++;
+				if (pending) { cached = collectTasksConversionIdentities('Other.md', f.adapter.files.get('Other.md')!, f.settings.keyMappings, true); pending = false; }
+			});
+		const service = new TasksConversionService(host, f.store, { now: () => '2026-10-08T17:00:00', operonId: () => 'lag1234' });
+		const preview = service.preview(await service.scan({ files: ['A.md'], folders: [], includeSubfolders: false }));
+		f.adapter.afterWrite = name => { if (name.endsWith('active.json')) { f.adapter.files.set('Other.md', `- [ ] Outside {{operonId:: ${collision ? 'lag1234' : 'other01'}}}`); pending = true; } };
+		const result = await service.apply(preview, { finalizeOnSuccess: true });
+		assert.ok(settlements > 1);
+		assert.equal(result.status, collision ? 'rolled-back' : 'committed');
+		assert.equal(await f.adapter.read('A.md'), collision ? preview.changes[0].before : preview.changes[0].after);
+		assert.equal(f.adapter.writes.filter(name => name.endsWith('.md')).length, collision ? 0 : 1);
+		assert.equal((await f.store.load()).kind, 'empty');
+	});
+}
+for (const relationship of [false, true]) {
+	test(`rollback CAS settles an outside event without replaying a write: relationship=${relationship}`, async () => {
+		const f = fixture({ 'A.md': '- [ ] A 📅 2026-10-08' });
+		let cached: ReturnType<typeof collectTasksConversionIdentities> = [], pending = false, allowed = true, calls = 0, injecting = false, injected = false;
+		const process = f.app.vault.process.bind(f.app.vault), read = f.adapter.read.bind(f.adapter);
+		f.app.vault.process = async (file, transform) => { injecting = ++calls === 2; try { return await process(file, transform); } finally { injecting = false; } };
+		f.adapter.read = async name => { const content = await read(name); if (name === 'A.md' && injecting && !injected) {
+			injected = true; pending = true;
+			f.adapter.files.set('Other.md', `- [ ] Outside {{operonId:: other01}}${relationship ? ' {{blockedBy:: lag1234}}' : ''}`);
+		} return content; };
+		const host = createTasksConversionHost(f.app, f.writer, () => f.settings, { matches: () => true, synchronize: () => true },
+			async () => { throw new Error('Full-vault inventory'); }, undefined, () => ({ sources: cached, externalReferences: [], reservedSeriesIds: [] }),
+			async () => { if (pending) { cached = collectTasksConversionIdentities('Other.md', f.adapter.files.get('Other.md')!, f.settings.keyMappings, true); pending = false; } });
+		const service = new TasksConversionService(host, f.store, { now: () => '2026-10-08T17:00:00', operonId: () => 'lag1234' });
+		const preview = service.preview(await service.scan({ files: ['A.md'], folders: [], includeSubfolders: false }));
+		const result = await service.apply(preview, { canCommit: () => allowed, onProgress: progress => { if (progress.phase === 'apply') allowed = false; } });
+		assert.equal(result.status, relationship ? 'recovery-required' : 'rolled-back');
+		assert.equal(await read('A.md'), relationship ? preview.changes[0].after : preview.changes[0].before);
+		assert.equal(f.adapter.writes.filter(name => name === 'A.md').length, relationship ? 1 : 2);
+		assert.equal((await f.store.load()).kind, relationship ? 'active' : 'empty');
+	});
+}
 test('backup-time collision in an existing file causes zero note writes', async () => {
 	const f = fixture({ 'A.md': '- [ ] A 🆔 A', 'Other.md': 'Unrelated' }), p = await f.preview();
 	f.adapter.afterWrite = file => { if (file.endsWith('active.json')) f.adapter.files.set('Other.md', `- [ ] Other {{operonId:: ${p.operonIds[0]}}}`); };
@@ -451,10 +537,10 @@ test('backup-time collision in an existing file causes zero note writes', async 
 	assert.ok(f.adapter.writes.every(file => !file.endsWith('.md')));
 	assert.equal(await f.adapter.read('A.md'), p.changes[0].before);
 });
-test('same-path mutation during identity inventory invalidates preflight with zero writes', async () => {
+test('indexed ID collision appearing during selected source read prevents all writes', async () => {
 	const f = fixture({ 'A.md': '- [ ] A 🆔 A', 'Other.md': 'Unrelated', 'Z.md': 'Last' }), p = await f.preview();
 	const read = f.adapter.read.bind(f.adapter);
-	f.adapter.read = async file => { const content = await read(file); if (file === 'Z.md') f.adapter.files.set('Other.md', `- [ ] Other {{operonId:: ${p.operonIds[0]}}}`); return content; };
+	f.adapter.read = async file => { const content = await read(file); if (file === 'A.md') f.adapter.files.set('Other.md', `- [ ] Other {{operonId:: ${p.operonIds[0]}}}`); return content; };
 	assert.equal((await f.service.apply(p)).status, 'not-applied'); assert.deepEqual(f.adapter.writes, []);
 });
 test('undo refuses an external relationship appearing during inventory without note writes', async () => {
@@ -506,6 +592,30 @@ test('real filesystem adapter, production TaskWriter and reload recovery restore
 	} finally { await rm(root, { recursive: true, force: true }); await rm(sealed, { recursive: true, force: true }); }
 });
 
+test('real storage conversion reads only its selected file and preserves sealed malformed templates', async () => {
+	const root = await mkdtemp('/private/tmp/operon-conversion-scope-'), sealed = await mkdtemp('/private/tmp/operon-conversion-scope-sealed-');
+	try {
+		const adapter = new DiskAdapter(root);
+		const originals = { 'Selected.md': '---\r\nTitle: %opaque YAML\r\n---\r\n- [ ] Repeat 🔁 every day 📅 2026-10-08\r\n',
+			'Template.md': '---\noperonId: { invalid: identity }\n---\n<% templater %>\n', 'Broken.md': '---\nUnclosed frontmatter' };
+		for (const [name, content] of Object.entries(originals)) { await adapter.write(name, content); await writeFile(path.join(sealed, name), content); }
+		const f = wiredFixture(adapter), read = adapter.read.bind(adapter), reads: string[] = [];
+		adapter.writes = [];
+		adapter.read = async name => { reads.push(name); if (name === 'Template.md' || name === 'Broken.md') throw new Error('Unselected source read'); return read(name); };
+		f.buffers.set('Template.md', 'Unsaved unrelated template');
+		const preview = f.service.preview(await f.service.scan({ files: ['Selected.md'], folders: [], includeSubfolders: true }));
+		assert.equal(adapter.writes.length, 0);
+		assert.equal((await f.service.apply(preview, { finalizeOnSuccess: true })).status, 'committed');
+		assert.equal(await read('Selected.md'), preview.changes[0].after);
+		assert.ok(adapter.writes.every(name => name === 'Selected.md' || name.startsWith(`${f.store.directory}/`)));
+		for (const name of ['Template.md', 'Broken.md']) { assert.equal(reads.includes(name), false); assert.equal(await read(name), await readFile(path.join(sealed, name), 'utf8')); }
+		assert.equal((await f.fresh().inspect()).state.kind, 'empty');
+		const writes = adapter.writes.length;
+		const second = f.service.preview(await f.service.scan({ files: ['Selected.md'], folders: [], includeSubfolders: true }));
+		assert.equal(second.operonIds.length, 0); assert.equal((await f.service.apply(second)).status, 'not-applied');
+		assert.equal(adapter.writes.length, writes);
+	} finally { await rm(root, { recursive: true, force: true }); await rm(sealed, { recursive: true, force: true }); }
+});
 for (const boundary of ['resolved-write', 'active-remove', 'resolved-remove'] as const) {
  test(`auto finalization retains committed sources at ${boundary} failure and reload cleanup never replays notes`, async () => {
   const f = fixture(), preview = await f.preview();

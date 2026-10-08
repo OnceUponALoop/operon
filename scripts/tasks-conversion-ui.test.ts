@@ -233,6 +233,14 @@ test('real main native buffer guard rejects dirty scene/header but admits its ow
  assert.deepEqual(await h.captureTasksConversionDrawingScenes(), [file.path]); assert.equal(h.tasksConversionBuffersMatch(file.path, 'disk'), false);
  assert.equal(view.data, 'disk'); assert.equal(view.preparedSaveText, 'disk');
 });
+test('selected conversion does not read an unrelated open drawing scene', async () => {
+ const { h } = await mainHarness(['captureTasksConversionDrawingScenes']);
+ const file = new (TFile as unknown as new (name: string) => TFile)('Unrelated.excalidraw.md');
+ let reads = 0;
+ const view = { file, plugin: { ea: { getAPI: () => { reads++; throw new Error('Unrelated scene'); } } } };
+ h.app = { workspace: { getLeavesOfType: () => [{ view }] } };
+ assert.deepEqual(await h.captureTasksConversionDrawingScenes(['Selected.md']), []); assert.equal(reads, 0);
+});
 test('legacy filter fences without task cards never make identity inventory unavailable', () => {
  assert.deepEqual(tasksConversionCardReferences('```operon\nfilter: My tasks\nview: table\n```'), []);
  assert.throws(() => tasksConversionCardReferences('```operon\nview: card\ntaskId: invalid!\n```'));

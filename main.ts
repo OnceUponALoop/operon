@@ -26474,11 +26474,11 @@ export default class OperonPlugin extends Plugin {
   return JSON.stringify(canonical(value));
  }
 
- private async captureTasksConversionDrawingScenes(): Promise<string[]> {
+ private async captureTasksConversionDrawingScenes(paths?: readonly string[]): Promise<string[]> {
   const unavailable: string[] = [];
   for (const leaf of this.app.workspace.getLeavesOfType('excalidraw')) {
    const candidate = leaf.view as unknown as { file?: TFile };
-   if (!candidate.file) continue;
+   if (!candidate.file || paths && !paths.includes(candidate.file.path)) continue;
    const path = candidate.file.path;
    const view = readExcalidrawTaskView(this.app, leaf.view);
    if (!view) { unavailable.push(path); continue; }
@@ -26542,7 +26542,7 @@ export default class OperonPlugin extends Plugin {
    synchronize: (path, before, after) => this.syncTaskEditorDeleteOpenViews(path, before, after),
   }, inventory, async (paths, operation) => {
    // Verify before native read/adopt leases: dirty source buffers must never be synchronized away.
-   const unavailable = await this.captureTasksConversionDrawingScenes();
+   const unavailable = await this.captureTasksConversionDrawingScenes(paths);
    for (const path of paths) {
     const file = this.app.vault.getAbstractFileByPath(path);
     if (!(file instanceof TFile)) continue;
@@ -26555,7 +26555,13 @@ export default class OperonPlugin extends Plugin {
       return operation(current);
      }, [], (path, expected, content) => this.assertTasksConversionAdoption(path, expected, content));
    } finally { for (const path of paths) nativePaths.delete(path); }
-  });
+  }, () => {
+   const snapshot = workflow();
+   return { externalReferences: snapshot.references, reservedSeriesIds: snapshot.series,
+    sources: [...this.indexer.getAllTasks(), ...this.indexer.getAllDuplicateInstanceSnapshots()].map(task => ({ path: task.primary.filePath, lineNumber: task.primary.format === 'yaml' ? -1 : task.primary.lineNumber,
+     operonIds: [task.operonId], repeatSeriesIds: parseDependencyIdList(task.fieldValues.repeatSeriesId ?? ''),
+     references: ['parentTask', 'blocking', 'blockedBy', 'related'].flatMap(key => parseDependencyIdList(task.fieldValues[key] ?? '')) })) };
+  }, async () => { await this.indexer.flushPendingRamReindexNow(); await this.indexer.awaitRamSettlement(); });
   const service = new TasksConversionService(host, new TasksConversionRecoveryStore(this.app.vault.adapter, this.app.vault.configDir));
   const controller = new TasksConversionController({ service, available,
    coordinate: async (paths, ids, operation, changes = []) => {

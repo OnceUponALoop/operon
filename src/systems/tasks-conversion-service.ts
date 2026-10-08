@@ -14,16 +14,19 @@ export interface TasksConversionIdentityInventory {
 	/** Synchronous mutation witness, checked inside TaskWriter's compare-and-set callback. */
 	isCurrent(): boolean;
 }
+export interface TasksConversionIdentityScope {
+	paths: readonly string[]; operonIds?: readonly string[]; repeatSeriesIds?: readonly string[];
+}
 export interface TasksConversionWritePort {
 	read(path: string): Promise<string>;
 	write(path: string, expected: string, next: string, allowed: () => boolean): Promise<void>;
-	identities(mappings: KeyMapping[], signal?: AbortSignal): Promise<TasksConversionIdentityInventory>;
+	identities(mappings: KeyMapping[], signal?: AbortSignal, scope?: TasksConversionIdentityScope): Promise<TasksConversionIdentityInventory>;
 }
 export interface TasksConversionHost {
 	settings(): TasksConversionSettings;
 	paths(): string[];
 	read(path: string): Promise<string>;
-	identities(mappings: KeyMapping[], signal?: AbortSignal): Promise<TasksConversionIdentityInventory>;
+	identities(mappings: KeyMapping[], signal?: AbortSignal, scope?: TasksConversionIdentityScope): Promise<TasksConversionIdentityInventory>;
 	exclusive<T>(paths: string[], operation: (port: TasksConversionWritePort) => Promise<T>): Promise<T>;
 }
 export type TasksConversionOutcome = 'committed' | 'not-applied' | 'cancelled' | 'rolled-back'
@@ -92,7 +95,7 @@ export class TasksConversionService {
 		check();
 		const settings = tasksConversionSettingsSnapshot(this.host.settings());
 		const paths = resolveTasksConversionPaths(scope, this.host.paths());
-		const inventory = await this.host.identities(settings.keyMappings, options.signal);
+		const inventory = await this.host.identities(settings.keyMappings, options.signal, { paths });
 		check();
 		const sources = [];
 		for (const [index, path] of paths.entries()) {
@@ -123,6 +126,7 @@ export class TasksConversionService {
 				keyMappings: structuredClone(preview.scan.settings.keyMappings), taskCount: preview.operonIds.length };
 			return this.host.exclusive(record.changes.map(change => change.path), async port => {
 				const attempted = new Set<string>();
+				const scope = { paths: record.changes.map(change => change.path), operonIds: record.operonIds, repeatSeriesIds: record.repeatSeriesIds };
 				try {
 					const expectedSettings = serializeTasksConversionSettings(preview.scan.settings);
 					const settingsMatch = () => serializeTasksConversionSettings(this.host.settings()) === expectedSettings;
@@ -134,7 +138,7 @@ export class TasksConversionService {
 					for (const change of record.changes) if (await port.read(change.path) !== change.before) {
 						return this.result('not-applied', record, `Source changed: ${change.path}`);
 					}
-					const inventory = await port.identities(record.keyMappings), used = reserved(inventory);
+					const inventory = await port.identities(record.keyMappings, undefined, scope), used = reserved(inventory);
 					if (!inventory.isCurrent() || inventory.unavailablePaths.length) return this.result('not-applied', record, 'Identity inventory is incomplete or changed');
 					const usedSeries = new Set([...inventory.reservedSeriesIds, ...inventory.sources.flatMap(source => source.repeatSeriesIds)]);
 					if (record.operonIds.some(id => used.has(id)) || record.repeatSeriesIds.some(id => usedSeries.has(id))) {
@@ -146,7 +150,7 @@ export class TasksConversionService {
 					if (active.kind !== 'active' || active.record.id !== record.id) return this.result('recovery-required', record, 'Backup could not be verified');
 					for (const [index, change] of record.changes.entries()) {
 						if (!allowed()) return this.restore(active, port, options, false, attempted);
-						const fresh = await port.identities(record.keyMappings);
+						const fresh = await port.identities(record.keyMappings, undefined, scope);
 						if (!fresh.isCurrent() || fresh.unavailablePaths.length || restoreIdentityConflict(fresh, record)
 							|| fresh.sources.some(source => !attempted.has(source.path) && source.operonIds.some(id => record.operonIds.includes(id)))) {
 							return this.restore(active, port, options, false, attempted);
@@ -163,7 +167,7 @@ export class TasksConversionService {
 					}
 					if (!allowed()) return this.restore(active, port, options, false, attempted);
 					for (const change of record.changes) if (await port.read(change.path) !== change.after) return this.restore(active, port, options, false, attempted);
-					const finalInventory = await port.identities(record.keyMappings);
+					const finalInventory = await port.identities(record.keyMappings, undefined, scope);
 					if (!finalInventory.isCurrent() || finalInventory.unavailablePaths.length || restoreIdentityConflict(finalInventory, record)) {
 						return this.restore(active, port, options, false, attempted);
 					}
@@ -230,7 +234,8 @@ export class TasksConversionService {
 		options: TasksConversionRunOptions, explicit = false, attempted?: ReadonlySet<string>): Promise<TasksConversionResult> {
 		const record = active.record;
 		const files = await this.classify(record, port);
-		const inventory = await port.identities(record.keyMappings);
+		const scope = explicit ? undefined : { paths: record.changes.map(change => change.path), operonIds: record.operonIds, repeatSeriesIds: record.repeatSeriesIds };
+		const inventory = await port.identities(record.keyMappings, undefined, scope);
 		const candidates = attempted ? record.changes.filter(change => attempted.has(change.path)
 			&& files.some(file => file.path === change.path && file.state === 'after')) : record.changes;
 		const candidatePaths = new Set(candidates.map(change => change.path));
@@ -247,7 +252,7 @@ export class TasksConversionService {
 			const current = await port.read(change.path);
 			if (current !== change.before) {
 				if (current !== change.after) return this.result('recovery-required', record, 'Restore source changed');
-				const fresh = await port.identities(record.keyMappings);
+				const fresh = await port.identities(record.keyMappings, undefined, scope);
 				if (!fresh.isCurrent() || fresh.unavailablePaths.length || restoreIdentityConflict(fresh, targets)) return this.result('recovery-required', record, 'Restore identity changed');
 				try { await port.write(change.path, change.after, change.before, () => fresh.isCurrent() && (!explicit || options.canCommit?.() !== false)); }
 				catch { if (await port.read(change.path) !== change.before) return this.result('recovery-required', record, 'Restore write could not be verified'); }
