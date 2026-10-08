@@ -53,3 +53,11 @@ test('custom usage includes desktop even when both mobile surfaces hide the prop
  });
  assert.ok(summaries[0].activeSurfaceKeys.includes('editor'));
 });
+
+
+test('retired Custom section is dropped while Additional order and name are preserved', () => {
+ const rows = normalizeTaskEditorSections([{id:'custom',name:'Old custom'}, {id:'sessions',name:'Log'}, {id:'additional',name:'Extras'}]);
+ assert.equal(rows.some(row => String(row.id) === 'custom'),false);
+ assert.deepEqual(rows.slice(0,2),[{id:'sessions',name:'Log'},{id:'additional',name:'Extras'}]);
+ assert.equal(rows.length,10);
+});

@@ -1,7 +1,7 @@
 /** Stable identities are independent of user-facing section names. */
 export const TASK_EDITOR_SECTION_IDS = [
  'description', 'notes', 'stats', 'commands', 'overview', 'planning',
- 'activity', 'connections', 'custom', 'additional', 'sessions',
+ 'activity', 'connections', 'additional', 'sessions',
 ] as const;
 export type TaskEditorSectionId = typeof TASK_EDITOR_SECTION_IDS[number];
 export interface TaskEditorSection { id: TaskEditorSectionId; name: string }
