@@ -8817,6 +8817,11 @@ body .operon-floating-panel.operon-reminder-rules-picker-panel button.operon-rem
 	width: min(94vw, calc(var(--operon-task-editor-main-column-width) - var(--operon-task-editor-split-transfer) + var(--operon-task-editor-horizontal-padding)));
 }
 
+/* The desktop editor renders its own title inside the content panel. */
+.modal.operon-task-editor-modal:not(.operon-task-editor-modal-mobile) > .modal-header {
+	display: none;
+}
+
 .operon-task-editor-modal .modal-content {
 	padding: 0;
 	height: 100%;
