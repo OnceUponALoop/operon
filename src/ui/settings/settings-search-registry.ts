@@ -305,6 +305,7 @@ export const OPERON_SETTINGS_SEARCH_REGISTRY: readonly OperonSettingsSearchEntry
 	section('ui', 'interfaceStateIcons', 'fallbackOpenStateIcon', 'settings', 'fallbackOpenStateIcon', 'fallbackOpenStateIconDesc', ['state icons', 'fallback icons']),
 	section('ui', 'interfaceStateIcons', 'fallbackFinishedStateIcon', 'settings', 'fallbackFinishedStateIcon', 'fallbackFinishedStateIconDesc', ['state icons', 'fallback icons']),
 	section('ui', 'interfaceStateIcons', 'fallbackCancelledStateIcon', 'settings', 'fallbackCancelledStateIcon', 'fallbackCancelledStateIconDesc', ['state icons', 'fallback icons']),
+	e('ui', 'interfaceTaskEditor', 'taskEditorSections', 'settings', 'taskEditorSections', 'taskEditorSectionsDesc', 'render', ['sections', 'rename', 'order', 'task editor']),
 	e('ui', 'interfaceTaskEditor', 'taskEditorShowLineNumbers', 'settings', 'taskEditorShowLineNumbers', 'taskEditorShowLineNumbersDesc', 'toggle', ['task editor', 'line numbers', 'source line numbers', 'file body line numbers']),
 	e('ui', 'interfaceTaskEditor', 'taskEditorHighlightActiveLine', 'settings', 'taskEditorHighlightActiveLine', 'taskEditorHighlightActiveLineDesc', 'toggle', ['task editor', 'highlight', 'active line', 'current line', 'file body']),
 	section('ui', 'interfaceTaskEditor', 'taskEditorWorkflowPickers', 'settings', 'taskEditorWorkflowPickers', 'taskEditorWorkflowPickersDesc', ['task editor', 'task editor pickers', 'workflow pickers']),

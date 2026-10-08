@@ -1,8 +1,8 @@
 {
   "schemaVersion": 1,
   "locale": "es",
-  "keyCount": 3550,
-  "keyFingerprint": "71226da74e971e9e093af4fab345b810b712fd9c0c992e92e977f36e3b40e3ae",
+  "keyCount": 3553,
+  "keyFingerprint": "d227b61beefc78e308eb3db9d0cb2990cebe30c87b856d481ec63d7d3b3c6a33",
   "translations": {
     "buttons": {
       "addFileSubtask": "Añadir subtarea de archivo",
@@ -2674,6 +2674,9 @@
       "taskEditorMobileCoreToolsMoveDown": "Mover hacia abajo",
       "taskEditorMobileCoreToolsMoveUp": "Mover hacia arriba",
       "taskEditorMobileCoreToolsReorder": "Reordenar iconos esenciales móviles",
+      "taskEditorSections": "Secciones y orden",
+      "taskEditorSectionsDesc": "Renombra y ordena las secciones de Task Editor. Deja un nombre vacío para restaurar el predeterminado. Se aplica al diseño de escritorio.",
+      "taskEditorSectionsSaveFailed": "No se pudieron guardar las secciones de Task Editor.",
       "taskEditorShowLineNumbers": "Mostrar números de línea en el Editor de tareas",
       "taskEditorShowLineNumbersDesc": "Mostrar los números de línea de origen en el panel de cuerpo del archivo del Editor de tareas.",
       "taskEditorWorkflowPickers": "Visibilidad y orden de propiedades",
@@ -3595,5 +3598,5 @@
       "toggleDescendantPreview": "Alternar vista previa de descendientes"
     }
   },
-  "sourceVersion": "ea2c723812f8d01e5eda7ea016fd5556896d00dd70ba71e384a9701fc09cc29d"
+  "sourceVersion": "88504cc09bc018612632366f52a12167d85dff858e2c8f7189a44cdc106660b4"
 }

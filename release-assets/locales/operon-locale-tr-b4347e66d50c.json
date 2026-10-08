@@ -1,8 +1,8 @@
 {
   "schemaVersion": 1,
   "locale": "tr",
-  "keyCount": 3550,
-  "keyFingerprint": "71226da74e971e9e093af4fab345b810b712fd9c0c992e92e977f36e3b40e3ae",
+  "keyCount": 3553,
+  "keyFingerprint": "d227b61beefc78e308eb3db9d0cb2990cebe30c87b856d481ec63d7d3b3c6a33",
   "translations": {
     "buttons": {
       "addFileSubtask": "Dosya Tipi Alt Görev Ekle",
@@ -2674,6 +2674,9 @@
       "taskEditorMobileCoreToolsMoveDown": "Aşağı taşı",
       "taskEditorMobileCoreToolsMoveUp": "Yukarı taşı",
       "taskEditorMobileCoreToolsReorder": "Mobil temel simgeleri sırala",
+      "taskEditorSections": "Bölümler ve Sıralama",
+      "taskEditorSectionsDesc": "Task Editor bölümlerini yeniden adlandırın ve sıralayın. Varsayılan adı geri yüklemek için adı boş bırakın. Masaüstü düzenine uygulanır.",
+      "taskEditorSectionsSaveFailed": "Task Editor bölümleri kaydedilemedi.",
       "taskEditorShowLineNumbers": "Görev Editörü'nde satır numaralarını göster",
       "taskEditorShowLineNumbersDesc": "Görev Editörü dosya gövdesi panelinde kaynak satır numaralarını gösterir.",
       "taskEditorWorkflowPickers": "Özellik Görünürlüğü ve Sıralaması",
@@ -3595,5 +3598,5 @@
       "toggleDescendantPreview": "Alt görev önizlemesini aç/kapat"
     }
   },
-  "sourceVersion": "a808e5d8b8d3a432db860cfdfd47394698025416f682c77bc74f07fcf81cae9f"
+  "sourceVersion": "400c794ad73a9c671e78ef9b54b1ce0e073521ebe9594e11640be35337cc688d"
 }

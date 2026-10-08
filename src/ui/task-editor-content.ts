@@ -1,3 +1,5 @@
+import { normalizeTaskEditorSections, type TaskEditorSectionId } from '../types/task-editor-sections';
+import { taskEditorSectionDefaultLabel } from './task-editor-section-label';
 import { buildTaskWikilinkOverlayLink } from './task-wikilink-overlay-insertion';
 import { bindAssigneeChipImage } from './assignee-chip-image';
 import { normalizeTaskCardSettings } from '../types/task-card';
@@ -1370,6 +1372,10 @@ export class TaskEditorContent {
 		}
 	}
 
+	private desktopSectionLabel(id: TaskEditorSectionId): string {
+		return this.settings.taskEditorSections?.find(section => section.id === id)?.name.trim() || taskEditorSectionDefaultLabel(id);
+	}
+
 	private renderTaskEditorBody(container: HTMLElement): void {
 		const progressState = this.getProgressSectionState();
 		// Title
@@ -1382,15 +1388,25 @@ export class TaskEditorContent {
 		});
 		titleRow.createDiv('operon-task-editor-title-side is-right');
 
-		const primaryFields = container.createDiv('operon-task-editor-primary-fields');
-
-		// Primary edit fields should remain in normal document flow when the file body panel toggles.
-		this.renderDescriptionNoteSection(primaryFields);
-		this.renderTimeSummarySection(primaryFields, progressState);
-
-		// High-frequency fields directly under the primary text and time summaries.
-		this.renderDesktopPropertyGroups(container);
-		this.renderDetailsSection(container);
+		const sections = container.createDiv('operon-task-editor-section-layout');
+		this.workflowRowsEl = sections;
+		const hosts = new Map<TaskEditorSectionId, HTMLElement>();
+		for (const section of normalizeTaskEditorSections(this.settings.taskEditorSections)) {
+			const host = sections.createDiv('operon-task-editor-section-host');
+			host.dataset.editorSection = section.id;
+			hosts.set(section.id, host);
+		}
+		// Create hosts in display/tab order, then initialize dependent controls in their existing order.
+		const host = (id: TaskEditorSectionId): HTMLElement => hosts.get(id)!;
+		for (const id of ['description', 'notes'] as const) {
+			host(id).addClass('operon-task-editor-primary-fields');
+			this.renderDescriptionNoteSection(host(id), id);
+		}
+		this.observeCompactTextEditorWidths();
+		host('stats').addClass('operon-task-editor-primary-fields');
+		this.renderTimeSummarySection(host('stats'), progressState);
+		this.renderDesktopPropertyGroups(host);
+		this.renderDetailsSection(host('sessions'));
 
 		// Actions bar
 		this.renderActions(container);
@@ -2719,28 +2735,30 @@ export class TaskEditorContent {
 		return descendants;
 	}
 
-	private renderDescriptionNoteSection(container: HTMLElement): void {
+	private renderDescriptionNoteSection(container: HTMLElement, id: 'description' | 'notes'): void {
 		const section = container.createDiv('operon-editor-text-fields');
 
-		const descriptionGroup = section.createDiv('operon-editor-text-field-group is-description');
-		const descriptionHeader = descriptionGroup.createDiv('operon-editor-desktop-group-header');
-		descriptionHeader.createEl('h6', {
-			cls: 'operon-editor-core-title-badge operon-editor-text-field-title operon-editor-desktop-group-title',
-			text: t('taskEditor', 'description'),
-		});
-		const descriptionActions = descriptionHeader.createDiv('operon-task-editor-workflow-actions operon-editor-description-actions');
-		this.renderProjectSerialControl(descriptionActions);
-		this.renderCopyOperonIdButton(descriptionActions);
-		this.renderDescription(descriptionGroup, false);
+		if (id === 'description') {
+			const descriptionGroup = section.createDiv('operon-editor-text-field-group is-description');
+			const descriptionHeader = descriptionGroup.createDiv('operon-editor-desktop-group-header');
+			descriptionHeader.createEl('h6', {
+				cls: 'operon-editor-core-title-badge operon-editor-text-field-title operon-editor-desktop-group-title',
+				text: this.desktopSectionLabel('description'),
+			});
+			const descriptionActions = descriptionHeader.createDiv('operon-task-editor-workflow-actions operon-editor-description-actions');
+			this.renderProjectSerialControl(descriptionActions);
+			this.renderCopyOperonIdButton(descriptionActions);
+			this.renderDescription(descriptionGroup, false);
 
-		const notesGroup = section.createDiv('operon-editor-text-field-group is-notes');
-		const notesHeader = notesGroup.createDiv('operon-editor-desktop-group-header');
-		notesHeader.createEl('h6', {
-			cls: 'operon-editor-core-title-badge operon-editor-text-field-title operon-editor-desktop-group-title',
-			text: t('taskEditor', 'notes'),
-		});
-		this.renderNote(notesGroup, false);
-		this.observeCompactTextEditorWidths();
+		} else {
+			const notesGroup = section.createDiv('operon-editor-text-field-group is-notes');
+			const notesHeader = notesGroup.createDiv('operon-editor-desktop-group-header');
+			notesHeader.createEl('h6', {
+				cls: 'operon-editor-core-title-badge operon-editor-text-field-title operon-editor-desktop-group-title',
+				text: this.desktopSectionLabel('notes'),
+			});
+			this.renderNote(notesGroup, false);
+		}
 	}
 
 	private renderDescription(container: HTMLElement, showLabel = true): void {
@@ -3195,7 +3213,7 @@ export class TaskEditorContent {
 
 	private renderStatsHeader(summary: HTMLElement, state: EditorProgressSectionState | null): void {
 		const header = summary.createDiv('operon-editor-desktop-group-header operon-editor-stats-header');
-		const title = header.createEl('h6', { text: t('settings', 'pipelineColumnStats'), cls: 'operon-editor-core-title-badge operon-editor-desktop-group-title', attr: { tabindex: '0' } });
+		const title = header.createEl('h6', { text: this.desktopSectionLabel('stats'), cls: 'operon-editor-core-title-badge operon-editor-desktop-group-title', attr: { tabindex: '0' } });
 		const actions = header.createDiv('operon-editor-stats-actions');
 		const makeCounter = (kind: 'subtasks' | 'checkboxes', name: string, label: string, open: (anchor: HTMLElement) => void) => {
 			const button = actions.createEl('button', { cls: `operon-editor-stats-counter is-${kind}`, attr: { type: 'button' } });
@@ -3220,6 +3238,7 @@ export class TaskEditorContent {
 			const focused = summary.ownerDocument.activeElement;
 			const closingPopoverHadFocus = !next?.hasSubtasks && focused?.closest('.operon-subtasks-filter-popover') != null && this.rootEl?.contains(focused);
 			summary.hidden = !next || !(next.hasSubtasks || next.hasPlainCheckboxes || next.totalDuration > 0 || next.totalEstimate > 0);
+			if (summary.parentElement?.hasClass('operon-task-editor-section-host')) summary.parentElement.hidden = summary.hidden;
 			const nextTimeSignature = JSON.stringify(next && [next.trackedSubtaskCount, next.estimatedSubtaskCount, next.ownDuration, next.subtaskDuration, next.totalDuration, next.ownEstimate, next.subtaskEstimate, next.totalEstimate]);
 			if (timeSignature !== nextTimeSignature) {
 				timeSignature = nextTimeSignature;
@@ -3256,16 +3275,20 @@ export class TaskEditorContent {
 		this.refreshStatsCounters = () => { if (!this.disposed && summary.isConnected) render(this.getProgressSectionState()); };
 	}
 
-	private renderDesktopPropertyGroups(container: HTMLElement): void {
+	private renderDesktopPropertyGroups(host: (id: TaskEditorSectionId) => HTMLElement): void {
+		const container = host('commands');
 		const commands = container.createDiv('operon-editor-group operon-editor-desktop-commands');
 		const header = commands.createDiv('operon-editor-desktop-group-header');
-		header.createDiv({ text: t('taskEditor', 'groupCommands'), cls: 'operon-editor-core-title-badge operon-editor-desktop-group-title' });
+		header.createDiv({ text: this.desktopSectionLabel('commands'), cls: 'operon-editor-core-title-badge operon-editor-desktop-group-title' });
 		const actions = header.createDiv('operon-editor-core-actions operon-task-editor-workflow-actions');
 		this.renderCoreActionButtons(actions);
 		this.renderRemoveControl(actions);
 
-		const root = container.createDiv('operon-editor-desktop-properties operon-task-editor-workflow-values');
-		this.workflowRowsEl = root;
+		const propertyHost = (id: TaskEditorSectionId): HTMLElement => {
+			const root = host(id);
+			root.addClass('operon-editor-desktop-properties', 'operon-task-editor-workflow-values');
+			return root;
+		};
 		const items = this.getRenderableWorkflowPickerItems();
 		const configured = new Map(this.settings.taskEditorWorkflowPickers.map(item => [item.key, item.visible]));
 		const available = new Set(items.map(item => item.key));
@@ -3275,11 +3298,11 @@ export class TaskEditorContent {
 				assigned.add(key);
 				return DESKTOP_CORE_FIELDS.has(key) ? configured.get(key) !== false : available.has(key);
 			});
-			this.renderDesktopPropertyGroup(root, group.key, keys);
+			this.renderDesktopPropertyGroup(propertyHost(group.key), group.key, keys);
 		}
 		const customKeys = items.filter(item => !assigned.has(item.key)).map(item => item.key);
-		this.renderDesktopPropertyGroup(root, 'custom', customKeys);
-  this.mountDesktopFileProperties(root);
+		this.renderDesktopPropertyGroup(propertyHost('custom'), 'custom', customKeys);
+  this.mountDesktopFileProperties(propertyHost('additional'));
 		this.refreshDesktopPropertyRows();
 	}
 
@@ -3291,7 +3314,8 @@ export class TaskEditorContent {
  }
 
  private mountDesktopFileProperties(root: HTMLElement): void {
-  if (Platform.isPhone || this.isNewTask || this.fileBodyContext?.format !== 'yaml') return;
+  root.hidden = Platform.isPhone || this.isNewTask || this.fileBodyContext?.format !== 'yaml';
+  if (root.hidden) return;
   this.filePropertyRoot = root.createDiv('operon-editor-desktop-file-properties');
   if (!this.filePropertyCleanup) {
    const changed = this.app.metadataCache.on('changed', file => {
@@ -3388,7 +3412,7 @@ export class TaskEditorContent {
   const group = root.createDiv('operon-editor-group operon-task-editor-workflow-surface operon-editor-desktop-property-group');
   group.dataset.propertyGroup = 'file';
   const header = group.createDiv('operon-editor-desktop-group-header');
-  header.createDiv({ text: t('taskEditor', 'groupFile'), cls: 'operon-editor-core-title-badge operon-editor-desktop-group-title' });
+  header.createDiv({ text: this.desktopSectionLabel('additional'), cls: 'operon-editor-core-title-badge operon-editor-desktop-group-title' });
   const controls = header.createDiv('operon-editor-desktop-file-header-actions');
   const actions = controls.createDiv('operon-task-editor-workflow-actions');
   const add = controls.createEl('button', { cls: 'operon-task-editor-workflow-action-button operon-editor-file-property-add', attr: { type: 'button' } });
@@ -3530,11 +3554,11 @@ export class TaskEditorContent {
   this.closeFilePropertyPicker = closePicker;
  }
 
-	private renderDesktopPropertyGroup(root: HTMLElement, key: string, keys: readonly string[]): void {
+	private renderDesktopPropertyGroup(root: HTMLElement, key: TaskEditorSectionId, keys: readonly string[]): void {
 		const group = root.createDiv('operon-editor-group operon-task-editor-workflow-surface operon-editor-desktop-property-group');
 		group.dataset.propertyGroup = key;
 		const header = group.createDiv('operon-editor-desktop-group-header');
-		header.createDiv({ text: t('taskEditor', `group${key.charAt(0).toUpperCase()}${key.slice(1)}`), cls: 'operon-editor-core-title-badge operon-editor-desktop-group-title' });
+		header.createDiv({ text: this.desktopSectionLabel(key), cls: 'operon-editor-core-title-badge operon-editor-desktop-group-title' });
 		const actions = header.createDiv('operon-task-editor-workflow-actions');
 		this.renderWorkflowPickerActions(actions, keys.map(field => ({ key: field, visible: true })), false);
 		if (key === 'custom') {
@@ -4191,7 +4215,7 @@ export class TaskEditorContent {
 
 	private refreshWorkflowPickerSurfaceValues(): void {
 		this.refreshWorkflowActionButtonStates();
-		if (this.workflowRowsEl?.hasClass('operon-editor-desktop-properties')) {
+		if (this.workflowRowsEl?.hasClass('operon-task-editor-section-layout')) {
 			this.refreshDesktopPropertyRows();
 			return;
 		}
@@ -5613,7 +5637,7 @@ export class TaskEditorContent {
 		const header = section.createDiv('operon-editor-tracking-sessions-header');
 		const title = header.createEl('h6', { cls: 'operon-editor-core-title-badge operon-editor-tracking-sessions-title' });
 		if (Platform.isPhone) this.appendCanonicalIcon(title, 'trackers', 'operon-editor-tracking-sessions-title-icon');
-		title.createSpan({ text: t('taskEditor', 'trackingSessions') });
+		title.createSpan({ text: Platform.isPhone ? t('taskEditor', 'trackingSessions') : this.desktopSectionLabel('sessions') });
 		const addButton = header.createEl('button', {
 			cls: 'operon-editor-core-action-btn operon-editor-tracking-sessions-add',
 			attr: { type: 'button' },

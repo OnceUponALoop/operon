@@ -1,3 +1,4 @@
+import { normalizeTaskEditorSections, type TaskEditorSection } from './task-editor-sections';
 import { DEFAULT_TASK_CARD_SETTINGS, normalizeTaskCardSettings, type TaskCardSettings } from './task-card';
 /**
  * Operon plugin settings with versioned schema and migration.
@@ -1660,6 +1661,8 @@ export interface OperonSettings extends TaskCardSettings {
 	estimateAutoReallocation: boolean;
 	/** Ordered, user-customizable visual controls for the New Operon Task toolbar. */
 	taskCreatorToolbar: TaskCreatorToolbarItem[];
+	/** Desktop Task Editor section order and optional custom titles. */
+	taskEditorSections: TaskEditorSection[];
 	/** If true, the Task Editor file body source panel shows source line numbers. */
 	taskEditorShowLineNumbers: boolean;
 	/** If true, highlight the current source line in the Task Editor file body. */
@@ -2231,6 +2234,7 @@ export const DEFAULT_SETTINGS: OperonSettings = {
 	projectSerialScopes: [],
 	estimateAutoReallocation: false,
 	taskCreatorToolbar: buildDefaultTaskCreatorToolbarItems(),
+	taskEditorSections: normalizeTaskEditorSections(undefined),
 	taskEditorShowLineNumbers: false,
 	taskEditorHighlightActiveLine: true,
 	taskEditorWorkflowPickers: buildDefaultTaskEditorWorkflowPickerItems(),
@@ -4309,6 +4313,7 @@ export function migrateSettings(raw: unknown): OperonSettings {
 		? src.inlineTaskDailyNoteAddScheduledDate
 		: DEFAULT_SETTINGS.inlineTaskDailyNoteAddScheduledDate;
 	out.taskCreatorToolbar = normalizeTaskCreatorToolbar(src.taskCreatorToolbar);
+	out.taskEditorSections = normalizeTaskEditorSections(src.taskEditorSections);
 	out.taskEditorShowLineNumbers = typeof src.taskEditorShowLineNumbers === 'boolean'
 		? src.taskEditorShowLineNumbers
 		: Object.keys(src).length === 0

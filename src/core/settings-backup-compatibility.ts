@@ -121,6 +121,7 @@ export const ALL_OPERON_SETTINGS_BACKUP_KEYS = [
 	'projectSerialScopes',
 	'estimateAutoReallocation',
 	'taskCreatorToolbar',
+	'taskEditorSections',
 	'taskEditorShowLineNumbers',
 	'taskEditorHighlightActiveLine',
 	'taskEditorWorkflowPickers',

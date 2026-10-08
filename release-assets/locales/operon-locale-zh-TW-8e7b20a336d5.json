@@ -1,8 +1,8 @@
 {
   "schemaVersion": 1,
   "locale": "zh-TW",
-  "keyCount": 3550,
-  "keyFingerprint": "71226da74e971e9e093af4fab345b810b712fd9c0c992e92e977f36e3b40e3ae",
+  "keyCount": 3553,
+  "keyFingerprint": "d227b61beefc78e308eb3db9d0cb2990cebe30c87b856d481ec63d7d3b3c6a33",
   "translations": {
     "buttons": {
       "addFileSubtask": "新增檔案子任務",
@@ -2674,6 +2674,9 @@
       "taskEditorMobileCoreToolsMoveDown": "下移",
       "taskEditorMobileCoreToolsMoveUp": "上移",
       "taskEditorMobileCoreToolsReorder": "重新排序移動端核心圖示",
+      "taskEditorSections": "區段與順序",
+      "taskEditorSectionsDesc": "重新命名並排列 Task Editor 區段。名稱留空可還原預設名稱。適用於桌面配置。",
+      "taskEditorSectionsSaveFailed": "無法儲存 Task Editor 區段。",
       "taskEditorShowLineNumbers": "在任務編輯器中顯示行號",
       "taskEditorShowLineNumbersDesc": "在任務編輯器的檔案正文面板中顯示源行號。",
       "taskEditorWorkflowPickers": "屬性顯示與排序",
@@ -3595,5 +3598,5 @@
       "toggleDescendantPreview": "切換子任務預覽"
     }
   },
-  "sourceVersion": "40c20cb54517c4778ce72a4d842065bbaedbd669c6c09fe03a723e71bfc188d3"
+  "sourceVersion": "281a03ad38216529dd4c22a6eef87e4bc256f333927e1ae72eb4e18bb60e5f67"
 }

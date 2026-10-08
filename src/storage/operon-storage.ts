@@ -273,6 +273,7 @@ function pickContextualMenuStoreSettings(settings: OperonSettings): ContextualMe
 function pickTaskUiPreferenceStoreSettings(settings: OperonSettings): TaskUiPreferenceStoreSettings {
 	return {
 		taskCreatorToolbar: settings.taskCreatorToolbar,
+		taskEditorSections: settings.taskEditorSections,
 		taskEditorShowLineNumbers: settings.taskEditorShowLineNumbers,
 		taskEditorHighlightActiveLine: settings.taskEditorHighlightActiveLine,
 		taskEditorWorkflowPickers: settings.taskEditorWorkflowPickers,

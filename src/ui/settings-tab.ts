@@ -1,3 +1,5 @@
+import { normalizeTaskEditorSections, type TaskEditorSection, type TaskEditorSectionId } from '../types/task-editor-sections';
+import { taskEditorSectionDefaultLabel } from './task-editor-section-label';
 import type { InterfaceIconRowSelection } from './settings/interface-editor-ui';
 import { scopeSettingsModal, scopeSettingsDefinitions, setSettingsScope } from './settings/settings-scope';
 import { PropertyPoolValueSession } from './property-value-pool-values';
@@ -1221,6 +1223,10 @@ export class OperonSettingsTab extends PluginSettingTab {
 	}
 
 	async setControlValue(key: string, value: unknown): Promise<void> {
+		if (key === 'taskEditorSections') {
+			await this.saveTaskEditorSections(() => normalizeTaskEditorSections(value));
+			return;
+		}
 		if (key.startsWith('calendarPresetRangeMode:')) {
 			if (value !== 'rolling' && value !== 'calendarWeek') return;
 			await this.updateCalendarPreset(key.slice('calendarPresetRangeMode:'.length), preset => { preset.rangeMode = value; });
@@ -2068,6 +2074,13 @@ export class OperonSettingsTab extends PluginSettingTab {
 					t('settings', 'taskEditorHighlightActiveLineDesc'), 'taskEditorHighlightActiveLine');
 			}],
 		], entries, t('settings', 'subtabTaskEditor'), 'DOCS-021 Task Editor');
+		groups.push({ type: 'group', heading: t('settings', 'taskEditorSections'), cls: 'operon-task-editor-sections-settings',
+			items: normalizeTaskEditorSections(this.settings.taskEditorSections).map(section => ({
+				name: section.name || taskEditorSectionDefaultLabel(section.id),
+				aliases: [taskEditorSectionDefaultLabel(section.id), t('settings', 'taskEditorSections')],
+				render: (setting: Setting) => this.configureTaskEditorSectionRow(setting, section.id),
+			})),
+		});
 		const heading = t('settings', 'taskEditorWorkflowPickers');
 		groups.push({
 			type: 'group', heading, cls: 'operon-task-chip-settings-group operon-task-editor-properties-group',
@@ -3464,6 +3477,62 @@ export class OperonSettingsTab extends PluginSettingTab {
 	}
 
 
+	private taskEditorSectionsSaveQueue: Promise<void> = Promise.resolve();
+	private saveTaskEditorSections(change: (current: TaskEditorSection[]) => TaskEditorSection[], refreshDefinitions = true): Promise<void> {
+		const run = this.taskEditorSectionsSaveQueue.then(async () => {
+			const current = normalizeTaskEditorSections(this.settings.taskEditorSections);
+			const before = JSON.stringify(current);
+			const next = normalizeTaskEditorSections(change(current));
+			if (before === JSON.stringify(next)) return;
+			await this.storage.updateSettings({ taskEditorSections: next });
+			this.notifySettingsChanged();
+			this.applyPendingSettingsChange();
+		}).catch((error: unknown) => {
+			new Notice(t('settings', 'taskEditorSectionsSaveFailed'));
+			throw error;
+		}).finally(() => { if (refreshDefinitions) this.updateNativeSettingsDefinitions(); });
+		this.taskEditorSectionsSaveQueue = run.catch(() => undefined);
+		return run;
+	}
+
+	private configureTaskEditorSectionRow(setting: Setting, id: TaskEditorSectionId, refresh?: () => void): void {
+		const sections = normalizeTaskEditorSections(this.settings.taskEditorSections);
+		const index = sections.findIndex(section => section.id === id);
+		const defaultName = taskEditorSectionDefaultLabel(id);
+		setting.settingEl.addClass('operon-task-editor-section-setting');
+		setting.setName(defaultName);
+		setting.addText(text => {
+			text.setValue(sections[index].name || defaultName).setPlaceholder(defaultName);
+			text.inputEl.maxLength = 80;
+			setAccessibleLabelWithoutTooltip(text.inputEl, defaultName);
+			setting.infoEl.replaceChildren(text.inputEl);
+			const saveName = (): void => {
+				const submitted = text.getValue();
+				const name = submitted.trim();
+				void this.saveTaskEditorSections(current => current.map(section => section.id === id
+					? { ...section, name: name === defaultName ? '' : name } : section), false)
+					.catch(() => undefined).finally(() => {
+						if (text.getValue() === submitted) text.setValue(this.settings.taskEditorSections.find(section => section.id === id)?.name || defaultName);
+					});
+			};
+			text.inputEl.addEventListener('change', saveName);
+			text.inputEl.addEventListener('keydown', event => {
+				if (event.key === 'Enter' && !event.isComposing) { event.preventDefault(); text.inputEl.blur(); }
+			});
+		});
+		for (const delta of [-1, 1]) setting.addExtraButton(button => button.setIcon(delta < 0 ? 'arrow-up' : 'arrow-down')
+			.setTooltip(t('settings', delta < 0 ? 'taskCardMoveUp' : 'taskCardMoveDown'))
+			.setDisabled(index + delta < 0 || index + delta >= sections.length)
+			.onClick(() => {
+				void this.saveTaskEditorSections(current => {
+					const from = current.findIndex(section => section.id === id);
+					const to = from + delta;
+					if (from >= 0 && to >= 0 && to < current.length) [current[from], current[to]] = [current[to], current[from]];
+					return current;
+				}).catch(() => undefined).finally(() => refresh?.());
+			}));
+	}
+
  private taskCardSaveQueue: Promise<void> = Promise.resolve();
  private saveTaskCardSetting(key: keyof TaskCardSettings, value: unknown): Promise<void> {
   const run = this.taskCardSaveQueue.then(async () => {
@@ -4538,6 +4607,16 @@ export class OperonSettingsTab extends PluginSettingTab {
 	private renderInterfaceTaskEditorTab(containerEl: HTMLElement): void {
 		this.renderBoundToggleSetting(containerEl, t('settings', 'taskEditorShowLineNumbers'), t('settings', 'taskEditorShowLineNumbersDesc'), 'taskEditorShowLineNumbers');
 		this.renderBoundToggleSetting(containerEl, t('settings', 'taskEditorHighlightActiveLine'), t('settings', 'taskEditorHighlightActiveLineDesc'), 'taskEditorHighlightActiveLine');
+		const sections = renderNativeSettingsGroupedSection(containerEl, t('settings', 'taskEditorSections'));
+		sections.addClass('operon-task-editor-sections-settings');
+		const renderSections = (): void => {
+			sections.empty();
+			for (const section of normalizeTaskEditorSections(this.settings.taskEditorSections)) {
+				this.configureTaskEditorSectionRow(new Setting(sections), section.id, renderSections);
+			}
+		};
+		renderSections();
+		this.markSettingsSearchSectionTarget(sections, 'ui.taskEditorSections');
 		const workflowPickersTitle = t('settings', 'taskEditorWorkflowPickers');
 		const sectionEl = renderNativeSettingsGroupedSection(
 			containerEl,

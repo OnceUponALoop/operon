@@ -1,8 +1,8 @@
 {
   "schemaVersion": 1,
   "locale": "ru",
-  "keyCount": 3550,
-  "keyFingerprint": "71226da74e971e9e093af4fab345b810b712fd9c0c992e92e977f36e3b40e3ae",
+  "keyCount": 3553,
+  "keyFingerprint": "d227b61beefc78e308eb3db9d0cb2990cebe30c87b856d481ec63d7d3b3c6a33",
   "translations": {
     "buttons": {
       "addFileSubtask": "Добавить файловую подзадачу",
@@ -2674,6 +2674,9 @@
       "taskEditorMobileCoreToolsMoveDown": "Переместить вниз",
       "taskEditorMobileCoreToolsMoveUp": "Переместить вверх",
       "taskEditorMobileCoreToolsReorder": "Изменить порядок основных мобильных значков",
+      "taskEditorSections": "Разделы и порядок",
+      "taskEditorSectionsDesc": "Переименуйте и упорядочьте разделы Task Editor. Оставьте имя пустым для восстановления имени по умолчанию. Применяется к настольной версии.",
+      "taskEditorSectionsSaveFailed": "Не удалось сохранить разделы Task Editor.",
       "taskEditorShowLineNumbers": "Показывать номера строк в редакторе задач",
       "taskEditorShowLineNumbersDesc": "Отображать номера строк исходного текста на панели тела файла в редакторе задач.",
       "taskEditorWorkflowPickers": "Видимость и порядок свойств",
@@ -3595,5 +3598,5 @@
       "toggleDescendantPreview": "Переключить предпросмотр потомков"
     }
   },
-  "sourceVersion": "50203b9d12c4bc7ce7d0fe7d8d7a26d6c3703cb6b15ce24d2ddcd8a4e0dc9b42"
+  "sourceVersion": "041241fe60d1a4fbb51100e48ec8a408adddaaae2cca259c96ce622b366977c0"
 }

@@ -36332,3 +36332,29 @@ body .operon-task-editor:not(.operon-task-editor-mobile) button.operon-editor-tr
 		display: inline;
 	}
 }
+
+/* Section hosts preserve scoped controls while the DOM follows the configured order. */
+.operon-task-editor:not(.operon-task-editor-mobile) .operon-task-editor-section-layout {
+ display: flex;
+ flex-direction: column;
+ gap: 12px;
+ min-width: 0;
+}
+
+.operon-task-editor:not(.operon-task-editor-mobile) .operon-task-editor-section-host > * {
+ flex-shrink: 0;
+}
+
+.operon-task-editor:not(.operon-task-editor-mobile) .operon-task-editor-section-host {
+ flex-shrink: 0;
+ min-width: 0;
+}
+
+.operon-task-editor:not(.operon-task-editor-mobile) .operon-task-editor-section-host[hidden] {
+ display: none;
+}
+
+.operon-task-editor-sections-settings .operon-task-editor-section-setting .setting-item-info input {
+ width: 16ch;
+ max-width: 100%;
+}

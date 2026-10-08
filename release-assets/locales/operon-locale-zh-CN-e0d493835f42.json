@@ -1,8 +1,8 @@
 {
   "schemaVersion": 1,
   "locale": "zh-CN",
-  "keyCount": 3550,
-  "keyFingerprint": "71226da74e971e9e093af4fab345b810b712fd9c0c992e92e977f36e3b40e3ae",
+  "keyCount": 3553,
+  "keyFingerprint": "d227b61beefc78e308eb3db9d0cb2990cebe30c87b856d481ec63d7d3b3c6a33",
   "translations": {
     "buttons": {
       "addFileSubtask": "添加文件子任务",
@@ -2674,6 +2674,9 @@
       "taskEditorMobileCoreToolsMoveDown": "下移",
       "taskEditorMobileCoreToolsMoveUp": "上移",
       "taskEditorMobileCoreToolsReorder": "重新排序移动端核心图标",
+      "taskEditorSections": "分区和顺序",
+      "taskEditorSectionsDesc": "重命名并排列 Task Editor 分区。名称留空可恢复默认名称。适用于桌面布局。",
+      "taskEditorSectionsSaveFailed": "无法保存 Task Editor 分区。",
       "taskEditorShowLineNumbers": "在任务编辑器中显示行号",
       "taskEditorShowLineNumbersDesc": "在任务编辑器的文件正文面板中显示源行号。",
       "taskEditorWorkflowPickers": "属性显示与排序",
@@ -3595,5 +3598,5 @@
       "toggleDescendantPreview": "切换子任务预览"
     }
   },
-  "sourceVersion": "31b3a6ecf8060dc7984a51d0c02ad92114e82039df9ca8e3ccbb8783643a8850"
+  "sourceVersion": "fe22f9c067284bf75371f25322b48e4960d5d6ce7bbe8a9e90c80e415a48adbd"
 }

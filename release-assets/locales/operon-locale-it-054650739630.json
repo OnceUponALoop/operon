@@ -1,8 +1,8 @@
 {
   "schemaVersion": 1,
   "locale": "it",
-  "keyCount": 3550,
-  "keyFingerprint": "71226da74e971e9e093af4fab345b810b712fd9c0c992e92e977f36e3b40e3ae",
+  "keyCount": 3553,
+  "keyFingerprint": "d227b61beefc78e308eb3db9d0cb2990cebe30c87b856d481ec63d7d3b3c6a33",
   "translations": {
     "buttons": {
       "addFileSubtask": "Aggiungi sotto-attività-file",
@@ -2674,6 +2674,9 @@
       "taskEditorMobileCoreToolsMoveDown": "Sposta in basso",
       "taskEditorMobileCoreToolsMoveUp": "Sposta in alto",
       "taskEditorMobileCoreToolsReorder": "Riordina icone principali mobili",
+      "taskEditorSections": "Sezioni e ordine",
+      "taskEditorSectionsDesc": "Rinomina e riordina le sezioni di Task Editor. Lascia vuoto un nome per ripristinare quello predefinito. Si applica al layout desktop.",
+      "taskEditorSectionsSaveFailed": "Impossibile salvare le sezioni di Task Editor.",
       "taskEditorShowLineNumbers": "Mostra numeri di riga nell'Editor attività",
       "taskEditorShowLineNumbersDesc": "Mostra i numeri di riga di origine nel pannello contenuto del file dell'Editor attività.",
       "taskEditorWorkflowPickers": "Visibilità e ordine delle proprietà",
@@ -3595,5 +3598,5 @@
       "toggleDescendantPreview": "Alterna anteprima discendenti"
     }
   },
-  "sourceVersion": "542880eb089d892e3714da4113910fc5ab1758dfd45fff6bfd302d84a9ac3ac9"
+  "sourceVersion": "6086711dc0654b0b2c971b0f3b65d4a4cafb59796dc8eaa832236b1c75294f00"
 }

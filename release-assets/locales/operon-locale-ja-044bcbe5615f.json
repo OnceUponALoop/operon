@@ -1,8 +1,8 @@
 {
   "schemaVersion": 1,
   "locale": "ja",
-  "keyCount": 3550,
-  "keyFingerprint": "71226da74e971e9e093af4fab345b810b712fd9c0c992e92e977f36e3b40e3ae",
+  "keyCount": 3553,
+  "keyFingerprint": "d227b61beefc78e308eb3db9d0cb2990cebe30c87b856d481ec63d7d3b3c6a33",
   "translations": {
     "buttons": {
       "addFileSubtask": "ファイルサブタスクを追加",
@@ -2674,6 +2674,9 @@
       "taskEditorMobileCoreToolsMoveDown": "下へ移動",
       "taskEditorMobileCoreToolsMoveUp": "上へ移動",
       "taskEditorMobileCoreToolsReorder": "モバイルのコアアイコンを並べ替え",
+      "taskEditorSections": "セクションと順序",
+      "taskEditorSectionsDesc": "Task Editorのセクション名と順序を変更します。名前を空にすると既定の名前に戻ります。デスクトップのレイアウトに適用されます。",
+      "taskEditorSectionsSaveFailed": "Task Editorのセクションを保存できませんでした。",
       "taskEditorShowLineNumbers": "タスクエディターに行番号を表示",
       "taskEditorShowLineNumbersDesc": "タスクエディターのファイル本文パネルにソースの行番号を表示します。",
       "taskEditorWorkflowPickers": "プロパティの表示と順序",
@@ -3595,5 +3598,5 @@
       "toggleDescendantPreview": "子孫プレビューを切り替え"
     }
   },
-  "sourceVersion": "29dda27d69077913705ef7274dedde43d3e527f42988bf9c42dcabd35d7ba5a0"
+  "sourceVersion": "bfa04ede5995f738bffe2dd809de49049e6ec6fbd0ac60c7010f7c05a6e05798"
 }

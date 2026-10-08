@@ -1,3 +1,4 @@
+import { normalizeTaskEditorSections } from '../types/task-editor-sections';
 import { App } from 'obsidian';
 import {
 	buildCompatibilityTaskEditorWorkflowPickerItems,
@@ -16,6 +17,7 @@ const TASK_UI_PREFERENCE_STORE_VERSION = 3;
 export type TaskUiPreferenceStoreSettings = Pick<
 	OperonSettings,
 	| 'taskCreatorToolbar'
+	| 'taskEditorSections'
 	| 'taskEditorShowLineNumbers'
 	| 'taskEditorHighlightActiveLine'
 	| 'taskEditorWorkflowPickers'
@@ -68,6 +70,7 @@ type LegacyTaskWikilinkOverlayPreferenceData = {
 function cloneSettings(settings: TaskUiPreferenceStoreSettings): TaskUiPreferenceStoreSettings {
 	return {
 		taskCreatorToolbar: settings.taskCreatorToolbar.map(item => ({ ...item })),
+		taskEditorSections: normalizeTaskEditorSections(settings.taskEditorSections),
 		taskEditorShowLineNumbers: settings.taskEditorShowLineNumbers,
 		taskEditorHighlightActiveLine: settings.taskEditorHighlightActiveLine,
 		taskEditorWorkflowPickers: settings.taskEditorWorkflowPickers.map(item => ({ ...item })),
@@ -146,6 +149,7 @@ function readStoreData(
 ): TaskUiPreferenceStoreSettings {
 	return {
 		taskCreatorToolbar: readArray(raw.taskCreatorToolbar, fallback.taskCreatorToolbar),
+		taskEditorSections: normalizeTaskEditorSections(raw.taskEditorSections ?? fallback.taskEditorSections),
 		taskEditorShowLineNumbers: readBoolean(raw.taskEditorShowLineNumbers, fallback.taskEditorShowLineNumbers),
 		taskEditorHighlightActiveLine: readBoolean(raw.taskEditorHighlightActiveLine, fallback.taskEditorHighlightActiveLine),
 		taskEditorWorkflowPickers: normalizeTaskEditorWorkflowPickers(
