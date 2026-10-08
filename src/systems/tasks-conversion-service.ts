@@ -1,6 +1,6 @@
 import type { KeyMapping } from '../types/settings';
 import type { TasksConversionSettings, TasksConversionScope, TasksConversionFactories, TasksConversionScan, TasksConversionPreview } from '../core/tasks-conversion-plan';
-import { previewTasksConversion, resolveTasksConversionPaths, scanTasksConversionSources, tasksConversionSettingsSnapshot } from '../core/tasks-conversion-plan';
+import { previewTasksConversion, resolveTasksConversionPaths, scanTasksConversionSources, tasksConversionSettingsSnapshot, serializeTasksConversionSettings } from '../core/tasks-conversion-plan';
 import { TasksConversionRecoveryStore, type TasksConversionRecord, type TasksConversionRecoveryState } from '../storage/tasks-conversion-recovery';
 
 export interface TasksConversionIdentity {
@@ -124,10 +124,11 @@ export class TasksConversionService {
 			return this.host.exclusive(record.changes.map(change => change.path), async port => {
 				const attempted = new Set<string>();
 				try {
-					const settingsMatch = () => JSON.stringify(tasksConversionSettingsSnapshot(this.host.settings())) === JSON.stringify(preview.scan.settings);
+					const expectedSettings = serializeTasksConversionSettings(preview.scan.settings);
+					const settingsMatch = () => serializeTasksConversionSettings(this.host.settings()) === expectedSettings;
 					const allowed = () => options.canCommit?.() !== false && settingsMatch();
 					if (options.canCommit?.() === false) return this.result('cancelled', record);
-					if (JSON.stringify(tasksConversionSettingsSnapshot(this.host.settings())) !== JSON.stringify(preview.scan.settings)) {
+					if (!settingsMatch()) {
 						return this.result('not-applied', record, 'Conversion settings changed; scan again');
 					}
 					for (const change of record.changes) if (await port.read(change.path) !== change.before) {

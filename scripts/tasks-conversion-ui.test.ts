@@ -6,6 +6,7 @@ import { createRequire } from 'node:module';
 const ts: typeof import('typescript') = createRequire(path.join(process.cwd(), 'package.json'))('typescript');
 import { App, TFile } from 'obsidian';
 import { fixture, wiredFixture, DiskAdapter } from './tasks-conversion-service.test';
+import { parseTaskLine } from '../src/core/parser';
 import { TasksConversionController, tasksConversionCounts } from '../src/ui/tasks-conversion-controller';
 import { TasksConversionModal } from '../src/ui/tasks-conversion-modal';
 import { createTasksConversionReferenceInventory, tasksConversionCanvasReferences, tasksConversionCardReferences, tasksConversionTableReferences } from '../src/systems/tasks-conversion-references';
@@ -399,4 +400,33 @@ test('verified success is not inherited by a different recovery record inspected
  const { m, button } = modalFixture(c, f.app);
  await new Promise<void>(resolve => { const render = c.onChange; c.onChange = () => { render(); if (!c.busy) resolve(); }; m.onOpen(); });
  assert.ok(button('Restore')); assert.equal(button('RetryCleanup'), undefined);
+});
+
+
+test('large mixed-file selection retains independent defaults, stable identity, focus and exact apply snapshots', async () => {
+ const notes = Object.fromEntries(Array.from({ length: 24 }, (_, file) => {
+  const end = file % 2 ? '\r\n' : '\n';
+  const lines = ['---', 'Title: Synthetic fixture', '---', '- [ ] Existing {{operonId:: zzzzzzz}} {{priority:: Low}}',
+   ...Array.from({ length: 12 }, (_, row) => `  - [ ] Task ${file}-${row} 📅 2026-10-10${row % 2 ? ' ⏬' : ''}`),
+   '```md', '- [ ] Protected 📅 2026-10-10', '```', '- [ ] Ordinary checkbox'];
+  return [`Folder/File-${String(file).padStart(2, '0')}.md`, lines.join(end) + end];
+ }));
+ const { f, c } = controller(fixture(notes)); f.settings.defaultPriority = 'High';
+ await c.initialize(); c.updateScope(f.scope); await c.scan();
+ const all = c.preview!, selected = all.rows.filter(row => row.status === 'eligible' && row.lineNumber % 3 === 0).map(row => row.key);
+ const { m, button, doc } = modalFixture(c);
+ await new Promise<void>(resolve => { const render = c.onChange; c.onChange = () => { render(); if (!c.busy) resolve(); }; m.onOpen(); });
+ button('SelectNone').focus(); c.select([]); assert.equal(doc.activeElement?.dataset.focusKey, 'SelectNone');
+ c.select(selected); const approved = c.preview!;
+ assert.equal(approved.operonIds.length, 96); assert.equal(approved.scan.timestamp, all.scan.timestamp);
+ for (const row of approved.rows.filter(row => row.selected)) {
+  assert.equal(row.operonId, all.rows.find(original => original.key === row.key)!.operonId);
+  const task = parseTaskLine(row.after!, row.lineNumber, row.path, f.settings.keyMappings)!;
+  assert.equal(task.fields.some(field => field.key === 'parentTask'), false);
+  if (row.lineNumber % 2 === 0) assert.equal(task.fields.find(field => field.key === 'priority')?.value, 'High');
+ }
+ c.select(all.selectedKeys); c.select(selected); assert.deepEqual(c.preview!.changes, approved.changes);
+ await c.apply(); assert.equal(c.result?.status, 'committed'); assert.equal(c.counts.converted, 96);
+ for (const change of approved.changes) assert.equal(await f.adapter.read(change.path), change.after);
+ assert.equal(doc.activeElement?.dataset.focusKey, 'New'); assert.equal((await f.store.load()).kind, 'empty');
 });

@@ -9,7 +9,7 @@ import type { OperonIndexer } from '../src/indexer/indexer';
 import { TaskWriter } from '../src/core/task-writer';
 import { parseTaskLine } from '../src/core/parser';
 import { tasksConversionProtectedLines, isTasksConversionPath } from '../src/core/tasks-conversion-scope';
-import { resolveTasksConversionPaths, type TasksConversionScope } from '../src/core/tasks-conversion-plan';
+import { resolveTasksConversionPaths, serializeTasksConversionSettings, tasksConversionSettingsSnapshot, type TasksConversionScope } from '../src/core/tasks-conversion-plan';
 import { TasksConversionService } from '../src/systems/tasks-conversion-service';
 import { createTasksConversionHost, collectTasksConversionIdentities } from '../src/systems/tasks-conversion-obsidian';
 import { TasksConversionRecoveryStore } from '../src/storage/tasks-conversion-recovery';
@@ -546,4 +546,48 @@ test('scan progress abort stops before any persistence and observers cannot muta
  await assert.rejects(f.service.scan(f.scope, { signal: abort.signal, onProgress: () => abort.abort() }), { name: 'AbortError' });
  assert.deepEqual(f.adapter.writes, []);
  assert.equal((await f.store.load()).kind, 'empty');
+});
+
+
+test('settings serialization preserves snapshot semantics independent of top-level insertion order', () => {
+ const settings = structuredClone(DEFAULT_SETTINGS);
+ const reversed = Object.fromEntries(Object.entries(settings).reverse()) as typeof settings;
+ assert.equal(serializeTasksConversionSettings(reversed), JSON.stringify(tasksConversionSettingsSnapshot(settings)));
+ settings.defaultPriority = 'Changed';
+ assert.notEqual(serializeTasksConversionSettings(settings), serializeTasksConversionSettings(reversed));
+});
+for (const key of ['priorities', 'pipelines', 'defaultPipelineName', 'defaultPriority', 'keyMappings', 'excludedFolders', 'fileTaskTemplateFolder'] as const) {
+ test(`fresh settings serialization rejects changed ${key} without persistent writes`, async () => {
+  const f = fixture(), preview = await f.preview();
+  const value = f.settings[key];
+  Object.assign(f.settings, { [key]: Array.isArray(value) ? [...value, value[0] ?? 'Changed'] : `${value} Changed` });
+  assert.equal((await f.service.apply(preview)).status, 'not-applied'); assert.deepEqual(f.adapter.writes, []);
+ });
+}
+test('current settings are checked inside the exact source writer guard', async () => {
+ const f = fixture(), preview = await f.preview(), process = f.app.vault.process.bind(f.app.vault);
+ f.app.vault.process = async (file, transform) => {
+  f.settings.defaultPriority = 'Changed'; return process(file, transform);
+ };
+ assert.equal((await f.service.apply(preview)).status, 'rolled-back');
+ assert.ok(f.adapter.writes.every(file => !file.endsWith('.md')));
+ for (const change of preview.changes) assert.equal(await f.adapter.read(change.path), change.before);
+});
+for (const boundary of [0, 1]) {
+ test(`settings change after source ${boundary} is caught before completion and restores exact sources`, async () => {
+  const f = fixture(), preview = await f.preview(); let changed = false;
+  f.adapter.afterWrite = (file, content) => {
+   if (!changed && file === preview.changes[boundary].path && content === preview.changes[boundary].after) {
+    changed = true; f.settings.defaultPriority = 'Changed';
+   }
+  };
+  assert.equal((await f.service.apply(preview)).status, 'rolled-back'); assert.equal(changed, true);
+  for (const change of preview.changes) assert.equal(await f.adapter.read(change.path), change.before);
+  assert.equal((await f.store.load()).kind, 'empty');
+ });
+}
+test('unrelated setting edits preserve the approved conversion output', async () => {
+ const f = fixture(), preview = await f.preview(); f.settings.autoParentFileTask = !f.settings.autoParentFileTask;
+ assert.equal((await f.service.apply(preview, { finalizeOnSuccess: true })).status, 'committed');
+ for (const change of preview.changes) assert.equal(await f.adapter.read(change.path), change.after);
 });

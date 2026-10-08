@@ -37,11 +37,15 @@ export interface TasksConversionFactories {
 	now?: () => string; operonId?: (used: Set<string>) => string; repeatSeriesId?: (used: Set<string>) => string;
 }
 
-export function tasksConversionSettingsSnapshot(settings: TasksConversionSettings): TasksConversionSettings {
-	return JSON.parse(JSON.stringify({ priorities: settings.priorities, pipelines: settings.pipelines,
+export function serializeTasksConversionSettings(settings: TasksConversionSettings): string {
+	return JSON.stringify({ priorities: settings.priorities, pipelines: settings.pipelines,
 		defaultPipelineName: settings.defaultPipelineName, defaultPriority: settings.defaultPriority,
 		keyMappings: settings.keyMappings, excludedFolders: settings.excludedFolders,
-		fileTaskTemplateFolder: settings.fileTaskTemplateFolder })) as TasksConversionSettings;
+		fileTaskTemplateFolder: settings.fileTaskTemplateFolder });
+}
+
+export function tasksConversionSettingsSnapshot(settings: TasksConversionSettings): TasksConversionSettings {
+	return JSON.parse(serializeTasksConversionSettings(settings)) as TasksConversionSettings;
 }
 
 export function resolveTasksConversionPaths(scope: TasksConversionScope, inventory: readonly string[]): string[] {
@@ -118,6 +122,7 @@ export function previewTasksConversion(scan: TasksConversionScan, selection?: re
 	const byKey = new Map(batch.items.map(item => [item.sourceKey, item]));
 	const patches = new Map<string, Map<number, string>>();
 	const errors: string[] = [], operonIds: string[] = [], repeatSeriesIds: string[] = [];
+	const defaults = Object.entries(resolveSubtaskInitialFieldsFromParentValues(null, null, scan.settings as OperonSettings));
 	const rows: TasksConversionPreview['rows'] = scan.rows.map(row => {
 		const result: TasksConversionPreview['rows'][number] = { ...row, selected: selected.has(row.key), warnings: [] };
 		if (!result.selected) return result;
@@ -130,8 +135,7 @@ export function previewTasksConversion(scan: TasksConversionScan, selection?: re
 		if (!task) throw new Error('Converted Tasks description could not be parsed');
 		setField(task, 'operonId', row.operonId!);
 		setField(task, 'datetimeCreated', scan.timestamp);
-		const defaults = resolveSubtaskInitialFieldsFromParentValues(null, null, scan.settings as OperonSettings);
-		for (const [key, value] of Object.entries(defaults)) if (typeof value === 'string') setField(task, key, value);
+		for (const [key, value] of defaults) if (typeof value === 'string') setField(task, key, value);
 		const previousFieldValues = Object.fromEntries(task.fields.map(field => [field.key, field.value]));
 		const applied = applyTasksEmojiConversionToParsedTask({ task, tags: conversion.tags,
 			mappedFields: conversion.mappedFields, leftovers: conversion.leftovers, previousFieldValues,

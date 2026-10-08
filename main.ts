@@ -26424,9 +26424,10 @@ export default class OperonPlugin extends Plugin {
    const view = leaf.view as unknown as { file?: TFile; saving?: boolean; lastSavedData?: string; canvas?: { getData?(): unknown } };
    if (view.file?.path !== path) continue;
    try {
+    const expected = JSON.stringify(JSON.parse(content));
     if (view.saving !== false || !view.lastSavedData || !view.canvas?.getData
-     || JSON.stringify(JSON.parse(view.lastSavedData)) !== JSON.stringify(JSON.parse(content))
-     || JSON.stringify(view.canvas.getData()) !== JSON.stringify(JSON.parse(content))) return false;
+     || JSON.stringify(JSON.parse(view.lastSavedData)) !== expected
+     || JSON.stringify(view.canvas.getData()) !== expected) return false;
    } catch { return false; }
   }
   for (const leaf of this.app.workspace.getLeavesOfType('excalidraw')) {
@@ -26501,6 +26502,8 @@ export default class OperonPlugin extends Plugin {
   if (this.tasksConversionModal) { this.tasksConversionModal.modalEl.focus(); return; }
   const available = () => this.startupReady && this.agentRuntimeLifecycle.getPhase() !== 'unloading';
   const pinned = this.pinnedCache;
+  const nativePaths = this.tasksConversionNativePaths, ownedSources = this.tasksConversionOwnedSources,
+   generatedIds = this.tasksConversionGeneratedIds, settledSources = this.tasksConversionSettledSources;
   if (!pinned) return;
   const workflow = () => {
    const references = [...pinned.getPinnedIds(), ...pinned.getManualOrderIds(),
@@ -26548,29 +26551,29 @@ export default class OperonPlugin extends Plugin {
    try {
     return await withExcalidrawMarkdownSources(this.app, this.writer, paths,
      file => this.isExcalidrawTaskSource(file), available, async current => {
-      for (const path of paths) this.tasksConversionNativePaths.add(path);
+      for (const path of paths) nativePaths.add(path);
       return operation(current);
      }, [], (path, expected, content) => this.assertTasksConversionAdoption(path, expected, content));
-   } finally { for (const path of paths) this.tasksConversionNativePaths.delete(path); }
+   } finally { for (const path of paths) nativePaths.delete(path); }
   });
   const service = new TasksConversionService(host, new TasksConversionRecoveryStore(this.app.vault.adapter, this.app.vault.configDir));
   const controller = new TasksConversionController({ service, available,
    coordinate: async (paths, ids, operation, changes = []) => {
-    for (const id of ids) this.tasksConversionGeneratedIds.add(id);
-    for (const change of changes) this.tasksConversionOwnedSources.set(change.path, { before: change.before, after: change.after, written: false });
+    for (const id of ids) generatedIds.add(id);
+    for (const change of changes) ownedSources.set(change.path, { before: change.before, after: change.after, written: false });
     try { return await operation(); }
     finally {
      for (const path of paths) {
       const file = this.app.vault.getAbstractFileByPath(path);
       if (file instanceof TFile) {
        try {
-        const content = await this.app.vault.read(file), owned = this.tasksConversionOwnedSources.get(path);
-        if (owned?.written && (content === owned.before || content === owned.after)) this.tasksConversionSettledSources.set(path, content);
-       } catch { this.tasksConversionSettledSources.delete(path); }
+        const content = await this.app.vault.read(file), owned = ownedSources.get(path);
+        if (owned?.written && (content === owned.before || content === owned.after)) settledSources.set(path, content);
+       } catch { settledSources.delete(path); }
       }
-      this.tasksConversionOwnedSources.delete(path);
+      ownedSources.delete(path);
      }
-     for (const id of ids) this.tasksConversionGeneratedIds.delete(id);
+     for (const id of ids) generatedIds.delete(id);
     }
    },
    settle: async paths => {
@@ -26578,7 +26581,7 @@ export default class OperonPlugin extends Plugin {
     for (const path of paths) {
      const file = this.app.vault.getAbstractFileByPath(path);
      const content = file instanceof TFile ? await this.app.vault.read(file) : null;
-     const owned = this.tasksConversionOwnedSources.get(path);
+     const owned = ownedSources.get(path);
      const conversionSource = !!owned && (content === owned.before || content === owned.after);
      await this.indexer.forceReindexFilePathAfterMutation(path, { notify: !conversionSource });
     }
