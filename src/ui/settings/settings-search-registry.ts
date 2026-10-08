@@ -110,6 +110,7 @@ export const OPERON_SETTINGS_SEARCH_REGISTRY: readonly OperonSettingsSearchEntry
 	e('automation', 'tasksInlineTasks', 'inlineTaskDailyNoteAddScheduledDate', 'settings', 'inlineTaskDailyNoteAddScheduledDate', 'inlineTaskDailyNoteAddScheduledDateDesc', 'toggle', ['daily notes', 'daily note defaults', 'scheduled date', 'dateScheduled', 'inline task']),
 	e('ui', 'tasksInlineTasks', 'inlineTaskShowTasksEmojiConvertIcon', 'settings', 'showTasksEmojiConvertIcon', 'showTasksEmojiConvertIconDesc', 'toggle', ['tasks emoji', 'convert task', 'inline task conversion']),
 	e('ui', 'tasksInlineTasks', 'inlineTaskShowPlainCheckboxConvertIcon', 'settings', 'showPlainCheckboxConvertIcon', 'showPlainCheckboxConvertIconDesc', 'toggle', ['plain checkbox', 'convert checkbox', 'inline task conversion']),
+	section('automation', 'tasksInlineTasks', 'tasksEmojiBulkConversion', 'settings', 'tasksBulkTitle', 'tasksBulkHelp', ['tasks emoji', 'bulk conversion', 'migration', 'recovery', 'toplu dönüşüm']),
 
 	e('automation', 'tasksTaskRouter', 'fileTasksFolder', 'settings', 'fileTasksFolder', 'fileTasksFolderDesc', 'folder', ['new task', 'task creator', 'file task', 'file task folder']),
 	section('automation', 'tasksTaskRouter', 'fileTaskPipelineLocations', 'settings', 'fileTaskPipelineLocations', 'fileTaskPipelineLocationsDesc', ['file task', 'pipeline', 'pipeline folder', 'pipeline location', 'task router']),

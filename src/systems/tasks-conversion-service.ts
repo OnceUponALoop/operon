@@ -17,21 +17,30 @@ export interface TasksConversionIdentityInventory {
 export interface TasksConversionWritePort {
 	read(path: string): Promise<string>;
 	write(path: string, expected: string, next: string, allowed: () => boolean): Promise<void>;
-	identities(mappings: KeyMapping[]): Promise<TasksConversionIdentityInventory>;
+	identities(mappings: KeyMapping[], signal?: AbortSignal): Promise<TasksConversionIdentityInventory>;
 }
 export interface TasksConversionHost {
 	settings(): TasksConversionSettings;
 	paths(): string[];
 	read(path: string): Promise<string>;
-	identities(mappings: KeyMapping[]): Promise<TasksConversionIdentityInventory>;
+	identities(mappings: KeyMapping[], signal?: AbortSignal): Promise<TasksConversionIdentityInventory>;
 	exclusive<T>(paths: string[], operation: (port: TasksConversionWritePort) => Promise<T>): Promise<T>;
 }
 export type TasksConversionOutcome = 'committed' | 'not-applied' | 'cancelled' | 'rolled-back'
 	| 'recovery-required' | 'kept' | 'restored' | 'cleanup-pending';
 export interface TasksConversionResult {
-	status: TasksConversionOutcome; taskCount: number; paths: string[]; message?: string;
+	status: TasksConversionOutcome; taskCount: number; paths: string[]; message?: string; recordId?: string;
+	/** All planned source writes passed final verification, even if evidence cleanup failed. */
+	sourcesCommitted?: boolean;
+	/** A verified restore touched source files, including a pending evidence cleanup. */
+	sourcesTouched?: boolean;
+}
+export interface TasksConversionScanOptions {
+	signal?: AbortSignal;
+	onProgress?: (progress: { completedFiles: number; totalFiles: number; path: string }) => void;
 }
 export interface TasksConversionRunOptions {
+	finalizeOnSuccess?: boolean;
 	canCommit?: () => boolean;
 	onProgress?: (progress: { phase: 'apply' | 'restore'; completedFiles: number; totalFiles: number; path: string }) => void;
 }
@@ -78,14 +87,20 @@ export class TasksConversionService {
 	constructor(private readonly host: TasksConversionHost, private readonly recovery: TasksConversionRecoveryStore,
 		private readonly factories: TasksConversionFactories = {}) {}
 
-	async scan(scope: TasksConversionScope): Promise<TasksConversionScan> {
+	async scan(scope: TasksConversionScope, options: TasksConversionScanOptions = {}): Promise<TasksConversionScan> {
+		const check = () => { if (options.signal?.aborted) throw new DOMException('Scan cancelled', 'AbortError'); };
+		check();
 		const settings = tasksConversionSettingsSnapshot(this.host.settings());
 		const paths = resolveTasksConversionPaths(scope, this.host.paths());
-		const inventory = await this.host.identities(settings.keyMappings);
+		const inventory = await this.host.identities(settings.keyMappings, options.signal);
+		check();
 		const sources = [];
-		for (const path of paths) {
+		for (const [index, path] of paths.entries()) {
+			check();
 			try { sources.push({ path, content: await this.host.read(path) }); }
 			catch (error) { sources.push({ path, error: error instanceof Error ? error.message : 'Source unreadable' }); }
+			check();
+			try { options.onProgress?.({ completedFiles: index + 1, totalFiles: paths.length, path }); } catch { /* Observers do not own scan state. */ }
 		}
 		const scan = freeze(scanTasksConversionSources(scope, sources, settings, reserved(inventory),
 			new Set([...inventory.reservedSeriesIds, ...inventory.sources.flatMap(source => source.repeatSeriesIds)]), this.factories));
@@ -151,7 +166,12 @@ export class TasksConversionService {
 					if (!finalInventory.isCurrent() || finalInventory.unavailablePaths.length || restoreIdentityConflict(finalInventory, record)) {
 						return this.restore(active, port, options, false, attempted);
 					}
-					return this.result('committed', record);
+					// Completion is part of the explicit Apply action. Cleanup never replays source writes.
+					if (options.finalizeOnSuccess) {
+						const result = await this.finish(active, 'kept', 'committed');
+						return { ...result, sourcesCommitted: true };
+					}
+					return { ...this.result('committed', record), sourcesCommitted: true };
 				} catch (error) {
 					const state = await this.recovery.load();
 					if (state.kind === 'active' && state.record.id === record.id && attempted.size) {
@@ -187,8 +207,8 @@ export class TasksConversionService {
 			if (id !== expectedId) return this.result('not-applied', null, 'Recovery identity changed');
 			if (state.kind === 'resolved') {
 				if (action !== 'cleanup') return this.result('cleanup-pending', state.record, 'Only cleanup remains');
-				try { await this.recovery.cleanup(); return this.result(state.resolution.decision, state.record); }
-				catch { return this.result('cleanup-pending', state.record); }
+				try { await this.recovery.cleanup(); return { ...this.result(state.resolution.decision, state.record), recordId: id }; }
+				catch { return { ...this.result('cleanup-pending', state.record), recordId: id }; }
 			}
 			if (action === 'cleanup') return this.result('not-applied', state.record, 'Conversion is unresolved');
 			return this.host.exclusive(state.record.changes.map(change => change.path), async port => {
@@ -235,7 +255,7 @@ export class TasksConversionService {
 			this.progress(options, 'restore', index + 1, record, change.path);
 		}
 		for (const change of record.changes) if (await port.read(change.path) !== change.before) return this.result('recovery-required', record, 'Restored source changed');
-		return this.finish(active, 'restored', explicit ? 'restored' : 'rolled-back');
+		return { ...await this.finish(active, 'restored', explicit ? 'restored' : 'rolled-back'), sourcesTouched: true };
 	}
 	private async classify(record: TasksConversionRecord, port: Pick<TasksConversionWritePort, 'read'>): Promise<TasksConversionInspection['files']> {
 		const files: TasksConversionInspection['files'] = [];
@@ -249,10 +269,13 @@ export class TasksConversionService {
 	}
 	private async finish(active: Extract<TasksConversionRecoveryState, { kind: 'active' }>, decision: 'kept' | 'restored', status: TasksConversionOutcome = decision): Promise<TasksConversionResult> {
 		try { await this.recovery.resolve(active, decision); await this.recovery.cleanup(); return this.result(status, active.record); }
-		catch { const state = await this.recovery.load(); return this.result(state.kind === 'resolved' ? 'cleanup-pending' : 'recovery-required', active.record, 'Recovery evidence retained'); }
+		catch {
+			try { const state = await this.recovery.load(); return this.result(state.kind === 'resolved' ? 'cleanup-pending' : 'recovery-required', active.record, 'Recovery evidence retained'); }
+			catch { return this.result('recovery-required', active.record, 'Recovery evidence retained'); }
+		}
 	}
 	private result(status: TasksConversionOutcome, record: TasksConversionRecord | null, message?: string): TasksConversionResult {
-		return { status, taskCount: record?.taskCount ?? 0, paths: record?.changes.map(change => change.path) ?? [], ...(message ? { message } : {}) };
+		return { status, taskCount: record?.taskCount ?? 0, paths: record?.changes.map(change => change.path) ?? [], ...(record ? { recordId: record.id } : {}), ...(message ? { message } : {}) };
 	}
 	private progress(options: TasksConversionRunOptions, phase: 'apply' | 'restore', completedFiles: number, record: TasksConversionRecord, path: string): void {
 		try { options.onProgress?.({ phase, completedFiles, totalFiles: record.changes.length, path }); } catch { /* Observers do not own the transaction. */ }

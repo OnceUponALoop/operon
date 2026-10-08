@@ -20,7 +20,7 @@ class ObservedFiles extends Map<string, string> {
 	set(file: string, content: string) { const result = super.set(file, content); this.changed?.(file); return result; }
 	delete(file: string) { const result = super.delete(file); if (result) this.changed?.(file); return result; }
 }
-class MemoryAdapter {
+export class MemoryAdapter {
 	files = new ObservedFiles();
 	folders = new Set<string>();
 	writes: string[] = [];
@@ -41,12 +41,12 @@ class MemoryAdapter {
 	}
 }
 
-function fixture(notes: Record<string, string> = { 'A.md': '- [ ] A 🆔 A', 'B.md': '- [ ] B ⛔ A' }) {
+export function fixture(notes: Record<string, string> = { 'A.md': '- [ ] A 🆔 A', 'B.md': '- [ ] B ⛔ A' }) {
 	const adapter = new MemoryAdapter();
 	for (const [file, content] of Object.entries(notes)) adapter.files.set(file, content);
 	return wiredFixture(adapter);
 }
-function wiredFixture(adapter: MemoryAdapter) {
+export function wiredFixture(adapter: MemoryAdapter) {
 	const settings = structuredClone(DEFAULT_SETTINGS);
 	const buffers = new Map<string, string>();
 	const references: string[] = [], reservedSeriesIds: string[] = [];
@@ -466,7 +466,7 @@ test('undo refuses an external relationship appearing during inventory without n
 	assert.equal(f.adapter.writes.length, count); assert.equal(await read('A.md'), p.changes[0].after);
 });
 
-class DiskAdapter extends MemoryAdapter {
+export class DiskAdapter extends MemoryAdapter {
 	constructor(readonly root: string) { super(); }
 	private physical(file: string) { const target = path.resolve(this.root, file); if (!target.startsWith(`${this.root}/`)) throw new Error('Fixture path escape'); return target; }
 	async exists(file: string) { try { await stat(this.physical(file)); return true; } catch { return false; } }
@@ -504,4 +504,46 @@ test('real filesystem adapter, production TaskWriter and reload recovery restore
 		}
 		const count = adapter.writes.length; assert.equal((await f.fresh().inspect()).state.kind, 'empty'); assert.equal(adapter.writes.length, count);
 	} finally { await rm(root, { recursive: true, force: true }); await rm(sealed, { recursive: true, force: true }); }
+});
+
+for (const boundary of ['resolved-write', 'active-remove', 'resolved-remove'] as const) {
+ test(`auto finalization retains committed sources at ${boundary} failure and reload cleanup never replays notes`, async () => {
+  const f = fixture(), preview = await f.preview();
+  f.adapter.beforeWrite = name => { if (boundary === 'resolved-write' && name.endsWith('/resolved.json')) throw new Error('marker failed'); };
+  f.adapter.beforeRemove = name => { if (boundary === 'active-remove' && name.endsWith('/active.json') || boundary === 'resolved-remove' && name.endsWith('/resolved.json')) throw new Error('cleanup failed'); };
+  const result = await f.service.apply(preview, { finalizeOnSuccess: true });
+  assert.equal(result.sourcesCommitted, true);
+  assert.equal(result.status, boundary === 'resolved-write' ? 'recovery-required' : 'cleanup-pending');
+  for (const change of preview.changes) assert.equal(await f.adapter.read(change.path), change.after);
+  const noteWrites = f.adapter.writes.filter(name => name.endsWith('.md')).length;
+  f.adapter.beforeWrite = undefined; f.adapter.beforeRemove = undefined;
+  const fresh = f.fresh(), state = (await fresh.inspect()).state;
+  assert.notEqual(state.kind, 'empty');
+  if (state.kind === 'active') assert.equal((await fresh.resolve('keep', state.record.id)).status, 'kept');
+  else if (state.kind === 'resolved') assert.equal((await fresh.resolve('cleanup', state.resolution.id)).status, 'kept');
+  else assert.fail('Expected valid retained evidence');
+  assert.equal((await fresh.inspect()).state.kind, 'empty');
+  assert.equal(f.adapter.writes.filter(name => name.endsWith('.md')).length, noteWrites);
+ });
+}
+test('auto finalization removes pending decision and permits next conversion without undo/keep', async () => {
+ const f = fixture(), preview = await f.preview();
+ assert.equal((await f.service.apply(preview, { finalizeOnSuccess: true })).status, 'committed');
+ assert.equal((await f.fresh().inspect()).state.kind, 'empty');
+ f.adapter.files.set('C.md', '- [ ] C 📅 2026-10-10');
+ const next = f.service.preview(await f.service.scan({ files: ['C.md'], folders: [], includeSubfolders: true }));
+ assert.equal((await f.service.apply(next, { finalizeOnSuccess: true })).status, 'committed');
+});
+test('late cancel during finalization leaves committed sources intact', async () => {
+ const f = fixture(), preview = await f.preview(); let allowed = true;
+ f.adapter.beforeWrite = name => { if (name.endsWith('/resolved.json')) allowed = false; };
+ const result = await f.service.apply(preview, { finalizeOnSuccess: true, canCommit: () => allowed });
+ assert.equal(result.status, 'committed');
+ for (const change of preview.changes) assert.equal(await f.adapter.read(change.path), change.after);
+});
+test('scan progress abort stops before any persistence and observers cannot mutate transaction', async () => {
+ const f = fixture(), abort = new AbortController();
+ await assert.rejects(f.service.scan(f.scope, { signal: abort.signal, onProgress: () => abort.abort() }), { name: 'AbortError' });
+ assert.deepEqual(f.adapter.writes, []);
+ assert.equal((await f.store.load()).kind, 'empty');
 });

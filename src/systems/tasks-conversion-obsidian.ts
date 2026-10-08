@@ -56,7 +56,9 @@ export function collectTasksConversionIdentities(path: string, content: string, 
 export function createTasksConversionHost(
 	app: App, writer: Pick<TaskWriter, 'runExclusiveTaskMutation' | 'applyExactMarkdownSourceMutation' | 'waitForMarkdownSources'>,
 	settings: () => TasksConversionSettings, openSources: TaskIdRepairOpenSources,
-	workflowInventory: () => Promise<Pick<TasksConversionIdentityInventory, 'externalReferences' | 'reservedSeriesIds' | 'isCurrent'>>,
+	workflowInventory: (signal?: AbortSignal) => Promise<Pick<TasksConversionIdentityInventory, 'externalReferences' | 'reservedSeriesIds' | 'isCurrent'> & { unavailablePaths?: string[] }>,
+ coordinateSources: <T>(paths: readonly string[], operation: (current: () => boolean) => Promise<T>) => Promise<T>
+  = (_paths, operation) => operation(() => true),
 ): TasksConversionHost {
 	let witness: { revision: number } | null = null;
 	const resolve = (path: string) => {
@@ -70,13 +72,16 @@ export function createTasksConversionHost(
 		return content;
 	};
 	const paths = () => app.vault.getMarkdownFiles().map(file => file.path).sort();
-	const identities = async (original: KeyMapping[]) => {
+	const identities = async (original: KeyMapping[], signal?: AbortSignal) => {
+		const check = () => { if (signal?.aborted) throw new DOMException('Scan cancelled', 'AbortError'); };
+		check();
 		const observed = witness, revision = observed?.revision;
 		const sources: TasksConversionIdentity[] = [], unavailablePaths: string[] = [];
 		const contents = new Map<string, string>();
 		const current = settings().keyMappings;
 		const initialPaths = paths();
 		for (const path of initialPaths) {
+			check();
 			try {
 				const content = await read(path);
 				contents.set(path, content);
@@ -99,18 +104,20 @@ export function createTasksConversionHost(
 				sources.push(...locations.values());
 			} catch { unavailablePaths.push(path); }
 		}
-		const workflow = await workflowInventory(), finalPaths = paths();
+		check();
+		const workflow = await workflowInventory(signal), finalPaths = paths();
+		check();
 		for (const path of new Set([...initialPaths, ...finalPaths])) {
 			if (initialPaths.includes(path) !== finalPaths.includes(path)) unavailablePaths.push(path);
 		}
-		return { sources, unavailablePaths, ...workflow, isCurrent: () => observed !== null && witness === observed
+		return { sources, ...workflow, unavailablePaths: [...new Set([...unavailablePaths, ...(workflow.unavailablePaths ?? [])])], isCurrent: () => observed !== null && witness === observed
 			&& observed.revision === revision && workflow.isCurrent() && JSON.stringify(paths()) === JSON.stringify(initialPaths)
 			&& [...contents].every(([path, content]) => openSources.matches(path, content)) };
 	};
 	return { settings, paths, read, identities,
 		exclusive: async (sourcePaths, operation) => {
 			await writer.waitForMarkdownSources(sourcePaths);
-			return writer.runExclusiveTaskMutation(async permit => {
+			return writer.runExclusiveTaskMutation(permit => coordinateSources(sourcePaths, async sourceCurrent => {
 				const observed = { revision: 0 };
 				const changed = () => { observed.revision++; };
 				const refs = [app.vault.on('modify', changed), app.vault.on('create', changed), app.vault.on('delete', changed), app.vault.on('rename', changed)];
@@ -118,12 +125,12 @@ export function createTasksConversionHost(
 				try { return await operation({ read, identities,
 				write: async (path, expected, next, allowed) => {
 					const result = await writer.applyExactMarkdownSourceMutation(path, expected, next,
-						() => allowed() && openSources.matches(path, expected), permit, 'plugin');
+						() => sourceCurrent() && allowed() && openSources.matches(path, expected), permit, 'plugin');
 					if (result.outcome !== 'committed') throw new Error(`Tasks conversion write: ${result.outcome}`);
 					if (!openSources.synchronize(path, expected, next)) throw new Error('Editor changed during conversion write');
 				},
 				}); } finally { witness = null; for (const ref of refs) app.vault.offref(ref); }
-			});
+			}));
 		},
 	};
 }

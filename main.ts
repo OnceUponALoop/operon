@@ -1,3 +1,9 @@
+import { TasksConversionModal } from './src/ui/tasks-conversion-modal';
+import { TasksConversionController } from './src/ui/tasks-conversion-controller';
+import { TasksConversionService } from './src/systems/tasks-conversion-service';
+import { createTasksConversionHost } from './src/systems/tasks-conversion-obsidian';
+import { createTasksConversionReferenceInventory, tasksConversionTableReferences } from './src/systems/tasks-conversion-references';
+import { TasksConversionRecoveryStore } from './src/storage/tasks-conversion-recovery';
 import { pauseExcalidrawTaskPresentation } from './src/ui/excalidraw-task-auto-height';
 import { splitTaskCreationText } from './src/ui/task-creation-text';
 import { ExcalidrawSourceError, rebaseExcalidrawTaskSource, withExcalidrawMarkdownSources, createExcalidrawMarkdownSource, insertExcalidrawInlineTask, readExcalidrawMarkdownSections, type InlineMarkdownSource } from './src/ui/excalidraw-markdown-source';
@@ -16584,6 +16590,7 @@ export default class OperonPlugin extends Plugin {
 			this.indexV8CleanupMaintenance?.request();
 		};
 		this.indexer.onTasksRemoved = (removedTasks, evidence) => {
+			removedTasks = removedTasks.filter(task => !this.tasksConversionGeneratedIds.has(task.operonId));
    if (this.startupReady && evidence) this.excalidrawTaskIntegration?.confirmDeleted(evidence.filePaths
     ? removedTasks.filter(task => evidence.filePaths!.includes(task.primary.filePath)) : removedTasks, evidence.kind);
 			if (!this.startupReady || removedTasks.length === 0) return;
@@ -16594,10 +16601,11 @@ export default class OperonPlugin extends Plugin {
 			}
 			void this.handleTasksRemovedFromIndex(removedTasks);
 		};
-		this.indexer.onTasksChanged = (changes) => {
-			if (!this.startupReady || changes.length === 0) return;
-			void this.handleIndexedTasksChanged(changes);
-		};
+		this.indexer.onTasksChanged = asyncHandler('indexed task changes failed', async changes => {
+   const relevant = await this.filterTasksConversionIndexedChanges(changes);
+   if (!this.startupReady || relevant.length === 0) return;
+   await this.handleIndexedTasksChanged(relevant);
+  });
 
 		this.register(
 			this.timeTracker.subscribe((event) => {
@@ -16862,6 +16870,7 @@ export default class OperonPlugin extends Plugin {
 			this.buildDeveloperApiSettingsIntegration(),
 			this.buildSettingsBackupUiIntegration(),
 			() => this.reconcileAllParentTaskDateRangesWhenSafe(),
+			{ open: () => this.openTasksBulkConversion(), available: () => this.startupReady && this.agentRuntimeLifecycle.getPhase() !== 'unloading' },
 			);
 		this.addSettingTab(this.settingsTab);
 
@@ -17085,6 +17094,7 @@ export default class OperonPlugin extends Plugin {
 
 	onunload(): void {
 		this.agentRuntimeLifecycle.beginUnloading();
+		this.tasksConversionModal?.shutdown();
 		disposeAssigneeChipImages(this.app);
 		this.agentRuntimeCliTransportAvailable = false;
 		this.taskSourceModifyReconciler?.destroy();
@@ -26399,6 +26409,186 @@ export default class OperonPlugin extends Plugin {
 		);
 	}
 
+
+ private tasksConversionModal: TasksConversionModal | null = null;
+ private readonly tasksConversionNativePaths = new Set<string>();
+ private readonly tasksConversionOwnedSources = new Map<string, { before: string; after: string; written: boolean }>();
+ private readonly tasksConversionGeneratedIds = new Set<string>();
+ private readonly tasksConversionDrawingScenes = new Map<string, string>();
+ private readonly tasksConversionSettledSources = new Map<string, string>();
+
+ /** Strict read-only checks: never flush dirty Markdown or native views. */
+ private tasksConversionBuffersMatch(path: string, content: string): boolean {
+  if (!this.taskEditorDeleteOpenViewsMatch(path, content)) return false;
+  for (const leaf of this.app.workspace.getLeavesOfType('canvas')) {
+   const view = leaf.view as unknown as { file?: TFile; saving?: boolean; lastSavedData?: string; canvas?: { getData?(): unknown } };
+   if (view.file?.path !== path) continue;
+   try {
+    if (view.saving !== false || !view.lastSavedData || !view.canvas?.getData
+     || JSON.stringify(JSON.parse(view.lastSavedData)) !== JSON.stringify(JSON.parse(content))
+     || JSON.stringify(view.canvas.getData()) !== JSON.stringify(JSON.parse(content))) return false;
+   } catch { return false; }
+  }
+  for (const leaf of this.app.workspace.getLeavesOfType('excalidraw')) {
+   const view = leaf.view as unknown as ExcalidrawTaskView & { preparedSaveText?: string; lastSavedData?: string; saveCoordinator?: { isSaveInProgress?: boolean }; isSynchronizing?: boolean };
+   if (view.file?.path !== path) continue;
+   if (!readExcalidrawTaskView(this.app, view) || view.data !== content || view.lastSavedData !== content
+    || view.preparedSaveText !== content || view.saveCoordinator?.isSaveInProgress !== false || (view.isSynchronizing && !this.tasksConversionNativePaths.has(path))
+    || this.tasksConversionDrawingScenes.get(path) !== this.tasksConversionSceneSignature(view.excalidrawAPI.getSceneElementsIncludingDeleted?.() ?? view.excalidrawAPI.getSceneElements())) return false;
+  }
+  return true;
+ }
+
+ /** Native ownership is scoped even when a retained recovery guard invokes this later. */
+ private assertTasksConversionAdoption(path: string, expected: string, content: string): void {
+  const owned = this.tasksConversionNativePaths.has(path);
+  this.tasksConversionNativePaths.add(path);
+  try {
+   if (!this.tasksConversionBuffersMatch(path, expected) && !this.tasksConversionBuffersMatch(path, content)) throw new Error(`Unsaved source: ${path}`);
+  } finally { if (!owned) this.tasksConversionNativePaths.delete(path); }
+ }
+
+ /** Suppress conversion-only progress changes only while the exact approved source is present. */
+ private async filterTasksConversionIndexedChanges(changes: IndexedTaskDelta[]): Promise<IndexedTaskDelta[]> {
+  changes = changes.filter(change => !this.tasksConversionGeneratedIds.has(change.after?.operonId ?? change.before?.operonId ?? ''));
+  const exact = new Set<string>();
+  for (const path of new Set(changes.map(change => change.after?.primary.filePath ?? ''))) {
+   const owned = this.tasksConversionOwnedSources.get(path), file = this.app.vault.getAbstractFileByPath(path);
+   if (!owned?.written || !(file instanceof TFile)) continue;
+   try { const content = await this.app.vault.read(file); if (content === owned.before || content === owned.after) exact.add(path); } catch { /* Unverified deltas retain normal automation. */ }
+  }
+  return changes.filter(change => {
+   if (!change.before || !change.after || !exact.has(change.after.primary.filePath)) return true;
+   return JSON.stringify([change.before.fieldValues, change.before.description, change.before.tags, change.before.checkbox, change.before.primary])
+    !== JSON.stringify([change.after.fieldValues, change.after.description, change.after.tags, change.after.checkbox, change.after.primary]);
+  });
+ }
+
+ private tasksConversionSceneSignature(value: unknown): string {
+  const canonical = (item: unknown): unknown => {
+   if (Array.isArray(item)) return item.map(canonical);
+   if (item && typeof item === 'object') return Object.fromEntries(Object.entries(item).sort(([a], [b]) => a.localeCompare(b)).map(([key, value]) => [key, canonical(value)]));
+   return item;
+  };
+  return JSON.stringify(canonical(value));
+ }
+
+ private async captureTasksConversionDrawingScenes(): Promise<string[]> {
+  const unavailable: string[] = [];
+  for (const leaf of this.app.workspace.getLeavesOfType('excalidraw')) {
+   const candidate = leaf.view as unknown as { file?: TFile };
+   if (!candidate.file) continue;
+   const path = candidate.file.path;
+   const view = readExcalidrawTaskView(this.app, leaf.view);
+   if (!view) { unavailable.push(path); continue; }
+   let api: ReturnType<ExcalidrawTaskView['plugin']['ea']['getAPI']> | null = null;
+   try {
+    api = view.plugin.ea.getAPI(view);
+    const saved = await api.getSceneFromFile(view.file!);
+    if (!saved) throw new Error('Drawing scene unreadable');
+    const signature = this.tasksConversionSceneSignature(saved.elements);
+    this.tasksConversionDrawingScenes.set(path, signature);
+    const current = view.excalidrawAPI.getSceneElementsIncludingDeleted?.() ?? view.excalidrawAPI.getSceneElements();
+    if (this.tasksConversionSceneSignature(current) !== signature) unavailable.push(path);
+   } catch { this.tasksConversionDrawingScenes.delete(path); unavailable.push(path); }
+   finally { api?.destroy(); }
+  }
+  return unavailable;
+ }
+
+ private openTasksBulkConversion(): void {
+  if (!this.startupReady || this.agentRuntimeLifecycle.getPhase() === 'unloading') return;
+  if (this.tasksConversionModal) { this.tasksConversionModal.modalEl.focus(); return; }
+  const available = () => this.startupReady && this.agentRuntimeLifecycle.getPhase() !== 'unloading';
+  const pinned = this.pinnedCache;
+  if (!pinned) return;
+  const workflow = () => {
+   const references = [...pinned.getPinnedIds(), ...pinned.getManualOrderIds(),
+    ...Object.values(this.storage.kanbanOrder.toPackage().boards).flatMap(board => Object.values(board).flat()),
+    ...this.storage.activeTrackers.getAll().map(tracker => tracker.taskId),
+    ...this.storage.repeatSeries.getAllEntries().map(series => series.sourceTaskId),
+    ...this.settings.tablePresets.flatMap(tasksConversionTableReferences),
+    ...(this.timeTracker.getActiveOperonId() ? [this.timeTracker.getActiveOperonId()!] : [])].filter((id): id is string => typeof id === 'string' && !!id);
+   const series = [...this.storage.repeatSeries.getAllSeriesIds()];
+   return { references, series, revision: [pinned.getGeneration(), this.storage.activeTrackers.getGeneration(), this.storage.repeatSeries.getRevision()] };
+  };
+  const nativeState = () => {
+   const views = [...this.app.workspace.getLeavesOfType('canvas'), ...this.app.workspace.getLeavesOfType('excalidraw')];
+   const references: string[] = [];
+   const snapshots = views.map(leaf => {
+    const view = leaf.view as unknown as { file?: TFile; canvas?: { getData?(): unknown }; excalidrawAPI?: { getSceneElements(): readonly { type: string; link?: string | null; isDeleted?: boolean }[] } };
+    const elements = view.excalidrawAPI?.getSceneElements() ?? [];
+    for (const element of elements) {
+     const id = element.type === 'embeddable' && !element.isDeleted ? /#Operon task ([a-z0-9]{7})\]\]$/u.exec(element.link ?? '')?.[1] : null;
+     if (id) references.push(id);
+    }
+    return [view.file?.path, view.canvas?.getData?.(), elements];
+   });
+   return { views, references, signature: JSON.stringify(snapshots) };
+  };
+  const inventory = createTasksConversionReferenceInventory(this.app, {
+   workflow: () => { const snapshot = workflow(), signature = JSON.stringify(snapshot);
+    return { externalReferences: snapshot.references, reservedSeriesIds: snapshot.series, isCurrent: () => available() && JSON.stringify(workflow()) === signature }; },
+   nativeSnapshot: async () => { const snapshot = nativeState(); const unavailablePaths = await this.captureTasksConversionDrawingScenes(); return { references: snapshot.references, unavailablePaths,
+    isCurrent: () => { const current = nativeState(); return snapshot.signature === current.signature && snapshot.views.length === current.views.length && snapshot.views.every((leaf, index) => leaf === current.views[index]); } }; },
+   matches: (path, content) => this.tasksConversionBuffersMatch(path, content),
+   projectTable: (path, preset) => this.tablePresetRegistry?.projectFilePreset(path, preset) ?? preset,
+  });
+  const host = createTasksConversionHost(this.app, this.writer, () => this.settings, {
+   matches: (path, content) => this.tasksConversionBuffersMatch(path, content),
+   synchronize: (path, before, after) => this.syncTaskEditorDeleteOpenViews(path, before, after),
+  }, inventory, async (paths, operation) => {
+   // Verify before native read/adopt leases: dirty source buffers must never be synchronized away.
+   const unavailable = await this.captureTasksConversionDrawingScenes();
+   for (const path of paths) {
+    const file = this.app.vault.getAbstractFileByPath(path);
+    if (!(file instanceof TFile)) continue;
+    if (unavailable.includes(path) || !this.tasksConversionBuffersMatch(path, await this.app.vault.read(file))) throw new Error(`Unsaved source: ${path}`);
+   }
+   try {
+    return await withExcalidrawMarkdownSources(this.app, this.writer, paths,
+     file => this.isExcalidrawTaskSource(file), available, async current => {
+      for (const path of paths) this.tasksConversionNativePaths.add(path);
+      return operation(current);
+     }, [], (path, expected, content) => this.assertTasksConversionAdoption(path, expected, content));
+   } finally { for (const path of paths) this.tasksConversionNativePaths.delete(path); }
+  });
+  const service = new TasksConversionService(host, new TasksConversionRecoveryStore(this.app.vault.adapter, this.app.vault.configDir));
+  const controller = new TasksConversionController({ service, available,
+   coordinate: async (paths, ids, operation, changes = []) => {
+    for (const id of ids) this.tasksConversionGeneratedIds.add(id);
+    for (const change of changes) this.tasksConversionOwnedSources.set(change.path, { before: change.before, after: change.after, written: false });
+    try { return await operation(); }
+    finally {
+     for (const path of paths) {
+      const file = this.app.vault.getAbstractFileByPath(path);
+      if (file instanceof TFile) {
+       try {
+        const content = await this.app.vault.read(file), owned = this.tasksConversionOwnedSources.get(path);
+        if (owned?.written && (content === owned.before || content === owned.after)) this.tasksConversionSettledSources.set(path, content);
+       } catch { this.tasksConversionSettledSources.delete(path); }
+      }
+      this.tasksConversionOwnedSources.delete(path);
+     }
+     for (const id of ids) this.tasksConversionGeneratedIds.delete(id);
+    }
+   },
+   settle: async paths => {
+    if (!available()) throw new Error('Plugin is unloading');
+    for (const path of paths) {
+     const file = this.app.vault.getAbstractFileByPath(path);
+     const content = file instanceof TFile ? await this.app.vault.read(file) : null;
+     const owned = this.tasksConversionOwnedSources.get(path);
+     const conversionSource = !!owned && (content === owned.before || content === owned.after);
+     await this.indexer.forceReindexFilePathAfterMutation(path, { notify: !conversionSource });
+    }
+    this.refreshViews();
+   },
+  });
+  const modal = new TasksConversionModal(this.app, controller, () => { if (this.tasksConversionModal === modal) this.tasksConversionModal = null; });
+  this.tasksConversionModal = modal; modal.open();
+ }
+
 	private registerFileWatchers(): void {
 		// File content changed → incremental reindex
 		this.registerEvent(
@@ -27033,6 +27223,8 @@ export default class OperonPlugin extends Plugin {
 	}
 
 	private markInternalTaskWrite(filePath: string): void {
+		const owned = this.tasksConversionOwnedSources.get(filePath);
+		if (owned) owned.written = true;
 		this.taskSourceModifyReconciler?.markInternalWrite(filePath);
 	}
 
@@ -27045,6 +27237,14 @@ export default class OperonPlugin extends Plugin {
 			await this.indexer.handleFileDelete(filePath);
 			return;
 		}
+		const protectedSource = this.tasksConversionSettledSources.get(filePath);
+		const owned = this.tasksConversionOwnedSources.get(filePath);
+		const source = await this.app.vault.read(file);
+		if ((owned?.written && (source === owned.before || source === owned.after)) || (protectedSource !== undefined && source === protectedSource)) {
+			await this.indexer.forceReindexFilePathAfterMutation(filePath, { notify: false });
+			return;
+		}
+		this.tasksConversionSettledSources.delete(filePath);
 		await this.normalizeWorkflowStateAfterRawEdit(filePath);
 		if (mode === 'deferred') {
 			const settledFile = this.app.vault.getAbstractFileByPath(filePath);
@@ -27112,6 +27312,19 @@ export default class OperonPlugin extends Plugin {
 	}
 
 	private async normalizeWorkflowStateAfterRawEdit(filePath: string): Promise<void> {
+		const owned = this.tasksConversionOwnedSources.get(filePath);
+		if (owned?.written) {
+			const file = this.app.vault.getAbstractFileByPath(filePath);
+			const content = file instanceof TFile ? await this.app.vault.read(file) : null;
+			if (content === owned.before || content === owned.after) return;
+		}
+		const protectedSource = this.tasksConversionSettledSources.get(filePath);
+		if (protectedSource !== undefined) {
+			const file = this.app.vault.getAbstractFileByPath(filePath);
+			if (file instanceof TFile && await this.app.vault.read(file) === protectedSource) return;
+			this.tasksConversionSettledSources.delete(filePath);
+		}
+
 		if (this.workflowNormalizationInProgress.has(filePath)) {
 			this.workflowNormalizationPending.add(filePath);
 			await new Promise<void>(resolve => {

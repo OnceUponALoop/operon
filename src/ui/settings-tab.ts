@@ -1,3 +1,4 @@
+import type { TasksConversionUiIntegration } from './tasks-conversion-controller';
 import type { InterfaceIconRowSelection } from './settings/interface-editor-ui';
 import { scopeSettingsModal, scopeSettingsDefinitions, setSettingsScope } from './settings/settings-scope';
 import { PropertyPoolValueSession } from './property-value-pool-values';
@@ -1021,6 +1022,7 @@ export class OperonSettingsTab extends PluginSettingTab {
 		developerApiIntegration?: DeveloperApiSettingsIntegration,
 		settingsBackupUiIntegration?: SettingsBackupUiIntegration,
 		reconcileParentTaskDateRanges?: () => Promise<ParentTaskDateRangeReconcileResult>,
+		private readonly tasksConversionUi?: TasksConversionUiIntegration,
 	) {
 		super(app, plugin);
 		Reflect.set(this, 'icon', 'factory');
@@ -1571,6 +1573,7 @@ export class OperonSettingsTab extends PluginSettingTab {
 			return this.buildTaskSettingsGroups([
 				['dailyNoteInlineTaskDefaults', ['inlineTaskDailyNoteAddStartDate', 'inlineTaskDailyNoteAddScheduledDate'], (el, key) => this.renderInlineDailyNoteDefaultsSettings(el, key), 'DOCS-050 Daily Notes workflows'],
 				['checkboxConversion', ['inlineTaskShowTasksEmojiConvertIcon', 'inlineTaskShowPlainCheckboxConvertIcon'], (el, key) => this.renderInlineConversionSettings(el, key), 'DOCS-049 Obsidian Tasks migration'],
+				['tasksBulkTitle', ['tasksEmojiBulkConversion'], el => this.renderTasksBulkConversion(el)],
 			], entries, t('settings', 'subtabInlineTasks'), 'DOCS-011 Inline tasks');
 		}
 		if (tabId !== 'tasksFileTasks') return [];
@@ -5820,6 +5823,14 @@ export class OperonSettingsTab extends PluginSettingTab {
 		if (!selectedKey || selectedKey === 'inlineTaskDailyNoteAddScheduledDate') {
 			this.renderBoundToggleSetting(containerEl, t('settings', 'inlineTaskDailyNoteAddScheduledDate'), t('settings', 'inlineTaskDailyNoteAddScheduledDateDesc'), 'inlineTaskDailyNoteAddScheduledDate');
 		}
+	}
+
+	private renderTasksBulkConversion(containerEl: HTMLElement): void {
+		new Setting(containerEl).setName(t('settings', 'tasksBulkTitle'))
+			.setDesc(t('settings', 'tasksBulkHelp')).addButton(button => button
+				.setButtonText(t('settings', 'tasksBulkOpen'))
+				.setDisabled(!this.tasksConversionUi?.available())
+				.onClick(() => this.tasksConversionUi?.open()));
 	}
 
 	private renderInlineConversionSettings(containerEl: HTMLElement, selectedKey?: string): void {
