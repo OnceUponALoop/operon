@@ -35627,6 +35627,10 @@ body .operon-task-editor:not(.operon-task-editor-mobile) .operon-editor-desktop-
 	box-sizing: border-box;
 }
 
+body .operon-task-editor:not(.operon-task-editor-mobile) .operon-editor-desktop-group-header button.operon-task-editor-workflow-action-button[hidden] {
+	display: none;
+}
+
 body .operon-task-editor:not(.operon-task-editor-mobile) .operon-editor-desktop-group-header button.operon-editor-core-action-btn {
 	height: 30px;
 	min-height: 30px;

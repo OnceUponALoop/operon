@@ -3561,7 +3561,7 @@ export class TaskEditorContent {
 		const actions = header.createDiv('operon-task-editor-workflow-actions');
 		this.renderWorkflowPickerActions(actions, keys.map(field => ({ key: field, visible: true })), false);
 		if (key === 'custom') {
-			const add = actions.createEl('button', { cls: 'operon-task-editor-workflow-action-button', attr: { type: 'button' } });
+			const add = actions.createEl('button', { cls: 'operon-task-editor-workflow-action-button operon-editor-custom-property-add', attr: { type: 'button' } });
 			setIcon(add, 'plus');
 			setAccessibleLabelWithoutTooltip(add, t('taskEditor', 'addFileProperty'));
 			this.bindTaskEditorTooltip(add, t('taskEditor', 'addFileProperty'));
@@ -3620,7 +3620,7 @@ export class TaskEditorContent {
 				getOwnerWindow(anchor).requestAnimationFrame(() => {
 					if (this.disposed || !anchor.isConnected || epoch !== this.propertyInteractionEpoch) return;
 					const button = key ? this.workflowActionButtons.get(key) : null;
-					if (key && button?.isConnected) this.openWorkflowPickerFromAction(key, button);
+					if (key && button?.isConnected) this.openWorkflowPickerFromAction(key, anchor);
 					else anchor.focus({ preventScroll: true });
 				});
 			},
@@ -3669,7 +3669,7 @@ export class TaskEditorContent {
 					if (this.workflowActionPickerClose !== closePicker) return;
 					this.workflowActionPickerClose = null; value.removeClass('is-picker-open');
 					if (!this.disposed && this.propertyInteractionEpoch === epoch) {
-						const target = value.closest<HTMLElement>('.operon-editor-desktop-property-row')?.hidden ? this.workflowActionButtons.get(key) : value.isConnected ? value : label;
+						const target = value.closest<HTMLElement>('.operon-editor-desktop-property-row')?.hidden ? this.getWorkflowActionFocusTarget(key) : value.isConnected ? value : label;
 						target?.focus({ preventScroll: true });
 					}
 				},
@@ -4242,8 +4242,17 @@ export class TaskEditorContent {
 		iconWrap.addClass('operon-task-editor-workflow-action-icon-placeholder');
 	}
 
+	private getWorkflowActionFocusTarget(key: string): HTMLButtonElement | null | undefined {
+		const button = this.workflowActionButtons.get(key);
+		return button?.hidden
+			? button.closest('.operon-editor-desktop-property-group')?.querySelector<HTMLButtonElement>('.operon-editor-custom-property-add')
+			: button;
+	}
+
 	private syncWorkflowActionButtonState(key: string, button: HTMLButtonElement): void {
 		const active = this.hasWorkflowPickerValue(key);
+		const customGroup = button.closest<HTMLElement>('.operon-editor-desktop-property-group')?.dataset.propertyGroup === 'custom';
+		button.hidden = customGroup && !active;
 		button.toggleClass('is-active', active);
 		button.setAttr('aria-pressed', String(active));
 		const locked = key === 'subtasks' && !this.getCurrentOperonId();
@@ -4353,6 +4362,7 @@ export class TaskEditorContent {
 			if (this.workflowActionPickerClose === closePicker) {
 				this.workflowActionPickerClose = null;
 			}
+			if (!this.disposed && button.hidden) this.getWorkflowActionFocusTarget(key)?.focus({ preventScroll: true });
 			restoreReminderActionFocus();
 		};
 
