@@ -36349,3 +36349,13 @@ body .operon-task-editor:not(.operon-task-editor-mobile) button.operon-editor-tr
  width: 16ch;
  max-width: 100%;
 }
+
+
+.operon-task-editor:not(.operon-task-editor-mobile) .operon-task-editor-section-host.is-section-disabled {
+ display: none;
+}
+
+.operon-task-editor-sections-settings .operon-task-editor-section-setting .is-section-move-disabled {
+ opacity: 0.35;
+ pointer-events: none;
+}

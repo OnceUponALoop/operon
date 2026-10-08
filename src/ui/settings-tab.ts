@@ -3524,17 +3524,35 @@ export class OperonSettingsTab extends PluginSettingTab {
 				if (event.key === 'Enter' && !event.isComposing) { event.preventDefault(); text.inputEl.blur(); }
 			});
 		});
-		for (const delta of [-1, 1]) setting.addExtraButton(button => button.setIcon(delta < 0 ? 'arrow-up' : 'arrow-down')
+		if (id !== 'description') setting.addToggle(toggle => {
+			let changeVersion = 0;
+			toggle.setValue(sections[index].enabled !== false);
+			setAccessibleLabelWithoutTooltip(toggle.toggleEl, defaultName);
+			toggle.onChange(enabled => {
+				const version = ++changeVersion;
+				void this.saveTaskEditorSections(current => current.map(section => section.id === id
+					? { ...section, enabled } : section), false).catch(() => {
+					if (version !== changeVersion) return;
+					toggle.setValue(normalizeTaskEditorSections(this.settings.taskEditorSections).find(section => section.id === id)?.enabled !== false);
+				});
+			});
+		});
+		for (const delta of [-1, 1]) setting.addExtraButton(button => {
+			const disabled = index + delta < 0 || index + delta >= sections.length;
+			button.extraSettingsEl.toggleClass('is-section-move-disabled', disabled);
+			button.setIcon(delta < 0 ? 'arrow-up' : 'arrow-down')
 			.setTooltip(t('settings', delta < 0 ? 'taskCardMoveUp' : 'taskCardMoveDown'))
-			.setDisabled(index + delta < 0 || index + delta >= sections.length)
+			.setDisabled(disabled)
 			.onClick(() => {
+				if (disabled) return;
 				void this.saveTaskEditorSections(current => {
 					const from = current.findIndex(section => section.id === id);
 					const to = from + delta;
 					if (from >= 0 && to >= 0 && to < current.length) [current[from], current[to]] = [current[to], current[from]];
 					return current;
 				}).catch(() => undefined).finally(() => refresh?.());
-			}));
+			});
+		});
 	}
 
  private taskCardSaveQueue: Promise<void> = Promise.resolve();

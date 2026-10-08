@@ -61,3 +61,18 @@ test('retired Custom section is dropped while Additional order and name are pres
  assert.deepEqual(rows.slice(0,2),[{id:'sessions',name:'Log'},{id:'additional',name:'Extras'}]);
  assert.equal(rows.length,10);
 });
+
+
+test('section visibility defaults on, preserves opt-out and never hides Description', () => {
+ const rows = normalizeTaskEditorSections([{id:'description',name:'Task',enabled:false},{id:'notes',name:'Memo',enabled:false},{id:'stats',enabled:'false'}]);
+ assert.equal(rows.find(row=>row.id==='description')?.enabled,undefined);
+ assert.equal(rows.find(row=>row.id==='notes')?.enabled,false);
+ assert.ok(rows.filter(row=>row.id!=='notes').every(row=>row.enabled!==false));
+ assert.deepEqual(normalizeTaskEditorSections(rows),rows);
+});
+
+test('section visibility survives canonical save and reload together with names and order', () => {
+ const settings = {...DEFAULT_SETTINGS,taskEditorSections:normalizeTaskEditorSections([{id:'notes',name:'Memo',enabled:false}])};
+ const restored = composeOperonSettingsFromDataPackage(buildOperonDataPackageFromSettings(settings), DEFAULT_SETTINGS);
+ assert.deepEqual(restored.taskEditorSections,settings.taskEditorSections);
+});

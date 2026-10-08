@@ -1397,6 +1397,7 @@ export class TaskEditorContent {
 		for (const section of normalizeTaskEditorSections(this.settings.taskEditorSections)) {
 			const host = sections.createDiv('operon-task-editor-section-host');
 			host.dataset.editorSection = section.id;
+			host.toggleClass('is-section-disabled', section.enabled === false);
 			hosts.set(section.id, host);
 		}
 		// Create hosts in display/tab order, then initialize dependent controls in their existing order.
