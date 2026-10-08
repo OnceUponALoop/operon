@@ -11,7 +11,7 @@ export function isPathInsideFolder(filePath: string, folderPath: string): boolea
 	return normalizedFilePath === normalizedFolderPath || normalizedFilePath.startsWith(`${normalizedFolderPath}/`);
 }
 
-export function isOperonExcludedPath(filePath: string, settings: OperonSettings): boolean {
+export function isOperonExcludedPath(filePath: string, settings: Pick<OperonSettings, 'fileTaskTemplateFolder' | 'excludedFolders'>): boolean {
 	if (isPathInsideFolder(filePath, settings.fileTaskTemplateFolder)) return true;
 	return (settings.excludedFolders ?? []).some(folderPath => isPathInsideFolder(filePath, folderPath));
 }

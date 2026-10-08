@@ -7,6 +7,7 @@ import { parseTaskLine } from '../src/core/parser';
 import { serializeTask } from '../src/core/serializer';
 import { validateDependencyEdge, validateDependencyEdgeSet } from '../src/core/dependency-graph';
 import { calculateNextRepeatDate, parseRepeatRule } from '../src/core/repeat-rule';
+import './tasks-conversion-service.test';
 
 function convert(line: string) {
 	const result = convertTasksEmojiLineToOperon(line);
