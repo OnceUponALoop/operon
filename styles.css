@@ -35757,16 +35757,68 @@ body .operon-state-icon-setting:where(.operon-settings-scope, .operon-settings-s
 .excalidraw button.operon-excalidraw-task-pool-button svg { width: var(--lg-icon-size, 1rem); height: var(--lg-icon-size, 1rem); }
 
 /* Settings Tasks bulk conversion. */
-.operon-tasks-conversion-section { margin-block: var(--size-4-3); }
-.operon-tasks-conversion-actions, .operon-tasks-conversion-path {
- display: flex; flex-wrap: wrap; align-items: center; gap: var(--size-4-2); margin-block: var(--size-4-2);
+.operon-tasks-conversion-settings {
+ padding: 0 var(--setting-items-padding-x, 24px) var(--size-4-4);
+ font-size: var(--font-ui-small);
+ line-height: var(--line-height-normal);
+ min-width: 0;
 }
-.operon-tasks-conversion-path span { overflow-wrap: anywhere; flex: 1; }
-.operon-tasks-conversion-settings button { border-radius: 8px; }
+.operon-tasks-conversion-section { margin: 0; }
+.operon-tasks-conversion-section + .operon-tasks-conversion-section {
+ margin-top: var(--size-4-4);
+ padding-top: var(--size-4-3);
+ border-top: 1px solid var(--background-modifier-border);
+}
+.operon-tasks-conversion-actions {
+ display: flex;
+ flex-wrap: wrap;
+ align-items: center;
+ gap: var(--size-4-2);
+ margin-block: var(--size-4-3);
+}
+.operon-tasks-conversion-path {
+ display: grid;
+ grid-template-columns: minmax(0, 1fr) auto;
+ align-items: center;
+ gap: var(--size-4-3);
+ padding-block: var(--size-4-2);
+ border-bottom: 1px solid var(--background-modifier-border);
+}
+.operon-tasks-conversion-path span { overflow-wrap: anywhere; min-width: 0; }
+.operon-tasks-conversion-settings button,
+.operon-tasks-conversion-settings button.mod-cta {
+ background: var(--background-primary);
+ border: 1px solid var(--background-modifier-border);
+ border-radius: 8px;
+ color: var(--text-normal);
+ box-shadow: none;
+ font-size: var(--font-ui-small);
+ height: auto;
+ min-height: var(--input-height);
+ padding: var(--size-2-2) var(--size-4-3);
+ white-space: normal;
+}
+.operon-tasks-conversion-settings button:not(:disabled):hover {
+ background: var(--background-modifier-hover);
+ border-color: var(--background-modifier-border-hover);
+}
+.operon-tasks-conversion-settings button:focus-visible {
+ outline: 2px solid var(--interactive-accent);
+ outline-offset: 2px;
+}
+.operon-tasks-conversion-settings button:disabled { opacity: 0.5; }
 .operon-tasks-conversion-settings summary { cursor: pointer; overflow-wrap: anywhere; }
-.operon-tasks-conversion-settings p { overflow-wrap: anywhere; }
-.operon-tasks-conversion-check { display: flex; align-items: center; gap: var(--size-4-2); }
+.operon-tasks-conversion-settings p { overflow-wrap: anywhere; margin-block: var(--size-4-2); }
+.operon-tasks-conversion-check {
+ display: flex;
+ align-items: center;
+ gap: var(--size-4-2);
+ margin-top: var(--size-4-3);
+}
+.operon-tasks-conversion-check input { flex-shrink: 0; margin: 0; }
 .operon-tasks-conversion-progress progress { width: 100%; }
 @media (max-width: 600px) {
+ .operon-tasks-conversion-settings { padding-inline: var(--size-4-3); }
  .operon-tasks-conversion-actions button { flex: 1 1 auto; min-height: 36px; }
+ .operon-tasks-conversion-path { gap: var(--size-4-2); }
 }
