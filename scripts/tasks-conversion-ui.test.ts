@@ -156,7 +156,7 @@ test('Settings keeps keyboard focus through scan, inline confirmation and result
  assert.equal(doc.activeElement?.dataset.focusKey, 'Dismiss'); assert.ok(button('ConfirmApply'));
  assert.deepEqual(f.adapter.writes, []);
  button('ConfirmApply').focus(); const apply = c.confirm(c.preview!); assert.equal(doc.activeElement?.dataset.focusKey, 'Cancel'); await apply;
- assert.equal(doc.activeElement?.dataset.focusKey, 'New'); assert.ok(root.allText.includes('Converted: 2'));
+ assert.equal(doc.activeElement?.dataset.focusKey, 'Scan'); assert.ok(root.allText.includes('Converted: 2'));
  assert.equal(root.allText.includes('Undo'), false); assert.equal(root.allText.includes('Keep result'), false);
 });
 test('Settings shows a count instead of source previews or task selection', async () => {
@@ -492,7 +492,7 @@ test('large mixed-file selection retains independent defaults, stable identity, 
  assert.deepEqual(c.preview!.changes, approved.changes);
  await c.confirm(approved); assert.equal(c.result?.status, 'committed'); assert.equal(c.counts.converted, 288);
  for (const change of approved.changes) assert.equal(await f.adapter.read(change.path), change.after);
- assert.equal(doc.activeElement?.dataset.focusKey, 'New'); assert.equal((await f.store.load()).kind, 'empty');
+ assert.equal(doc.activeElement?.dataset.focusKey, 'Scan'); assert.equal((await f.store.load()).kind, 'empty');
 });
 
 
@@ -599,4 +599,25 @@ test('real adapter skips a conflicted source only after renewed confirmation and
   assert.equal(await adapter.read('Unrelated.txt'), originals['Unrelated.txt']);
   assert.ok(adapter.writes.every(file => file === 'B.md' || file.startsWith('.test-config/plugins/operon/state/tasks-conversion/')));
  } finally { await rm(root, { recursive: true, force: true }); }
+});
+
+
+test('completed Settings result releases preview height and offers scope and scan without a restart step', async () => {
+ const { f, c } = controller(); await c.initialize(); c.updateScope(f.scope); await c.scan();
+ const { root, button } = settingsFixture(c);
+ const page = new TestElement('div', root.ownerDocument); page.children.push(root); root.parentElement = page;
+ page.scrollTop = 500; page.scrollHeight = 700; page.clientHeight = 400; root.offsetHeight = 140;
+ c.requestConfirmation(c.preview!);
+ assert.equal(root.cssProps['--operon-conversion-min-height'], '340px');
+ await c.confirm(c.preview!);
+ assert.equal(root.cssProps['--operon-conversion-min-height'], '0px');
+ assert.ok(root.allText.includes('Conversion completed.'));
+ assert.ok(root.allText.includes('Converted: 2'));
+ assert.equal(button('New'), undefined);
+ assert.ok(button('AddFiles')); assert.ok(button('AddFolders')); assert.ok(button('Scan'));
+ assert.equal(button('Apply'), undefined); assert.equal(button('ConfirmApply'), undefined);
+ const writes = [...f.adapter.writes];
+ await c.scan();
+ assert.equal(c.result, null); assert.equal(c.preview?.selectedKeys.length, 0);
+ assert.deepEqual(f.adapter.writes, writes);
 });

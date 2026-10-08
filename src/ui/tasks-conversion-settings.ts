@@ -68,7 +68,10 @@ export class TasksConversionSettings {
     progress.createEl('p', { text: `${c.progress.completedFiles} / ${c.progress.totalFiles} · ${c.progress.path}` }); }
    this.button(progress, 'Cancel', () => c.cancel());
   } else if (c.blocked && c.inspection) this.renderRecovery();
-  else if (c.result) this.renderResult();
+  else if (c.result) {
+   this.renderResult();
+   if (c.inspection && !c.settlementPending.length) this.renderScope();
+  }
   else if (c.inspection) { this.renderScope(); if (c.preview) this.renderPreview(); }
   else {
    if (c.result) { this.renderCounts(this.contentEl); if (c.settlementPending.length) this.button(this.contentEl, 'RetryRefresh', () => c.retrySettlement()); }
@@ -76,10 +79,10 @@ export class TasksConversionSettings {
   }
   this.contentEl.setCssProps({ '--operon-conversion-min-height': '0px' });
   const extra = Math.max(0, ...scroll.map(({ element, top }) => top - Math.max(0, element.scrollHeight - element.clientHeight)));
-  if (extra) this.contentEl.setCssProps({ '--operon-conversion-min-height': `${this.contentEl.offsetHeight + extra}px` });
+  if (extra && (c.busy || !c.result)) this.contentEl.setCssProps({ '--operon-conversion-min-height': `${this.contentEl.offsetHeight + extra}px` });
   const controls = Array.from(this.contentEl.querySelectorAll<HTMLElement>('[data-focus-key]')).filter(el => !(el as HTMLButtonElement).disabled);
   const target = focused ? controls.find(el => el.dataset.focusKey === focused) : null;
-  const fallback = controls.find(el => el.dataset.focusKey === (c.busy ? 'Cancel' : c.confirmation ? 'Dismiss' : c.result && !c.blocked ? 'New' : c.preview ? 'Apply' : 'AddFiles'))
+  const fallback = controls.find(el => el.dataset.focusKey === (c.busy ? 'Cancel' : c.confirmation ? 'Dismiss' : c.result && !c.blocked ? 'Scan' : c.preview ? 'Apply' : 'AddFiles'))
    ?? controls.find(el => el.tagName === 'BUTTON' && !(el as HTMLButtonElement).disabled);
   if (focused) (target ?? fallback)?.focus({ preventScroll: true });
   for (const { element, top, left } of scroll) { element.scrollTop = top; element.scrollLeft = left; }
@@ -111,6 +114,17 @@ export class TasksConversionSettings {
   const section = this.contentEl.createDiv({ cls: 'operon-tasks-conversion-section' });
   const vars = { count: String(preview.selectedKeys.length), files: String(preview.changes.length) };
   section.createEl('p', { text: text(preview.selectedKeys.length ? 'Summary' : 'Empty', vars), attr: { role: 'status', 'aria-live': 'polite' } });
+  this.renderWarnings(section, 'issues');
+  if (c.confirmation === preview) section.createEl('p', { text: text('Confirm', vars) });
+  const actions = section.createDiv({ cls: 'operon-tasks-conversion-actions' });
+  if (c.confirmation === preview) {
+   this.button(actions, 'Dismiss', () => c.dismissConfirmation());
+   this.button(actions, 'ConfirmApply', () => c.confirm(preview)).addClass('mod-cta');
+  } else this.button(actions, 'Apply', () => c.requestConfirmation(preview), !preview.selectedKeys.length || !!preview.errors.length || !c.available, vars).addClass('mod-cta');
+ }
+ private renderWarnings(section: HTMLElement, key: string): void {
+  const c = this.controller, preview = c.preview;
+  if (!preview) return;
   const issues = c.skippedSources.map(path => text('SkippedSource', { path }));
   for (const file of preview.scan.files) if (file.error) issues.push(`${file.path} · ${file.error === 'excluded' ? text('Excluded') : text('SourceUnavailable', { reason: file.error })}`);
   for (const row of preview.rows) {
@@ -121,26 +135,20 @@ export class TasksConversionSettings {
   }
   for (const error of preview.errors) if (!issues.some(issue => issue.endsWith(error))) issues.push(error);
   if (issues.length) {
-   const details = this.details(section, 'issues', text('Issues', { count: String(issues.length) }));
+   const details = this.details(section, key, text('Issues', { count: String(issues.length) }));
    for (const issue of issues) details.createEl('p', { text: issue });
   }
-  if (c.confirmation === preview) section.createEl('p', { text: text('Confirm', vars) });
-  const actions = section.createDiv({ cls: 'operon-tasks-conversion-actions' });
-  if (c.confirmation === preview) {
-   this.button(actions, 'Dismiss', () => c.dismissConfirmation());
-   this.button(actions, 'ConfirmApply', () => c.confirm(preview)).addClass('mod-cta');
-  } else this.button(actions, 'Apply', () => c.requestConfirmation(preview), !preview.selectedKeys.length || !!preview.errors.length || !c.available, vars).addClass('mod-cta');
  }
  private renderResult(): void {
   const c = this.controller, result = c.result!;
   const section = this.contentEl.createDiv({ cls: 'operon-tasks-conversion-section', attr: { role: 'status', 'aria-live': 'polite' } });
-  section.createEl('p', { text: text(result.sourcesCommitted || result.status === 'committed' || result.status === 'kept' ? 'Success' : result.status === 'rolled-back' || result.status === 'restored' ? 'RolledBack' : result.status === 'cancelled' ? 'Cancelled' : 'Stopped') });
+  section.createEl('p').createEl('strong', { text: text(result.sourcesCommitted || result.status === 'committed' || result.status === 'kept' ? 'Success' : result.status === 'rolled-back' || result.status === 'restored' ? 'RolledBack' : result.status === 'cancelled' ? 'Cancelled' : 'Stopped') });
   this.renderCounts(section);
+  this.renderWarnings(section, 'result-issues');
   if (result.message) section.createEl('p', { text: text('Details', { reason: result.message }) });
   if (c.settlementPending.length) this.button(section, 'RetryRefresh', () => c.retrySettlement());
   if (result.sourceConflicts?.length) this.button(section, 'ReviewUnchanged', () => c.reviewUnchangedSources(), c.blocked);
   if (!c.inspection) this.button(section, 'RetryInspect', () => c.initialize());
-  this.button(section, 'New', () => c.reset(), c.blocked || !!c.settlementPending.length);
  }
  private renderCounts(parent: HTMLElement): void {
   const counts = this.controller.counts;
