@@ -4,11 +4,11 @@ import { readFile, mkdtemp, writeFile, rm } from 'node:fs/promises';
 import path from 'node:path';
 import { createRequire } from 'node:module';
 const ts: typeof import('typescript') = createRequire(path.join(process.cwd(), 'package.json'))('typescript');
-import { App, TFile } from 'obsidian';
+import { App, TFile, Setting } from 'obsidian';
 import { fixture, wiredFixture, DiskAdapter } from './tasks-conversion-service.test';
 import { parseTaskLine } from '../src/core/parser';
 import { TasksConversionController, tasksConversionCounts } from '../src/ui/tasks-conversion-controller';
-import { TasksConversionModal } from '../src/ui/tasks-conversion-modal';
+import { TasksConversionSettings } from '../src/ui/tasks-conversion-settings';
 import { createTasksConversionReferenceInventory, tasksConversionCanvasReferences, tasksConversionCardReferences, tasksConversionTableReferences } from '../src/systems/tasks-conversion-references';
 import { createExcalidrawMarkdownSource, withExcalidrawMarkdownSources } from '../src/ui/excalidraw-markdown-source';
 import { OPERON_SETTINGS_SEARCH_REGISTRY } from '../src/ui/settings/settings-search-registry';
@@ -70,12 +70,12 @@ test('cleanup retry preserves successful in-session counts after active copy is 
 });
 test('new runs clear old progress before inspecting or applying', async () => {
  const { c } = controller(); c.progress = { completedFiles: 10, totalFiles: 10, path: 'old.md' };
- const observed: unknown[] = []; c.onChange = () => { if (c.busy) observed.push(c.progress); };
+ const observed: unknown[] = []; c.subscribe(() => { if (c.busy) observed.push(c.progress); });
  await c.initialize(); assert.equal(observed[0], null);
 });
 test('controller cancellation during apply verifies rollback rather than claiming converted count', async () => {
  const { f, c } = controller(); await c.initialize(); c.updateScope(f.scope); await c.scan();
- c.onChange = () => { if (c.phase === 'apply' && c.progress?.completedFiles === 1) c.cancel(); };
+ c.subscribe(() => { if (c.phase === 'apply' && c.progress?.completedFiles === 1) c.cancel(); });
  await c.apply(); assert.equal(c.result?.status, 'rolled-back'); assert.equal(c.counts.converted, 0);
  assert.equal((await f.store.load()).kind, 'empty');
 });
@@ -119,49 +119,98 @@ test('Settings entry is searchable render action without a persisted settings ke
 });
 
 class TestElement {
+ parentElement: TestElement | null = null;
  tagName: string; children: TestElement[] = []; dataset: Record<string, string> = {}; textContent = ''; disabled = false;
  checked = false; open = false; scrollTop = 0; attrs: Record<string, string> = {}; listeners = new Map<string, Array<() => void>>();
  constructor(tag: string, readonly ownerDocument: { activeElement: TestElement | null }) { this.tagName = tag.toUpperCase(); }
  createEl(tag: string, options: any = {}): any {
   const child = new TestElement(tag, this.ownerDocument); child.textContent = options.text ?? '';
   for (const [key, value] of Object.entries(options.attr ?? {})) child.setAttribute(key, String(value));
-  this.children.push(child); return child;
+  child.parentElement = this; this.children.push(child); return child;
  }
  createSpan(options: any): any { return this.createEl('span', options); }
  createDiv(options: any = {}): any { return this.createEl('div', options); }
  setText(text: string): void { this.textContent = text; }
  setAttribute(key: string, value: string): void { this.attrs[key] = value; if (key === 'data-focus-key') this.dataset.focusKey = value; }
- addClass(): void {} addEventListener(key: string, fn: () => void): void { this.listeners.set(key, [...(this.listeners.get(key) ?? []), fn]); }
+ addClass(): void {} removeClass(): void {} addEventListener(key: string, fn: () => void): void { this.listeners.set(key, [...(this.listeners.get(key) ?? []), fn]); }
+ contains(el: unknown): boolean { return el === this || this.children.some(child => child.contains(el)); }
  empty(): void { this.children = []; }
  querySelectorAll(): any[] { return this.children.flatMap(child => [child, ...child.querySelectorAll()]).filter(child => child.dataset.focusKey); }
  focus(): void { if (!this.disabled) this.ownerDocument.activeElement = this; }
  fire(key: string): void { for (const fn of this.listeners.get(key) ?? []) fn(); }
  get allText(): string { return [this.textContent, ...this.children.map(child => child.allText)].join(' '); }
 }
-function modalFixture(c: TasksConversionController, app = new App()) {
- const m = new TasksConversionModal(app, c, () => {}), doc = { activeElement: null as TestElement | null };
- const root = new TestElement('div', doc);
- m.contentEl = root as unknown as HTMLElement; m.titleEl = new TestElement('h2', doc) as unknown as HTMLElement;
- return { m, root, doc, button: (key: string) => root.querySelectorAll().find(el => el.dataset.focusKey === key) as TestElement };
+function settingsFixture(c: TasksConversionController, app = new App()) {
+ const doc = { activeElement: null as TestElement | null }, root = new TestElement('div', doc);
+ const view = new TasksConversionSettings(app, root as unknown as HTMLElement, c);
+ return { view, root, doc, button: (key: string) => root.querySelectorAll().find(el => el.dataset.focusKey === key) as TestElement };
 }
-test('modal preserves keyboard focus through scan, preview, apply and result without normal Undo', async () => {
+test('Settings keeps keyboard focus through scan, inline confirmation and result', async () => {
  const { f, c } = controller(); await c.initialize(); c.updateScope(f.scope);
- const { m, root, doc, button } = modalFixture(c); m.onOpen(); await new Promise(resolve => setTimeout(resolve, 0));
+ const { root, doc, button } = settingsFixture(c);
  button('Scan').focus(); const scan = c.scan(); assert.equal(doc.activeElement?.dataset.focusKey, 'Cancel'); await scan;
- assert.ok(doc.activeElement?.dataset.focusKey); assert.equal(c.preview?.selectedKeys.length, 2);
- button('Apply').focus(); const apply = c.apply(); assert.equal(doc.activeElement?.dataset.focusKey, 'Cancel'); await apply;
+ assert.equal(c.preview?.selectedKeys.length, 2);
+ button('Apply').focus(); button('Apply').fire('click'); await Promise.resolve();
+ assert.equal(doc.activeElement?.dataset.focusKey, 'Dismiss'); assert.ok(button('ConfirmApply'));
+ assert.deepEqual(f.adapter.writes, []);
+ button('ConfirmApply').focus(); const apply = c.confirm(c.preview!); assert.equal(doc.activeElement?.dataset.focusKey, 'Cancel'); await apply;
  assert.equal(doc.activeElement?.dataset.focusKey, 'New'); assert.ok(root.allText.includes('Converted: 2'));
  assert.equal(root.allText.includes('Undo'), false); assert.equal(root.allText.includes('Keep result'), false);
 });
-test('modal uses inert text for HTML-looking source and exposes full file snapshots', async () => {
- const f = fixture({ 'A.md': '- [ ] <img onerror="alert(1)"> 📅 2026-10-10' }), { c } = controller(f);
- await c.initialize(); c.updateScope(f.scope); await c.scan(); const { m, root } = modalFixture(c); m.onOpen(); await new Promise(resolve => setTimeout(resolve, 0));
- assert.ok(root.allText.includes('<img onerror="alert(1)">')); assert.ok(root.allText.includes('Full file preview'));
- assert.ok(!root.children.some(el => el.tagName === 'IMG'));
+test('Settings shows a count instead of source previews or task selection', async () => {
+ const f = fixture({ 'A.md': '- [ ] <img onerror="alert(1)"> 📅 2026-10-10\n- [ ] Plain\n```md\n- [ ] Hidden 📅 2026-10-10\n```' }), { c } = controller(f);
+ await c.initialize(); c.updateScope(f.scope); await c.scan(); const { root, button } = settingsFixture(c);
+ assert.ok(root.allText.includes('1 convertible tasks found in 1 files.'));
+ assert.equal(root.allText.includes('<img'), false); assert.equal(root.allText.includes('Full file preview'), false);
+ assert.equal(button('SelectAll'), undefined); assert.equal(button('SelectNone'), undefined);
+ assert.equal(button('issues'), undefined); assert.equal(root.querySelectorAll().filter(el => el.tagName === 'INPUT').length, 1);
 });
-test('busy modal close requests cancellation and keeps transaction visible until result', async () => {
- const { c } = controller(); const { m } = modalFixture(c); c.busy = true; m.close();
- assert.equal(c.available, true); c.busy = false; m.close(); assert.equal(c.available, false);
+test('closing a Settings view dismisses only pending confirmation and keeps the controller available', async () => {
+ const { f, c } = controller(); await c.initialize(); c.updateScope(f.scope); await c.scan();
+ const { view } = settingsFixture(c); c.requestConfirmation(c.preview!); view.dispose();
+ assert.equal(c.available, true); assert.equal(c.confirmation, null); assert.deepEqual(f.adapter.writes, []);
+ const reopened = settingsFixture(c); assert.ok(reopened.button('Apply')); assert.equal(reopened.button('ConfirmApply'), undefined);
+});
+
+test('inline confirmation cancel and changed scope cannot apply a stale preview', async () => {
+ const { f, c } = controller(); await c.initialize(); c.updateScope(f.scope); await c.scan(); const preview = c.preview!;
+ c.requestConfirmation(preview); c.dismissConfirmation(); await c.confirm(preview); assert.deepEqual(f.adapter.writes, []);
+ c.requestConfirmation(preview); c.updateScope({ files: ['A.md'], folders: [], includeSubfolders: false });
+ assert.equal(c.confirmation, null); assert.equal(c.preview, null); await c.confirm(preview); assert.deepEqual(f.adapter.writes, []);
+ await c.scan(); c.requestConfirmation(c.preview!); await c.confirm(preview); assert.deepEqual(f.adapter.writes, []);
+});
+test('multiple Settings views cannot duplicate a confirmed apply or steal each other’s focus', async () => {
+ const { f, c } = controller(); await c.initialize(); c.updateScope(f.scope); await c.scan();
+ const doc = { activeElement: null as TestElement | null }, roots = [new TestElement('div', doc), new TestElement('div', doc)];
+ const views = roots.map(root => new TasksConversionSettings(f.app, root as unknown as HTMLElement, c));
+ roots[0].querySelectorAll().find(el => el.dataset.focusKey === 'Apply')!.focus();
+ const preview = c.preview!; c.requestConfirmation(preview);
+ assert.equal(roots[0].contains(doc.activeElement), true); assert.equal(roots[1].contains(doc.activeElement), false);
+ const first = c.confirm(preview); await c.confirm(preview); await first;
+ assert.equal(f.adapter.writes.filter(name => name.endsWith('.md')).length, 2);
+ assert.ok(roots.every(root => root.allText.includes('Converted: 2'))); for (const view of views) view.dispose();
+});
+test('Settings closing and remounting keeps an already confirmed operation alive', async () => {
+ const { f, c } = controller(); await c.initialize(); c.updateScope(f.scope); await c.scan();
+ const { view } = settingsFixture(c), original = f.service.apply.bind(f.service);
+ let release!: () => void; const gate = new Promise<void>(resolve => { release = resolve; });
+ f.service.apply = async (...args) => { await gate; return original(...args); };
+ const preview = c.preview!; c.requestConfirmation(preview); const apply = c.confirm(preview);
+ assert.equal(c.busy, true); view.dispose(); assert.equal(c.available, true);
+ const reopened = settingsFixture(c); assert.ok(reopened.button('Cancel')); release(); await apply;
+ assert.equal(c.result?.status, 'committed'); assert.ok(reopened.root.allText.includes('Converted: 2'));
+ for (const change of preview.changes) assert.equal(await f.adapter.read(change.path), change.after);
+});
+test('Settings warning summary omits protected/plain tasks and exposes only relevant reasons', async () => {
+ const { f, c } = controller(fixture({ 'A.md': '- [ ] Normal\n```md\n- [ ] Code 📅 2026-10-10\n```\n- [ ] Hybrid {{operonId:: hybrid1}} 📅 2026-10-10\n- [ ] Repeat 🔁 nonsense 📅 2026-10-10' }));
+ await c.initialize(); c.updateScope(f.scope); await c.scan(); const { root, button } = settingsFixture(c);
+ assert.ok(button('issues')); assert.ok(root.allText.includes('Unsupported mixed metadata'));
+ assert.equal(root.allText.includes('Normal'), false); assert.equal(root.allText.includes('Protected Markdown'), false);
+});
+test('observer failure cannot interrupt conversion after confirmation', async () => {
+ const { c } = controller(); await c.initialize(); c.updateScope({ files: ['A.md'], folders: [], includeSubfolders: false }); await c.scan();
+ c.subscribe(() => { throw new Error('Detached UI observer'); }); const preview = c.preview!; c.requestConfirmation(preview); await c.confirm(preview);
+ assert.equal(c.result?.status, 'committed');
 });
 
 test('production adapter UI flow in synthetic private tmp preserves sealed unrelated content and completes cleanup', async () => {
@@ -172,7 +221,15 @@ test('production adapter UI flow in synthetic private tmp preserves sealed unrel
   for (const [file, value] of Object.entries(notes)) { await adapter.write(file, value); await writeFile(path.join(sealed, file), value); }
   adapter.writes = []; const f = wiredFixture(adapter), { c } = controller(f);
   await c.initialize(); c.updateScope({ files: ['A.md'], folders: [], includeSubfolders: true }); await c.scan(); const approved = c.preview!.changes[0].after;
-  await c.apply(); assert.equal(c.result?.status, 'committed'); assert.equal(await adapter.read('A.md'), approved);
+  const mounted = settingsFixture(c), preview = c.preview!;
+  c.requestConfirmation(preview); c.dismissConfirmation(); assert.equal(adapter.writes.length, 0);
+  const original = f.service.apply.bind(f.service);
+  let release!: () => void; const gate = new Promise<void>(resolve => { release = resolve; });
+  f.service.apply = async (...args) => { await gate; return original(...args); };
+  c.requestConfirmation(preview); const applying = c.confirm(preview); mounted.view.dispose();
+  const reopened = settingsFixture(c); assert.ok(reopened.button('Cancel')); release(); await applying;
+  assert.equal(c.result?.status, 'committed'); assert.equal(await adapter.read('A.md'), approved);
+  assert.ok(reopened.root.allText.includes('Converted: 1')); reopened.view.dispose();
   for (const file of ['Unrelated.md', 'Ref.canvas']) assert.equal(await adapter.read(file), await readFile(path.join(sealed, file), 'utf8'));
   assert.ok(adapter.writes.every(file => file === 'A.md' || file.startsWith('.test-config/plugins/operon/state/tasks-conversion/')));
   assert.equal((await f.fresh().inspect()).state.kind, 'empty');
@@ -246,12 +303,12 @@ test('legacy filter fences without task cards never make identity inventory unav
  assert.throws(() => tasksConversionCardReferences('```operon\nview: card\ntaskId: invalid!\n```'));
 });
 
-for (const failure of ['settlement', 'inspection'] as const) test(`modal focuses enabled retry after ${failure} failure`, async () => {
+for (const failure of ['settlement', 'inspection'] as const) test(`Settings focuses enabled retry after ${failure} failure`, async () => {
  let inspections = 0; const f = fixture(), inspect = f.service.inspect.bind(f.service);
- f.service.inspect = async () => { if (failure === 'inspection' && ++inspections === 3) throw new Error('Read failed'); return inspect(); };
+ f.service.inspect = async () => { if (failure === 'inspection' && ++inspections === 2) throw new Error('Read failed'); return inspect(); };
  const { c } = controller(f, async () => { if (failure === 'settlement') throw new Error('Index failed'); });
  await c.initialize(); c.updateScope(f.scope); await c.scan();
- const { m, doc, button } = modalFixture(c); m.onOpen(); await new Promise(resolve => setTimeout(resolve, 0));
+ const { doc, button } = settingsFixture(c);
  button('Apply').focus(); await c.apply();
  assert.equal(doc.activeElement?.disabled, false);
  assert.equal(doc.activeElement?.dataset.focusKey, failure === 'settlement' ? 'RetryRefresh' : 'RetryInspect');
@@ -336,7 +393,7 @@ for (const scenario of ['scan-cancel', 'dirty-buffer', 'changed-source', 'concur
    for (const [file, content] of Object.entries(originals)) { await adapter.write(file, content); await writeFile(path.join(sealed, file), content); }
    const f = wiredFixture(adapter), { c } = controller(f); adapter.writes = []; await c.initialize(); c.updateScope(f.scope);
    if (scenario === 'scan-cancel') {
-    c.onChange = () => { if (c.phase === 'scan' && c.progress) c.cancel(); }; await c.scan(); assert.equal(c.preview, null); assert.deepEqual(adapter.writes, []);
+    c.subscribe(() => { if (c.phase === 'scan' && c.progress) c.cancel(); }); await c.scan(); assert.equal(c.preview, null); assert.deepEqual(adapter.writes, []);
    } else {
     await c.scan(); const preview = c.preview!;
     if (scenario === 'dirty-buffer') f.buffers.set('A.md', 'Unsaved user edit');
@@ -386,8 +443,7 @@ test('known committed marker failure offers only close-record retry and never re
  const { f, c } = controller(); await c.initialize(); c.updateScope(f.scope); await c.scan();
  f.adapter.beforeWrite = file => { if (file.endsWith('/resolved.json')) throw new Error('Close marker failed'); };
  await c.apply(); assert.equal(c.result?.sourcesCommitted, true); assert.equal(c.inspection?.state.kind, 'active');
- const { m, button } = modalFixture(c, f.app);
- await new Promise<void>(resolve => { const render = c.onChange; c.onChange = () => { render(); if (!c.busy) resolve(); }; m.onOpen(); });
+ const { button } = settingsFixture(c, f.app);
  assert.ok(button('RetryCleanup')); assert.equal(button('Restore'), undefined); assert.equal(button('FinishRecovery'), undefined);
  const writes = f.adapter.writes.filter(file => file.endsWith('.md')).length;
  await c.resolve('restore'); assert.equal(f.adapter.writes.filter(file => file.endsWith('.md')).length, writes);
@@ -405,8 +461,7 @@ test('verified success is not inherited by a different recovery record inspected
  f.adapter.beforeWrite = undefined; await f.store.resolve(original, 'kept'); await f.store.cleanup();
  await f.store.create({ ...structuredClone(original.record), id: crypto.randomUUID() });
  await c.initialize(); assert.equal(c.result, null); assert.equal(c.preview, null);
- const { m, button } = modalFixture(c, f.app);
- await new Promise<void>(resolve => { const render = c.onChange; c.onChange = () => { render(); if (!c.busy) resolve(); }; m.onOpen(); });
+ const { button } = settingsFixture(c, f.app);
  assert.ok(button('Restore')); assert.equal(button('RetryCleanup'), undefined);
 });
 
@@ -421,20 +476,52 @@ test('large mixed-file selection retains independent defaults, stable identity, 
  }));
  const { f, c } = controller(fixture(notes)); f.settings.defaultPriority = 'High';
  await c.initialize(); c.updateScope(f.scope); await c.scan();
- const all = c.preview!, selected = all.rows.filter(row => row.status === 'eligible' && row.lineNumber % 3 === 0).map(row => row.key);
- const { m, button, doc } = modalFixture(c);
- await new Promise<void>(resolve => { const render = c.onChange; c.onChange = () => { render(); if (!c.busy) resolve(); }; m.onOpen(); });
- button('SelectNone').focus(); c.select([]); assert.equal(doc.activeElement?.dataset.focusKey, 'SelectNone');
- c.select(selected); const approved = c.preview!;
- assert.equal(approved.operonIds.length, 96); assert.equal(approved.scan.timestamp, all.scan.timestamp);
+ const all = c.preview!;
+ const { button, doc } = settingsFixture(c);
+ button('Apply').focus(); const approved = c.preview!;
+ c.requestConfirmation(approved); assert.equal(doc.activeElement?.dataset.focusKey, 'Dismiss');
+ assert.equal(approved.operonIds.length, 288); assert.equal(approved.scan.timestamp, all.scan.timestamp);
  for (const row of approved.rows.filter(row => row.selected)) {
   assert.equal(row.operonId, all.rows.find(original => original.key === row.key)!.operonId);
   const task = parseTaskLine(row.after!, row.lineNumber, row.path, f.settings.keyMappings)!;
   assert.equal(task.fields.some(field => field.key === 'parentTask'), false);
   if (row.lineNumber % 2 === 0) assert.equal(task.fields.find(field => field.key === 'priority')?.value, 'High');
  }
- c.select(all.selectedKeys); c.select(selected); assert.deepEqual(c.preview!.changes, approved.changes);
- await c.apply(); assert.equal(c.result?.status, 'committed'); assert.equal(c.counts.converted, 96);
+ assert.deepEqual(c.preview!.changes, approved.changes);
+ await c.confirm(approved); assert.equal(c.result?.status, 'committed'); assert.equal(c.counts.converted, 288);
  for (const change of approved.changes) assert.equal(await f.adapter.read(change.path), change.after);
  assert.equal(doc.activeElement?.dataset.focusKey, 'New'); assert.equal((await f.store.load()).kind, 'empty');
+});
+
+
+test('Settings renderer lifecycle keeps separate detached surfaces and cleans only the requested page', async () => {
+ const source = await readFile(path.join(process.cwd(), 'src/ui/settings-tab.ts'), 'utf8');
+ const ast = ts.createSourceFile('settings-tab.ts', source, ts.ScriptTarget.Latest, true);
+ const cls = ast.statements.find(node => ts.isClassDeclaration(node) && node.name?.text === 'OperonSettingsTab') as import('typescript').ClassDeclaration;
+ const names = ['renderTasksBulkConversion', 'clearNativeSettingsPage'];
+ const methods = cls.members.filter(member => ts.isMethodDeclaration(member) && names.includes(member.name.getText(ast)));
+ assert.equal(methods.length, names.length);
+ const script = ts.transpileModule('class Harness { '+methods.map(method => method.getText(ast)).join('\n')+' }; return Harness;', { compilerOptions: { target: ts.ScriptTarget.ES2022 } }).outputText;
+ const Harness = new Function('Setting', 't', 'setSettingsScope', 'closeFloatingPanelsForRoot', script)(Setting, (_domain: string, key: string) => key, () => {}, () => {});
+ const h = new Harness(), { f, c } = controller(); await c.initialize(); c.updateScope(f.scope); await c.scan();
+ const views: TasksConversionSettings[] = [];
+ h.tasksConversionSettings = new Map(); h.disposeReminderSoundPreview = () => {};
+ h.tasksConversionUi = { available: () => true, mount: (host: HTMLElement) => {
+  const view = new TasksConversionSettings(new App(), host, c); views.push(view); return () => view.dispose();
+ } };
+ const doc = { activeElement: null as TestElement | null }, first = new TestElement('div', doc), second = new TestElement('div', doc);
+ const cleanupFirst = h.renderTasksBulkConversion(first); h.renderTasksBulkConversion(second);
+ assert.equal(h.tasksConversionSettings.size, 2); assert.ok(first.allText.includes('2 convertible tasks')); assert.ok(second.allText.includes('2 convertible tasks'));
+ c.requestConfirmation(c.preview!); h.clearNativeSettingsPage(first);
+ assert.equal(h.tasksConversionSettings.size, 1); assert.equal(first.children.length, 0); assert.equal(c.confirmation, null);
+ assert.equal(c.available, true); assert.ok(second.allText.includes('2 convertible tasks'));
+ cleanupFirst(); assert.equal(h.tasksConversionSettings.size, 1);
+ h.clearNativeSettingsPage(second); assert.equal(h.tasksConversionSettings.size, 0); assert.equal(c.available, true);
+});
+
+test('plugin reuses its conversion session and refuses access while unloading', async () => {
+ const { h } = await mainHarness(['getTasksBulkConversion']); const { c } = controller();
+ h.startupReady = true; h.agentRuntimeLifecycle = { getPhase: () => 'ready' }; h.tasksConversionController = c;
+ assert.equal(h.getTasksBulkConversion(), c); assert.equal(h.getTasksBulkConversion(), c);
+ h.agentRuntimeLifecycle.getPhase = () => 'unloading'; assert.equal(h.getTasksBulkConversion(), null);
 });

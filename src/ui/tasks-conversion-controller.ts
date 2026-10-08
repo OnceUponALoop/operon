@@ -1,7 +1,7 @@
 import type { TasksConversionScope, TasksConversionPreview, TasksConversionFileChange } from '../core/tasks-conversion-plan';
 import type { TasksConversionService, TasksConversionInspection, TasksConversionResult } from '../systems/tasks-conversion-service';
 
-export interface TasksConversionUiIntegration { open(): void; available(): boolean }
+export interface TasksConversionUiIntegration { mount(container: HTMLElement): () => void; available(): boolean }
 export interface TasksConversionControllerDependencies {
  service: Pick<TasksConversionService, 'scan' | 'preview' | 'apply' | 'inspect' | 'resolve'>;
  available(): boolean;
@@ -37,6 +37,7 @@ export function tasksConversionCounts(result: TasksConversionResult | null, prev
 export class TasksConversionController {
  scope: TasksConversionScope = { files: [], folders: [], includeSubfolders: true };
  preview: TasksConversionPreview | null = null;
+ confirmation: TasksConversionPreview | null = null;
  inspection: TasksConversionInspection | null = null;
  result: TasksConversionResult | null = null;
  busy = false;
@@ -48,7 +49,17 @@ export class TasksConversionController {
  private cancelled = false;
  private disposed = false;
  private verifiedCounts: TasksConversionCounts | null = null;
- onChange: () => void = () => {};
+ private readonly listeners = new Set<() => void>();
+ subscribe(listener: () => void): () => void { this.listeners.add(listener); return () => { this.listeners.delete(listener); }; }
+ requestConfirmation(preview: TasksConversionPreview): void {
+  if (this.busy || this.blocked || !this.available || this.result || this.preview !== preview || !preview.selectedKeys.length || preview.errors.length) return;
+  this.confirmation = preview; this.emit();
+ }
+ dismissConfirmation(): void { if (!this.confirmation) return; this.confirmation = null; this.emit(); }
+ async confirm(preview: TasksConversionPreview): Promise<void> {
+  if (this.confirmation !== preview || this.preview !== preview) return;
+  this.confirmation = null; await this.apply();
+ }
  constructor(private readonly deps: TasksConversionControllerDependencies) {}
  get available(): boolean { return !this.disposed && this.deps.available(); }
  get blocked(): boolean { return !this.inspection || this.inspection.state.kind !== 'empty'; }
@@ -59,14 +70,14 @@ export class TasksConversionController {
  updateScope(scope: TasksConversionScope): void {
   if (this.busy || this.blocked) return;
   this.scope = { files: [...new Set(scope.files)].sort(), folders: [...new Set(scope.folders)].sort(), includeSubfolders: scope.includeSubfolders };
-  this.preview = null; this.result = null; this.error = null; this.emit();
+  this.preview = null; this.confirmation = null; this.result = null; this.error = null; this.emit();
  }
  select(keys: readonly string[]): void {
   if (this.busy || this.blocked || this.result || !this.preview) return;
-  this.preview = this.deps.service.preview(this.preview.scan, keys); this.emit();
+  this.confirmation = null; this.preview = this.deps.service.preview(this.preview.scan, keys); this.emit();
  }
  cancel(): void { if (this.cancelled) return; this.cancelled = true; this.abort?.abort(); this.emit(); }
- dispose(): void { this.disposed = true; this.cancel(); this.onChange = () => {}; }
+ dispose(): void { this.disposed = true; this.cancel(); this.confirmation = null; this.listeners.clear(); }
  async initialize(): Promise<void> {
   await this.run('inspect', async () => {
    this.inspection = await this.deps.service.inspect();
@@ -122,7 +133,7 @@ export class TasksConversionController {
  }
  reset(): void {
   if (this.busy || this.blocked || this.settlementPending.length) return;
-  this.preview = null; this.result = null; this.verifiedCounts = null; this.error = null; this.progress = null; this.emit();
+  this.preview = null; this.confirmation = null; this.result = null; this.verifiedCounts = null; this.error = null; this.progress = null; this.emit();
  }
  private async inspectAndSettle(paths: readonly string[], refresh = true): Promise<void> {
   const written = refresh && (!!this.result?.sourcesTouched || !!this.result?.sourcesCommitted || !!this.result && ['committed', 'rolled-back', 'restored', 'kept', 'recovery-required'].includes(this.result.status));
@@ -144,10 +155,10 @@ export class TasksConversionController {
  }
  private async run(phase: NonNullable<TasksConversionController['phase']>, operation: () => Promise<void>): Promise<void> {
   if (this.busy || !this.available) return;
-  this.busy = true; this.phase = phase; this.progress = null; this.cancelled = false; this.abort = new AbortController(); this.error = null; this.emit();
+  this.confirmation = null; this.busy = true; this.phase = phase; this.progress = null; this.cancelled = false; this.abort = new AbortController(); this.error = null; this.emit();
   try { await operation(); }
   catch (error) { if (!(error instanceof Error && error.name === 'AbortError')) this.error = error instanceof Error ? error.message : 'Operation failed'; }
   finally { this.busy = false; this.phase = null; this.abort = null; this.emit(); }
  }
- private emit(): void { if (!this.disposed) this.onChange(); }
+ private emit(): void { if (!this.disposed) for (const listener of this.listeners) { try { listener(); } catch { /* Views do not own transaction state. */ } } }
 }

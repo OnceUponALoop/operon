@@ -1,4 +1,4 @@
-import { TasksConversionModal } from './src/ui/tasks-conversion-modal';
+import { TasksConversionSettings } from './src/ui/tasks-conversion-settings';
 import { TasksConversionController } from './src/ui/tasks-conversion-controller';
 import { TasksConversionService } from './src/systems/tasks-conversion-service';
 import { createTasksConversionHost } from './src/systems/tasks-conversion-obsidian';
@@ -16870,7 +16870,7 @@ export default class OperonPlugin extends Plugin {
 			this.buildDeveloperApiSettingsIntegration(),
 			this.buildSettingsBackupUiIntegration(),
 			() => this.reconcileAllParentTaskDateRangesWhenSafe(),
-			{ open: () => this.openTasksBulkConversion(), available: () => this.startupReady && this.agentRuntimeLifecycle.getPhase() !== 'unloading' },
+			{ mount: container => { const controller = this.getTasksBulkConversion(); if (!controller) return () => {}; const view = new TasksConversionSettings(this.app, container, controller); return () => view.dispose(); }, available: () => this.startupReady && this.agentRuntimeLifecycle.getPhase() !== 'unloading' },
 			);
 		this.addSettingTab(this.settingsTab);
 
@@ -17094,7 +17094,7 @@ export default class OperonPlugin extends Plugin {
 
 	onunload(): void {
 		this.agentRuntimeLifecycle.beginUnloading();
-		this.tasksConversionModal?.shutdown();
+		this.tasksConversionController?.dispose();
 		disposeAssigneeChipImages(this.app);
 		this.agentRuntimeCliTransportAvailable = false;
 		this.taskSourceModifyReconciler?.destroy();
@@ -26410,7 +26410,7 @@ export default class OperonPlugin extends Plugin {
 	}
 
 
- private tasksConversionModal: TasksConversionModal | null = null;
+ private tasksConversionController: TasksConversionController | null = null;
  private readonly tasksConversionNativePaths = new Set<string>();
  private readonly tasksConversionOwnedSources = new Map<string, { before: string; after: string; written: boolean }>();
  private readonly tasksConversionGeneratedIds = new Set<string>();
@@ -26497,14 +26497,14 @@ export default class OperonPlugin extends Plugin {
   return unavailable;
  }
 
- private openTasksBulkConversion(): void {
-  if (!this.startupReady || this.agentRuntimeLifecycle.getPhase() === 'unloading') return;
-  if (this.tasksConversionModal) { this.tasksConversionModal.modalEl.focus(); return; }
+ private getTasksBulkConversion(): TasksConversionController | null {
+  if (!this.startupReady || this.agentRuntimeLifecycle.getPhase() === 'unloading') return null;
+  if (this.tasksConversionController) return this.tasksConversionController;
   const available = () => this.startupReady && this.agentRuntimeLifecycle.getPhase() !== 'unloading';
   const pinned = this.pinnedCache;
   const nativePaths = this.tasksConversionNativePaths, ownedSources = this.tasksConversionOwnedSources,
    generatedIds = this.tasksConversionGeneratedIds, settledSources = this.tasksConversionSettledSources;
-  if (!pinned) return;
+  if (!pinned) return null;
   const workflow = () => {
    const references = [...pinned.getPinnedIds(), ...pinned.getManualOrderIds(),
     ...Object.values(this.storage.kanbanOrder.toPackage().boards).flatMap(board => Object.values(board).flat()),
@@ -26594,8 +26594,7 @@ export default class OperonPlugin extends Plugin {
     this.refreshViews();
    },
   });
-  const modal = new TasksConversionModal(this.app, controller, () => { if (this.tasksConversionModal === modal) this.tasksConversionModal = null; });
-  this.tasksConversionModal = modal; modal.open();
+  this.tasksConversionController = controller; return controller;
  }
 
 	private registerFileWatchers(): void {

@@ -2946,6 +2946,7 @@ export class OperonSettingsTab extends PluginSettingTab {
 	}
 
 	private clearNativeSettingsPage(containerEl: HTMLElement): void {
+		for (const [host, dispose] of this.tasksConversionSettings) if (containerEl.contains(host)) dispose();
 		this.disposeReminderSoundPreview();
 		closeFloatingPanelsForRoot(containerEl);
 		containerEl.empty();
@@ -4051,6 +4052,7 @@ export class OperonSettingsTab extends PluginSettingTab {
 	}
 
 	private renderSettingsTab(tabId: OperonSettingsTabId, contentEl: HTMLElement): void {
+		for (const dispose of this.tasksConversionSettings.values()) dispose();
 		for (const dispose of this.propertyPoolSettings.values()) dispose();
 		this.propertyPoolSettings.clear();
 		if (tabId !== 'tasksReminders') this.disposeReminderSoundPreview();
@@ -4074,6 +4076,7 @@ export class OperonSettingsTab extends PluginSettingTab {
 	}
 
 	hide(): void {
+		for (const dispose of this.tasksConversionSettings.values()) dispose();
 		this.disposeReminderSoundPreview();
 		this.clearActiveNativeSettingsPage();
 		if (this.hasPendingSettingsChange) {
@@ -5825,12 +5828,17 @@ export class OperonSettingsTab extends PluginSettingTab {
 		}
 	}
 
-	private renderTasksBulkConversion(containerEl: HTMLElement): void {
-		new Setting(containerEl).setName(t('settings', 'tasksBulkTitle'))
-			.setDesc(t('settings', 'tasksBulkHelp')).addButton(button => button
-				.setButtonText(t('settings', 'tasksBulkOpen'))
-				.setDisabled(!this.tasksConversionUi?.available())
-				.onClick(() => this.tasksConversionUi?.open()));
+	private readonly tasksConversionSettings = new Map<HTMLElement, () => void>();
+
+	private renderTasksBulkConversion(containerEl: HTMLElement): () => void {
+		for (const [host, dispose] of this.tasksConversionSettings) if (host.parentElement === containerEl) dispose();
+		new Setting(containerEl).setName(t('settings', 'tasksBulkTitle')).setDesc(t('settings', 'tasksBulkHelp'));
+		if (!this.tasksConversionUi?.available()) { containerEl.createEl('p', { text: t('settings', 'tasksBulkUnavailable') }); return () => {}; }
+		const host = containerEl.createDiv();
+		const dispose = this.tasksConversionUi.mount(host);
+		const cleanup = () => { dispose(); this.tasksConversionSettings.delete(host); };
+		this.tasksConversionSettings.set(host, cleanup);
+		return cleanup;
 	}
 
 	private renderInlineConversionSettings(containerEl: HTMLElement, selectedKey?: string): void {
