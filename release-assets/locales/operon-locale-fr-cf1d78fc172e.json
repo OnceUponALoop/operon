@@ -2680,7 +2680,7 @@
       "taskEditorShowLineNumbers": "Afficher les numéros de ligne dans l'éditeur de tâche",
       "taskEditorShowLineNumbersDesc": "Afficher les numéros de ligne source dans le panneau de contenu du fichier de l'éditeur de tâche.",
       "taskEditorWorkflowPickers": "Visibilité et ordre des propriétés",
-      "taskEditorWorkflowPickersDesc": "Workflow Pickers : choisissez les propriétés affichées dans Task Editor et leur ordre, y compris les propriétés personnalisées prises en charge. Masquer une ligne ne modifie pas les métadonnées existantes.",
+      "taskEditorWorkflowPickersDesc": "Choisissez les propriétés et leur ordre dans Task Editor mobile, y compris les propriétés personnalisées prises en charge. Ces préférences ne modifient ni l’éditeur sur ordinateur ni les données existantes des tâches.",
       "taskEditorWorkflowPickersMoveDown": "Déplacer vers le bas",
       "taskEditorWorkflowPickersMoveUp": "Déplacer vers le haut",
       "taskEditorWorkflowPickersReorder": "Réorganiser les sélecteurs de workflow",
@@ -3598,5 +3598,5 @@
       "toggleDescendantPreview": "Basculer l'aperçu des descendants"
     }
   },
-  "sourceVersion": "9cf71fa3dd5b805e3d95b4326480516ade0b1f09da81175895317084db9e014f"
+  "sourceVersion": "ddf523976554d3bf2cb7d84867e6e3c2e73ea4c1f38fd4f172a97193d3b4b3cc"
 }

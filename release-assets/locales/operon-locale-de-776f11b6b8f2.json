@@ -2680,7 +2680,7 @@
       "taskEditorShowLineNumbers": "Zeilennummern im Aufgaben-Editor anzeigen",
       "taskEditorShowLineNumbersDesc": "Quell-Zeilennummern im Dateiinhaltsbereich des Aufgaben-Editors anzeigen.",
       "taskEditorWorkflowPickers": "Sichtbarkeit und Reihenfolge der Eigenschaften",
-      "taskEditorWorkflowPickersDesc": "Workflow Pickers: Wählen Sie die sichtbaren Eigenschaftszeilen im Task Editor und ihre Reihenfolge, einschließlich unterstützter benutzerdefinierter Eigenschaften. Das Ausblenden einer Zeile ändert keine vorhandenen Aufgabenmetadaten.",
+      "taskEditorWorkflowPickersDesc": "Wählen Sie die Eigenschaftszeilen und ihre Reihenfolge im mobilen Task Editor, einschließlich unterstützter benutzerdefinierter Eigenschaften. Diese Einstellungen beeinflussen weder den Desktop-Editor noch vorhandene Aufgabendaten.",
       "taskEditorWorkflowPickersMoveDown": "Nach unten",
       "taskEditorWorkflowPickersMoveUp": "Nach oben",
       "taskEditorWorkflowPickersReorder": "Arbeitsablauf-Auswahlfelder neu anordnen",
@@ -3598,5 +3598,5 @@
       "toggleDescendantPreview": "Vorschau untergeordneter Aufgaben umschalten"
     }
   },
-  "sourceVersion": "910ddbe51521ed6b72c77b79ed418e500ad32c03da76b46e384ad6cc6257d750"
+  "sourceVersion": "1b14c950833327cac6184226478722cdd6bf7ead2801b6f993abf5dbb4c55b71"
 }

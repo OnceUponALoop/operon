@@ -2680,7 +2680,7 @@
       "taskEditorShowLineNumbers": "Mostrar números de línea en el Editor de tareas",
       "taskEditorShowLineNumbersDesc": "Mostrar los números de línea de origen en el panel de cuerpo del archivo del Editor de tareas.",
       "taskEditorWorkflowPickers": "Visibilidad y orden de propiedades",
-      "taskEditorWorkflowPickersDesc": "Workflow Pickers: elige las filas de propiedades que aparecen en Task Editor y su orden, incluidas las propiedades personalizadas compatibles. Ocultar una fila no cambia los metadatos existentes de la tarea.",
+      "taskEditorWorkflowPickersDesc": "Elige las propiedades y su orden en Task Editor móvil, incluidas las propiedades personalizadas compatibles. Estas preferencias no afectan al editor de escritorio ni a los datos existentes de las tareas.",
       "taskEditorWorkflowPickersMoveDown": "Mover hacia abajo",
       "taskEditorWorkflowPickersMoveUp": "Mover hacia arriba",
       "taskEditorWorkflowPickersReorder": "Reordenar selectores de flujo de trabajo",
@@ -3598,5 +3598,5 @@
       "toggleDescendantPreview": "Alternar vista previa de descendientes"
     }
   },
-  "sourceVersion": "88504cc09bc018612632366f52a12167d85dff858e2c8f7189a44cdc106660b4"
+  "sourceVersion": "86f2c1f11c7795a86faa2c1ff8c35349be1a1bf1ee5456eab0c334c06bd7570d"
 }

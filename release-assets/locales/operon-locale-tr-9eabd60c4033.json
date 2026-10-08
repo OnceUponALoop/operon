@@ -2680,7 +2680,7 @@
       "taskEditorShowLineNumbers": "Görev Editörü'nde satır numaralarını göster",
       "taskEditorShowLineNumbersDesc": "Görev Editörü dosya gövdesi panelinde kaynak satır numaralarını gösterir.",
       "taskEditorWorkflowPickers": "Özellik Görünürlüğü ve Sıralaması",
-      "taskEditorWorkflowPickersDesc": "Workflow Pickers: desteklenen özel özellikler dahil Task Editor içinde hangi özellik satırlarının görüneceğini ve sırasını seçin. Bir satırı gizlemek mevcut görev verilerini değiştirmez.",
+      "taskEditorWorkflowPickersDesc": "Mobile Task Editor içinde görünecek property satırlarını ve sıralarını seçin; desteklenen custom property’ler de dahildir. Bu tercihler desktop editörünü veya mevcut task verilerini etkilemez.",
       "taskEditorWorkflowPickersMoveDown": "Aşağı taşı",
       "taskEditorWorkflowPickersMoveUp": "Yukarı taşı",
       "taskEditorWorkflowPickersReorder": "İş akışı seçicilerini sırala",
@@ -3598,5 +3598,5 @@
       "toggleDescendantPreview": "Alt görev önizlemesini aç/kapat"
     }
   },
-  "sourceVersion": "400c794ad73a9c671e78ef9b54b1ce0e073521ebe9594e11640be35337cc688d"
+  "sourceVersion": "18d866dedd2d945e19070d9e203469c7b5983163cfd46950817a52909022e7dc"
 }

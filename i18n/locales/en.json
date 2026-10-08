@@ -870,7 +870,7 @@
 		"workspaceTweaksRemovePropertiesExcludedFolder": "Remove excluded folder",
 		"taskEditorFileBodySection": "File Body",
 		"taskEditorWorkflowPickers": "Property Visibility & Order",
-		"taskEditorWorkflowPickersDesc": "Workflow Pickers: choose which property rows appear in Task Editor and set their order, including supported custom properties. Hiding a row does not change existing task metadata.",
+		"taskEditorWorkflowPickersDesc": "Choose which property rows appear in Mobile Task Editor and set their order, including supported custom properties. These preferences do not affect the desktop editor or existing task metadata.",
 		"taskEditorWorkflowPickersReorder": "Reorder workflow pickers",
 		"taskEditorWorkflowPickersMoveUp": "Move up",
 		"taskEditorWorkflowPickersMoveDown": "Move down",

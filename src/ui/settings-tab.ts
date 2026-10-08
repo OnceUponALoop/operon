@@ -2081,8 +2081,13 @@ export class OperonSettingsTab extends PluginSettingTab {
 				render: (setting: Setting) => this.configureTaskEditorSectionRow(setting, section.id),
 			})),
 		});
+
+		return groups;
+	}
+
+	private buildMobilePropertySettingsGroup(): SettingDefinitionItem {
 		const heading = t('settings', 'taskEditorWorkflowPickers');
-		groups.push({
+		return {
 			type: 'group', heading, cls: 'operon-task-chip-settings-group operon-task-editor-properties-group',
 			extraButtons: ['DOCS-062 Field pickers overview', 'DOCS-070 Custom field pickers'].map(target =>
 				this.buildDeclarativeSettingsDocsButton(`${heading} — ${target}`, target, 'operon-native-settings-declarative-docs-action--inline-heading')),
@@ -2101,8 +2106,7 @@ export class OperonSettingsTab extends PluginSettingTab {
 					this.renderTaskEditorWorkflowPickerSettingsSection(setting.settingEl, { key: row.key });
 				},
 			}))],
-		});
-		return groups;
+		};
 	}
 
 	private buildMobileSettingsGroups(
@@ -2636,7 +2640,7 @@ export class OperonSettingsTab extends PluginSettingTab {
 					this.renderTaskEditorMobileCoreToolSettingsSection(setting.settingEl, { key: row.key });
 				},
 			})),
-		] }];
+		] }, this.buildMobilePropertySettingsGroup()];
 	}
 
 	private buildSettingsSearchSettingDefinition(
@@ -4617,16 +4621,7 @@ export class OperonSettingsTab extends PluginSettingTab {
 		};
 		renderSections();
 		this.markSettingsSearchSectionTarget(sections, 'ui.taskEditorSections');
-		const workflowPickersTitle = t('settings', 'taskEditorWorkflowPickers');
-		const sectionEl = renderNativeSettingsGroupedSection(
-			containerEl,
-			workflowPickersTitle,
-			undefined,
-			this.buildNativeSettingsDocsAction(workflowPickersTitle, 'DOCS-062 Field pickers overview'),
-		);
-		this.applyInterfaceIconListSectionStyle(sectionEl);
-		this.renderTaskEditorWorkflowPickerSettingsSection(sectionEl);
-		this.markSettingsSearchSectionTarget(sectionEl, 'ui.taskEditorWorkflowPickers');
+
 	}
 
 	private renderInterfaceTweaksTab(containerEl: HTMLElement): void {
@@ -4929,6 +4924,16 @@ export class OperonSettingsTab extends PluginSettingTab {
 		this.applyInterfaceIconListSectionStyle(sectionEl);
 		this.renderTaskEditorMobileCoreToolSettingsSection(sectionEl);
 		this.markSettingsSearchSectionTarget(sectionEl, 'ui.taskEditorMobileCoreTools');
+		const workflowPickersTitle = t('settings', 'taskEditorWorkflowPickers');
+		const propertiesSectionEl = renderNativeSettingsGroupedSection(
+			containerEl,
+			workflowPickersTitle,
+			undefined,
+			this.buildNativeSettingsDocsAction(workflowPickersTitle, 'DOCS-062 Field pickers overview'),
+		);
+		this.applyInterfaceIconListSectionStyle(propertiesSectionEl);
+		this.renderTaskEditorWorkflowPickerSettingsSection(propertiesSectionEl);
+		this.markSettingsSearchSectionTarget(propertiesSectionEl, 'ui.taskEditorWorkflowPickers');
 	}
 
 	private renderProjectSerialSettings(containerEl: HTMLElement): void {
@@ -6664,9 +6669,8 @@ export class OperonSettingsTab extends PluginSettingTab {
 
 	private isCustomSurfaceMappingVisible(mapping: KeyMapping, surface: CustomSurfaceSettingsTarget): boolean {
 		if (surface === 'kanbanSwimlane') return mapping.showInKanbanSwimlane === true;
-		const entries = surface === 'editor'
-			? [...this.settings.taskEditorWorkflowPickers, ...this.settings.taskEditorMobileCoreTools]
-			: surface === 'creator'
+		if (surface === 'editor') return mapping.showInEditor !== false;
+		const entries = surface === 'creator'
 				? this.settings.taskCreatorToolbar
 				: [
 					...this.settings.inlineTaskCompactChips,
@@ -6678,7 +6682,6 @@ export class OperonSettingsTab extends PluginSettingTab {
 				];
 		const matches = entries.filter(entry => entry.key === mapping.canonicalKey);
 		if (matches.length > 0) return matches.some(entry => entry.visible);
-		if (surface === 'editor') return mapping.showInEditor !== false;
 		if (surface === 'creator') return mapping.showInCreator !== false;
 		return mapping.showInChips === true;
 	}

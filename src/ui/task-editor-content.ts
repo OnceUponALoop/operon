@@ -125,7 +125,7 @@ import { getVisiblePropertyName } from '../core/yaml-fields';
 import { resolveTaskEditorProgressFromStats } from '../core/task-stats-read-model';
 import { resolveSubtaskActionIconForKind, resolveSubtaskActionLabelKeyForKind } from '../core/subtask-action';
 import { createInlineTaskCompactChipElement } from './compact-task-layout';
-import { INLINE_TASK_COMPACT_FALLBACK_ICONS, InlineTaskCompactChipKey, TASK_CREATOR_FALLBACK_FIELD_ICONS, TaskEditorWorkflowPickerItem } from '../types/settings';
+import { normalizeTaskEditorWorkflowPickers, INLINE_TASK_COMPACT_FALLBACK_ICONS, InlineTaskCompactChipKey, TASK_CREATOR_FALLBACK_FIELD_ICONS, TaskEditorWorkflowPickerItem } from '../types/settings';
 import { openTaskFieldPicker } from './task-field-picker-dispatch';
 import { getManagedTaskDataFieldPicker, type ManagedTaskDataFieldPicker } from './task-data-field-picker';
 import { formatReminderDisplayItem } from './reminder-display';
@@ -3290,13 +3290,12 @@ export class TaskEditorContent {
 			return root;
 		};
 		const items = this.getRenderableWorkflowPickerItems();
-		const configured = new Map(this.settings.taskEditorWorkflowPickers.map(item => [item.key, item.visible]));
 		const available = new Set(items.map(item => item.key));
 		const assigned = new Set<string>();
 		for (const group of TASK_EDITOR_DESKTOP_GROUPS) {
 			const keys = group.fields.filter(key => {
 				assigned.add(key);
-				return DESKTOP_CORE_FIELDS.has(key) ? configured.get(key) !== false : available.has(key);
+				return DESKTOP_CORE_FIELDS.has(key) || available.has(key);
 			});
 			this.renderDesktopPropertyGroup(propertyHost(group.key), group.key, keys);
 		}
@@ -4144,7 +4143,10 @@ export class TaskEditorContent {
 	}
 
 	private getRenderableWorkflowPickerItems(): TaskEditorWorkflowPickerItem[] {
-		return this.settings.taskEditorWorkflowPickers
+		const items = Platform.isPhone
+			? this.settings.taskEditorWorkflowPickers
+			: normalizeTaskEditorWorkflowPickers(undefined, undefined, this.settings.keyMappings);
+		return items
 			.filter(item => item.visible)
 			.filter(item => this.canRenderWorkflowPickerKey(item.key));
 	}

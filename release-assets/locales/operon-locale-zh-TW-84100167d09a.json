@@ -2680,7 +2680,7 @@
       "taskEditorShowLineNumbers": "在任務編輯器中顯示行號",
       "taskEditorShowLineNumbersDesc": "在任務編輯器的檔案正文面板中顯示源行號。",
       "taskEditorWorkflowPickers": "屬性顯示與排序",
-      "taskEditorWorkflowPickersDesc": "Workflow Pickers：選擇在 Task Editor 中顯示的屬性列及其順序，包括支援的自訂屬性。隱藏列不會變更現有任務中繼資料。",
+      "taskEditorWorkflowPickersDesc": "選擇行動版 Task Editor 中顯示的屬性及其順序，包括支援的自訂屬性。這些偏好不會影響桌面編輯器或現有任務資料。",
       "taskEditorWorkflowPickersMoveDown": "下移",
       "taskEditorWorkflowPickersMoveUp": "上移",
       "taskEditorWorkflowPickersReorder": "重新排序工作流選擇器",
@@ -3598,5 +3598,5 @@
       "toggleDescendantPreview": "切換子任務預覽"
     }
   },
-  "sourceVersion": "281a03ad38216529dd4c22a6eef87e4bc256f333927e1ae72eb4e18bb60e5f67"
+  "sourceVersion": "2ef0ff0536a33ce6ba84010735671a63e3de3b90ec4408adfccabfb8fd74d43a"
 }

@@ -2680,7 +2680,7 @@
       "taskEditorShowLineNumbers": "Mostrar números de linha no Editor de Tarefa",
       "taskEditorShowLineNumbersDesc": "Exibir números de linha da origem no painel do corpo do arquivo do Editor de Tarefa.",
       "taskEditorWorkflowPickers": "Visibilidade e ordem das propriedades",
-      "taskEditorWorkflowPickersDesc": "Workflow Pickers: escolha as propriedades exibidas no Task Editor e sua ordem, incluindo propriedades personalizadas compatíveis. Ocultar uma linha não altera os metadados existentes da tarefa.",
+      "taskEditorWorkflowPickersDesc": "Escolha as propriedades e sua ordem no Task Editor móvel, incluindo propriedades personalizadas compatíveis. Essas preferências não afetam o editor de desktop nem os dados existentes das tarefas.",
       "taskEditorWorkflowPickersMoveDown": "Mover para baixo",
       "taskEditorWorkflowPickersMoveUp": "Mover para cima",
       "taskEditorWorkflowPickersReorder": "Reordenar seletores de fluxo de trabalho",
@@ -3598,5 +3598,5 @@
       "toggleDescendantPreview": "Alternar visualização descendente"
     }
   },
-  "sourceVersion": "c44ccbf3afee2e00247c14772c6b020171aae82cca1f6d382e9e802605a8a73c"
+  "sourceVersion": "71526318bcd3af78c817954719961af838ccac68bb86f1bcd844a407a1322e73"
 }

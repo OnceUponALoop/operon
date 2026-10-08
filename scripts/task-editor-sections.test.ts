@@ -1,3 +1,4 @@
+import { buildCustomFieldUsageSummaries } from '../src/core/managed-task-fields';
 import assert from 'node:assert/strict';
 import test from 'node:test';
 import { normalizeTaskEditorSections, TASK_EDITOR_SECTION_IDS } from '../src/types/task-editor-sections';
@@ -38,4 +39,17 @@ test('section order and names survive canonical package save and reload', () => 
 test('sections are discoverable by Settings Search and belong to backup preferences', () => {
  assert.equal(OPERON_SETTINGS_SEARCH_REGISTRY.find(entry => entry.key === 'taskEditorSections')?.tabId, 'interfaceTaskEditor');
  assert.ok(SETTINGS_BACKUP_COMPATIBILITY_BY_KEY.taskEditorSections);
+});
+
+test('property visibility search is owned by Mobile Task Editor', () => {
+ assert.equal(OPERON_SETTINGS_SEARCH_REGISTRY.find(entry => entry.id === 'ui.taskEditorWorkflowPickers')?.tabId, 'mobileTaskEditor');
+});
+
+test('custom usage includes desktop even when both mobile surfaces hide the property', () => {
+ const summaries = buildCustomFieldUsageSummaries({
+  keyMappings: [{ canonicalKey: 'customExample', visiblePropertyName: 'Example', type: 'text', isSystem: false, showInEditor: true, sync: 'no', enabled: true }],
+  filterSets: [], kanbanPresets: [], tasks: null,
+  surfaces: { taskEditorWorkflowPickers: [{ key: 'customExample', visible: false }], taskEditorMobileCoreTools: [{ key: 'customExample', visible: false }] },
+ });
+ assert.ok(summaries[0].activeSurfaceKeys.includes('editor'));
 });

@@ -1,4 +1,4 @@
-import type { App } from 'obsidian';
+import { Platform, type App } from 'obsidian';
 import { parseListValue } from '../core/parser';
 import { isRetiredKeyMapping, KeyMapping, OperonSettings } from '../types/settings';
 import { IndexedTask } from '../types/fields';
@@ -138,6 +138,7 @@ function getCustomSurfaceItems(
 			...collect(settings.taskWikilinkOverlayCompactChips),
 		];
 	}
+	if (!Platform.isPhone) return [];
 	return [
 		...collect(settings.taskEditorWorkflowPickers),
 		...collect(settings.taskEditorMobileCoreTools),

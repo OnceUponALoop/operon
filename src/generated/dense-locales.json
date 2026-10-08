@@ -6244,7 +6244,7 @@
       "Show line numbers in Task Editor",
       "Display source line numbers in the Task Editor file body panel.",
       "Property Visibility & Order",
-      "Workflow Pickers: choose which property rows appear in Task Editor and set their order, including supported custom properties. Hiding a row does not change existing task metadata.",
+      "Choose which property rows appear in Mobile Task Editor and set their order, including supported custom properties. These preferences do not affect the desktop editor or existing task metadata.",
       "Move down",
       "Move up",
       "Reorder workflow pickers",

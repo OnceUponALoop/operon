@@ -2680,7 +2680,7 @@
       "taskEditorShowLineNumbers": "在任务编辑器中显示行号",
       "taskEditorShowLineNumbersDesc": "在任务编辑器的文件正文面板中显示源行号。",
       "taskEditorWorkflowPickers": "属性显示与排序",
-      "taskEditorWorkflowPickersDesc": "Workflow Pickers：选择在 Task Editor 中显示的属性行及其顺序，包括受支持的自定义属性。隐藏行不会更改现有任务元数据。",
+      "taskEditorWorkflowPickersDesc": "选择移动版 Task Editor 中显示的属性及其顺序，包括支持的自定义属性。这些偏好不会影响桌面编辑器或现有任务数据。",
       "taskEditorWorkflowPickersMoveDown": "下移",
       "taskEditorWorkflowPickersMoveUp": "上移",
       "taskEditorWorkflowPickersReorder": "重新排序工作流选择器",
@@ -3598,5 +3598,5 @@
       "toggleDescendantPreview": "切换子任务预览"
     }
   },
-  "sourceVersion": "fe22f9c067284bf75371f25322b48e4960d5d6ce7bbe8a9e90c80e415a48adbd"
+  "sourceVersion": "29dc190810714e551c2b331e4df8240d4afbbd2976a4df55cde8796d95cef9e5"
 }

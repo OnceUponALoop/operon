@@ -870,7 +870,7 @@
 		"workspaceTweaksRemovePropertiesExcludedFolder": "Retirer le dossier exclu",
 		"taskEditorFileBodySection": "Contenu du fichier",
 		"taskEditorWorkflowPickers": "Visibilité et ordre des propriétés",
-		"taskEditorWorkflowPickersDesc": "Workflow Pickers : choisissez les propriétés affichées dans Task Editor et leur ordre, y compris les propriétés personnalisées prises en charge. Masquer une ligne ne modifie pas les métadonnées existantes.",
+		"taskEditorWorkflowPickersDesc": "Choisissez les propriétés et leur ordre dans Task Editor mobile, y compris les propriétés personnalisées prises en charge. Ces préférences ne modifient ni l’éditeur sur ordinateur ni les données existantes des tâches.",
 		"taskEditorWorkflowPickersReorder": "Réorganiser les sélecteurs de workflow",
 		"taskEditorWorkflowPickersMoveUp": "Déplacer vers le haut",
 		"taskEditorWorkflowPickersMoveDown": "Déplacer vers le bas",

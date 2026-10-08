@@ -2680,7 +2680,7 @@
       "taskEditorShowLineNumbers": "タスクエディターに行番号を表示",
       "taskEditorShowLineNumbersDesc": "タスクエディターのファイル本文パネルにソースの行番号を表示します。",
       "taskEditorWorkflowPickers": "プロパティの表示と順序",
-      "taskEditorWorkflowPickersDesc": "Workflow Pickers: 対応するカスタムプロパティを含め、Task Editor に表示するプロパティ行とその順序を選択します。行を非表示にしても既存のタスクメタデータは変更されません。",
+      "taskEditorWorkflowPickersDesc": "モバイル版Task Editorに表示するプロパティと順序を選択します。対応するカスタムプロパティも含まれます。デスクトップ版や既存のタスクデータには影響しません。",
       "taskEditorWorkflowPickersMoveDown": "下へ移動",
       "taskEditorWorkflowPickersMoveUp": "上へ移動",
       "taskEditorWorkflowPickersReorder": "ワークフローピッカーを並べ替え",
@@ -3598,5 +3598,5 @@
       "toggleDescendantPreview": "子孫プレビューを切り替え"
     }
   },
-  "sourceVersion": "bfa04ede5995f738bffe2dd809de49049e6ec6fbd0ac60c7010f7c05a6e05798"
+  "sourceVersion": "63a64ddbc7b3b5ecf88f69bcc5bfa00e5ba743beb6e05323b13e2cdd0326f9a6"
 }

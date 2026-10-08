@@ -870,7 +870,7 @@
 		"workspaceTweaksRemovePropertiesExcludedFolder": "移除排除的文件夹",
 		"taskEditorFileBodySection": "文件正文",
 		"taskEditorWorkflowPickers": "属性显示与排序",
-		"taskEditorWorkflowPickersDesc": "Workflow Pickers：选择在 Task Editor 中显示的属性行及其顺序，包括受支持的自定义属性。隐藏行不会更改现有任务元数据。",
+		"taskEditorWorkflowPickersDesc": "选择移动版 Task Editor 中显示的属性及其顺序，包括支持的自定义属性。这些偏好不会影响桌面编辑器或现有任务数据。",
 		"taskEditorWorkflowPickersReorder": "重新排序工作流选择器",
 		"taskEditorWorkflowPickersMoveUp": "上移",
 		"taskEditorWorkflowPickersMoveDown": "下移",

@@ -870,7 +870,7 @@
 		"workspaceTweaksRemovePropertiesExcludedFolder": "Hariç klasörü kaldır",
 		"taskEditorFileBodySection": "Dosya İçeriği",
 		"taskEditorWorkflowPickers": "Özellik Görünürlüğü ve Sıralaması",
-		"taskEditorWorkflowPickersDesc": "Workflow Pickers: desteklenen özel özellikler dahil Task Editor içinde hangi özellik satırlarının görüneceğini ve sırasını seçin. Bir satırı gizlemek mevcut görev verilerini değiştirmez.",
+		"taskEditorWorkflowPickersDesc": "Mobile Task Editor içinde görünecek property satırlarını ve sıralarını seçin; desteklenen custom property’ler de dahildir. Bu tercihler desktop editörünü veya mevcut task verilerini etkilemez.",
 		"taskEditorWorkflowPickersReorder": "İş akışı seçicilerini sırala",
 		"taskEditorWorkflowPickersMoveUp": "Yukarı taşı",
 		"taskEditorWorkflowPickersMoveDown": "Aşağı taşı",

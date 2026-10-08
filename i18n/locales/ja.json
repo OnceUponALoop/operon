@@ -870,7 +870,7 @@
 		"workspaceTweaksRemovePropertiesExcludedFolder": "除外フォルダーを削除",
 		"taskEditorFileBodySection": "ファイル本文",
 		"taskEditorWorkflowPickers": "プロパティの表示と順序",
-		"taskEditorWorkflowPickersDesc": "Workflow Pickers: 対応するカスタムプロパティを含め、Task Editor に表示するプロパティ行とその順序を選択します。行を非表示にしても既存のタスクメタデータは変更されません。",
+		"taskEditorWorkflowPickersDesc": "モバイル版Task Editorに表示するプロパティと順序を選択します。対応するカスタムプロパティも含まれます。デスクトップ版や既存のタスクデータには影響しません。",
 		"taskEditorWorkflowPickersReorder": "ワークフローピッカーを並べ替え",
 		"taskEditorWorkflowPickersMoveUp": "上へ移動",
 		"taskEditorWorkflowPickersMoveDown": "下へ移動",

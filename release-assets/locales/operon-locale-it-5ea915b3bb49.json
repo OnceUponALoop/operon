@@ -2680,7 +2680,7 @@
       "taskEditorShowLineNumbers": "Mostra numeri di riga nell'Editor attività",
       "taskEditorShowLineNumbersDesc": "Mostra i numeri di riga di origine nel pannello contenuto del file dell'Editor attività.",
       "taskEditorWorkflowPickers": "Visibilità e ordine delle proprietà",
-      "taskEditorWorkflowPickersDesc": "Workflow Pickers: scegli le proprietà visibili in Task Editor e il loro ordine, incluse le proprietà personalizzate supportate. Nascondere una riga non modifica i metadati esistenti.",
+      "taskEditorWorkflowPickersDesc": "Scegli le proprietà e il loro ordine in Task Editor mobile, incluse le proprietà personalizzate supportate. Queste preferenze non influiscono sull’editor desktop né sui dati esistenti delle attività.",
       "taskEditorWorkflowPickersMoveDown": "Sposta in basso",
       "taskEditorWorkflowPickersMoveUp": "Sposta in alto",
       "taskEditorWorkflowPickersReorder": "Riordina selettori flusso di lavoro",
@@ -3598,5 +3598,5 @@
       "toggleDescendantPreview": "Alterna anteprima discendenti"
     }
   },
-  "sourceVersion": "6086711dc0654b0b2c971b0f3b65d4a4cafb59796dc8eaa832236b1c75294f00"
+  "sourceVersion": "fd976cf98f2ad51fed972a529f8b7153628a5374ab6094ed922d9503b7f18b6f"
 }

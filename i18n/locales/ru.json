@@ -870,7 +870,7 @@
 		"workspaceTweaksRemovePropertiesExcludedFolder": "Удалить исключённую папку",
 		"taskEditorFileBodySection": "Содержимое файла",
 		"taskEditorWorkflowPickers": "Видимость и порядок свойств",
-		"taskEditorWorkflowPickersDesc": "Workflow Pickers: выберите строки свойств в Task Editor и их порядок, включая поддерживаемые пользовательские свойства. Скрытие строки не изменяет существующие метаданные задачи.",
+		"taskEditorWorkflowPickersDesc": "Выберите строки свойств и их порядок в мобильном Task Editor, включая поддерживаемые пользовательские свойства. Эти настройки не влияют на настольный редактор и существующие данные задач.",
 		"taskEditorWorkflowPickersReorder": "Изменить порядок средств выбора рабочего процесса",
 		"taskEditorWorkflowPickersMoveUp": "Переместить вверх",
 		"taskEditorWorkflowPickersMoveDown": "Переместить вниз",
