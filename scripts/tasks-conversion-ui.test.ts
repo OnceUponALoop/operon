@@ -706,7 +706,7 @@ test('Settings separates note information from skipped warnings before and after
  const { c } = controller(f); await c.initialize();
  c.updateScope({ files: ['A.md', 'Missing.md'], folders: [], includeSubfolders: false }); await c.scan();
  const { root, button, view } = settingsFixture(c);
- assert.equal(button('issues-notes').textContent, 'Information for task notes (2)');
+ assert.equal(button('issues-notes').textContent, 'Information to be added to the task’s note field (2)');
  const notes = button('issues-notes').parentElement!;
  assert.ok(notes.allText.includes('custom checkbox symbol: u')); assert.ok(notes.allText.includes('⏰ 06:00'));
  assert.equal(button('issues').textContent, 'Warnings (2)');
@@ -720,7 +720,7 @@ test('Settings separates note information from skipped warnings before and after
  assert.equal(root.ownerDocument.activeElement?.dataset.focusKey, 'issues-notes');
  await c.confirm(c.preview!);
  assert.equal(c.result?.status, 'committed'); assert.ok(root.allText.includes('Converted: 1'));
- assert.equal(button('result-issues-notes').textContent, 'Information for task notes (2)');
+ assert.equal(button('result-issues-notes').textContent, 'Information to be added to the task’s note field (2)');
  assert.equal(button('result-issues').textContent, 'Warnings (2)');
  const converted = parseTaskLine((await f.adapter.read('A.md')).split('\n')[0], 0, 'A.md')!;
  const note = converted.fields.find(field => field.key === 'note')!.value;

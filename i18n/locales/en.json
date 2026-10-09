@@ -2208,7 +2208,7 @@
 		"tasksBulkConfirmApply": "Convert",
 		"tasksBulkDismiss": "Go back",
 		"tasksBulkIssues": "Warnings ({{count}})",
-		"tasksBulkNoteInformation": "Information for task notes ({{count}})",
+		"tasksBulkNoteInformation": "Information to be added to the task’s note field ({{count}})",
 		"tasksBulkErrors": "Errors ({{count}})",
 		"tasksBulkErrorDetails": "Error: {{reason}}",
 		"tasksBulkUnavailable": "Conversion is available when Operon is ready.",
