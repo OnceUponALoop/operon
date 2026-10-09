@@ -31,6 +31,14 @@ const after=buildMetadataTailRenderSignature(parsed,tasks[1],callbacks,false,fal
 const state=EditorState.create({doc:lines.join('\\n')});const view={state:{doc:state.doc,selection:state.selection,facet:f=>state.facet(f),field:()=>true}};
 reads=0;const plugin=operonLivePreviewConcealExtension(callbacks).create(view);assert.equal(reads,1);
 reads=0;plugin.update({view,selectionSet:false,docChanged:false,transactions:[{effects:[operonIndexRefreshEffect.of()]}]});assert.equal(reads,1);
+const signature=()=>buildMetadataTailRenderSignature(parsed,tasks[1],callbacks,false,false);
+for(const change of [()=>settings.priorities[0].color='#123456',()=>settings.keyMappings[0].visiblePropertyName='Changed']){
+ const old=signature();change();assert.notEqual(signature(),old);
+}
+const same=signature();tasks[1].fieldValues.datetimeModified='2030-01-01T10:00:00';assert.equal(signature(),same);
+let serializationReads=0;
+Object.defineProperty(settings.priorities[0],'renderProbe',{enumerable:true,get(){serializationReads++;return 'probe';}});
+plugin.update({view,selectionSet:false,docChanged:false,transactions:[{effects:[operonIndexRefreshEffect.of()]}]});assert.equal(serializationReads,1);
 console.log('Inline render preparation: shared lookup, output parity, changed relation and fresh render passed');
 `},outfile,bundle:true,format:'esm',platform:'node',logLevel:'silent',alias:{obsidian:path.join(root,'scripts/test-support/obsidian.ts')}});
  await import(pathToFileURL(outfile).href);

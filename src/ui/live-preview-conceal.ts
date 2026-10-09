@@ -381,6 +381,7 @@ export class MetadataTailWidget extends WidgetType {
 		private readonly workflowStatusIdentityIndex: WorkflowStatusIdentityIndex,
 		private readonly revealSource: () => void,
 		private readonly renderContext = createCompactTaskRenderContext(callbacks.getAllTasks),
+		settingsSignature = buildMetadataTailSettingsSignature(callbacks.getSettings()),
 	) {
 		super();
 		this.task = { ...task, fields: task.fields.map(field => ({ ...field })) };
@@ -396,6 +397,7 @@ export class MetadataTailWidget extends WidgetType {
 			false,
 			workflowStatusIdentityIndex,
 			this.renderContext,
+			settingsSignature,
 		);
 	}
 
@@ -834,6 +836,7 @@ export function operonLivePreviewConcealExtension(callbacks: LivePreviewCallback
 				const pipelines = callbacks.getPipelines();
 				const workflowStatusIdentityIndex = buildWorkflowStatusIdentityIndex(pipelines);
 				const renderContext = createCompactTaskRenderContext(callbacks.getAllTasks);
+				let settingsSignature: string | undefined;
 
 				let inFencedCodeBlock = false;
 				for (let lineNumber = 1; lineNumber <= view.state.doc.lines; lineNumber++) {
@@ -946,6 +949,7 @@ export function operonLivePreviewConcealExtension(callbacks: LivePreviewCallback
 								view.dispatch({ effects: operonIndexRefreshEffect.of() });
 							},
 							renderContext,
+							settingsSignature ??= buildMetadataTailSettingsSignature(callbacks.getSettings()),
 						);
 
 						decorations.add(
@@ -1080,6 +1084,7 @@ export function buildMetadataTailRenderSignature(
 	trackingSnapshot: boolean,
 	workflowStatusIdentityIndex?: WorkflowStatusIdentityIndex,
 	renderContext?: CompactTaskRenderContext,
+	settingsSignature = buildMetadataTailSettingsSignature(callbacks.getSettings()),
 ): string {
 	const fieldValues = getFieldValues(task, indexedTask);
 	const tags = indexedTask?.tags ?? task.tags;
@@ -1122,7 +1127,7 @@ export function buildMetadataTailRenderSignature(
 			entry.tooltipContent ?? '',
 		]);
 
-	return stableStringify({
+	return settingsSignature + stableStringify({
 		checkbox: indexedTask?.checkbox ?? task.checkbox,
 		fieldValues: Object.fromEntries(Object.entries(fieldValues).filter(([key]) => key !== 'datetimeModified' && key !== 'dateModified')),
 		tags,
@@ -1140,10 +1145,15 @@ export function buildMetadataTailRenderSignature(
 		inlineTaskShowPinAction: settings.inlineTaskShowPinAction,
 		inlineTaskShowNoteAction: settings.inlineTaskShowNoteAction,
 		inlineTaskShowSubtaskAction: settings.inlineTaskShowSubtaskAction,
+		noteIcon: getConfiguredKeyMappingIcon('note', settings.keyMappings) || 'notebook-pen',
+	});
+}
+
+function buildMetadataTailSettingsSignature(settings: OperonSettings): string {
+	return stableStringify({
 		keyMappings: settings.keyMappings,
 		pipelines: settings.pipelines,
 		priorities: settings.priorities,
-		noteIcon: getConfiguredKeyMappingIcon('note', settings.keyMappings) || 'notebook-pen',
 	});
 }
 
