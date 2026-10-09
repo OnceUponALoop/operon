@@ -14755,6 +14755,13 @@ body:not(.is-mobile) .mod-root .workspace-leaf-content[data-type="operon-filter-
 	margin-bottom: var(--operon-dynamic-file-task-filter-spacing);
 }
 
+.operon-dynamic-file-task-filter-host--block {
+	width: 100%;
+	max-width: 100%;
+	margin: 0;
+	padding: 8px 0 var(--operon-dynamic-file-task-filter-spacing);
+}
+
 .operon-dynamic-file-task-filter-host--body-bottom {
 	margin-top: var(
 		--operon-dynamic-file-task-filter-margin-top,
