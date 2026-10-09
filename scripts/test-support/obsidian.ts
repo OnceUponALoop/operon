@@ -1,3 +1,4 @@
+import { StateField } from '@codemirror/state';
 import momentLibrary from 'moment';
 
 export const moment = momentLibrary;
@@ -8,7 +9,14 @@ export function normalizePath(path: string): string {
 
 export class App {}
 
-export const editorLivePreviewField = {};
+export const editorLivePreviewField = StateField.define<boolean>({
+	create: () => true,
+	update: value => value,
+});
+export const editorInfoField = StateField.define<{ file: { path: string } | null }>({
+	create: () => ({ file: { path: 'A.md' } }),
+	update: value => value,
+});
 
 export type KeymapEventHandler = (...args: any[]) => any;
 

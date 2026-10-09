@@ -131,7 +131,7 @@
 		"calendar:task-icon:test": "node --test scripts/calendar-task-icon-interaction.test.mjs",
 		"mobile:direct-view-commands:test": "node --test scripts/direct-mobile-view-commands.test.mjs",
 		"inline-note:tooltip:test": "node scripts/inline-note-tooltip.test.mjs",
-		"inline-render:preparation:test": "node scripts/inline-render-preparation.test.mjs",
+		"inline-render:preparation:test": "node scripts/inline-render-preparation.test.mjs && node scripts/live-preview-conceal-state.test.mjs",
 		"reading-mode:source:test": "node scripts/reading-mode-source-resolution.test.mjs",
 		"reading-mode:refresh:test": "node scripts/reading-mode-refresh.test.mjs && node scripts/reading-filter-lifecycle.test.mjs && node scripts/reading-row-refresh.test.mjs && node scripts/filter-render-signature.test.mjs && node scripts/dynamic-filter-layout.test.mjs",
 		"reading-mode:embed-lifecycle:test": "node scripts/reading-embed-lifecycle.test.mjs",

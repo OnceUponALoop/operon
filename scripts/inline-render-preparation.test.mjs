@@ -11,6 +11,7 @@ try {
  await build({stdin:{resolveDir:root,loader:'ts',contents:`
 import assert from 'node:assert/strict';
 import {EditorState} from '@codemirror/state';
+import {editorLivePreviewField,editorInfoField} from 'obsidian';
 import {DEFAULT_SETTINGS} from './src/types/settings';
 import {parseTaskLine} from './src/core/parser';
 import {createCompactTaskRenderContext,buildInlineTaskCompactChipEntries} from './src/ui/compact-task-layout';
@@ -28,9 +29,10 @@ const before=buildMetadataTailRenderSignature(parsed,tasks[1],callbacks,false,fa
 current=[{...tasks[0],description:'Renamed',checkbox:'done'},tasks[1]];
 const next=createCompactTaskRenderContext(callbacks.getAllTasks);assert.equal(next.taskLookup.taskById.get('parent1').description,'Renamed');assert.equal(context.taskLookup.taskById.get('parent1').description,'Parent');
 const after=buildMetadataTailRenderSignature(parsed,tasks[1],callbacks,false,false,undefined,next);assert.notEqual(after,before);
-const state=EditorState.create({doc:lines.join('\\n')});const view={state:{doc:state.doc,selection:state.selection,facet:f=>state.facet(f),field:()=>true}};
-reads=0;const plugin=operonLivePreviewConcealExtension(callbacks).create(view);assert.equal(reads,1);
-reads=0;plugin.update({view,selectionSet:false,docChanged:false,transactions:[{effects:[operonIndexRefreshEffect.of()]}]});assert.equal(reads,1);
+reads=0;
+let state=EditorState.create({doc:lines.join('\\n'),extensions:[editorLivePreviewField,editorInfoField,operonLivePreviewConcealExtension(callbacks)]});
+const view={get state(){return state;}};assert.equal(reads,1);
+reads=0;state=state.update({effects:operonIndexRefreshEffect.of()}).state;assert.equal(reads,1);
 const signature=()=>buildMetadataTailRenderSignature(parsed,tasks[1],callbacks,false,false);
 for(const change of [()=>settings.priorities[0].color='#123456',()=>settings.keyMappings[0].visiblePropertyName='Changed']){
  const old=signature();change();assert.notEqual(signature(),old);
@@ -38,7 +40,7 @@ for(const change of [()=>settings.priorities[0].color='#123456',()=>settings.key
 const same=signature();tasks[1].fieldValues.datetimeModified='2030-01-01T10:00:00';assert.equal(signature(),same);
 let serializationReads=0;
 Object.defineProperty(settings.priorities[0],'renderProbe',{enumerable:true,get(){serializationReads++;return 'probe';}});
-plugin.update({view,selectionSet:false,docChanged:false,transactions:[{effects:[operonIndexRefreshEffect.of()]}]});assert.equal(serializationReads,1);
+state=state.update({effects:operonIndexRefreshEffect.of()}).state;assert.equal(serializationReads,1);
 const dom={querySelector:()=>null,querySelectorAll:()=>[],contains:()=>false};
 const olderContext=createCompactTaskRenderContext(callbacks.getAllTasks);
 const older=new MetadataTailWidget(parsed,tasks[1],callbacks,settings.pipelines,undefined,()=>{},olderContext);
