@@ -116,7 +116,7 @@ export class TasksConversionSettings {
   const section = this.contentEl.createDiv({ cls: 'operon-tasks-conversion-section' });
   const vars = { count: String(preview.selectedKeys.length), files: String(preview.changes.length) };
   section.createEl('p', { text: text(preview.selectedKeys.length ? 'Summary' : 'Empty', vars), attr: { role: 'status', 'aria-live': 'polite' } });
-  this.renderWarnings(section, 'issues');
+  this.renderMessages(section, 'issues');
   if (c.confirmation === preview) section.createEl('p', { text: text('Confirm', vars) });
   const actions = section.createDiv({ cls: 'operon-tasks-conversion-actions' });
   if (c.confirmation === preview) {
@@ -124,32 +124,44 @@ export class TasksConversionSettings {
    this.button(actions, 'ConfirmApply', () => c.confirm(preview)).addClass('mod-cta');
   } else this.button(actions, 'Apply', () => c.requestConfirmation(preview), !preview.selectedKeys.length || !!preview.errors.length || !c.available, vars).addClass('mod-cta');
  }
- private renderWarnings(section: HTMLElement, key: string): void {
+ private renderMessages(section: HTMLElement, key: string): void {
   const c = this.controller, preview = c.preview;
   if (!preview) return;
   const excluded = preview.scan.files.filter(file => file.error === 'excluded').length;
   if (excluded) section.createEl('p', { text: text('ExcludedSummary', { count: String(excluded) }) });
-  const issues = c.skippedSources.map(path => text('SkippedSource', { path }));
-  for (const file of preview.scan.files) if (file.error && file.error !== 'excluded') issues.push(`${file.path} · ${text('SourceUnavailable', { reason: file.error })}`);
+  const warnings = c.skippedSources.map(path => text('SkippedSource', { path }));
+  const information: string[] = [], errors: string[] = [];
+  for (const file of preview.scan.files) if (file.error && file.error !== 'excluded') warnings.push(`${file.path} · ${text('SourceUnavailable', { reason: file.error })}`);
   for (const row of preview.rows) {
-   const reasons = [...row.warnings];
-   if (row.error) reasons.push(row.error);
-   if (row.status === 'hybrid_unsupported') reasons.push(text('Hybrid'));
-   for (const reason of reasons) issues.push(`${row.path}:${row.lineNumber + 1} · ${reason}`);
+   const location = `${row.path}:${row.lineNumber + 1}`;
+   if (row.error) errors.push(`${location} · ${row.error}`);
+   else for (const reason of row.warnings) information.push(`${location} · ${reason}`);
+   if (row.status === 'hybrid_unsupported') warnings.push(`${location} · ${text('Hybrid')}`);
   }
-  for (const error of preview.errors) if (!issues.some(issue => issue.endsWith(error))) issues.push(error);
-  if (issues.length) {
-   const details = this.details(section, key, text('Issues', { count: String(issues.length) }));
-   for (const issue of issues) details.createEl('p', { text: issue });
+  for (const error of preview.errors) if (!preview.rows.some(row => row.error && row.key === error)) errors.push(error);
+  for (const [suffix, title, messages] of [
+   ['-errors', 'Errors', errors], ['', 'Issues', warnings], ['-notes', 'NoteInformation', information],
+  ] as const) {
+   if (!messages.length) continue;
+   const details = this.details(section, `${key}${suffix}`, text(title, { count: String(messages.length) }));
+   for (const message of messages) details.createEl('p', { text: message });
   }
  }
+ private renderOutcomeDetails(section: HTMLElement): void {
+  const result = this.controller.result;
+  if (!result?.message) return;
+  const failed = ['not-applied', 'recovery-required', 'cleanup-pending'].includes(result.status);
+  section.createEl('p', { text: text(failed ? 'ErrorDetails' : 'Details', { reason: result.message }),
+   ...(failed ? { attr: { role: 'alert' } } : {}) });
+ }
+
  private renderResult(): void {
   const c = this.controller, result = c.result!;
   const section = this.contentEl.createDiv({ cls: 'operon-tasks-conversion-section', attr: { role: 'status', 'aria-live': 'polite' } });
   section.createEl('p').createEl('strong', { text: text(result.sourcesCommitted || result.status === 'committed' || result.status === 'kept' ? 'Success' : result.status === 'rolled-back' || result.status === 'restored' ? 'RolledBack' : result.status === 'cancelled' ? 'Cancelled' : 'Stopped') });
   this.renderCounts(section);
-  this.renderWarnings(section, 'result-issues');
-  if (result.message) section.createEl('p', { text: text('Details', { reason: result.message }) });
+  this.renderMessages(section, 'result-issues');
+  this.renderOutcomeDetails(section);
   if (c.settlementPending.length) this.button(section, 'RetryRefresh', () => c.retrySettlement());
   if (result.sourceConflicts?.length) this.button(section, 'ReviewUnchanged', () => c.reviewUnchangedSources(), c.blocked);
   if (!c.inspection) this.button(section, 'RetryInspect', () => c.initialize());
@@ -164,6 +176,7 @@ export class TasksConversionSettings {
   const section = this.contentEl.createDiv({ cls: 'operon-tasks-conversion-section' });
   section.createEl('p', { text: text(c.result?.sourcesCommitted ? 'Success' : 'Recovery'), attr: { role: 'status' } });
   this.renderCounts(section);
+  this.renderOutcomeDetails(section);
   if (inspection.state.kind === 'blocked') section.createEl('p', { text: text('Error', { reason: inspection.state.message }), attr: { role: 'alert' } });
   else if (inspection.state.kind === 'resolved') {
    section.createEl('p', { text: text('CleanupPending') });

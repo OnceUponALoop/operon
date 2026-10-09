@@ -1,8 +1,8 @@
 {
   "schemaVersion": 1,
   "locale": "pt-BR",
-  "keyCount": 3603,
-  "keyFingerprint": "50a8dd048df4381195eec439b7e754e0c8ff4eb93d855764aa7e4ff1ff1a8c79",
+  "keyCount": 3606,
+  "keyFingerprint": "835e6d558232f8037c826ecbb01915cfd8b6d1be57efaff17ea96ba009181bb0",
   "translations": {
     "buttons": {
       "addFileSubtask": "Adicionar subtarefa em arquivo",
@@ -2778,6 +2778,8 @@
       "tasksBulkDismiss": "Voltar",
       "tasksBulkEmpty": "Nenhuma tarefa emoji do Tasks elegível encontrada.",
       "tasksBulkError": "Operação interrompida: {{reason}}",
+      "tasksBulkErrorDetails": "Erro: {{reason}}",
+      "tasksBulkErrors": "Erros ({{count}})",
       "tasksBulkEvidence": "Evidência de recuperação: {{path}}",
       "tasksBulkExcluded": "Pasta excluída ou modelo",
       "tasksBulkExcludedSummary": "Arquivos não verificados em pastas de modelos ou excluídas: {{count}}.",
@@ -2786,6 +2788,7 @@
       "tasksBulkHybrid": "Metadados mistos não compatíveis",
       "tasksBulkIssues": "Avisos ({{count}})",
       "tasksBulkNew": "Nova conversão",
+      "tasksBulkNoteInformation": "Informações para as notas das tarefas ({{count}})",
       "tasksBulkRecovery": "Uma conversão interrompida precisa de atenção.",
       "tasksBulkRefreshing": "Atualizando visualizações",
       "tasksBulkRemove": "Remover",
@@ -3648,5 +3651,5 @@
       "toggleDescendantPreview": "Alternar visualização descendente"
     }
   },
-  "sourceVersion": "96a5bb363298a79a1d948ee46c9a014192343b8a6ed3498764af7b0477351049"
+  "sourceVersion": "b6c6fcab65d4a7496ff99f5ed8eb36af040fb0d638ecf7bc109dcac41403d9f8"
 }

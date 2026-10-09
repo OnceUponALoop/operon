@@ -2208,6 +2208,9 @@
 		"tasksBulkConfirmApply": "Dönüştür",
 		"tasksBulkDismiss": "Vazgeç",
 		"tasksBulkIssues": "Uyarılar ({{count}})",
+		"tasksBulkNoteInformation": "Görev notları için bilgiler ({{count}})",
+		"tasksBulkErrors": "Hatalar ({{count}})",
+		"tasksBulkErrorDetails": "Hata: {{reason}}",
 		"tasksBulkUnavailable": "Operon hazır olduğunda dönüşüm kullanılabilir.",
 		"tasksBulkReviewUnchanged": "Değişmeyen dosyalarla devam et",
 		"tasksBulkSkippedSource": "Taramadan farklı olduğu için atlandı: {{path}}"

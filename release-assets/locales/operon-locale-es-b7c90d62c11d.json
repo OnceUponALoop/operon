@@ -1,8 +1,8 @@
 {
   "schemaVersion": 1,
   "locale": "es",
-  "keyCount": 3603,
-  "keyFingerprint": "50a8dd048df4381195eec439b7e754e0c8ff4eb93d855764aa7e4ff1ff1a8c79",
+  "keyCount": 3606,
+  "keyFingerprint": "835e6d558232f8037c826ecbb01915cfd8b6d1be57efaff17ea96ba009181bb0",
   "translations": {
     "buttons": {
       "addFileSubtask": "Añadir subtarea de archivo",
@@ -2778,6 +2778,8 @@
       "tasksBulkDismiss": "Volver",
       "tasksBulkEmpty": "No se encontraron tareas emoji de Tasks aptas.",
       "tasksBulkError": "Operación detenida: {{reason}}",
+      "tasksBulkErrorDetails": "Error: {{reason}}",
+      "tasksBulkErrors": "Errores ({{count}})",
       "tasksBulkEvidence": "Evidencia de recuperación: {{path}}",
       "tasksBulkExcluded": "Carpeta excluida o plantilla",
       "tasksBulkExcludedSummary": "Archivos sin analizar en carpetas de plantillas o excluidas: {{count}}.",
@@ -2786,6 +2788,7 @@
       "tasksBulkHybrid": "Metadatos mixtos no compatibles",
       "tasksBulkIssues": "Advertencias ({{count}})",
       "tasksBulkNew": "Nueva conversión",
+      "tasksBulkNoteInformation": "Información para las notas de tareas ({{count}})",
       "tasksBulkRecovery": "Una conversión interrumpida requiere atención.",
       "tasksBulkRefreshing": "Actualizando vistas",
       "tasksBulkRemove": "Quitar",
@@ -3648,5 +3651,5 @@
       "toggleDescendantPreview": "Alternar vista previa de descendientes"
     }
   },
-  "sourceVersion": "77e6ecf5a3ac7b49017c5a5cfbd17c7e63d4bf4f002503e9331dd2345e75a0e7"
+  "sourceVersion": "7f672423e593d89b3dc40ca9761ea7e940a58ec8c9eab7e986c580357afa20c5"
 }

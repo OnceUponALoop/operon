@@ -1,8 +1,8 @@
 {
   "schemaVersion": 1,
   "locale": "it",
-  "keyCount": 3603,
-  "keyFingerprint": "50a8dd048df4381195eec439b7e754e0c8ff4eb93d855764aa7e4ff1ff1a8c79",
+  "keyCount": 3606,
+  "keyFingerprint": "835e6d558232f8037c826ecbb01915cfd8b6d1be57efaff17ea96ba009181bb0",
   "translations": {
     "buttons": {
       "addFileSubtask": "Aggiungi sotto-attività-file",
@@ -2778,6 +2778,8 @@
       "tasksBulkDismiss": "Indietro",
       "tasksBulkEmpty": "Nessuna attività emoji di Tasks idonea trovata.",
       "tasksBulkError": "Operazione interrotta: {{reason}}",
+      "tasksBulkErrorDetails": "Errore: {{reason}}",
+      "tasksBulkErrors": "Errori ({{count}})",
       "tasksBulkEvidence": "Prova di recupero: {{path}}",
       "tasksBulkExcluded": "Cartella esclusa o modello",
       "tasksBulkExcludedSummary": "File non analizzati nelle cartelle dei modelli o escluse: {{count}}.",
@@ -2786,6 +2788,7 @@
       "tasksBulkHybrid": "Metadati misti non supportati",
       "tasksBulkIssues": "Avvisi ({{count}})",
       "tasksBulkNew": "Nuova conversione",
+      "tasksBulkNoteInformation": "Informazioni per le note delle attività ({{count}})",
       "tasksBulkRecovery": "Una conversione interrotta richiede attenzione.",
       "tasksBulkRefreshing": "Aggiornamento viste",
       "tasksBulkRemove": "Rimuovi",
@@ -3648,5 +3651,5 @@
       "toggleDescendantPreview": "Alterna anteprima discendenti"
     }
   },
-  "sourceVersion": "bb6bdf15a870edef82bc861d2cb47ad55b9b1c8ad8c8f1d8d7ccdbcb0d517435"
+  "sourceVersion": "3a252435aae31b847442048867c3e3408e7c95081d51f7588f059fa9e58d958b"
 }

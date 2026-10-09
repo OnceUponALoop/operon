@@ -1,8 +1,8 @@
 {
   "schemaVersion": 1,
   "locale": "zh-TW",
-  "keyCount": 3603,
-  "keyFingerprint": "50a8dd048df4381195eec439b7e754e0c8ff4eb93d855764aa7e4ff1ff1a8c79",
+  "keyCount": 3606,
+  "keyFingerprint": "835e6d558232f8037c826ecbb01915cfd8b6d1be57efaff17ea96ba009181bb0",
   "translations": {
     "buttons": {
       "addFileSubtask": "新增檔案子任務",
@@ -2778,6 +2778,8 @@
       "tasksBulkDismiss": "返回",
       "tasksBulkEmpty": "找不到符合條件的 Tasks 表情任務。",
       "tasksBulkError": "操作已停止：{{reason}}",
+      "tasksBulkErrorDetails": "錯誤：{{reason}}",
+      "tasksBulkErrors": "錯誤（{{count}}）",
       "tasksBulkEvidence": "復原記錄：{{path}}",
       "tasksBulkExcluded": "排除的資料夾或範本",
       "tasksBulkExcludedSummary": "範本或已排除資料夾中未掃描的檔案數：{{count}}。",
@@ -2786,6 +2788,7 @@
       "tasksBulkHybrid": "不支援混合中繼資料",
       "tasksBulkIssues": "警告（{{count}}）",
       "tasksBulkNew": "新增轉換",
+      "tasksBulkNoteInformation": "任務備註資訊（{{count}}）",
       "tasksBulkRecovery": "中斷的轉換需要檢查。",
       "tasksBulkRefreshing": "正在重新整理檢視",
       "tasksBulkRemove": "移除",
@@ -3648,5 +3651,5 @@
       "toggleDescendantPreview": "切換子任務預覽"
     }
   },
-  "sourceVersion": "97f59722391c93dbe0ab81556959f47a29f46ae277c22d70be983c369a421cba"
+  "sourceVersion": "f45609d665af386a65bd4dba221924c1539a6b4dde32cad7a48308f7df69bf94"
 }

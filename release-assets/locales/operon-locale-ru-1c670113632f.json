@@ -1,8 +1,8 @@
 {
   "schemaVersion": 1,
   "locale": "ru",
-  "keyCount": 3603,
-  "keyFingerprint": "50a8dd048df4381195eec439b7e754e0c8ff4eb93d855764aa7e4ff1ff1a8c79",
+  "keyCount": 3606,
+  "keyFingerprint": "835e6d558232f8037c826ecbb01915cfd8b6d1be57efaff17ea96ba009181bb0",
   "translations": {
     "buttons": {
       "addFileSubtask": "Добавить файловую подзадачу",
@@ -2778,6 +2778,8 @@
       "tasksBulkDismiss": "Назад",
       "tasksBulkEmpty": "Подходящие задачи с эмодзи Tasks не найдены.",
       "tasksBulkError": "Операция остановлена: {{reason}}",
+      "tasksBulkErrorDetails": "Ошибка: {{reason}}",
+      "tasksBulkErrors": "Ошибки ({{count}})",
       "tasksBulkEvidence": "Данные восстановления: {{path}}",
       "tasksBulkExcluded": "Исключённая папка или шаблон",
       "tasksBulkExcludedSummary": "Не просканировано файлов в папках шаблонов или исключённых папках: {{count}}.",
@@ -2786,6 +2788,7 @@
       "tasksBulkHybrid": "Смешанные метаданные не поддерживаются",
       "tasksBulkIssues": "Предупреждения ({{count}})",
       "tasksBulkNew": "Новое преобразование",
+      "tasksBulkNoteInformation": "Информация для заметок задач ({{count}})",
       "tasksBulkRecovery": "Прерванное преобразование требует проверки.",
       "tasksBulkRefreshing": "Обновление представлений",
       "tasksBulkRemove": "Удалить из выбора",
@@ -3648,5 +3651,5 @@
       "toggleDescendantPreview": "Переключить предпросмотр потомков"
     }
   },
-  "sourceVersion": "ea1de205679e26306264833787d06079246f5eeed07582403ca6a57a503f1401"
+  "sourceVersion": "c50cef4fa1580f33c0d435734037e0b5beb55f98e4113317bbfa4efe44c51754"
 }

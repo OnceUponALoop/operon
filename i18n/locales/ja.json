@@ -2208,6 +2208,9 @@
 		"tasksBulkConfirmApply": "変換",
 		"tasksBulkDismiss": "戻る",
 		"tasksBulkIssues": "警告 ({{count}})",
+		"tasksBulkNoteInformation": "タスクのノートに保存する情報（{{count}}）",
+		"tasksBulkErrors": "エラー（{{count}}）",
+		"tasksBulkErrorDetails": "エラー: {{reason}}",
 		"tasksBulkUnavailable": "Operon の準備ができると変換できます。",
 		"tasksBulkReviewUnchanged": "変更のないファイルを確認",
 		"tasksBulkSkippedSource": "スキャン時と異なるためスキップ: {{path}}"

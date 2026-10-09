@@ -2208,6 +2208,9 @@
 		"tasksBulkConfirmApply": "转换",
 		"tasksBulkDismiss": "返回",
 		"tasksBulkIssues": "警告（{{count}}）",
+		"tasksBulkNoteInformation": "任务备注信息（{{count}}）",
+		"tasksBulkErrors": "错误（{{count}}）",
+		"tasksBulkErrorDetails": "错误：{{reason}}",
 		"tasksBulkUnavailable": "Operon 准备就绪后即可转换。",
 		"tasksBulkReviewUnchanged": "检查未更改的文件",
 		"tasksBulkSkippedSource": "因与扫描时不同而跳过：{{path}}"

@@ -700,3 +700,64 @@ test('explicit excluded selections get inline reasons while actual source errors
  assert.equal(root.allText.includes('Excluded folder or template'), false); assert.equal(button('issues'), undefined);
  view.dispose();
 });
+
+test('Settings separates note information from skipped warnings before and after conversion', async () => {
+ const f = fixture({ 'A.md': '- [u] Custom ⏰ 06:00 📅 2026-10-10\n- [ ] Hybrid {{operonId:: hybrid1}} 📅 2026-10-10' });
+ const { c } = controller(f); await c.initialize();
+ c.updateScope({ files: ['A.md', 'Missing.md'], folders: [], includeSubfolders: false }); await c.scan();
+ const { root, button, view } = settingsFixture(c);
+ assert.equal(button('issues-notes').textContent, 'Information for task notes (2)');
+ const notes = button('issues-notes').parentElement!;
+ assert.ok(notes.allText.includes('custom checkbox symbol: u')); assert.ok(notes.allText.includes('⏰ 06:00'));
+ assert.equal(button('issues').textContent, 'Warnings (2)');
+ const warnings = button('issues').parentElement!;
+ assert.ok(warnings.allText.includes('Unsupported mixed metadata')); assert.ok(warnings.allText.includes('Missing.md'));
+ assert.equal(warnings.allText.includes('⏰'), false); assert.equal(button('issues-errors'), undefined);
+ assert.equal(button('Apply').disabled, false); assert.deepEqual(f.adapter.writes, []);
+ notes.open = true; notes.fire('toggle'); button('issues-notes').focus();
+ c.requestConfirmation(c.preview!);
+ assert.equal(button('issues-notes').parentElement!.open, true);
+ assert.equal(root.ownerDocument.activeElement?.dataset.focusKey, 'issues-notes');
+ await c.confirm(c.preview!);
+ assert.equal(c.result?.status, 'committed'); assert.ok(root.allText.includes('Converted: 1'));
+ assert.equal(button('result-issues-notes').textContent, 'Information for task notes (2)');
+ assert.equal(button('result-issues').textContent, 'Warnings (2)');
+ const converted = parseTaskLine((await f.adapter.read('A.md')).split('\n')[0], 0, 'A.md')!;
+ const note = converted.fields.find(field => field.key === 'note')!.value;
+ assert.ok(note.includes('⏰ 06:00')); assert.ok(note.includes('custom checkbox symbol: u'));
+ assert.equal(converted.fields.some(field => field.key === 'datetimeStart'), false);
+ view.dispose();
+});
+
+test('note-only information does not create a warning heading or block conversion', async () => {
+ const { f, c } = controller(fixture({ 'A.md': '- [>] Task ⏳ 2026-10-10' }));
+ await c.initialize(); c.updateScope(f.scope); await c.scan();
+ const { root, button, view } = settingsFixture(c);
+ assert.ok(button('issues-notes')); assert.equal(button('issues'), undefined);
+ assert.equal(root.allText.includes('Warnings'), false); assert.equal(button('Apply').disabled, false);
+ view.dispose();
+});
+
+test('blocking preview errors stay separate from note information without duplicate row keys', async () => {
+ const { f, c } = controller(); await c.initialize(); c.updateScope(f.scope); await c.scan();
+ const row = c.preview!.rows[0];
+ c.preview = { ...c.preview!, rows: c.preview!.rows.map(item => item === row
+  ? { ...item, error: 'Workflow resolution failed', warnings: ['Not applied to notes'] } : item), errors: [row.key] };
+ const { root, button, view } = settingsFixture(c);
+ assert.equal(button('issues-errors').textContent, 'Errors (1)');
+ assert.ok(root.allText.includes('A.md:1 · Workflow resolution failed'));
+ assert.equal(root.allText.includes('Not applied to notes'), false);
+ assert.equal(button('issues'), undefined); assert.equal(button('Apply').disabled, true);
+ assert.deepEqual(f.adapter.writes, []); view.dispose();
+});
+
+test('source changes remain visible operation errors with zero writes', async () => {
+ const { f, c } = controller(); await c.initialize(); c.updateScope(f.scope); await c.scan();
+ const { root, view } = settingsFixture(c);
+ f.adapter.files.set('A.md', '- [ ] User edit 🆔 A');
+ c.requestConfirmation(c.preview!); await c.confirm(c.preview!);
+ assert.equal(c.result?.status, 'not-applied');
+ assert.ok(root.allText.includes('Error: Source differs from scan:'));
+ assert.equal(root.allText.includes('Conversion completed.'), false); assert.deepEqual(f.adapter.writes, []);
+ view.dispose();
+});

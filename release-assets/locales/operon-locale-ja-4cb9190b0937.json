@@ -1,8 +1,8 @@
 {
   "schemaVersion": 1,
   "locale": "ja",
-  "keyCount": 3603,
-  "keyFingerprint": "50a8dd048df4381195eec439b7e754e0c8ff4eb93d855764aa7e4ff1ff1a8c79",
+  "keyCount": 3606,
+  "keyFingerprint": "835e6d558232f8037c826ecbb01915cfd8b6d1be57efaff17ea96ba009181bb0",
   "translations": {
     "buttons": {
       "addFileSubtask": "ファイルサブタスクを追加",
@@ -2778,6 +2778,8 @@
       "tasksBulkDismiss": "戻る",
       "tasksBulkEmpty": "変換できる Tasks の絵文字タスクはありません。",
       "tasksBulkError": "処理を停止しました: {{reason}}",
+      "tasksBulkErrorDetails": "エラー: {{reason}}",
+      "tasksBulkErrors": "エラー（{{count}}）",
       "tasksBulkEvidence": "復旧データ: {{path}}",
       "tasksBulkExcluded": "除外フォルダーまたはテンプレート",
       "tasksBulkExcludedSummary": "テンプレートまたは除外フォルダー内の未スキャンファイル数: {{count}}。",
@@ -2786,6 +2788,7 @@
       "tasksBulkHybrid": "混在したメタデータは未対応",
       "tasksBulkIssues": "警告 ({{count}})",
       "tasksBulkNew": "新しい変換",
+      "tasksBulkNoteInformation": "タスクのノートに保存する情報（{{count}}）",
       "tasksBulkRecovery": "中断した変換を確認する必要があります。",
       "tasksBulkRefreshing": "表示を更新中",
       "tasksBulkRemove": "選択から削除",
@@ -3648,5 +3651,5 @@
       "toggleDescendantPreview": "子孫プレビューを切り替え"
     }
   },
-  "sourceVersion": "3657b237a26420e22a315abb9fc2b296bd71a34f92307c0588bce576cd06b44a"
+  "sourceVersion": "b84b941910085cdbf2146d5496dc2597666d9e13acd465c87e2b1f550c3e0ee5"
 }

@@ -2208,6 +2208,9 @@
 		"tasksBulkConfirmApply": "轉換",
 		"tasksBulkDismiss": "返回",
 		"tasksBulkIssues": "警告（{{count}}）",
+		"tasksBulkNoteInformation": "任務備註資訊（{{count}}）",
+		"tasksBulkErrors": "錯誤（{{count}}）",
+		"tasksBulkErrorDetails": "錯誤：{{reason}}",
 		"tasksBulkUnavailable": "Operon 準備就緒後即可轉換。",
 		"tasksBulkReviewUnchanged": "檢查未變更的檔案",
 		"tasksBulkSkippedSource": "因與掃描時不同而略過：{{path}}"

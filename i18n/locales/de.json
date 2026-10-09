@@ -2208,6 +2208,9 @@
 		"tasksBulkConfirmApply": "Konvertieren",
 		"tasksBulkDismiss": "Zurück",
 		"tasksBulkIssues": "Warnungen ({{count}})",
+		"tasksBulkNoteInformation": "Informationen für Aufgabennotizen ({{count}})",
+		"tasksBulkErrors": "Fehler ({{count}})",
+		"tasksBulkErrorDetails": "Fehler: {{reason}}",
 		"tasksBulkUnavailable": "Die Konvertierung ist verfügbar, sobald Operon bereit ist.",
 		"tasksBulkReviewUnchanged": "Unveränderte Dateien prüfen",
 		"tasksBulkSkippedSource": "Weicht vom Scan ab und wird übersprungen: {{path}}"

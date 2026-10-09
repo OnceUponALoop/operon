@@ -1,8 +1,8 @@
 {
   "schemaVersion": 1,
   "locale": "tr",
-  "keyCount": 3603,
-  "keyFingerprint": "50a8dd048df4381195eec439b7e754e0c8ff4eb93d855764aa7e4ff1ff1a8c79",
+  "keyCount": 3606,
+  "keyFingerprint": "835e6d558232f8037c826ecbb01915cfd8b6d1be57efaff17ea96ba009181bb0",
   "translations": {
     "buttons": {
       "addFileSubtask": "Dosya Tipi Alt Görev Ekle",
@@ -2778,6 +2778,8 @@
       "tasksBulkDismiss": "Vazgeç",
       "tasksBulkEmpty": "Uygun Tasks emoji görevi bulunamadı.",
       "tasksBulkError": "İşlem durdu: {{reason}}",
+      "tasksBulkErrorDetails": "Hata: {{reason}}",
+      "tasksBulkErrors": "Hatalar ({{count}})",
       "tasksBulkEvidence": "Kurtarma kanıtı: {{path}}",
       "tasksBulkExcluded": "Hariç tutulan klasör veya şablon",
       "tasksBulkExcludedSummary": "Şablon ve hariç tutulan klasörler: {{count}} dosya taranmadı.",
@@ -2786,6 +2788,7 @@
       "tasksBulkHybrid": "Desteklenmeyen karma metadata",
       "tasksBulkIssues": "Uyarılar ({{count}})",
       "tasksBulkNew": "Yeni dönüşüm",
+      "tasksBulkNoteInformation": "Görev notları için bilgiler ({{count}})",
       "tasksBulkRecovery": "Kesilmiş bir dönüşümün incelenmesi gerekiyor.",
       "tasksBulkRefreshing": "Görünümler yenileniyor",
       "tasksBulkRemove": "Kaldır",
@@ -3648,5 +3651,5 @@
       "toggleDescendantPreview": "Alt görev önizlemesini aç/kapat"
     }
   },
-  "sourceVersion": "b7a5b451160e0f4a11207af4c8c1a61c3f58a5ca09ecccb25449e0519ec2fa58"
+  "sourceVersion": "edb2f9f6968c060a8ff905538ed4e89c81e23c8b8dcd245bfc0badbe34544c68"
 }
