@@ -23284,19 +23284,19 @@ export default class OperonPlugin extends Plugin {
 					);
 
 							const renderDescription = () => {
-							const renderedDescription = createDiv({ cls: 'operon-reading-task-description-content' });
-							renderCompactTaskMarkdown(renderedDescription, {
-								app: this.app,
-								value: indexed.description || '(untitled)',
-								sourcePath: ctx.sourcePath,
-								mode: 'interactive',
-								containerClassName: 'operon-reading-task-description-markdown',
-							});
-							enhanceReadingTaskFileWikilinks(renderedDescription, ctx.sourcePath, linkOverlayCallbacks, {
-								sourceText: indexed.description || '(untitled)',
-							});
+								const renderedDescription = createDiv({ cls: 'operon-reading-task-description-content' });
+								renderCompactTaskMarkdown(renderedDescription, {
+									app: this.app,
+									value: indexed.description || '(untitled)',
+									sourcePath: ctx.sourcePath,
+									mode: 'interactive',
+									containerClassName: 'operon-reading-task-description-markdown',
+								});
+								enhanceReadingTaskFileWikilinks(renderedDescription, ctx.sourcePath, linkOverlayCallbacks, {
+									sourceText: indexed.description || '(untitled)',
+								});
 
-							return renderedDescription;
+								return renderedDescription;
 							};
 							const previousRow = li.querySelector<HTMLElement>(':scope > .operon-reading-task-row');
 							const nextRow = updateReadingInlineTaskRow(previousRow, indexed, callbacks, renderDescription, {

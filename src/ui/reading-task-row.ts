@@ -214,9 +214,13 @@ export function updateReadingInlineTaskRow(
  return next;
 }
 
-function prepareReadingTaskChips(task: IndexedTask, callbacks: ReadingTaskRowCallbacks, options?: ReadingTaskRowOptions): InlineTaskCompactChipEntry[] {
+function prepareReadingTaskChips(
+	task: IndexedTask,
+	callbacks: ReadingTaskRowCallbacks,
+	options?: ReadingTaskRowOptions,
+	workflowStatusIdentityIndex = options?.workflowStatusIdentityIndex ?? buildWorkflowStatusIdentityIndex(callbacks.getPipelines()),
+): InlineTaskCompactChipEntry[] {
 	const settings = callbacks.getSettings();
-	const workflowStatusIdentityIndex = options?.workflowStatusIdentityIndex;
 	const locationResolver = shouldResolveLocationCompactChips(settings, options?.chipItems)
 		? getLocationPlaceIndex(callbacks.app, settings).resolve
 		: undefined;
@@ -375,7 +379,7 @@ export function buildReadingTaskRowElement(
 	}
 
 	const settings = callbacks.getSettings();
-	const entries = options?.preparedEntries ?? prepareReadingTaskChips(task, callbacks, options);
+	const entries = options?.preparedEntries ?? prepareReadingTaskChips(task, callbacks, options, workflowStatusIdentityIndex);
 	for (const entry of entries) {
 		const renderEntry = readOnly && entry.interactive ? { ...entry, interactive: false } : entry;
 		const chip = createInlineTaskCompactChipElement(renderEntry, 'operon-reading-task-chip operon-task-chip');
