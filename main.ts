@@ -882,6 +882,7 @@ import {
 import { DEFAULT_PRIORITIES } from './src/types/priority';
 import {
 	activateI18nLocale,
+	getCurrentLang,
 	initI18n,
 	installI18nLocale,
 	resetI18nToEnglish,
@@ -23112,6 +23113,8 @@ export default class OperonPlugin extends Plugin {
 			};
 			const workflowStatusIdentityIndex = buildWorkflowStatusIdentityIndex(this.settings.pipelines);
 			const renderContext = createCompactTaskRenderContext(() => this.indexer.getAllTasks());
+			// Conservative shared invalidation; row preparation resolves time-sensitive chips afresh.
+			const refreshSignature = JSON.stringify([this.settings, this.indexer.getGeneration(), localToday(), getCurrentLang()]);
 			const listItems = el.querySelectorAll<HTMLElement>('li.task-list-item');
 			const sectionTaskResolutions = new Map<string, ReadingSectionInlineTaskResolution>();
 			const sectionCursors = new Map<string, number>();
@@ -23280,6 +23283,7 @@ export default class OperonPlugin extends Plugin {
 						asHTMLElement(child) !== null && (child.tagName === 'UL' || child.tagName === 'OL')
 					);
 
+							const renderDescription = () => {
 							const renderedDescription = createDiv({ cls: 'operon-reading-task-description-content' });
 							renderCompactTaskMarkdown(renderedDescription, {
 								app: this.app,
@@ -23292,8 +23296,11 @@ export default class OperonPlugin extends Plugin {
 								sourceText: indexed.description || '(untitled)',
 							});
 
+							return renderedDescription;
+							};
 							const previousRow = li.querySelector<HTMLElement>(':scope > .operon-reading-task-row');
-							const nextRow = updateReadingInlineTaskRow(previousRow, indexed, callbacks, renderedDescription, {
+							const nextRow = updateReadingInlineTaskRow(previousRow, indexed, callbacks, renderDescription, {
+								refreshSignature,
 								readOnly: resolvedTask.readOnly,
 								onBlockedAction: invalidSource ? () => {
 									void this.requestInvalidTaskIdRepair({ ...invalidSource, format: 'inline' });

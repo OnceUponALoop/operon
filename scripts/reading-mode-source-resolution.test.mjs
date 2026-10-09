@@ -53,12 +53,13 @@ const enhanceReadingTaskFileWikilinks=()=>{};
 const applyFileTaskPropertyVisibility=()=>{};
 const renderCompactTaskMarkdown=(el,o)=>{el.textContent=o.value;};
 const buildReadingTaskRowElement=(task,callbacks,description,options)=>{const el=new Element();el.row={id:task.operonId,description:task.description,readOnly:options.readOnly&&!options.onBlockedAction,blockedAction:options.onBlockedAction,line:task.primary.lineNumber};el.appendChild(description);return el;};
-const updateReadingInlineTaskRow=(_previous,task,callbacks,description,options)=>buildReadingTaskRowElement(task,callbacks,description,options);
+const updateReadingInlineTaskRow=(_previous,task,callbacks,description,options)=>buildReadingTaskRowElement(task,callbacks,typeof description==='function'?description():description,options);
+const localToday=()=> '2026-10-09',getCurrentLang=()=> 'en';
 const DEFAULT_PRIORITIES=[];
 class Harness {
  readingInlineMounts=new Map(); register(){}
  settings={pipelines:[],keyMappings:[]};app={};repairRequests=[];requestInvalidTaskIdRepair(target){this.repairRequests.push(target);}processor;reindexes=[]; mounts=0;tasks=new Map();
- indexer={getTask:id=>this.tasks.get(id),getAllTasks:()=>[...this.tasks.values()],getFileTaskByPath:()=>null,hasDuplicateOperonIdConflict:()=>false,scheduleReindex:p=>this.reindexes.push(p)};
+ indexer={getGeneration:()=>1,getTask:id=>this.tasks.get(id),getAllTasks:()=>[...this.tasks.values()],getFileTaskByPath:()=>null,hasDuplicateOperonIdConflict:()=>false,scheduleReindex:p=>this.reindexes.push(p)};
  registerMarkdownPostProcessor(fn){this.processor=fn;}
  scheduleDynamicFileTaskFilterReadingMount(){this.mounts++;}
 `;
