@@ -1,8 +1,8 @@
 {
   "schemaVersion": 1,
   "locale": "ja",
-  "keyCount": 3602,
-  "keyFingerprint": "76733abb454d783ebd0c3a21c6424cf8f77913c2830e2bbb14fcaac5c72df2b7",
+  "keyCount": 3603,
+  "keyFingerprint": "50a8dd048df4381195eec439b7e754e0c8ff4eb93d855764aa7e4ff1ff1a8c79",
   "translations": {
     "buttons": {
       "addFileSubtask": "ファイルサブタスクを追加",
@@ -2780,6 +2780,7 @@
       "tasksBulkError": "処理を停止しました: {{reason}}",
       "tasksBulkEvidence": "復旧データ: {{path}}",
       "tasksBulkExcluded": "除外フォルダーまたはテンプレート",
+      "tasksBulkExcludedSummary": "テンプレートまたは除外フォルダー内の未スキャンファイル数: {{count}}。",
       "tasksBulkFinishRecovery": "変換を完了",
       "tasksBulkHelp": "ファイルやフォルダーを選択してスキャンし、見つかった Tasks 絵文字タスクをすべて変換します。タスクは独立したままで、親リンクやフィールドの継承は追加されません。",
       "tasksBulkHybrid": "混在したメタデータは未対応",
@@ -3647,5 +3648,5 @@
       "toggleDescendantPreview": "子孫プレビューを切り替え"
     }
   },
-  "sourceVersion": "0abee9bf8e1b7f96d0532183215cd00b369781993b5e7972c738ce18b5aa91b4"
+  "sourceVersion": "3657b237a26420e22a315abb9fc2b296bd71a34f92307c0588bce576cd06b44a"
 }

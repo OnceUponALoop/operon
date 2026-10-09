@@ -2185,6 +2185,7 @@
 		"tasksBulkAfter": "After",
 		"tasksBulkHybrid": "Unsupported mixed metadata",
 		"tasksBulkExcluded": "Excluded folder or template",
+		"tasksBulkExcludedSummary": "Files not scanned in template or excluded folders: {{count}}.",
 		"tasksBulkSourceUnavailable": "Source unavailable: {{reason}}",
 		"tasksBulkError": "Operation stopped: {{reason}}",
 		"tasksBulkDetails": "Details: {{reason}}",

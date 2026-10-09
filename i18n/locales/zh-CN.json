@@ -2185,6 +2185,7 @@
 		"tasksBulkAfter": "转换后",
 		"tasksBulkHybrid": "不支持混合元数据",
 		"tasksBulkExcluded": "排除的文件夹或模板",
+		"tasksBulkExcludedSummary": "模板或已排除文件夹中未扫描的文件数：{{count}}。",
 		"tasksBulkSourceUnavailable": "源不可用：{{reason}}",
 		"tasksBulkError": "操作已停止：{{reason}}",
 		"tasksBulkDetails": "详情：{{reason}}",

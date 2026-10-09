@@ -675,3 +675,28 @@ test('targeted saved Canvas references are checked without enumerating the vault
  const result = await inventory(undefined, { paths: ['Board.canvas'], ids: ['task001'] });
  assert.deepEqual(result.externalReferences, ['task001']); assert.deepEqual(result.unavailablePaths, []);
 });
+
+
+test('vault scan summarizes normal exclusions without warning rows', async () => {
+ const f = fixture({ 'Templates/A.md': '- [ ] A 🆔 A', 'Skip/B.md': '- [ ] B 🆔 B', 'Live.md': '- [ ] Live 🆔 L' });
+ f.settings.fileTaskTemplateFolder = 'Templates'; f.settings.excludedFolders = ['Skip'];
+ const { c } = controller(f); await c.initialize(); c.updateScope(f.scope); await c.scan();
+ const { root, button, view } = settingsFixture(c);
+ assert.ok(root.allText.includes('Files not scanned in template or excluded folders: 2.'));
+ assert.equal(root.allText.includes('Templates/A.md'), false); assert.equal(root.allText.includes('Skip/B.md'), false);
+ assert.equal(button('issues'), undefined); assert.equal(button('Apply').disabled, false);
+ view.dispose();
+});
+
+test('explicit excluded selections get inline reasons while actual source errors remain warnings', async () => {
+ const f = fixture({ 'Templates/A.md': '- [ ] A 🆔 A', 'Live.md': '- [ ] Live 🆔 L' });
+ f.settings.fileTaskTemplateFolder = 'Templates'; f.settings.excludedFolders = ['Empty'];
+ const { c } = controller(f); await c.initialize();
+ c.updateScope({ files: ['Templates/A.md', 'Missing.md'], folders: ['Templates', 'Empty'], includeSubfolders: true }); await c.scan();
+ const { root, button, view } = settingsFixture(c);
+ for (const key of ['files:Templates/A.md', 'folders:Templates', 'folders:Empty']) assert.ok(button(key).parentElement!.allText.includes('Excluded folder or template'));
+ assert.ok(root.allText.includes('Warnings (1)')); assert.ok(root.allText.includes('Missing.md'));
+ c.updateScope({ files: [], folders: ['/'], includeSubfolders: true });
+ assert.equal(root.allText.includes('Excluded folder or template'), false); assert.equal(button('issues'), undefined);
+ view.dispose();
+});

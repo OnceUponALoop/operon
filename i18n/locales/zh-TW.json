@@ -2185,6 +2185,7 @@
 		"tasksBulkAfter": "轉換後",
 		"tasksBulkHybrid": "不支援混合中繼資料",
 		"tasksBulkExcluded": "排除的資料夾或範本",
+		"tasksBulkExcludedSummary": "範本或已排除資料夾中未掃描的檔案數：{{count}}。",
 		"tasksBulkSourceUnavailable": "來源無法使用：{{reason}}",
 		"tasksBulkError": "操作已停止：{{reason}}",
 		"tasksBulkDetails": "詳細資訊：{{reason}}",

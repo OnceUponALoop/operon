@@ -2185,6 +2185,7 @@
 		"tasksBulkAfter": "Après",
 		"tasksBulkHybrid": "Métadonnées mixtes non prises en charge",
 		"tasksBulkExcluded": "Dossier exclu ou modèle",
+		"tasksBulkExcludedSummary": "Fichiers non analysés dans les dossiers de modèles ou exclus : {{count}}.",
 		"tasksBulkSourceUnavailable": "Source indisponible : {{reason}}",
 		"tasksBulkError": "Opération arrêtée : {{reason}}",
 		"tasksBulkDetails": "Détails : {{reason}}",

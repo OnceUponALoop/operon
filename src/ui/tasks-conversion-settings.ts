@@ -1,3 +1,4 @@
+import { isOperonExcludedPath } from '../core/operon-path-exclusions';
 import { App, FuzzySuggestModal, TFolder, type FuzzyMatch } from 'obsidian';
 import { t } from '../core/i18n';
 import { asyncHandler } from '../core/async-action';
@@ -99,7 +100,8 @@ export class TasksConversionSettings {
    });
    for (const path of c.scope[kind]) {
     const row = section.createDiv({ cls: 'operon-tasks-conversion-path' });
-    row.createSpan( { text: path === '/' ? text('VaultRoot') : path });
+    const excluded = c.preview && isOperonExcludedPath(path, c.preview.scan.settings);
+    row.createSpan({ text: `${path === '/' ? text('VaultRoot') : path}${excluded ? ` · ${text('Excluded')}` : ''}` });
     this.button(row, 'Remove', () => c.updateScope({ ...c.scope, [kind]: c.scope[kind].filter(value => value !== path) }), false, undefined, `${kind}:${path}`);
    }
   }
@@ -125,8 +127,10 @@ export class TasksConversionSettings {
  private renderWarnings(section: HTMLElement, key: string): void {
   const c = this.controller, preview = c.preview;
   if (!preview) return;
+  const excluded = preview.scan.files.filter(file => file.error === 'excluded').length;
+  if (excluded) section.createEl('p', { text: text('ExcludedSummary', { count: String(excluded) }) });
   const issues = c.skippedSources.map(path => text('SkippedSource', { path }));
-  for (const file of preview.scan.files) if (file.error) issues.push(`${file.path} · ${file.error === 'excluded' ? text('Excluded') : text('SourceUnavailable', { reason: file.error })}`);
+  for (const file of preview.scan.files) if (file.error && file.error !== 'excluded') issues.push(`${file.path} · ${text('SourceUnavailable', { reason: file.error })}`);
   for (const row of preview.rows) {
    const reasons = [...row.warnings];
    if (row.error) reasons.push(row.error);

@@ -2185,6 +2185,7 @@
 		"tasksBulkAfter": "Depois",
 		"tasksBulkHybrid": "Metadados mistos não compatíveis",
 		"tasksBulkExcluded": "Pasta excluída ou modelo",
+		"tasksBulkExcludedSummary": "Arquivos não verificados em pastas de modelos ou excluídas: {{count}}.",
 		"tasksBulkSourceUnavailable": "Fonte indisponível: {{reason}}",
 		"tasksBulkError": "Operação interrompida: {{reason}}",
 		"tasksBulkDetails": "Detalhes: {{reason}}",

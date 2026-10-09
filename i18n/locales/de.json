@@ -2185,6 +2185,7 @@
 		"tasksBulkAfter": "Nachher",
 		"tasksBulkHybrid": "Nicht unterstützte gemischte Metadaten",
 		"tasksBulkExcluded": "Ausgeschlossener Ordner oder Vorlage",
+		"tasksBulkExcludedSummary": "Nicht gescannte Dateien in Vorlagen- oder ausgeschlossenen Ordnern: {{count}}.",
 		"tasksBulkSourceUnavailable": "Quelle nicht verfügbar: {{reason}}",
 		"tasksBulkError": "Vorgang angehalten: {{reason}}",
 		"tasksBulkDetails": "Details: {{reason}}",

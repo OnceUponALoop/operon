@@ -1,8 +1,8 @@
 {
   "schemaVersion": 1,
   "locale": "fr",
-  "keyCount": 3602,
-  "keyFingerprint": "76733abb454d783ebd0c3a21c6424cf8f77913c2830e2bbb14fcaac5c72df2b7",
+  "keyCount": 3603,
+  "keyFingerprint": "50a8dd048df4381195eec439b7e754e0c8ff4eb93d855764aa7e4ff1ff1a8c79",
   "translations": {
     "buttons": {
       "addFileSubtask": "Ajouter une sous-tâche-fichier",
@@ -2780,6 +2780,7 @@
       "tasksBulkError": "Opération arrêtée : {{reason}}",
       "tasksBulkEvidence": "Preuve de récupération : {{path}}",
       "tasksBulkExcluded": "Dossier exclu ou modèle",
+      "tasksBulkExcludedSummary": "Fichiers non analysés dans les dossiers de modèles ou exclus : {{count}}.",
       "tasksBulkFinishRecovery": "Terminer la conversion",
       "tasksBulkHelp": "Sélectionnez des fichiers ou dossiers, analysez-les puis convertissez toutes les tâches emoji Tasks trouvées. Les tâches restent indépendantes, sans liens parents ni champs hérités.",
       "tasksBulkHybrid": "Métadonnées mixtes non prises en charge",
@@ -3647,5 +3648,5 @@
       "toggleDescendantPreview": "Basculer l'aperçu des descendants"
     }
   },
-  "sourceVersion": "b2a8c754904268cf816ee616eaca35537d347df004258f7b2cefdcaf9e45df91"
+  "sourceVersion": "34f776b8e87bba60c6ffbebee67d8814df05cf9592304835295dce35ffacd400"
 }

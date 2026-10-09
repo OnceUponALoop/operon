@@ -1,8 +1,8 @@
 {
   "schemaVersion": 1,
   "locale": "de",
-  "keyCount": 3602,
-  "keyFingerprint": "76733abb454d783ebd0c3a21c6424cf8f77913c2830e2bbb14fcaac5c72df2b7",
+  "keyCount": 3603,
+  "keyFingerprint": "50a8dd048df4381195eec439b7e754e0c8ff4eb93d855764aa7e4ff1ff1a8c79",
   "translations": {
     "buttons": {
       "addFileSubtask": "Datei-Unteraufgabe hinzufügen",
@@ -2780,6 +2780,7 @@
       "tasksBulkError": "Vorgang angehalten: {{reason}}",
       "tasksBulkEvidence": "Wiederherstellungsnachweis: {{path}}",
       "tasksBulkExcluded": "Ausgeschlossener Ordner oder Vorlage",
+      "tasksBulkExcludedSummary": "Nicht gescannte Dateien in Vorlagen- oder ausgeschlossenen Ordnern: {{count}}.",
       "tasksBulkFinishRecovery": "Konvertierung abschließen",
       "tasksBulkHelp": "Dateien oder Ordner auswählen, scannen und alle gefundenen Tasks-Emoji-Aufgaben konvertieren. Aufgaben bleiben unabhängig; es werden keine Elternverknüpfungen oder geerbten Felder hinzugefügt.",
       "tasksBulkHybrid": "Nicht unterstützte gemischte Metadaten",
@@ -3647,5 +3648,5 @@
       "toggleDescendantPreview": "Vorschau untergeordneter Aufgaben umschalten"
     }
   },
-  "sourceVersion": "07da584d1a7e1ae245c1df7028229d1a5c2cadc10fea5c0d1cca1b22568bf1b1"
+  "sourceVersion": "99d968953ae660719c62c40c12c17e52cfab97ea564da4403b9c19dd5a44a17d"
 }

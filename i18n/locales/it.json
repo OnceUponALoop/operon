@@ -2185,6 +2185,7 @@
 		"tasksBulkAfter": "Dopo",
 		"tasksBulkHybrid": "Metadati misti non supportati",
 		"tasksBulkExcluded": "Cartella esclusa o modello",
+		"tasksBulkExcludedSummary": "File non analizzati nelle cartelle dei modelli o escluse: {{count}}.",
 		"tasksBulkSourceUnavailable": "Fonte non disponibile: {{reason}}",
 		"tasksBulkError": "Operazione interrotta: {{reason}}",
 		"tasksBulkDetails": "Dettagli: {{reason}}",

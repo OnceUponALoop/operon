@@ -1,8 +1,8 @@
 {
   "schemaVersion": 1,
   "locale": "pt-BR",
-  "keyCount": 3602,
-  "keyFingerprint": "76733abb454d783ebd0c3a21c6424cf8f77913c2830e2bbb14fcaac5c72df2b7",
+  "keyCount": 3603,
+  "keyFingerprint": "50a8dd048df4381195eec439b7e754e0c8ff4eb93d855764aa7e4ff1ff1a8c79",
   "translations": {
     "buttons": {
       "addFileSubtask": "Adicionar subtarefa em arquivo",
@@ -2780,6 +2780,7 @@
       "tasksBulkError": "Operação interrompida: {{reason}}",
       "tasksBulkEvidence": "Evidência de recuperação: {{path}}",
       "tasksBulkExcluded": "Pasta excluída ou modelo",
+      "tasksBulkExcludedSummary": "Arquivos não verificados em pastas de modelos ou excluídas: {{count}}.",
       "tasksBulkFinishRecovery": "Concluir conversão",
       "tasksBulkHelp": "Selecione arquivos ou pastas, faça a varredura e converta todas as tarefas com emojis do Tasks encontradas. As tarefas permanecem independentes, sem vínculos a tarefas pai ou campos herdados.",
       "tasksBulkHybrid": "Metadados mistos não compatíveis",
@@ -3647,5 +3648,5 @@
       "toggleDescendantPreview": "Alternar visualização descendente"
     }
   },
-  "sourceVersion": "fb72ece9421e1ea63cce77cda2d5963e9eedeedb5789d03259e597c153887c63"
+  "sourceVersion": "96a5bb363298a79a1d948ee46c9a014192343b8a6ed3498764af7b0477351049"
 }

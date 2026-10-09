@@ -2185,6 +2185,7 @@
 		"tasksBulkAfter": "変換後",
 		"tasksBulkHybrid": "混在したメタデータは未対応",
 		"tasksBulkExcluded": "除外フォルダーまたはテンプレート",
+		"tasksBulkExcludedSummary": "テンプレートまたは除外フォルダー内の未スキャンファイル数: {{count}}。",
 		"tasksBulkSourceUnavailable": "ソースを利用できません: {{reason}}",
 		"tasksBulkError": "処理を停止しました: {{reason}}",
 		"tasksBulkDetails": "詳細: {{reason}}",

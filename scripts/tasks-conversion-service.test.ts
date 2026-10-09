@@ -780,3 +780,30 @@ for (const duplicate of [false, true]) test(`forward CAS distinguishes a new rel
  assert.equal(await f.adapter.read('A.md'), duplicate ? preview.changes[0].before : preview.changes[0].after);
  assert.equal(f.adapter.writes.filter(name => name === 'A.md').length, duplicate ? 0 : 1);
 });
+
+
+test('scan excludes template and excluded subfolders before identity and content reads', async () => {
+ const f = fixture({ 'A.md': '- [ ] A 🆔 A', 'Skip/Deep/B.md': '- [ ] B 🆔 B', 'Templates/C.md': '- [ ] C 🆔 C', 'Templates2/D.md': '- [ ] D 🆔 D' });
+ f.settings.excludedFolders = ['Skip']; f.settings.fileTaskTemplateFolder = 'Templates';
+ f.buffers.set('Templates/C.md', 'Unsaved template');
+ const reads: string[] = [], identityPaths: string[][] = [], progress: string[] = [], totals: number[] = [];
+ const read = f.adapter.read.bind(f.adapter), identities = f.host.identities.bind(f.host);
+ f.adapter.read = async name => { reads.push(name); return read(name); };
+ f.host.identities = async (keys, signal, scope) => { identityPaths.push([...(scope?.paths ?? [])]); return identities(keys, signal, scope); };
+ const scan = await f.service.scan({ ...f.scope, files: ['Templates/C.md'], folders: ['/', 'Templates', 'Skip'] }, { onProgress: value => { progress.push(value.path); totals.push(value.totalFiles); } });
+ assert.deepEqual(identityPaths, [['A.md', 'Templates2/D.md']]);
+ assert.ok(reads.every(name => name === 'A.md' || name === 'Templates2/D.md'));
+ assert.deepEqual(progress, ['A.md', 'Templates2/D.md']); assert.deepEqual(totals, [2, 2]);
+ assert.deepEqual(scan.files.map(file => file.path), ['A.md', 'Skip/Deep/B.md', 'Templates/C.md', 'Templates2/D.md']);
+ assert.deepEqual(scan.files.filter(file => file.error).map(file => file.error), ['excluded', 'excluded']);
+ const preview = f.service.preview(scan); assert.equal(preview.selectedKeys.length, 2); assert.equal(preview.changes.length, 2);
+ assert.deepEqual(f.adapter.writes, []);
+});
+
+test('explicit excluded scope with no eligible paths performs no file reads', async () => {
+ const f = fixture({ 'Templates/Sub/A.md': '- [ ] A 🆔 A' }); f.settings.fileTaskTemplateFolder = 'Templates';
+ let reads = 0; f.adapter.read = async () => { reads++; throw new Error('excluded content must not be read'); };
+ const scan = await f.service.scan({ files: ['Templates/Sub/A.md'], folders: ['Templates'], includeSubfolders: true });
+ assert.equal(reads, 0); assert.equal(scan.files.length, 1); assert.equal(scan.files[0].error, 'excluded');
+ assert.equal(f.service.preview(scan).selectedKeys.length, 0); assert.deepEqual(f.adapter.writes, []);
+});

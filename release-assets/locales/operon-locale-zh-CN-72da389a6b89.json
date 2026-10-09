@@ -1,8 +1,8 @@
 {
   "schemaVersion": 1,
   "locale": "zh-CN",
-  "keyCount": 3602,
-  "keyFingerprint": "76733abb454d783ebd0c3a21c6424cf8f77913c2830e2bbb14fcaac5c72df2b7",
+  "keyCount": 3603,
+  "keyFingerprint": "50a8dd048df4381195eec439b7e754e0c8ff4eb93d855764aa7e4ff1ff1a8c79",
   "translations": {
     "buttons": {
       "addFileSubtask": "添加文件子任务",
@@ -2780,6 +2780,7 @@
       "tasksBulkError": "操作已停止：{{reason}}",
       "tasksBulkEvidence": "恢复记录：{{path}}",
       "tasksBulkExcluded": "排除的文件夹或模板",
+      "tasksBulkExcludedSummary": "模板或已排除文件夹中未扫描的文件数：{{count}}。",
       "tasksBulkFinishRecovery": "完成转换",
       "tasksBulkHelp": "选择文件或文件夹，扫描后转换找到的所有 Tasks 表情符号任务。任务保持独立，不添加父任务链接或继承字段。",
       "tasksBulkHybrid": "不支持混合元数据",
@@ -3647,5 +3648,5 @@
       "toggleDescendantPreview": "切换子任务预览"
     }
   },
-  "sourceVersion": "d5f5b2a7a408f1dff58a20446b2d9c84cb0431796dedeea89bad07b6d36cceca"
+  "sourceVersion": "ba99cbc40bcb1b4531c0bc8d6b0e1044260f3c0b16b4073289aa4e2ba60c85e5"
 }

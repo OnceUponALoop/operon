@@ -1,8 +1,8 @@
 {
   "schemaVersion": 1,
   "locale": "ru",
-  "keyCount": 3602,
-  "keyFingerprint": "76733abb454d783ebd0c3a21c6424cf8f77913c2830e2bbb14fcaac5c72df2b7",
+  "keyCount": 3603,
+  "keyFingerprint": "50a8dd048df4381195eec439b7e754e0c8ff4eb93d855764aa7e4ff1ff1a8c79",
   "translations": {
     "buttons": {
       "addFileSubtask": "Добавить файловую подзадачу",
@@ -2780,6 +2780,7 @@
       "tasksBulkError": "Операция остановлена: {{reason}}",
       "tasksBulkEvidence": "Данные восстановления: {{path}}",
       "tasksBulkExcluded": "Исключённая папка или шаблон",
+      "tasksBulkExcludedSummary": "Не просканировано файлов в папках шаблонов или исключённых папках: {{count}}.",
       "tasksBulkFinishRecovery": "Завершить преобразование",
       "tasksBulkHelp": "Выберите файлы или папки, выполните сканирование и преобразуйте все найденные задачи с эмодзи Tasks. Задачи останутся независимыми, без родительских связей и наследования полей.",
       "tasksBulkHybrid": "Смешанные метаданные не поддерживаются",
@@ -3647,5 +3648,5 @@
       "toggleDescendantPreview": "Переключить предпросмотр потомков"
     }
   },
-  "sourceVersion": "3537bac1ce096caad1c78a2e2e32dec8286c152398b23051d13e1ba6023bb2bb"
+  "sourceVersion": "ea1de205679e26306264833787d06079246f5eeed07582403ca6a57a503f1401"
 }

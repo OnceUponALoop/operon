@@ -1,8 +1,8 @@
 {
   "schemaVersion": 1,
   "locale": "it",
-  "keyCount": 3602,
-  "keyFingerprint": "76733abb454d783ebd0c3a21c6424cf8f77913c2830e2bbb14fcaac5c72df2b7",
+  "keyCount": 3603,
+  "keyFingerprint": "50a8dd048df4381195eec439b7e754e0c8ff4eb93d855764aa7e4ff1ff1a8c79",
   "translations": {
     "buttons": {
       "addFileSubtask": "Aggiungi sotto-attività-file",
@@ -2780,6 +2780,7 @@
       "tasksBulkError": "Operazione interrotta: {{reason}}",
       "tasksBulkEvidence": "Prova di recupero: {{path}}",
       "tasksBulkExcluded": "Cartella esclusa o modello",
+      "tasksBulkExcludedSummary": "File non analizzati nelle cartelle dei modelli o escluse: {{count}}.",
       "tasksBulkFinishRecovery": "Completa conversione",
       "tasksBulkHelp": "Seleziona file o cartelle, scansiona e converti tutte le attività con emoji Tasks trovate. Le attività restano indipendenti, senza collegamenti al genitore o campi ereditati.",
       "tasksBulkHybrid": "Metadati misti non supportati",
@@ -3647,5 +3648,5 @@
       "toggleDescendantPreview": "Alterna anteprima discendenti"
     }
   },
-  "sourceVersion": "cce2dad27e7592f9a3d2e54569c2045a94266ef2fe2a184ad42e9426d913a8dc"
+  "sourceVersion": "bb6bdf15a870edef82bc861d2cb47ad55b9b1c8ad8c8f1d8d7ccdbcb0d517435"
 }

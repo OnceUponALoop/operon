@@ -2185,6 +2185,7 @@
 		"tasksBulkAfter": "Sonra",
 		"tasksBulkHybrid": "Desteklenmeyen karma metadata",
 		"tasksBulkExcluded": "Hariç tutulan klasör veya şablon",
+		"tasksBulkExcludedSummary": "Şablon ve hariç tutulan klasörler: {{count}} dosya taranmadı.",
 		"tasksBulkSourceUnavailable": "Kaynak kullanılamıyor: {{reason}}",
 		"tasksBulkError": "İşlem durdu: {{reason}}",
 		"tasksBulkDetails": "Ayrıntı: {{reason}}",

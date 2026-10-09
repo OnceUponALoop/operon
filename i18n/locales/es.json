@@ -2185,6 +2185,7 @@
 		"tasksBulkAfter": "Después",
 		"tasksBulkHybrid": "Metadatos mixtos no compatibles",
 		"tasksBulkExcluded": "Carpeta excluida o plantilla",
+		"tasksBulkExcludedSummary": "Archivos sin analizar en carpetas de plantillas o excluidas: {{count}}.",
 		"tasksBulkSourceUnavailable": "Fuente no disponible: {{reason}}",
 		"tasksBulkError": "Operación detenida: {{reason}}",
 		"tasksBulkDetails": "Detalles: {{reason}}",

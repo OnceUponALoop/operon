@@ -1,5 +1,6 @@
+import { isOperonExcludedPath } from '../core/operon-path-exclusions';
 import type { KeyMapping } from '../types/settings';
-import type { TasksConversionSettings, TasksConversionScope, TasksConversionFactories, TasksConversionScan, TasksConversionPreview } from '../core/tasks-conversion-plan';
+import type { TasksConversionSettings, TasksConversionScope, TasksConversionFactories, TasksConversionScan, TasksConversionPreview, TasksConversionSource } from '../core/tasks-conversion-plan';
 import { previewTasksConversion, resolveTasksConversionPaths, scanTasksConversionSources, tasksConversionSettingsSnapshot, serializeTasksConversionSettings } from '../core/tasks-conversion-plan';
 import { TasksConversionRecoveryStore, type TasksConversionRecord, type TasksConversionRecoveryState } from '../storage/tasks-conversion-recovery';
 
@@ -99,10 +100,13 @@ export class TasksConversionService {
 		const check = () => { if (options.signal?.aborted) throw new DOMException('Scan cancelled', 'AbortError'); };
 		check();
 		const settings = tasksConversionSettingsSnapshot(this.host.settings());
-		const paths = resolveTasksConversionPaths(scope, this.host.paths());
+		const sources: TasksConversionSource[] = [];
+		const paths = resolveTasksConversionPaths(scope, this.host.paths()).filter(path => {
+			if (!isOperonExcludedPath(path, settings)) return true;
+			sources.push({ path, error: 'excluded' }); return false;
+		});
 		const inventory = await this.host.identities(settings.keyMappings, options.signal, { paths });
 		check();
-		const sources = [];
 		for (const [index, path] of paths.entries()) {
 			check();
 			try { sources.push({ path, content: await this.host.read(path) }); }
@@ -110,6 +114,7 @@ export class TasksConversionService {
 			check();
 			try { options.onProgress?.({ completedFiles: index + 1, totalFiles: paths.length, path }); } catch { /* Observers do not own scan state. */ }
 		}
+		sources.sort((a, b) => a.path < b.path ? -1 : a.path > b.path ? 1 : 0);
 		const scan = freeze(scanTasksConversionSources(scope, sources, settings, reserved(inventory),
 			new Set([...inventory.reservedSeriesIds, ...inventory.sources.flatMap(source => source.repeatSeriesIds)]), this.factories));
 		this.scans.add(scan); return scan;

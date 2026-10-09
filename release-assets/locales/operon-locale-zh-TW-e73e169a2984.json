@@ -1,8 +1,8 @@
 {
   "schemaVersion": 1,
   "locale": "zh-TW",
-  "keyCount": 3602,
-  "keyFingerprint": "76733abb454d783ebd0c3a21c6424cf8f77913c2830e2bbb14fcaac5c72df2b7",
+  "keyCount": 3603,
+  "keyFingerprint": "50a8dd048df4381195eec439b7e754e0c8ff4eb93d855764aa7e4ff1ff1a8c79",
   "translations": {
     "buttons": {
       "addFileSubtask": "新增檔案子任務",
@@ -2780,6 +2780,7 @@
       "tasksBulkError": "操作已停止：{{reason}}",
       "tasksBulkEvidence": "復原記錄：{{path}}",
       "tasksBulkExcluded": "排除的資料夾或範本",
+      "tasksBulkExcludedSummary": "範本或已排除資料夾中未掃描的檔案數：{{count}}。",
       "tasksBulkFinishRecovery": "完成轉換",
       "tasksBulkHelp": "選擇檔案或資料夾，掃描後轉換找到的所有 Tasks 表情符號任務。任務保持獨立，不新增父任務連結或繼承欄位。",
       "tasksBulkHybrid": "不支援混合中繼資料",
@@ -3647,5 +3648,5 @@
       "toggleDescendantPreview": "切換子任務預覽"
     }
   },
-  "sourceVersion": "a5b2580a6edb9a213588cfed22cc3ba47350af979b21232607b6ff89f7c8aed6"
+  "sourceVersion": "97f59722391c93dbe0ab81556959f47a29f46ae277c22d70be983c369a421cba"
 }

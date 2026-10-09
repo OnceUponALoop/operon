@@ -2185,6 +2185,7 @@
 		"tasksBulkAfter": "После",
 		"tasksBulkHybrid": "Смешанные метаданные не поддерживаются",
 		"tasksBulkExcluded": "Исключённая папка или шаблон",
+		"tasksBulkExcludedSummary": "Не просканировано файлов в папках шаблонов или исключённых папках: {{count}}.",
 		"tasksBulkSourceUnavailable": "Источник недоступен: {{reason}}",
 		"tasksBulkError": "Операция остановлена: {{reason}}",
 		"tasksBulkDetails": "Подробности: {{reason}}",
