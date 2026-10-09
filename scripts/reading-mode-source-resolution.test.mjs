@@ -22,7 +22,8 @@ const methods = names.map(name => {
 });
 const prelude=`
 import {createCompactTaskRenderContext} from ${JSON.stringify(path.join(root, "src/ui/compact-task-layout"))};
-import {iterateMarkdownFencedBlocks} from ${JSON.stringify(path.join(root, 'src/core/markdown-fenced-lines'))};
+import {iterateMarkdownFencedBlocks as iterateFences} from ${JSON.stringify(path.join(root, 'src/core/markdown-fenced-lines'))};
+let fenceReads=0;function* iterateMarkdownFencedBlocks(text){fenceReads++;yield* iterateFences(text);}
 import assert from 'node:assert/strict';
 import {parseTaskLine} from ${JSON.stringify(path.join(root, 'src/core/parser'))};
 import {extractReadingTaskOperonId,extractReadingTaskDisplayId,resolveReadingSectionInlineTasks,resolveReadingInlineTaskFromText,createIndexedReadingResolvedTask,buildReadingParsedTaskSnapshot} from ${JSON.stringify(path.join(root, 'src/ui/reading-task-operon-id'))};
@@ -70,6 +71,16 @@ const task=(text,line)=>buildReadingParsedTaskSnapshot(parseTaskLine(text,line,s
 function render(text,start,end,rows,tasks=[],sectionAvailable=true){const h=new Harness();tasks.forEach(t=>h.tasks.set(t.operonId,t));h.registerReadingModeProcessor();const root=new Element();const ul=root.appendChild(new Element('UL'));const lis=rows.map(({text,line})=>{const li=ul.appendChild(new Element('LI',text));li.addClass('task-list-item');const input=li.appendChild(new Element('INPUT'));input.attrs['data-line']=String(line);return li;});h.processor(root,{sourcePath,getSectionInfo:()=>sectionAvailable?{text,lineStart:start,lineEnd:end}:null,addChild:()=>{}});return {h,lis,rows:lis.map(li=>li.children.find(c=>c.row)?.row??null)};}
 const a='- [ ] Alpha {{operonId:: alpha01}}'; const b='- [ ] Beta {{operonId:: beta001}}';
 
+test('fence cache shares source parsing but separates ranges, source texts and renders',()=>{
+ const h=new Harness(), cache=new Map(), text='~~~md\n- [ ] protected\n~~~\n- [ ] visible';
+ fenceReads=0;
+ assert.equal(h.isFencedMarkdownSection({text,lineStart:1,lineEnd:1},cache),true);
+ assert.equal(h.isFencedMarkdownSection({text,lineStart:3,lineEnd:3},cache),false);
+ assert.equal(h.isFencedMarkdownSection({text,lineStart:1,lineEnd:1},cache),true);
+ assert.equal(fenceReads,1);
+ assert.equal(h.isFencedMarkdownSection({text:'plain',lineStart:0,lineEnd:0},cache),false);assert.equal(fenceReads,2);
+ h.isFencedMarkdownSection({text,lineStart:1,lineEnd:1},new Map());assert.equal(fenceReads,3);
+});
 test('task at document start renders normally',()=>{const r=render(a,0,0,[{text:a,line:0}],[task(a,0)]);assert.equal(r.rows[0].id,'alpha01');assert.equal(r.rows[0].readOnly,false);});
 test('full note is restricted to the current section without double offset',()=>{const text=[a,'','# Section','',b,'','# Later',a].join('\n');const h=new Harness();const resolved=h.resolveReadingViewSectionTasks({text,lineStart:4,lineEnd:4},sourcePath);assert.deepEqual([...resolved.lineTasks.keys()],[4]);assert.deepEqual(resolved.orderedTasks.map(r=>r.task.operonId),['beta001']);});
 test('native relative data-line resolves to the absolute source line',()=>{const r=render(['Heading','',a].join('\n'),2,2,[{text:a,line:0}],[task(a,2)]);const li=new Element('LI');li.addClass('task-list-item');li.appendChild(new Element('INPUT')).attrs['data-line']='0';assert.equal(r.h.getReadingListItemSourceLine(li,{lineStart:2,lineEnd:2}),2);assert.equal(r.rows[0].readOnly,false);});

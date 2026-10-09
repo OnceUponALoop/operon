@@ -32,7 +32,7 @@ import { indentNewInlineSubtask } from './src/core/task-creator-target-resolver'
 import { disposeWebLightboxes } from './src/ui/web-lightbox';
 import { refreshAssigneeChipImages, disposeAssigneeChipImages } from './src/ui/assignee-chip-image';
 import { normalizeTaskColorValue } from './src/core/task-color-value';
-import { iterateMarkdownFencedBlocks } from './src/core/markdown-fenced-lines';
+import { iterateMarkdownFencedBlocks, type MarkdownFencedBlock } from './src/core/markdown-fenced-lines';
 import { executeTaskIdRepair } from './src/systems/task-id-repair-coordinator';
 import { requestTaskIdRepair } from './src/ui/task-id-repair-prompt';
 import type { TaskIdRepairTarget } from './src/core/task-id-repair-sources';
@@ -1543,6 +1543,12 @@ interface PreparedTaskEditorDeleteMutation {
 		readonly nextContent?: string;
 	};
 }
+
+type ReadingFenceCache = Map<string, {
+	lines: string[];
+	blocks: MarkdownFencedBlock[];
+	sections: Map<string, boolean>;
+}>;
 
 export default class OperonPlugin extends Plugin {
 	private agentRuntimeCore!: OperonAgentRuntimeCoreV1;
@@ -23068,7 +23074,8 @@ export default class OperonPlugin extends Plugin {
 			const processSection = (el: HTMLElement, ctx: MarkdownPostProcessorContext): void => {
 				if (this.isRenderedCodeElement(el)) return;
 				const rootSectionInfo = ctx.getSectionInfo(el);
-				if (rootSectionInfo && this.isFencedMarkdownSection(rootSectionInfo)) return;
+				const fenceCache: ReadingFenceCache = new Map();
+				if (rootSectionInfo && this.isFencedMarkdownSection(rootSectionInfo, fenceCache)) return;
 
 
 			const linkOverlayCallbacks = {
@@ -23112,7 +23119,7 @@ export default class OperonPlugin extends Plugin {
 				if (this.isRenderedCodeElement(li)) continue;
 
 				const sectionInfo = ctx.getSectionInfo(li);
-				if (sectionInfo && this.isFencedMarkdownSection(sectionInfo)) continue;
+				if (sectionInfo && this.isFencedMarkdownSection(sectionInfo, fenceCache)) continue;
 
 					const retainedId = li.dataset.operonReadingTaskId;
 					const retainedTask = retainedId ? this.indexer.getTask(retainedId) : undefined;
@@ -35746,17 +35753,26 @@ export default class OperonPlugin extends Plugin {
 		return !!el.closest('pre, code');
 	}
 
-	private isFencedMarkdownSection(sectionInfo: MarkdownSectionInformation): boolean {
+	private isFencedMarkdownSection(sectionInfo: MarkdownSectionInformation, cache?: ReadingFenceCache): boolean {
 		const { text, lineStart, lineEnd } = sectionInfo;
-		const lines = text.split('\n');
+		let context = cache?.get(text);
+		if (!context) {
+			context = { lines: text.split('\n'), blocks: [...iterateMarkdownFencedBlocks(text)], sections: new Map() };
+			cache?.set(text, context);
+		}
+		const key = `${lineStart}:${lineEnd}`;
+		const cached = context.sections.get(key);
+		if (cached !== undefined) return cached;
+		const { lines, blocks } = context;
 		const contentLines = lines.slice(lineStart, lineEnd + 1)
 			.map((line, index) => line.trim() ? lineStart + index : -1)
 			.filter(lineNumber => lineNumber >= 0);
-		const blocks = [...iterateMarkdownFencedBlocks(text)];
-		return contentLines.length > 0 && contentLines.every(lineNumber => blocks.some(block =>
+		const result = contentLines.length > 0 && contentLines.every(lineNumber => blocks.some(block =>
 			lineNumber >= block.contentStartLine - 1 && (lineNumber < block.contentEndLine
 				|| (lineNumber === block.contentEndLine
 					&& this.isMarkdownFenceLine(lines[lineNumber].replace(/^(?: {0,3}>[ \t]?)+/u, ''))))));
+		context.sections.set(key, result);
+		return result;
 	}
 
 	private isMarkdownFenceLine(line: string): boolean {
