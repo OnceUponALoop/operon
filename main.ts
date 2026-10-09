@@ -1675,6 +1675,7 @@ export default class OperonPlugin extends Plugin {
 	private dynamicFileTaskFilterReadingTimers = new Map<string, WindowTimeoutHandle>();
 	private dynamicFileTaskFilterReadingHosts = new Set<HTMLElement>();
 	private dynamicFileTaskFilterReadingInstances = new WeakMap<HTMLElement, FilterSurfaceInstance>();
+	private dynamicFileTaskFilterReadingOwners = new WeakMap<HTMLElement, { view: MarkdownView; root: HTMLElement; filePath: string }>();
 	private deferredRefreshTimer: WindowTimeoutHandle | null = null;
 	private editableFocusRefreshTimer: WindowTimeoutHandle | null = null;
 	private refreshViewsFrame: number | null = null;
@@ -23356,8 +23357,12 @@ export default class OperonPlugin extends Plugin {
 	}
 
 	private pruneDisconnectedDynamicFileTaskFilterReadingHosts(): void {
+		const views = new Set(this.app.workspace.getLeavesOfType('markdown').map(leaf => leaf.view));
 		for (const host of Array.from(this.dynamicFileTaskFilterReadingHosts)) {
-			if (!host.isConnected) {
+			const owner = this.dynamicFileTaskFilterReadingOwners.get(host);
+			if (!host.isConnected || !owner || !views.has(owner.view)
+				|| owner.view.getMode() !== 'preview' || owner.view.file?.path !== owner.filePath
+				|| this.getReadingPreviewContentRoot(owner.view) !== owner.root || !owner.root.contains(host)) {
 				this.destroyDynamicFileTaskFilterReadingHost(host);
 			}
 		}
@@ -23372,13 +23377,19 @@ export default class OperonPlugin extends Plugin {
 			if (!(view instanceof MarkdownView) || view.file?.path !== filePath || view.getMode() !== 'preview') continue;
 			const root = this.getReadingPreviewContentRoot(view);
 			if (!root) continue;
-			this.removeDynamicFileTaskFilterHosts(root);
-			const host = root.ownerDocument.win.createDiv();
-			host.className = `${DYNAMIC_FILE_TASK_FILTER_HOST_CLASS} ${DYNAMIC_FILE_TASK_FILTER_HOST_CLASS}--reading`;
+			let host = Array.from(this.dynamicFileTaskFilterReadingHosts).find(candidate => {
+				const owner = this.dynamicFileTaskFilterReadingOwners.get(candidate);
+				return owner?.view === view && owner.root === root && owner.filePath === filePath;
+			});
+			if (!host) {
+				host = root.ownerDocument.win.createDiv();
+				host.className = `${DYNAMIC_FILE_TASK_FILTER_HOST_CLASS} ${DYNAMIC_FILE_TASK_FILTER_HOST_CLASS}--reading`;
+				this.dynamicFileTaskFilterReadingHosts.add(host);
+				this.dynamicFileTaskFilterReadingOwners.set(host, { view, root, filePath });
+				this.dynamicFileTaskFilterReadingInstances.set(host, createFilterSurfaceInstance(host));
+			}
 			this.insertDynamicFileTaskFilterReadingHost(root, host);
-			const instance = createFilterSurfaceInstance(host);
-			this.dynamicFileTaskFilterReadingHosts.add(host);
-			this.dynamicFileTaskFilterReadingInstances.set(host, instance);
+			const instance = this.dynamicFileTaskFilterReadingInstances.get(host)!;
 			const rendered = renderDynamicFileTaskFilterSurface(
 				instance,
 				filePath,
@@ -23413,6 +23424,7 @@ export default class OperonPlugin extends Plugin {
 				cleanupOperonRenderRoot(host);
 			}
 			this.dynamicFileTaskFilterReadingInstances.delete(host);
+			this.dynamicFileTaskFilterReadingOwners.delete(host);
 			this.dynamicFileTaskFilterReadingHosts.delete(host);
 			host.remove();
 	}
@@ -23421,12 +23433,13 @@ export default class OperonPlugin extends Plugin {
 		const placement = this.settings.dynamicFileTaskFilterPlacement;
 		applyDynamicFileTaskFilterHostPlacement(host, placement);
 		if (placement === 'body-bottom') {
-			root.insertBefore(host, root.querySelector<HTMLElement>('.markdown-preview-pusher'));
+			const reference = root.querySelector<HTMLElement>('.markdown-preview-pusher');
+			if (host.parentNode !== root || host.nextSibling !== reference) root.insertBefore(host, reference);
 			return;
 		}
 		const metadataContainer = root.querySelector<HTMLElement>('.metadata-container, .frontmatter-container');
 		if (metadataContainer?.parentElement) {
-			metadataContainer.parentElement.insertBefore(host, metadataContainer.nextSibling);
+			if (metadataContainer.nextSibling !== host) metadataContainer.parentElement.insertBefore(host, metadataContainer.nextSibling);
 			return;
 		}
 		const firstBodyChild = Array.from(root.children).find((child): child is HTMLElement => {
@@ -23438,7 +23451,8 @@ export default class OperonPlugin extends Plugin {
 			if (element.hasClass('markdown-preview-pusher')) return false;
 			return true;
 		});
-		root.insertBefore(host, firstBodyChild ?? root.querySelector<HTMLElement>('.markdown-preview-pusher'));
+		const reference = firstBodyChild ?? root.querySelector<HTMLElement>('.markdown-preview-pusher');
+		if (host.parentNode !== root || host.nextSibling !== reference) root.insertBefore(host, reference);
 	}
 
 	private getTaskEditorSubtaskOptions(task: ParsedTask | null): Partial<TaskEditorContentOptions> {
