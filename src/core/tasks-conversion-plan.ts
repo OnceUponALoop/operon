@@ -137,7 +137,7 @@ export function previewTasksConversion(scan: TasksConversionScan, selection?: re
 		setField(task, 'datetimeCreated', scan.timestamp);
 		for (const [key, value] of defaults) if (typeof value === 'string') setField(task, key, value);
 		const previousFieldValues = Object.fromEntries(task.fields.map(field => [field.key, field.value]));
-		const applied = applyTasksEmojiConversionToParsedTask({ task, tags: conversion.tags,
+		const applied = applyTasksEmojiConversionToParsedTask({ task, description: conversion.description, timePrefix: conversion.timePrefix, tags: conversion.tags,
 			mappedFields: conversion.mappedFields, leftovers: conversion.leftovers, previousFieldValues,
 			pipelines: scan.settings.pipelines, defaultPipelineName: scan.settings.defaultPipelineName,
 			defaultPriority: scan.settings.defaultPriority, repeatSeriesIdFactory: row.repeatSeriesId ? () => row.repeatSeriesId! : undefined });

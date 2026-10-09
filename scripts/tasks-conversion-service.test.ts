@@ -1,3 +1,4 @@
+import { createTasksConversionReferenceInventory, tasksConversionCardReferences } from '../src/systems/tasks-conversion-references';
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
 import { mkdtemp, readFile, writeFile, mkdir, readdir, rm, stat } from 'node:fs/promises';
@@ -492,7 +493,7 @@ for (const collision of [false, true]) {
 		const f = fixture({ 'A.md': '- [ ] A 📅 2026-10-08' });
 		let cached: ReturnType<typeof collectTasksConversionIdentities> = [], pending = false, settlements = 0;
 		const host = createTasksConversionHost(f.app, f.writer, () => f.settings, { matches: () => true, synchronize: () => true },
-			async () => { throw new Error('Conversion must not request full-vault inventory'); }, undefined,
+			async (_signal, changed) => { assert.ok(changed, 'Conversion must not request full-vault inventory'); return { externalReferences: [], reservedSeriesIds: [], isCurrent: () => true }; }, undefined,
 			() => ({ sources: cached, externalReferences: [], reservedSeriesIds: [] }), async () => {
 				settlements++;
 				if (pending) { cached = collectTasksConversionIdentities('Other.md', f.adapter.files.get('Other.md')!, f.settings.keyMappings, true); pending = false; }
@@ -519,7 +520,7 @@ for (const relationship of [false, true]) {
 			f.adapter.files.set('Other.md', `- [ ] Outside {{operonId:: other01}}${relationship ? ' {{blockedBy:: lag1234}}' : ''}`);
 		} return content; };
 		const host = createTasksConversionHost(f.app, f.writer, () => f.settings, { matches: () => true, synchronize: () => true },
-			async () => { throw new Error('Full-vault inventory'); }, undefined, () => ({ sources: cached, externalReferences: [], reservedSeriesIds: [] }),
+			async (_signal, changed) => { assert.ok(changed, 'Full-vault inventory'); return { externalReferences: [], reservedSeriesIds: [], isCurrent: () => true }; }, undefined, () => ({ sources: cached, externalReferences: [], reservedSeriesIds: [] }),
 			async () => { if (pending) { cached = collectTasksConversionIdentities('Other.md', f.adapter.files.get('Other.md')!, f.settings.keyMappings, true); pending = false; } });
 		const service = new TasksConversionService(host, f.store, { now: () => '2026-10-08T17:00:00', operonId: () => 'lag1234' });
 		const preview = service.preview(await service.scan({ files: ['A.md'], folders: [], includeSubfolders: false }));
@@ -700,4 +701,82 @@ test('unrelated setting edits preserve the approved conversion output', async ()
  const f = fixture(), preview = await f.preview(); f.settings.autoParentFileTask = !f.settings.autoParentFileTask;
  assert.equal((await f.service.apply(preview, { finalizeOnSuccess: true })).status, 'committed');
  for (const change of preview.changes) assert.equal(await f.adapter.read(change.path), change.after);
+});
+
+test('automatic rollback retains a newly referenced task and its recovery evidence', async () => {
+ const f = fixture({ 'A.md': '- [ ] A 📅 2026-10-09' }); let allowed = true;
+ const host = createTasksConversionHost(f.app, f.writer, () => f.settings, { matches: () => true, synchronize: () => true },
+  async () => ({ externalReferences: [...f.adapter.files.values()].flatMap(tasksConversionCardReferences), reservedSeriesIds: [], isCurrent: () => true }), undefined,
+  () => ({ sources: [...f.adapter.files].filter(([path]) => path.endsWith('.md')).flatMap(([path, content]) => collectTasksConversionIdentities(path, content, f.settings.keyMappings)), externalReferences: [], reservedSeriesIds: [] }));
+ const service = new TasksConversionService(host, f.store, { operonId: () => 'card001' });
+ const p = service.preview(await service.scan(f.scope));
+ const result = await service.apply(p, { canCommit: () => allowed, onProgress: progress => {
+  if (progress.phase === 'apply') { f.adapter.files.set('Dashboard.md', '```operon\nview: card\ntaskId: card001\n```'); allowed = false; }
+ } });
+ assert.equal(result.status, 'recovery-required'); assert.equal(await f.adapter.read('A.md'), p.changes[0].after);
+ assert.equal((await f.store.load()).kind, 'active');
+});
+
+for (const outcome of ['cancel', 'write-error', 'success'] as const) test(`real storage ${outcome} preserves transaction-created external references`, async () => {
+ const root = await mkdtemp('/private/tmp/operon-reference-boundary-');
+ try {
+  const adapter = new DiskAdapter(root);
+  await adapter.write('A.md', '- [ ] A 📅 2026-10-09'); await adapter.write('B.md', '- [ ] B 📅 2026-10-09');
+  await adapter.write('Other.md', 'Untouched'); adapter.writes = [];
+  const f = wiredFixture(adapter); let allowed = true, next = 0;
+  const inventory = createTasksConversionReferenceInventory(f.app, {
+   workflow: () => ({ externalReferences: [], reservedSeriesIds: [], isCurrent: () => true }),
+   nativeSnapshot: () => ({ references: [], isCurrent: () => true }), matches: () => true, projectTable: (_path, preset) => preset,
+   markdownBuffers: () => [...f.buffers].map(([path, content]) => ({ path, content })), keyMappings: () => f.settings.keyMappings,
+  });
+  const host = createTasksConversionHost(f.app, f.writer, () => f.settings, { matches: () => true, synchronize: () => true }, inventory, undefined,
+   () => ({ sources: [], externalReferences: [], reservedSeriesIds: [] }));
+  const fresh = () => new TasksConversionService(host, f.store, { operonId: () => `ref000${++next}` });
+  const service = fresh(), preview = service.preview(await service.scan({ files: ['A.md', 'B.md'], folders: [], includeSubfolders: true }));
+  const originalProcess = f.app.vault.process.bind(f.app.vault);
+  f.app.vault.process = async (file, transform) => {
+   if (file.path === 'B.md' && outcome === 'write-error') throw new Error('Injected second write failure');
+   const result = await originalProcess(file, transform);
+   if (file.path === 'A.md') {
+    await adapter.write('Dashboard.md', '``` operon\nview: card\ntaskId: '+preview.operonIds[0]+'\n```');
+    if (outcome === 'cancel') allowed = false;
+   }
+   return result;
+  };
+  const result = await service.apply(preview, { canCommit: () => allowed, finalizeOnSuccess: true });
+  assert.equal(result.status, outcome === 'success' ? 'committed' : 'recovery-required');
+  assert.equal(await adapter.read('A.md'), preview.changes[0].after);
+  assert.equal(await adapter.read('Other.md'), 'Untouched');
+  assert.ok(adapter.writes.every(name => ['A.md', 'B.md', 'Dashboard.md'].includes(name) || name.startsWith(f.store.directory+'/')));
+  const reloaded = await new TasksConversionRecoveryStore(adapter as unknown as DataAdapter, f.app.vault.configDir).load();
+  assert.equal(reloaded.kind, outcome === 'success' ? 'empty' : 'active');
+ } finally { await rm(root, { recursive: true, force: true }); }
+});
+
+test('a valid new relationship at the forward write boundary does not cancel conversion', async () => {
+ const f = fixture({ 'A.md': '- [ ] A 📅 2026-10-09' }), preview = await f.preview();
+ const process = f.app.vault.process.bind(f.app.vault); let injected = false;
+ f.app.vault.process = async (file, transform) => {
+  if (!injected) { injected = true; f.references.push(preview.operonIds[0]); }
+  return process(file, transform);
+ };
+ assert.equal((await f.service.apply(preview, { finalizeOnSuccess: true })).status, 'committed');
+ assert.equal(await f.adapter.read('A.md'), preview.changes[0].after);
+ assert.equal((await f.store.load()).kind, 'empty');
+});
+
+for (const duplicate of [false, true]) test(`forward CAS distinguishes a new relationship from identity duplication: ${duplicate}`, async () => {
+ const f = fixture({ 'A.md': '- [ ] A 📅 2026-10-09' }), preview = await f.preview();
+ const process = f.app.vault.process.bind(f.app.vault); let injected = false;
+ f.app.vault.process = async (file, transform) => {
+  if (!injected) {
+   injected = true;
+   f.adapter.files.set('Other.md', `- [ ] Outside {{operonId:: ${duplicate ? preview.operonIds[0] : 'other01'}}} {{related:: ${preview.operonIds[0]}}}`);
+  }
+  return process(file, transform);
+ };
+ const result = await f.service.apply(preview, { finalizeOnSuccess: true });
+ assert.equal(result.status, duplicate ? 'rolled-back' : 'committed');
+ assert.equal(await f.adapter.read('A.md'), duplicate ? preview.changes[0].before : preview.changes[0].after);
+ assert.equal(f.adapter.writes.filter(name => name === 'A.md').length, duplicate ? 0 : 1);
 });

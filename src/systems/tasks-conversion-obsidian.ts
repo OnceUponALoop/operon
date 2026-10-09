@@ -1,3 +1,4 @@
+import { TasksConversionConflictError } from './tasks-conversion-service';
 import { TFile, parseYaml, type App } from 'obsidian';
 import type { TaskWriter } from '../core/task-writer';
 import type { KeyMapping } from '../types/settings';
@@ -56,7 +57,7 @@ export function collectTasksConversionIdentities(path: string, content: string, 
 export function createTasksConversionHost(
 	app: App, writer: Pick<TaskWriter, 'runExclusiveTaskMutation' | 'applyExactMarkdownSourceMutation' | 'waitForMarkdownSources'>,
 	settings: () => TasksConversionSettings, openSources: TaskIdRepairOpenSources,
-	workflowInventory: (signal?: AbortSignal) => Promise<Pick<TasksConversionIdentityInventory, 'externalReferences' | 'reservedSeriesIds' | 'isCurrent'> & { unavailablePaths?: string[] }>,
+	workflowInventory: (signal?: AbortSignal, changed?: { paths: readonly string[]; ids: readonly string[]; ownedPaths?: readonly string[] }) => Promise<Pick<TasksConversionIdentityInventory, 'externalReferences' | 'reservedSeriesIds' | 'isCurrent'> & { unavailablePaths?: string[] }>,
  coordinateSources: <T>(paths: readonly string[], operation: (current: () => boolean) => Promise<T>) => Promise<T>
   = (_paths, operation) => operation(() => true),
 	indexedInventory: () => Pick<TasksConversionIdentityInventory, 'sources' | 'externalReferences' | 'reservedSeriesIds'>,
@@ -118,10 +119,15 @@ export function createTasksConversionHost(
 		const cached = scope ? indexed() : null;
 		if (cached) sources.push(...cached.sources);
 		// Only explicit undo/recovery audits other sources on disk. Conversion uses the existing index.
-		const workflow = cached ? { ...cached, isCurrent: () => true } : await workflowInventory(signal);
+		const changedReferences = scope?.restoring ? await workflowInventory(signal, { paths: [...(observed?.paths.keys() ?? [])].filter(path => !selectedPaths.has(path)), ids: [...guardedIds], ownedPaths: initialPaths }) : null;
+		const workflow = cached ? { ...cached, ...changedReferences, externalReferences: [...cached.externalReferences, ...(changedReferences?.externalReferences ?? [])], isCurrent: () => changedReferences?.isCurrent() ?? true } : await workflowInventory(signal);
 		const relevant = (inventory: ReturnType<typeof indexed>) => {
-			return JSON.stringify([inventory.sources.filter(source => [...source.operonIds, ...source.repeatSeriesIds, ...source.references].some(id => guardedIds.has(id))),
-				inventory.externalReferences.filter(id => guardedIds.has(id)), inventory.reservedSeriesIds.filter(id => guardedIds.has(id))]);
+			const sources = scope && !scope.restoring ? inventory.sources.map(source => ({
+				path: source.path, lineNumber: source.lineNumber, operonIds: source.operonIds.filter(id => guardedIds.has(id)),
+				repeatSeriesIds: source.repeatSeriesIds.filter(id => guardedIds.has(id)), references: [],
+			})) : inventory.sources;
+			return JSON.stringify([sources.filter(source => [...source.operonIds, ...source.repeatSeriesIds, ...source.references].some(id => guardedIds.has(id))),
+				scope && !scope.restoring ? [] : inventory.externalReferences.filter(id => guardedIds.has(id)), inventory.reservedSeriesIds.filter(id => guardedIds.has(id))]);
 		};
 		const signature = cached ? relevant(cached) : null;
 		const finalPaths = scope ? initialPaths : paths();
@@ -130,7 +136,7 @@ export function createTasksConversionHost(
 			if (initialPaths.includes(path) !== finalPaths.includes(path)) unavailablePaths.push(path);
 		}
 		return { ...workflow, sources, unavailablePaths: [...new Set([...unavailablePaths, ...(workflow.unavailablePaths ?? [])])], isCurrent: () => observed !== null && witness === observed
-			&& (scope ? initialPaths.every((path, index) => observed.paths.get(path) === revisions[index]) && relevant(indexed()) === signature
+			&& (scope ? initialPaths.every((path, index) => observed.paths.get(path) === revisions[index]) && relevant(indexed()) === signature && workflow.isCurrent() && (!scope.restoring || observed.revision === revision)
 				: observed.revision === revision && workflow.isCurrent() && JSON.stringify(paths()) === JSON.stringify(initialPaths))
 			&& [...contents].every(([path, content]) => openSources.matches(path, content)) };
 	};
@@ -158,6 +164,7 @@ export function createTasksConversionHost(
 						}, permit, 'plugin');
 						// This guard refusal is a confirmed zero-write CAS. Never replay uncertain failures.
 						if (result.outcome === 'conflict' && indexPending) continue;
+						if (result.outcome === 'conflict') throw new TasksConversionConflictError();
 						if (result.outcome !== 'committed') throw new Error(`Tasks conversion write: ${result.outcome}`);
 						if (!openSources.synchronize(path, expected, next)) throw new Error('Editor changed during conversion write');
 						break;

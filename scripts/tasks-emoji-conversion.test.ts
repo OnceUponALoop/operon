@@ -7,7 +7,7 @@ import { parseTaskLine } from '../src/core/parser';
 import { serializeTask } from '../src/core/serializer';
 import { validateDependencyEdge, validateDependencyEdgeSet } from '../src/core/dependency-graph';
 import { calculateNextRepeatDate, parseRepeatRule } from '../src/core/repeat-rule';
-import './tasks-conversion-service.test';
+import { fixture } from './tasks-conversion-service.test';
 import './tasks-conversion-ui.test';
 
 function convert(line: string) {
@@ -253,4 +253,56 @@ test('does not accept an adjoining protected suffix as a valid recurrence prefix
 	const result = convert(String.raw`- [ ] Task 🔁 every day\x 📅 2026-10-08`);
 	assert.equal(result.mappedFields.repeat, undefined);
 	assert.match(result.leftovers[0], /invalid recurrence expression/u);
+});
+
+for (const [prefix, date, start, end, estimate] of [
+ ['08:30', '2026-10-09', '2026-10-09T08:30:00', undefined, undefined],
+ ['8:30-09:45', '2026-10-09', '2026-10-09T08:30:00', '2026-10-09T09:45:00', '4500'],
+ ['23:00 - 01:00', '2026-12-31', '2026-12-31T23:00:00', '2027-01-01T01:00:00', '7200'],
+] as const) test(`timed conversion preserves ${prefix} with explicit scheduling only`, async () => {
+ const f = fixture({ 'A.md': `- [ ] ${prefix} Work ⏳ ${date}` });
+ const preview = await f.preview(), task = parseTaskLine(preview.changes[0].after, 0, 'A.md')!;
+ const values = Object.fromEntries(task.fields.map(field => [field.key, field.value]));
+ assert.equal(values.datetimeStart, start); assert.equal(values.datetimeEnd, end); assert.equal(values.estimate, estimate);
+ assert.equal(task.description, 'Work'); assert.equal(preview.rows[0].warnings.length, 0);
+ await f.service.apply(preview); assert.equal(await f.adapter.read('A.md'), preview.changes[0].after);
+});
+for (const prefix of ['08:99', '24:00', '09:00-09:00']) test(`invalid or ambiguous clock ${prefix} is preserved as a warning`, async () => {
+ const f = fixture({ 'A.md': `- [ ] ${prefix} Work ⏳ 2026-10-09` }); const p = await f.preview();
+ const task = parseTaskLine(p.changes[0].after, 0, 'A.md')!;
+ assert.ok(task.fields.find(field => field.key === 'note')?.value.includes(prefix));
+ assert.ok(!task.fields.some(field => field.key === 'datetimeStart' || field.key === 'datetimeEnd' || field.key === 'estimate'));
+ assert.ok(p.rows[0].warnings.length); assert.deepEqual(p.errors, []);
+});
+for (const prefix of ['08:30', '08:30-09:30', '08:30 - 09:30']) test(`unscheduled clock ${prefix} survives serialization`, async () => {
+ const p = await fixture({ 'A.md': `- [ ] ${prefix} Work 📅 2026-10-09` }).preview();
+ assert.ok(p.changes[0].after.startsWith(`- [ ] ${prefix} Work`));
+ assert.ok(!p.changes[0].after.includes('datetimeStart::')); assert.ok(!p.changes[0].after.includes('dateScheduled::'));
+});
+test('conversion preserves multilingual tags and protected literal bytes through reparsing', async () => {
+ const tags = ['görev', 'überprüfung', '日本語', 'العربية', 'e\u0301quipe', 'Proje/İş'];
+ const literal = '`a  b` [two  words](file%20name) [[two  words]]';
+ const f = fixture({ 'A.md': `- [ ] Inspect ${literal} ${tags.map(tag => '#'+tag).join(' ')} 📅 2026-10-09` });
+ const p = await f.preview(), task = parseTaskLine(p.changes[0].after, 0, 'A.md')!;
+ assert.deepEqual(task.tags, tags); assert.equal(task.description, 'Inspect '+literal);
+ assert.equal(serializeTask(task), p.changes[0].after);
+});
+
+test('a second ordinary clock token survives conversion reparsing', async () => {
+ const p = await fixture({ 'A.md': '- [ ] 08:30 09:00 Call 📅 2026-10-09' }).preview();
+ assert.ok(p.changes[0].after.startsWith('- [ ] 08:30 09:00 Call'));
+});
+test('local scheduling validates DST gaps, elapsed time and month boundaries', () => {
+ const previous = process.env.TZ; process.env.TZ = 'Europe/Berlin';
+ try {
+  const gap = convert('- [ ] 02:30 Work ⏳ 2026-03-29');
+  assert.equal(gap.mappedFields.datetimeStart, undefined); assert.ok(gap.leftovers.join(' ').includes('02:30'));
+  const range = convert('- [ ] 01:30-03:30 Work ⏳ 2026-03-29');
+  assert.equal(range.mappedFields.estimate, '3600');
+  const month = convert('- [ ] 23:00-01:00 Work ⏳ 2026-04-30');
+  assert.equal(month.mappedFields.datetimeEnd, '2026-05-01T01:00:00');
+  const invalid = convert('- [ ] 08:30 Work ⏳ 2026-02-30');
+  assert.equal(invalid.mappedFields.dateScheduled, undefined); assert.equal(invalid.mappedFields.datetimeStart, undefined);
+  assert.ok(invalid.leftovers.join(' ').includes('2026-02-30'));
+ } finally { if (previous === undefined) delete process.env.TZ; else process.env.TZ = previous; }
 });

@@ -621,3 +621,57 @@ test('completed Settings result releases preview height and offers scope and sca
  assert.equal(c.result, null); assert.equal(c.preview?.selectedKeys.length, 0);
  assert.deepEqual(f.adapter.writes, writes);
 });
+
+for (const content of ['---\noperonId: other01\nblockedBy: task001\n---\nBody', '---\nblockedBy : task001\n---', '---\n  blockedBy: task001\n---', '---\n{blockedBy: task001}\n---', '``` operon\nview: card\ntaskId: task001\n```', '```\toperon\nview: card\ntaskId: task001\n```']) {
+ test('targeted rollback inventory includes saved and dirty references: '+content.split('\n')[0], async () => {
+  const file = new (TFile as unknown as new (name: string) => TFile)('Other.md');
+  const app = { vault: { getAbstractFileByPath: () => file, read: async () => content } } as unknown as App;
+  let buffer = content;
+  const inventory = createTasksConversionReferenceInventory(app, {
+   workflow: () => ({ externalReferences: [], reservedSeriesIds: [], isCurrent: () => true }),
+   nativeSnapshot: () => ({ references: [], isCurrent: () => true }), matches: () => false,
+   projectTable: (_path, preset) => preset, markdownBuffers: () => [{ path: 'Dirty.md', content: buffer }],
+  });
+  const dirty = await inventory(undefined, { paths: [], ids: ['task001'] });
+  assert.deepEqual(dirty.externalReferences, ['task001']); assert.deepEqual(dirty.unavailablePaths, []);
+  buffer = ''; assert.equal(dirty.isCurrent(), false);
+  const saved = await inventory(undefined, { paths: ['Other.md'], ids: ['task001'] });
+  assert.deepEqual(saved.externalReferences, ['task001']); assert.deepEqual(saved.unavailablePaths, []);
+ });
+}
+test('targeted rollback ignores unrelated malformed frontmatter mentioning an ID in prose', async () => {
+ const inventory = createTasksConversionReferenceInventory({ vault: {} } as App, {
+  workflow: () => ({ externalReferences: [], reservedSeriesIds: [], isCurrent: () => true }),
+  nativeSnapshot: () => ({ references: [], isCurrent: () => true }), matches: () => true,
+  projectTable: (_path, preset) => preset,
+  markdownBuffers: () => [{ path: 'Template.md', content: '---\nTitle: %invalid\n---\nAn ordinary mention task001' }],
+ });
+ const result = await inventory(undefined, { paths: [], ids: ['task001'] });
+ assert.deepEqual(result.externalReferences, []); assert.deepEqual(result.unavailablePaths, []);
+});
+
+test('targeted native and compressed drawing references stay read-only and invalidate before restore', async () => {
+ const file = new (TFile as unknown as new (name: string) => TFile)('Drawing.md');
+ let nativeIds = ['task001'], reads = 0, drawingReads = 0;
+ const app = { vault: { getAbstractFileByPath: () => file, read: async () => { reads++; return '---\nexcalidraw-plugin: parsed\n---\ncompressed scene'; } } } as unknown as App;
+ const inventory = createTasksConversionReferenceInventory(app, {
+  workflow: () => ({ externalReferences: [], reservedSeriesIds: [], isCurrent: () => true }), matches: () => false,
+  nativeSnapshot: ids => { assert.deepEqual(ids, ['task001']); const snapshot = [...nativeIds]; return { references: snapshot, isCurrent: () => JSON.stringify(snapshot) === JSON.stringify(nativeIds) }; },
+  projectTable: (_path, preset) => preset,
+  drawingReferences: async () => { drawingReads++; return ['task001']; },
+ });
+ const result = await inventory(undefined, { paths: ['Drawing.md'], ids: ['task001'] });
+ assert.deepEqual(result.externalReferences, ['task001']); assert.deepEqual(result.unavailablePaths, []);
+ assert.equal(reads, 1); assert.equal(drawingReads, 1); assert.equal(result.isCurrent(), true);
+ nativeIds = []; assert.equal(result.isCurrent(), false);
+});
+test('targeted saved Canvas references are checked without enumerating the vault', async () => {
+ const file = new (TFile as unknown as new (name: string) => TFile)('Board.canvas');
+ const app = { vault: { getAbstractFileByPath: () => file, read: async () => JSON.stringify({ nodes: [{ type: 'text', operonTask: { version: 1, taskId: 'task001' } }] }) } } as unknown as App;
+ const inventory = createTasksConversionReferenceInventory(app, {
+  workflow: () => ({ externalReferences: [], reservedSeriesIds: [], isCurrent: () => true }), matches: () => true,
+  nativeSnapshot: () => ({ references: [], isCurrent: () => true }), projectTable: (_path, preset) => preset,
+ });
+ const result = await inventory(undefined, { paths: ['Board.canvas'], ids: ['task001'] });
+ assert.deepEqual(result.externalReferences, ['task001']); assert.deepEqual(result.unavailablePaths, []);
+});

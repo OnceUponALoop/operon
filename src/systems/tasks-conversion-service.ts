@@ -15,8 +15,11 @@ export interface TasksConversionIdentityInventory {
 	isCurrent(): boolean;
 }
 export interface TasksConversionIdentityScope {
-	paths: readonly string[]; operonIds?: readonly string[]; repeatSeriesIds?: readonly string[];
+	paths: readonly string[]; operonIds?: readonly string[]; repeatSeriesIds?: readonly string[]; restoring?: boolean;
 }
+/** Only a confirmed zero-write compare-and-set refusal may be retried. */
+export class TasksConversionConflictError extends Error {}
+
 export interface TasksConversionWritePort {
 	read(path: string): Promise<string>;
 	write(path: string, expected: string, next: string, allowed: () => boolean): Promise<void>;
@@ -65,9 +68,9 @@ function freeze<T>(value: T): T {
 function reserved(inventory: TasksConversionIdentityInventory): Set<string> {
 	return new Set([...inventory.externalReferences, ...inventory.sources.flatMap(source => [...source.operonIds, ...source.references])]);
 }
-function restoreIdentityConflict(inventory: TasksConversionIdentityInventory, record: TasksConversionRecord): boolean {
+function restoreIdentityConflict(inventory: TasksConversionIdentityInventory, record: TasksConversionRecord, removing = true): boolean {
 	const ids = new Set(record.operonIds), series = new Set(record.repeatSeriesIds);
-	if (inventory.externalReferences.some(id => ids.has(id) || series.has(id)) || inventory.reservedSeriesIds.some(id => series.has(id))) return true;
+	if ((removing && inventory.externalReferences.some(id => ids.has(id) || series.has(id))) || inventory.reservedSeriesIds.some(id => series.has(id))) return true;
 	const paths = new Set(record.changes.map(change => change.path));
 	const seen = new Set<string>(), seenSeries = new Set<string>();
 	for (const source of inventory.sources) {
@@ -80,7 +83,7 @@ function restoreIdentityConflict(inventory: TasksConversionIdentityInventory, re
 			if (!paths.has(source.path) || !ownsGenerated || seenSeries.has(id)) return true;
 			seenSeries.add(id);
 		}
-		if (!ownsGenerated && source.references.some(id => ids.has(id))) return true;
+		if (removing && !ownsGenerated && source.references.some(id => ids.has(id))) return true;
 	}
 	return false;
 }
@@ -158,27 +161,27 @@ export class TasksConversionService {
 					const active = await this.recovery.load();
 					if (active.kind !== 'active' || active.record.id !== record.id) return this.result('recovery-required', record, 'Backup could not be verified');
 					for (const [index, change] of record.changes.entries()) {
-						if (!allowed()) return this.restore(active, port, options, false, attempted);
+						if (!allowed()) return await this.restore(active, port, options, false, attempted);
 						const fresh = await port.identities(record.keyMappings, undefined, scope);
-						if (!fresh.isCurrent() || fresh.unavailablePaths.length || restoreIdentityConflict(fresh, record)
+						if (!fresh.isCurrent() || fresh.unavailablePaths.length || restoreIdentityConflict(fresh, record, false)
 							|| fresh.sources.some(source => !attempted.has(source.path) && source.operonIds.some(id => record.operonIds.includes(id)))) {
-							return this.restore(active, port, options, false, attempted);
+							return await this.restore(active, port, options, false, attempted);
 						}
 						try {
 							attempted.add(change.path);
 							await port.write(change.path, change.before, change.after, () => allowed() && fresh.isCurrent());
 						} catch {
 							// Classify all files, including an unreadable write, without replaying it.
-							return this.restore(active, port, options, false, attempted);
+							return await this.restore(active, port, options, false, attempted);
 						}
-						if (await port.read(change.path) !== change.after) return this.restore(active, port, options, false, attempted);
+						if (await port.read(change.path) !== change.after) return await this.restore(active, port, options, false, attempted);
 						this.progress(options, 'apply', index + 1, record, change.path);
 					}
-					if (!allowed()) return this.restore(active, port, options, false, attempted);
-					for (const change of record.changes) if (await port.read(change.path) !== change.after) return this.restore(active, port, options, false, attempted);
+					if (!allowed()) return await this.restore(active, port, options, false, attempted);
+					for (const change of record.changes) if (await port.read(change.path) !== change.after) return await this.restore(active, port, options, false, attempted);
 					const finalInventory = await port.identities(record.keyMappings, undefined, scope);
-					if (!finalInventory.isCurrent() || finalInventory.unavailablePaths.length || restoreIdentityConflict(finalInventory, record)) {
-						return this.restore(active, port, options, false, attempted);
+					if (!finalInventory.isCurrent() || finalInventory.unavailablePaths.length || restoreIdentityConflict(finalInventory, record, false)) {
+						return await this.restore(active, port, options, false, attempted);
 					}
 					// Completion is part of the explicit Apply action. Cleanup never replays source writes.
 					if (options.finalizeOnSuccess) {
@@ -243,7 +246,7 @@ export class TasksConversionService {
 		options: TasksConversionRunOptions, explicit = false, attempted?: ReadonlySet<string>): Promise<TasksConversionResult> {
 		const record = active.record;
 		const files = await this.classify(record, port);
-		const scope = explicit ? undefined : { paths: record.changes.map(change => change.path), operonIds: record.operonIds, repeatSeriesIds: record.repeatSeriesIds };
+		const scope = explicit ? undefined : { paths: record.changes.map(change => change.path), operonIds: record.operonIds, repeatSeriesIds: record.repeatSeriesIds, restoring: true };
 		const inventory = await port.identities(record.keyMappings, undefined, scope);
 		const candidates = attempted ? record.changes.filter(change => attempted.has(change.path)
 			&& files.some(file => file.path === change.path && file.state === 'after')) : record.changes;
@@ -261,10 +264,17 @@ export class TasksConversionService {
 			const current = await port.read(change.path);
 			if (current !== change.before) {
 				if (current !== change.after) return this.result('recovery-required', record, 'Restore source changed');
-				const fresh = await port.identities(record.keyMappings, undefined, scope);
-				if (!fresh.isCurrent() || fresh.unavailablePaths.length || restoreIdentityConflict(fresh, targets)) return this.result('recovery-required', record, 'Restore identity changed');
-				try { await port.write(change.path, change.after, change.before, () => fresh.isCurrent() && (!explicit || options.canCommit?.() !== false)); }
-				catch { if (await port.read(change.path) !== change.before) return this.result('recovery-required', record, 'Restore write could not be verified'); }
+				for (let retry = 0; ; retry++) {
+					const fresh = await port.identities(record.keyMappings, undefined, scope);
+					if (!fresh.isCurrent() || fresh.unavailablePaths.length || restoreIdentityConflict(fresh, targets)) return this.result('recovery-required', record, 'Restore identity changed');
+					try { await port.write(change.path, change.after, change.before, () => fresh.isCurrent() && (!explicit || options.canCommit?.() !== false)); break; }
+					catch (error) {
+						const observed = await port.read(change.path);
+						if (observed === change.before) break;
+						if (error instanceof TasksConversionConflictError && observed === change.after && !fresh.isCurrent() && retry < 2) continue;
+						return this.result('recovery-required', record, 'Restore write could not be verified');
+					}
+				}
 			}
 			if (await port.read(change.path) !== change.before) return this.result('recovery-required', record, 'Restore verification failed');
 			this.progress(options, 'restore', index + 1, record, change.path);

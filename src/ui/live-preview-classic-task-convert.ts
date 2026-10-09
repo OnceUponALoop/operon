@@ -1,3 +1,4 @@
+import { tasksConversionProtectedLines } from '../core/tasks-conversion-scope';
 import {
 	Decoration,
 	DecorationSet,
@@ -52,6 +53,7 @@ class ClassicTaskConvertWidget extends WidgetType {
 		const handleActivate = (event: Event): void => {
 			event.preventDefault();
 			event.stopPropagation();
+			if (tasksConversionProtectedLines(view.state.doc.toString()).has(this.lineNumber)) return;
 			if (this.kind === 'tasksEmoji') {
 				this.callbacks.convertTasksEmojiLine(this.lineNumber, view);
 				return;
@@ -109,14 +111,10 @@ export function operonLivePreviewClassicTaskConvertExtension(callbacks: ClassicT
 
 			const filePath = callbacks.getFilePath(view);
 			const settings = callbacks.getSettings();
-			let inFencedCodeBlock = false;
+			const protectedLines = tasksConversionProtectedLines(view.state.doc.toString());
 			for (let lineNumber = 1; lineNumber <= view.state.doc.lines; lineNumber++) {
 				const line = view.state.doc.line(lineNumber);
-				if (isMarkdownFenceLine(line.text)) {
-					inFencedCodeBlock = !inFencedCodeBlock;
-					continue;
-				}
-				if (inFencedCodeBlock) continue;
+				if (protectedLines.has(lineNumber - 1)) continue;
 				if (!line.text.includes('- [')) continue;
 
 				const kind = classifyClassicTaskConversionLine(line.text, filePath, settings.keyMappings);
@@ -155,8 +153,4 @@ export function operonLivePreviewClassicTaskConvertExtension(callbacks: ClassicT
 	}, {
 		decorations: pluginValue => pluginValue.decorations,
 	});
-}
-
-function isMarkdownFenceLine(line: string): boolean {
-	return /^\s*(?:`{3,}|~{3,})/.test(line);
 }

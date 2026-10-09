@@ -47,6 +47,7 @@ import {boundRuntimeTransactionIdV1} from './src/agent-runtime/runtime/transacti
 import {toLocalDatetime} from './src/core/local-time';
 import {composeStatusValue} from './src/core/workflow-status-value';
 import {DEFAULT_SETTINGS} from './src/types/settings';
+import {scanTasksConversionSources,previewTasksConversion} from './src/core/tasks-conversion-plan';
 import {DEFAULT_PRIORITIES} from './src/types/priority';
 import {collectScopedPlainCheckboxMoveLines,removePlainCheckboxMoveLinesFromContent,scanPlainCheckboxOwnership} from './src/core/plain-checkbox-lines';
 import {parseTaskLine,hasOperonFields} from './src/core/parser';
@@ -56,6 +57,7 @@ import {getManagedTaskFieldType} from './src/core/managed-task-fields';
 import {isValidOperonId} from './src/core/id-generator';
 import {getSubtaskInitialFieldKeys,resolveSubtaskInitialFieldsFromParentValues} from './src/core/subtask-inheritance';
 import {extractMarkdownCheckboxListItem,extractMarkdownListItemDescription,measureMarkdownIndent,normalizeMarkdownCheckboxMarker} from './src/core/markdown-list-items';
+import {tasksConversionProtectedLines} from './src/core/tasks-conversion-scope';
 import {convertTasksEmojiLineToOperon} from './src/core/tasks-emoji-to-operon';
 import {applyTasksEmojiConversionToParsedTask} from './src/core/tasks-emoji-application';
 import {evaluateFilterSet} from './src/core/filter-evaluator';
@@ -114,7 +116,8 @@ for (const separator of ['', '   ', '# Boundary', 'Plain text', '- Explanation']
  assert.equal(fields(f.probe,f.editor.getLine(1)).parentTask,'parent1');
  assert.equal(fields(f.probe,f.editor.getLine(2)).parentTask,'parent1');
  assert.equal(fields(f.probe,f.editor.getLine(3)).parentTask,fields(f.probe,f.editor.getLine(2)).operonId);
- assert.equal(fields(f.probe,f.editor.getLine(5)).parentTask,'file001');
+ if (separator === '# Boundary' || separator === 'Plain text') assert.equal(f.editor.getLine(5),lines[5]);
+ else assert.equal(fields(f.probe,f.editor.getLine(5)).parentTask,'file001');
  assert.equal(f.editor.getLine(4),separator);assert.ok(f.editor.getLine(3).startsWith('\t- '));checks+=6;
 }
 {
@@ -323,6 +326,40 @@ for(const attached of [true,false]) {
  assert.ok(contiguous.value.token.groups[1].nextContent.includes('- [ ] Detached'));assert.ok(!contiguous.value.token.groups[0].nextContent.includes('Detached'));
  assert.equal(f.editor.getValue(),content);checks+=7;
 }
+
+for (const lines of [
+ ['<!--','- [ ] Hidden 📅 2026-10-09','-->'],
+ ['%%','- [ ] Hidden 📅 2026-10-09','%%'],
+ ['    - [ ] Code 📅 2026-10-09'],
+ ['~~~md','\`\`\`','- [ ] Code 📅 2026-10-09','~~~'],
+ ['\`\`\`\`md','\`\`\`','- [ ] Code 📅 2026-10-09','\`\`\`\`'],
+]) {
+ for(const checkboxesOnly of [false,true]) {
+  const content=lines.join('\n'),f=fixture(content,0,lines.length-1); delete f.probe.isMarkdownFenceLine;
+  await f.probe.handleConvertSelectionToOperonTasksCommand(f.editor,f.view,checkboxesOnly);
+  assert.equal(f.editor.getValue(),content); checks++;
+ }
+ const content=lines.join('\n'),f=fixture(content,0,lines.length-1),index=lines.findIndex(line=>line.includes('📅'));
+ await f.probe.handleConvertTasksEmojiLineToOperonInlineTaskCommand(f.editor,f.view,index);
+ assert.equal(f.editor.getValue(),content); checks++;
+}
+
+for (const text of ['08:30 Work ⏳ 2026-10-09', '23:00-01:00 Work ⏳ 2026-12-31', '08:30 09:00 Call 📅 2026-10-09', 'Work #görev #日本語 #e\u0301quipe 📅 2026-10-09', '08:99 Work ⏳ 2026-10-09']) {
+ const line='- [ ] '+text;
+ const scan=scanTasksConversionSources({files:['Tasks.md'],folders:[],includeSubfolders:true},[{path:'Tasks.md',content:line}],DEFAULT_SETTINGS,new Set(),new Set(),{operonId:()=> 'test001'});
+ const expected=previewTasksConversion(scan).changes[0].after;
+ for(const mode of ['single','selection','checkboxes']) {
+  const f=fixture(line,0,0);
+  if(mode==='single') await f.probe.handleConvertTasksEmojiLineToOperonInlineTaskCommand(f.editor,f.view,0);
+  else await f.probe.handleConvertSelectionToOperonTasksCommand(f.editor,f.view,mode==='checkboxes');
+  const actual=f.probe.parseInlineTaskLine(f.editor.getLine(0),0,'Tasks.md'),target=f.probe.parseInlineTaskLine(expected,0,'Tasks.md');
+  assert.equal(actual.description,target.description);assert.deepEqual(actual.tags,target.tags);assert.deepEqual(actual.timePrefix,target.timePrefix);
+  const values=fields(f.probe,f.editor.getLine(0)),wanted=fields(f.probe,expected);
+  for(const key of ['datetimeStart','datetimeEnd','estimate','dateScheduled','dateDue','note']) assert.equal(values[key],wanted[key],mode+': '+key);
+  assert.equal(wanted.parentTask,undefined); checks+=10;
+ }
+}
+
 console.log('Checkbox ownership Plugin integration: '+checks+' checks passed with production methods.');
 `},outfile,bundle:true,format:'esm',platform:'node',target:['node18'],logLevel:'silent',alias:{obsidian:path.join(rootDir,'scripts/test-support/obsidian.ts')}});
   await import(pathToFileURL(outfile).href);

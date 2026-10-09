@@ -1,8 +1,9 @@
+import { tasksConversionProtectedLines } from './src/core/tasks-conversion-scope';
 import { TasksConversionSettings } from './src/ui/tasks-conversion-settings';
 import { TasksConversionController } from './src/ui/tasks-conversion-controller';
 import { TasksConversionService } from './src/systems/tasks-conversion-service';
 import { createTasksConversionHost } from './src/systems/tasks-conversion-obsidian';
-import { createTasksConversionReferenceInventory, tasksConversionTableReferences } from './src/systems/tasks-conversion-references';
+import { createTasksConversionReferenceInventory, tasksConversionTableReferences, tasksConversionCanvasReferences } from './src/systems/tasks-conversion-references';
 import { TasksConversionRecoveryStore } from './src/storage/tasks-conversion-recovery';
 import { pauseExcalidrawTaskPresentation } from './src/ui/excalidraw-task-auto-height';
 import { splitTaskCreationText } from './src/ui/task-creation-text';
@@ -19,7 +20,7 @@ import { createCheckboxOwnershipRuntimeV1 } from './src/agent-runtime/extensions
 import { checkboxOwnershipExecutionKeyV1 } from './src/agent-runtime/extensions/checkbox-ownership-v1/decode';
 import type { CheckboxOwnershipApplyRequestV1, CheckboxOwnershipMutationResultV1 } from './src/agent-runtime/extensions/checkbox-ownership-v1/contracts';
 import { boundRuntimeTransactionIdV1 } from './src/agent-runtime/runtime/transaction-identifiers';
-import { getIcon } from 'obsidian';
+import { getIcon, type App } from 'obsidian';
 import { resolveTaskMediaReference } from './src/core/task-media-reference';
 import { parseOperonGroupRule } from './src/core/canvas-group-rule';
 import { canWriteGroupCanvas } from './src/systems/canvas-group-background';
@@ -26511,31 +26512,54 @@ export default class OperonPlugin extends Plugin {
     ...this.storage.activeTrackers.getAll().map(tracker => tracker.taskId),
     ...this.storage.repeatSeries.getAllEntries().map(series => series.sourceTaskId),
     ...this.settings.tablePresets.flatMap(tasksConversionTableReferences),
+    ...[...(this.tablePresetRegistry?.getSnapshot().entries.values() ?? [])].flatMap(entry => entry.preset ? tasksConversionTableReferences(entry.preset) : []),
     ...(this.timeTracker.getActiveOperonId() ? [this.timeTracker.getActiveOperonId()!] : [])].filter((id): id is string => typeof id === 'string' && !!id);
    const series = [...this.storage.repeatSeries.getAllSeriesIds()];
    return { references, series, revision: [pinned.getGeneration(), this.storage.activeTrackers.getGeneration(), this.storage.repeatSeries.getRevision()] };
   };
-  const nativeState = () => {
+  const nativeState = (ids?: readonly string[]) => {
    const views = [...this.app.workspace.getLeavesOfType('canvas'), ...this.app.workspace.getLeavesOfType('excalidraw')];
    const references: string[] = [];
    const snapshots = views.map(leaf => {
     const view = leaf.view as unknown as { file?: TFile; canvas?: { getData?(): unknown }; excalidrawAPI?: { getSceneElements(): readonly { type: string; link?: string | null; isDeleted?: boolean }[] } };
     const elements = view.excalidrawAPI?.getSceneElements() ?? [];
+    if (ids && view.canvas?.getData) {
+     const data = JSON.stringify(view.canvas.getData());
+     if (ids.some(id => data.includes(id))) references.push(...tasksConversionCanvasReferences(data));
+    }
     for (const element of elements) {
      const id = element.type === 'embeddable' && !element.isDeleted ? /#Operon task ([a-z0-9]{7})\]\]$/u.exec(element.link ?? '')?.[1] : null;
      if (id) references.push(id);
     }
     return [view.file?.path, view.canvas?.getData?.(), elements];
    });
-   return { views, references, signature: JSON.stringify(snapshots) };
+   return { views, references, signature: JSON.stringify(ids ? references.filter(id => ids.includes(id)) : snapshots) };
   };
   const inventory = createTasksConversionReferenceInventory(this.app, {
    workflow: () => { const snapshot = workflow(), signature = JSON.stringify(snapshot);
     return { externalReferences: snapshot.references, reservedSeriesIds: snapshot.series, isCurrent: () => available() && JSON.stringify(workflow()) === signature }; },
-   nativeSnapshot: async () => { const snapshot = nativeState(); const unavailablePaths = await this.captureTasksConversionDrawingScenes(); return { references: snapshot.references, unavailablePaths,
-    isCurrent: () => { const current = nativeState(); return snapshot.signature === current.signature && snapshot.views.length === current.views.length && snapshot.views.every((leaf, index) => leaf === current.views[index]); } }; },
+   nativeSnapshot: async ids => { const snapshot = nativeState(ids); const unavailablePaths = ids ? [] : await this.captureTasksConversionDrawingScenes(); return { references: snapshot.references, unavailablePaths,
+    isCurrent: () => { const current = nativeState(ids); return snapshot.signature === current.signature && snapshot.views.length === current.views.length && snapshot.views.every((leaf, index) => leaf === current.views[index]); } }; },
    matches: (path, content) => this.tasksConversionBuffersMatch(path, content),
    projectTable: (path, preset) => this.tablePresetRegistry?.projectFilePreset(path, preset) ?? preset,
+   keyMappings: () => this.settings.keyMappings,
+   markdownBuffers: () => this.app.workspace.getLeavesOfType('markdown').flatMap(leaf => {
+    const view = leaf.view as MarkdownView; return view.file && view.editor ? [{ path: view.file.path, content: view.editor.getValue() }] : [];
+   }),
+   drawingReferences: async (file, content) => {
+    if (!this.isExcalidrawTaskSource(file) && !/^excalidraw-plugin:/mu.test(content)) return null;
+    const plugin = (this.app as App & { plugins?: { plugins?: Record<string, { ea?: { getAPI(view?: unknown): Pick<ReturnType<ExcalidrawTaskView['plugin']['ea']['getAPI']>, 'getSceneFromFile' | 'destroy'> } }> } }).plugins?.plugins?.['obsidian-excalidraw-plugin'];
+    const api = plugin?.ea?.getAPI();
+    if (!api) throw new Error('Drawing reference source unavailable');
+    try {
+     const scene = await api.getSceneFromFile(file);
+     if (!scene) throw new Error('Drawing reference scene unavailable');
+     return scene.elements.flatMap(element => {
+      const id = element.type === 'embeddable' && !element.isDeleted ? /#Operon task ([a-z0-9]{7})\]\]$/u.exec(element.link ?? '')?.[1] : null;
+      return id ? [id] : [];
+     });
+    } finally { api.destroy(); }
+   },
   });
   const host = createTasksConversionHost(this.app, this.writer, () => this.settings, {
    matches: (path, content) => this.tasksConversionBuffersMatch(path, content),
@@ -31614,6 +31638,9 @@ export default class OperonPlugin extends Plugin {
 		targetLineNumber?: number,
 	): Promise<void> {
 		const lineNumber = targetLineNumber ?? editor.getCursor().line;
+		if (tasksConversionProtectedLines(editor.getValue()).has(lineNumber)) {
+			new Notice(t('notifications', 'currentLineNotSupportedTasksEmoji')); return;
+		}
 		const line = editor.getLine(lineNumber);
 		const filePath = view.file?.path ?? '';
 		if (!filePath) {
@@ -31657,6 +31684,8 @@ export default class OperonPlugin extends Plugin {
 
 		const applied = applyTasksEmojiConversionToParsedTask({
 			task: parsed,
+			description: conversion.description,
+			timePrefix: conversion.timePrefix,
 			tags: conversion.tags,
 			mappedFields: conversion.mappedFields,
 			leftovers: conversion.leftovers,
@@ -31715,15 +31744,14 @@ export default class OperonPlugin extends Plugin {
 		let convertedCount = 0;
 		let linkedCount = 0;
 		let skippedCount = 0;
-		let inFencedCodeBlock = false;
+		const protectedLines = tasksConversionProtectedLines(sourceContent);
 
 		for (let lineNumber = 0; lineNumber <= selectedRange.endLine; lineNumber++) {
 			const line = sourceLines[lineNumber] ?? '';
-			const fenceLine = this.isMarkdownFenceLine(line);
 			const inSelection = lineNumber >= selectedRange.startLine;
 
 			if (inSelection) {
-				if (inFencedCodeBlock || fenceLine) {
+				if (protectedLines.has(lineNumber)) {
 					skippedCount++;
 				} else {
 					const owner = owners.get(lineNumber) ?? null;
@@ -31757,9 +31785,6 @@ export default class OperonPlugin extends Plugin {
 				}
 			}
 
-			if (fenceLine) {
-				inFencedCodeBlock = !inFencedCodeBlock;
-			}
 		}
 
 		if (convertedCount === 0) {
@@ -31875,6 +31900,8 @@ export default class OperonPlugin extends Plugin {
 
 			const applied = applyTasksEmojiConversionToParsedTask({
 				task: parsed,
+				description: tasksEmojiConversion.description,
+				timePrefix: tasksEmojiConversion.timePrefix,
 				tags: tasksEmojiConversion.tags,
 				mappedFields: tasksEmojiConversion.mappedFields,
 				leftovers: tasksEmojiConversion.leftovers,

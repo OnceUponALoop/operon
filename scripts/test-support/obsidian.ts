@@ -348,6 +348,8 @@ export class TFolder {
 }
 
 export function parseYaml(source: string): Record<string, unknown> {
+	// Single-entry flow mapping used by reference-safety fixtures.
+	if (/^\s*\{[^{}\n,]+\}\s*$/u.test(source)) source = source.trim().slice(1, -1);
 	const result: Record<string, unknown> = {};
 	let activeListKey: string | null = null;
 	let activeListHasItems = false;

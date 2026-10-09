@@ -1,4 +1,5 @@
 import { build } from 'esbuild';
+import { runTasksConversionHoverTests } from './tasks-conversion-hover.test.mjs';
 import { mkdtemp, rm } from 'node:fs/promises';
 import { execFileSync } from 'node:child_process';
 import { tmpdir } from 'node:os';
@@ -15,6 +16,7 @@ try {
 		alias: { obsidian: path.join(root, 'scripts/test-support/obsidian.ts') },
 	});
 	execFileSync(process.execPath, ['--test', outfile], { stdio: 'inherit' });
+	await runTasksConversionHoverTests(root);
 } finally {
 	await rm(temp, { recursive: true, force: true });
 }

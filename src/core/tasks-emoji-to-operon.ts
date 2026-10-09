@@ -1,9 +1,12 @@
 import { parseTaskLine, hasOperonFields } from './parser';
-import { buildCanonicalLocalDatetime, deriveDatetimeEnd } from './scheduling-rules';
+import { buildCanonicalLocalDatetime, shiftDatetimeByDays, deriveEstimateValue } from './scheduling-rules';
+import { parseLocalTimestamp, toLocalDate, toLocalDatetime } from './local-time';
+import type { TimePrefix } from '../types/fields';
 import { parseTasksRecurrenceToOperon } from './tasks-recurrence-to-operon';
 import { CheckboxState } from '../types/keys';
 import {
 	collectMarkdownProtectedRanges,
+	normalizeMarkdownProseWhitespace,
 	findMarkdownProtectedRangeAt,
 	type MarkdownProtectedRange,
 } from './markdown-protected-ranges';
@@ -20,6 +23,7 @@ export type TasksEmojiToOperonResult =
 		kind: 'converted';
 		checkbox: CheckboxState;
 		description: string;
+		timePrefix?: TimePrefix;
 		tags: string[];
 		mappedFields: Record<string, string>;
 		leftovers: string[];
@@ -86,10 +90,6 @@ function overlaps(left: TextRange, right: TextRange): boolean {
 	return left.from < right.to && right.from < left.to;
 }
 
-function compressWhitespace(text: string): string {
-	return text.replace(/\s+/g, ' ').trim();
-}
-
 function normalizeCreatedDate(value: string): string {
 	return `${value}T00:00:01`;
 }
@@ -139,31 +139,24 @@ function parseClockToSeconds(value: string): number | null {
 	return hours * 3600 + minutes * 60;
 }
 
+function validLocalDatetime(date: string, clock: string): string | null {
+	if (parseClockToSeconds(clock) === null) return null;
+	const value = buildCanonicalLocalDatetime(date, clock.padStart(5, '0'));
+	const timestamp = parseLocalTimestamp(value);
+	return timestamp !== null && Number.isFinite(timestamp) && toLocalDatetime(new Date(timestamp)) === value ? value : null;
+}
+
 function buildTimedSchedulingFields(dateScheduled: string, timeBlock: LeadingTimeBlock): Record<string, string> | null {
-	const datetimeStart = buildCanonicalLocalDatetime(dateScheduled, timeBlock.startTime);
+	const datetimeStart = validLocalDatetime(dateScheduled, timeBlock.startTime);
 	if (!datetimeStart) return null;
-
-	if (!timeBlock.endTime) {
-		const estimateSeconds = 15 * 60;
-		return {
-			datetimeStart,
-			datetimeEnd: deriveDatetimeEnd(datetimeStart, estimateSeconds),
-			estimate: String(estimateSeconds),
-		};
-	}
-
-	const startSeconds = parseClockToSeconds(timeBlock.startTime);
-	const endSeconds = parseClockToSeconds(timeBlock.endTime);
-	if (startSeconds == null || endSeconds == null || endSeconds <= startSeconds) return null;
-
-	const estimateSeconds = endSeconds - startSeconds;
-	const datetimeEnd = buildCanonicalLocalDatetime(dateScheduled, timeBlock.endTime);
+	if (!timeBlock.endTime) return { datetimeStart };
+	const startSeconds = parseClockToSeconds(timeBlock.startTime), endSeconds = parseClockToSeconds(timeBlock.endTime);
+	if (startSeconds === null || endSeconds === null || startSeconds === endSeconds) return null;
+	const endDate = endSeconds < startSeconds ? shiftDatetimeByDays(`${dateScheduled}T12:00:00`, 1).slice(0, 10) : dateScheduled;
+	const datetimeEnd = validLocalDatetime(endDate, timeBlock.endTime);
 	if (!datetimeEnd) return null;
-	return {
-		datetimeStart,
-		datetimeEnd,
-		estimate: String(estimateSeconds),
-	};
+	const estimate = deriveEstimateValue(datetimeStart, datetimeEnd);
+	return estimate ? { datetimeStart, datetimeEnd, estimate } : null;
 }
 
 function findNextMetadataBoundary(text: string, from: number, protectedRanges: TextRange[], stopAtProtected = true): number {
@@ -271,6 +264,10 @@ export function convertTasksEmojiLineToOperon(line: string, options: TasksEmojiT
 			const fragment = body.slice(i, valueStart + dateMatch[1].length).trim();
 			pushRange({ from: i, to: valueStart + dateMatch[1].length });
 			foundTasksSyntax = true;
+			const dateStamp = parseLocalTimestamp(dateMatch[1]);
+			if (dateStamp === null || !Number.isFinite(dateStamp) || toLocalDate(new Date(dateStamp)) !== dateMatch[1]) {
+				leftovers.push(`${fragment} (invalid date)`); i = valueStart + dateMatch[1].length - 1; matched = true; break;
+			}
 			const normalizedValue = entry.key === 'datetimeCreated'
 				? normalizeCreatedDate(dateMatch[1])
 				: dateMatch[1];
@@ -413,13 +410,14 @@ export function convertTasksEmojiLineToOperon(line: string, options: TasksEmojiT
 	}
 
 	const scheduledDate = mappedFields['dateScheduled'];
-	if (scheduledDate && leadingTimeBlock) {
-		pushRange(leadingTimeBlock.range);
-		const timedFields = buildTimedSchedulingFields(scheduledDate, leadingTimeBlock);
-		if (timedFields) {
-			for (const [key, value] of Object.entries(timedFields)) {
-				mappedFields[key] = value;
-			}
+	if (leadingTimeBlock) {
+		const start = parseClockToSeconds(leadingTimeBlock.startTime), end = leadingTimeBlock.endTime ? parseClockToSeconds(leadingTimeBlock.endTime) : null;
+		const invalidClock = start === null || (leadingTimeBlock.endTime !== null && (end === null || end === start));
+		if (scheduledDate || invalidClock) {
+			const timedFields = !invalidClock && scheduledDate ? buildTimedSchedulingFields(scheduledDate, leadingTimeBlock) : null;
+			pushRange(leadingTimeBlock.range);
+			if (timedFields) Object.assign(mappedFields, timedFields);
+			else leftovers.push(`${leadingTimeBlock.raw} (invalid or ambiguous scheduled time)`);
 		}
 	}
 
@@ -430,7 +428,7 @@ export function convertTasksEmojiLineToOperon(line: string, options: TasksEmojiT
 		leftovers.push(fragment.value);
 		todoistRanges.push(fragment.range);
 	}
-	const cleanedBody = compressWhitespace(removeRanges(withoutEmojiMetadata, todoistRanges));
+	const cleanedBody = normalizeMarkdownProseWhitespace(removeRanges(withoutEmojiMetadata, todoistRanges));
 	if (!cleanedBody) return { kind: 'not_tasks_emoji' };
 
 	const checkboxChar = checkboxInfo.checkbox === 'done'
@@ -446,6 +444,7 @@ export function convertTasksEmojiLineToOperon(line: string, options: TasksEmojiT
 		kind: 'converted',
 		checkbox: checkboxInfo.checkbox,
 		description: parsed.description,
+		...(parsed.timePrefix ? { timePrefix: parsed.timePrefix } : {}),
 		tags: parsed.tags,
 		mappedFields,
 		leftovers,
