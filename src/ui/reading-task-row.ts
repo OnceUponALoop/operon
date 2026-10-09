@@ -17,6 +17,7 @@ import {
 import { PriorityDefinition } from '../types/priority';
 import {
 	buildInlineTaskCompactChipEntries,
+	type CompactTaskRenderContext,
 	createInlineTaskCompactChipElement,
 	InlineTaskCompactChipEntry,
 	isCompactTaskMediaChipKey,
@@ -136,6 +137,7 @@ export function guardReadingTaskRowActions(
 }
 
 export interface ReadingTaskRowOptions {
+	renderContext?: CompactTaskRenderContext;
  retainDom?: boolean;
 	owner?: Node | null;
 	workflowStatusIdentityIndex?: WorkflowStatusIdentityIndex;
@@ -339,13 +341,14 @@ export function buildReadingTaskRowElement(
 		task.fieldValues,
 		task.tags,
 		settings,
-		callbacks.getAllTasks(),
+		options?.renderContext?.tasks ?? callbacks.getAllTasks(),
 		options?.chipItems,
 		locationResolver,
 		{
 			app: callbacks.app,
 			repeatSkipDateResolver: callbacks.getRepeatSkipDates,
 			workflowStatusIdentityIndex,
+			taskLookup: options?.renderContext?.taskLookup,
 		},
 	);
 	for (const entry of entries) {

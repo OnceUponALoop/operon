@@ -28,6 +28,8 @@ import { showPriorityPicker } from './field-pickers/priority-picker';
 import { showEstimatePicker } from './field-pickers/estimate-picker';
 import {
 	buildInlineTaskCompactChipEntries,
+	createCompactTaskRenderContext,
+	type CompactTaskRenderContext,
 	createInlineTaskCompactChipElement,
 	InlineTaskCompactChipEntry,
 	isCompactTaskMediaChipKey,
@@ -378,6 +380,7 @@ export class MetadataTailWidget extends WidgetType {
 		private readonly pipelines: Pipeline[],
 		private readonly workflowStatusIdentityIndex: WorkflowStatusIdentityIndex,
 		private readonly revealSource: () => void,
+		private readonly renderContext = createCompactTaskRenderContext(callbacks.getAllTasks),
 	) {
 		super();
 		this.task = { ...task, fields: task.fields.map(field => ({ ...field })) };
@@ -392,6 +395,7 @@ export class MetadataTailWidget extends WidgetType {
 			false,
 			false,
 			workflowStatusIdentityIndex,
+			this.renderContext,
 		);
 	}
 
@@ -438,7 +442,7 @@ export class MetadataTailWidget extends WidgetType {
 
 		const fieldValues = getFieldValues(this.task, this.indexedTask);
 		const operonId = this.task.operonId;
-		const tasks = this.callbacks.getAllTasks();
+		const tasks = this.renderContext.tasks;
 		const taskColor = normalizeTaskColor(fieldValues['taskColor']);
 		if (taskColor) tailWrap.setCssProps({
 			'--operon-live-hover-border': taskColor,
@@ -478,6 +482,7 @@ export class MetadataTailWidget extends WidgetType {
 				app: this.callbacks.app,
 				repeatSkipDateResolver: this.callbacks.getRepeatSkipDates,
 				workflowStatusIdentityIndex: this.workflowStatusIdentityIndex,
+				taskLookup: this.renderContext.taskLookup,
 			},
 		);
 		for (const entry of entries) {
@@ -828,6 +833,7 @@ export function operonLivePreviewConcealExtension(callbacks: LivePreviewCallback
 				}
 				const pipelines = callbacks.getPipelines();
 				const workflowStatusIdentityIndex = buildWorkflowStatusIdentityIndex(pipelines);
+				const renderContext = createCompactTaskRenderContext(callbacks.getAllTasks);
 
 				let inFencedCodeBlock = false;
 				for (let lineNumber = 1; lineNumber <= view.state.doc.lines; lineNumber++) {
@@ -939,6 +945,7 @@ export function operonLivePreviewConcealExtension(callbacks: LivePreviewCallback
 								this.explicitRevealTaskId = parsed.operonId ?? null;
 								view.dispatch({ effects: operonIndexRefreshEffect.of() });
 							},
+							renderContext,
 						);
 
 						decorations.add(
@@ -1072,11 +1079,12 @@ export function buildMetadataTailRenderSignature(
 	pinnedSnapshot: boolean,
 	trackingSnapshot: boolean,
 	workflowStatusIdentityIndex?: WorkflowStatusIdentityIndex,
+	renderContext?: CompactTaskRenderContext,
 ): string {
 	const fieldValues = getFieldValues(task, indexedTask);
 	const tags = indexedTask?.tags ?? task.tags;
 	const settings = callbacks.getSettings();
-	const tasks = callbacks.getAllTasks();
+	const tasks = renderContext?.tasks ?? callbacks.getAllTasks();
 	const projectSerialDisplay = task.operonId ? callbacks.getProjectSerialDisplay?.(task.operonId) ?? null : null;
 	const locationIndex = shouldResolveLocationCompactChips(settings)
 		? getLocationPlaceIndex(callbacks.app, settings)
@@ -1086,6 +1094,7 @@ export function buildMetadataTailRenderSignature(
 		app: callbacks.app,
 		repeatSkipDateResolver: callbacks.getRepeatSkipDates,
 		workflowStatusIdentityIndex,
+		taskLookup: renderContext?.taskLookup,
 	})
 		.map(entry => [
 			entry.key,

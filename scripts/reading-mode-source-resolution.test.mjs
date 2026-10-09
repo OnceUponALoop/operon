@@ -21,6 +21,7 @@ const methods = names.map(name => {
  return method.getText(ast);
 });
 const prelude=`
+import {createCompactTaskRenderContext} from ${JSON.stringify(path.join(root, "src/ui/compact-task-layout"))};
 import {iterateMarkdownFencedBlocks} from ${JSON.stringify(path.join(root, 'src/core/markdown-fenced-lines'))};
 import assert from 'node:assert/strict';
 import {parseTaskLine} from ${JSON.stringify(path.join(root, 'src/core/parser'))};

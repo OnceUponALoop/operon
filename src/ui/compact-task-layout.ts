@@ -61,6 +61,21 @@ export interface CompactTaskLookupContext {
 	parentTaskIds: ReadonlySet<string>;
 }
 
+/** Render-pass data only. Action callbacks must keep reading the live index. */
+export interface CompactTaskRenderContext {
+	readonly tasks: IndexedTask[];
+	readonly taskLookup: CompactTaskLookupContext;
+}
+
+export function createCompactTaskRenderContext(getAllTasks: () => IndexedTask[]): CompactTaskRenderContext {
+	let tasks: IndexedTask[] | undefined;
+	let taskLookup: CompactTaskLookupContext | undefined;
+	return {
+		get tasks() { return tasks ??= getAllTasks(); },
+		get taskLookup() { return taskLookup ??= createCompactTaskLookup(tasks ??= getAllTasks()); },
+	};
+}
+
 export interface CompactChipEntryBuildOptions {
 	app?: App | null;
 	nowEpochMs?: number;

@@ -268,6 +268,7 @@ import { operonLivePreviewTaskWikilinkOverlayExtension, operonTaskWikilinkForceR
 import { operonLivePreviewKeySuggestExtension } from './src/ui/live-preview-key-suggest';
 import { debugTaskFieldSuggestion } from './src/ui/task-field-suggest';
 import { updateReadingInlineTaskRow } from './src/ui/reading-task-row';
+import { createCompactTaskRenderContext } from './src/ui/compact-task-layout';
 import { renderCompactTaskMarkdown } from './src/ui/compact-task-markdown-renderer';
 import {
 	createIndexedReadingResolvedTask,
@@ -23102,6 +23103,7 @@ export default class OperonPlugin extends Plugin {
 				getRepeatSkipDates: (repeatSeriesId: string) => this.storage.repeatSeries.getSkipDates(repeatSeriesId),
 			};
 			const workflowStatusIdentityIndex = buildWorkflowStatusIdentityIndex(this.settings.pipelines);
+			const renderContext = createCompactTaskRenderContext(() => this.indexer.getAllTasks());
 			const listItems = el.querySelectorAll<HTMLElement>('li.task-list-item');
 			const sectionTaskResolutions = new Map<string, ReadingSectionInlineTaskResolution>();
 			const sectionCursors = new Map<string, number>();
@@ -23290,6 +23292,7 @@ export default class OperonPlugin extends Plugin {
 								} : undefined,
 								projectSerialPlacement: 'tail',
 								workflowStatusIdentityIndex,
+								renderContext,
 							});
 							if (nextRow !== previousRow) {
 								if (previousRow) cleanupOperonRenderRoot(previousRow);
