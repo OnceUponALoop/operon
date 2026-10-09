@@ -111,6 +111,10 @@ export function operonLivePreviewClassicTaskConvertExtension(callbacks: ClassicT
 
 			const filePath = callbacks.getFilePath(view);
 			const settings = callbacks.getSettings();
+			if (!settings.inlineTaskShowTasksEmojiConvertIcon && !settings.inlineTaskShowPlainCheckboxConvertIcon) {
+				this.decorations = Decoration.none;
+				return;
+			}
 			const protectedLines = tasksConversionProtectedLines(view.state.doc.toString());
 			for (let lineNumber = 1; lineNumber <= view.state.doc.lines; lineNumber++) {
 				const line = view.state.doc.line(lineNumber);

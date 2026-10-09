@@ -43,7 +43,20 @@ const button=widget.toDOM(view),event={preventDefault(){},stopPropagation(){}};
 button.listeners.click(event);assert.equal(called,1);
 view.state=viewFor('<!--\\n'+task+'\\n-->').state;
 button.listeners.click(event);button.listeners.keydown({...event,key:'Enter'});assert.equal(called,1);
-console.log('Tasks conversion hover: 11 production behavior checks passed.');
+let documentReads=0;
+const countView=viewFor(task+'\\n- [ ] Plain');
+const doc=countView.state.doc;countView.state.doc={get lines(){documentReads++;return doc.lines;},line:n=>{documentReads++;return doc.line(n);},toString:()=>{documentReads++;return doc.toString();}};
+for(const tasksIcon of [false,true])for(const plainIcon of [false,true]){
+ const settings={...DEFAULT_SETTINGS,inlineTaskShowTasksEmojiConvertIcon:tasksIcon,inlineTaskShowPlainCheckboxConvertIcon:plainIcon};
+ const configured={...callbacks,getSettings:()=>settings};documentReads=0;
+ const instance=new (operonLivePreviewClassicTaskConvertExtension(configured))(countView);
+ assert.equal(instance.decorations.length,(Number(tasksIcon)+Number(plainIcon))*2);
+ if(!tasksIcon&&!plainIcon)assert.equal(documentReads,0);
+ settings.inlineTaskShowTasksEmojiConvertIcon=false;settings.inlineTaskShowPlainCheckboxConvertIcon=false;documentReads=0;
+ instance.update({view:countView,docChanged:true,transactions:[]});assert.equal(instance.decorations.length,0);assert.equal(documentReads,0);
+ settings.inlineTaskShowTasksEmojiConvertIcon=true;instance.update({view:countView,docChanged:true,transactions:[]});assert.equal(instance.decorations.length,2);
+}
+console.log('Tasks conversion hover: 15 production behavior groups passed.');
 ` }, outfile, bundle: true, platform: 'node', format: 'esm', logLevel: 'silent', alias: { obsidian: path.join(root, 'scripts/test-support/obsidian.ts') } });
   await import(pathToFileURL(outfile).href);
  } finally { await rm(temp, { recursive: true, force: true }); }
