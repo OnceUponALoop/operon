@@ -112,7 +112,28 @@ export function createOperonHoverIndicator(options: OperonHoverIndicatorOptions)
 	setIcon(button, options.icon);
 	setAccessibleLabelWithoutTooltip(button, options.title ?? '');
 	wrapper.appendChild(button);
-	wrapper.appendChild(createTooltip(options.title, options.titleIcon, options.content, options.contentEl, options.tooltipClassName, wrapper));
+	if (options.contentElFactory) {
+		button.setAttribute('tabindex', '0');
+		let tooltip: HTMLElement | null = null;
+		const prepare = () => {
+			if (!tooltip) {
+				tooltip = createTooltip(options.title, options.titleIcon, options.content, options.contentElFactory?.(), options.tooltipClassName, wrapper);
+				wrapper.appendChild(tooltip);
+			}
+			updateTooltipPlacement(wrapper);
+		};
+		wrapper.addEventListener('mouseenter', prepare);
+		wrapper.addEventListener('focusin', prepare);
+		(wrapper as BoundTooltipTarget)._operonHoverCleanup = () => {
+			wrapper.removeEventListener('mouseenter', prepare);
+			wrapper.removeEventListener('focusin', prepare);
+			tooltip?.remove();
+			tooltip = null;
+			options.onCleanup?.();
+		};
+	} else {
+		wrapper.appendChild(createTooltip(options.title, options.titleIcon, options.content, options.contentEl, options.tooltipClassName, wrapper));
+	}
 
 	return wrapper;
 }

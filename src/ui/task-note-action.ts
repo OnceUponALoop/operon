@@ -53,7 +53,7 @@ export function createTaskNoteActionButton(options: TaskNoteActionButtonOptions)
 	setAccessibleLabelWithoutTooltip(button, options.label);
 	bindOperonHoverTooltip(button, {
 		title: options.tooltipTitle,
-		contentEl: noteValue ? createCompactTaskMarkdownTooltipContent(button, noteValue) : undefined,
+		contentElFactory: noteValue ? () => createCompactTaskMarkdownTooltipContent(button, noteValue) : undefined,
 		taskColor: options.taskColor ?? null,
 		preferredHorizontal: 'right',
 	});

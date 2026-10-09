@@ -503,12 +503,13 @@ export function buildReadingTaskRowElement(
 	if (showNoteAction && readOnly && noteValue) {
 		const noteIndicator = createOperonHoverIndicator({
 			title: t('taskEditor', 'notes'),
-			contentEl: createCompactTaskMarkdownTooltipContent(actions, noteValue),
+			contentElFactory: () => createCompactTaskMarkdownTooltipContent(actions, noteValue),
 			icon: getConfiguredKeyMappingIcon('note', callbacks.getSettings().keyMappings) || 'notebook-pen',
 			taskColor,
 			preferredHorizontal: 'right',
 		});
 		noteIndicator.querySelector('.operon-hover-trigger')?.classList.add('operon-reading-task-note-neutral', 'operon-task-chip-action');
+		identifyInlineTaskPart(noteIndicator, 'note', JSON.stringify([rawNoteValue, taskColor, settings.language, noteIndicator.outerHTML.replace(/operon-accessible-label-\d+/g, 'operon-accessible-label')]));
 		actions.appendChild(noteIndicator);
 	} else if (showNoteAction && !readOnly && (!isTerminal || noteValue)) {
 		const noteButton = createTaskNoteActionButton({
