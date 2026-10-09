@@ -512,6 +512,9 @@ export function buildReadingTaskRowElement(
 		identifyInlineTaskPart(noteIndicator, 'note', JSON.stringify([rawNoteValue, taskColor, settings.language, noteIndicator.outerHTML.replace(/operon-accessible-label-\d+/g, 'operon-accessible-label')]));
 		actions.appendChild(noteIndicator);
 	} else if (showNoteAction && !readOnly && (!isTerminal || noteValue)) {
+		// Keep action closures independent of the render-pass lookup.
+		const retainDom = options?.retainDom;
+		const owner = options?.owner;
 		const noteButton = createTaskNoteActionButton({
 			owner: row,
 			noteValue,
@@ -527,7 +530,7 @@ export function buildReadingTaskRowElement(
 					anchor,
 					operonId: task.operonId,
 					sourcePath: task.primary.filePath,
-					lifecycleOwner: resolveReadingTaskNoteLifecycleOwner(options?.retainDom ? noteButton.closest<HTMLElement>('.operon-reading-task-row') ?? row : row, options?.owner),
+					lifecycleOwner: resolveReadingTaskNoteLifecycleOwner(retainDom ? noteButton.closest<HTMLElement>('.operon-reading-task-row') ?? row : row, owner),
 					initialValue: rawNoteValue,
 					taskDescription: task.description,
 					taskColor,

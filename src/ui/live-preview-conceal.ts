@@ -380,7 +380,7 @@ export class MetadataTailWidget extends WidgetType {
 		private readonly pipelines: Pipeline[],
 		private readonly workflowStatusIdentityIndex: WorkflowStatusIdentityIndex,
 		private readonly revealSource: () => void,
-		private readonly renderContext = createCompactTaskRenderContext(callbacks.getAllTasks),
+		private renderContext: CompactTaskRenderContext | undefined = createCompactTaskRenderContext(callbacks.getAllTasks),
 		settingsSignature = buildMetadataTailSettingsSignature(callbacks.getSettings()),
 	) {
 		super();
@@ -444,7 +444,8 @@ export class MetadataTailWidget extends WidgetType {
 
 		const fieldValues = getFieldValues(this.task, this.indexedTask);
 		const operonId = this.task.operonId;
-		const tasks = this.renderContext.tasks;
+		const renderContext = this.renderContext ??= createCompactTaskRenderContext(this.callbacks.getAllTasks);
+		const tasks = renderContext.tasks;
 		const taskColor = normalizeTaskColor(fieldValues['taskColor']);
 		if (taskColor) tailWrap.setCssProps({
 			'--operon-live-hover-border': taskColor,
@@ -484,7 +485,7 @@ export class MetadataTailWidget extends WidgetType {
 				app: this.callbacks.app,
 				repeatSkipDateResolver: this.callbacks.getRepeatSkipDates,
 				workflowStatusIdentityIndex: this.workflowStatusIdentityIndex,
-				taskLookup: this.renderContext.taskLookup,
+				taskLookup: renderContext.taskLookup,
 			},
 		);
 		for (const entry of entries) {
@@ -724,6 +725,9 @@ export class MetadataTailWidget extends WidgetType {
 	}
 
 	destroy(dom: HTMLElement): void {
+		this.renderContext = undefined;
+		const owner = MetadataTailWidget.owners.get(dom);
+		if (owner) owner.renderContext = undefined;
 		cleanupOperonRenderRoot(dom);
 	}
 
@@ -744,6 +748,7 @@ export class MetadataTailWidget extends WidgetType {
 			const fresh = this.toDOM(view);
 			reconcileInlineTaskDom(dom, fresh);
 			MetadataTailWidget.owners.set(dom, this);
+			if (previous !== this) previous.renderContext = undefined;
 			return true;
 		}
 		const updateAction = (selector: string, active: boolean, icon: string, label: string): void => {
@@ -758,6 +763,8 @@ export class MetadataTailWidget extends WidgetType {
 		};
 		updateAction('.operon-task-timer-action', this.trackingSnapshot, this.trackingSnapshot ? 'square' : 'play', t('tooltips', this.trackingSnapshot ? 'stopTimer' : 'startTimer'));
 		updateAction('[data-inline-action="pin"]', this.pinnedSnapshot, this.pinnedSnapshot ? 'pin-off' : 'pin', t('contextMenu', this.pinnedSnapshot ? 'unpinTask' : 'pinTask'));
+		// Retained handlers may own old widgets; only current decorations need the full render snapshot.
+		if (previous !== this) previous.renderContext = undefined;
 		return true;
 	}
 
