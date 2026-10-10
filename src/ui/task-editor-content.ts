@@ -3450,7 +3450,7 @@ export class TaskEditorContent {
   if (!entry || !surface) return;
   const populated = !isEmptyFilePropertyValue(entry.value);
   surface.row.hidden = !populated;
-  surface.action.hidden = !populated;
+  surface.action.hidden = !populated && !entry.baseline?.present && !entry.inline?.present;
   surface.action.toggleClass('is-active', populated);
   surface.action.disabled = !this.canEditFileProperty(entry);
   const label = surface.row.querySelector<HTMLButtonElement>('.operon-editor-desktop-property-label');
