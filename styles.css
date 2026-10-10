@@ -36388,6 +36388,11 @@ body .operon-task-editor:not(.operon-task-editor-mobile) button.operon-editor-de
 .operon-task-creator-template-error.is-hidden { display: none; }
 
 /* Creator focus mode: preserve hit targets and wrapping so picker anchors never move. */
+/* Cover the existing 14px body gap without moving controls or picker anchors. */
+body:not(.is-mobile) .operon-task-creator-toolbar {
+	padding-bottom: 14px;
+	margin-bottom: -14px;
+}
 body:not(.is-mobile) .operon-task-creator-tool {
 	position: relative;
 }
