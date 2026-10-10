@@ -7,7 +7,7 @@ import {
 	getNextQuarterHourSlotIndex,
 	getQuarterHourSlots,
 	getTimeDigitsFromCanonicalTime,
-	adjacentTimeSlotIndex,
+	moveTimeSuggestion,
 	isValidTimePrefix,
 	resolveTimeInput,
 	matchQuarterHourSlots,
@@ -141,8 +141,9 @@ export function showTimePicker(anchor: HTMLElement | DOMRect, options: TimePicke
 			button.textContent = formatTimeLabel(slot);
 			button.addEventListener('mousemove', () => {
 				if (activeTimeIndex === index) return;
+				timeResults.querySelector('.is-active')?.classList.remove('is-active');
 				activeTimeIndex = index;
-				renderTimeResults();
+				button.classList.add('is-active');
 			});
 			button.addEventListener('mousedown', event => {
 				event.preventDefault();
@@ -173,11 +174,13 @@ export function showTimePicker(anchor: HTMLElement | DOMRect, options: TimePicke
 	};
 
 	const moveActiveTime = (delta: number) => {
-		activeTimeIndex = adjacentTimeSlotIndex(resolveTimeInput(timeBuffer, timeFormat, currentMeridiem) ?? (activeTimeIndex === null ? null : slots[activeTimeIndex]?.canonical ?? null), delta, getNextQuarterHourSlotIndex());
+		activeTimeIndex = moveTimeSuggestion(visibleTimeIndices, activeTimeIndex, delta);
+		if (activeTimeIndex === null) return;
 		currentMeridiem = resolveMeridiem(slots[activeTimeIndex].hour24);
 		timeBuffer = getTimeDigitsFromCanonicalTime(slots[activeTimeIndex].canonical, timeFormat, currentMeridiem).padEnd(4, '_').slice(0, 4);
 		syncTimeInputValue();
-		refreshTimeMatches();
+		refreshMeridiemUi();
+		renderTimeResults();
 	};
 
 	const updateTimeFromDigitInput = (nextBuffer: string, caretPosition: number) => {

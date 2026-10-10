@@ -183,13 +183,6 @@ export function resolveTimeInput(digits: string, timeFormat: TimeFormat, meridie
 	return `${String(timeFormat === '12h' ? toCanonicalHour24(hour, meridiem) : hour).padStart(2, '0')}:${digits.slice(2)}`;
 }
 
-export function adjacentTimeSlotIndex(time: string | null, delta: number, fallbackIndex: number): number {
-	if (!time) return getWrappedSlotIndex(fallbackIndex + delta);
-	const [hour, minute] = time.split(':').map(Number);
-	const index = (hour * 60 + minute) / 15;
-	return getWrappedSlotIndex((delta > 0 ? Math.floor(index) : Math.ceil(index)) + delta);
-}
-
 export function matchQuarterHourSlots(options: {
 	digits: string;
 	anchorIndex: number;
@@ -297,4 +290,13 @@ function shiftDatePartByDays(datePart: string, deltaDays: number): string {
 		0,
 	);
 	return `${shifted.getFullYear()}-${String(shifted.getMonth() + 1).padStart(2, '0')}-${String(shifted.getDate()).padStart(2, '0')}`;
+}
+
+
+/** Move only within the currently rendered suggestions, keeping list boundaries. */
+export function moveTimeSuggestion(indices: readonly number[], active: number | null, delta: number): number | null {
+ if (!indices.length) return null;
+ const position = active === null ? -1 : indices.indexOf(active);
+ if (position < 0) return indices[delta > 0 ? 0 : indices.length - 1];
+ return indices[(position + delta + indices.length) % indices.length];
 }

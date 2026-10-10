@@ -1,4 +1,4 @@
-import { resolveTimeInput, isValidTimePrefix, matchQuarterHourSlots, adjacentTimeSlotIndex } from '../src/ui/field-pickers/datetime-time-grid';
+import { moveTimeSuggestion, resolveTimeInput, isValidTimePrefix, matchQuarterHourSlots } from '../src/ui/field-pickers/datetime-time-grid';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import test from 'node:test';
@@ -351,9 +351,6 @@ test('typed minute precision stays independent of quarter-hour suggestions', () 
  const match = matchQuarterHourSlots({ digits: '1652', anchorIndex: 0, timeFormat: '24h', meridiem: 'pm' });
  assert.equal(match.additionalSlots?.[0].canonical, '16:52');
  assert.equal(match.visibleIndices.length, 1);
- assert.equal(adjacentTimeSlotIndex('16:52', 1, 0), 68);
- assert.equal(adjacentTimeSlotIndex('16:52', -1, 0), 67);
- assert.equal(adjacentTimeSlotIndex('23:59', 1, 0), 0);
 });
 
 
@@ -370,4 +367,15 @@ test('minute prefixes progressively offer ten exact minutes in both clock format
   assert.equal(match.additionalSlots?.length, 10);
  }
  assert.equal(matchQuarterHourSlots({ digits: '106', anchorIndex: 0, timeFormat: '24h', meridiem: 'am' }).visibleIndices.length, 0);
+});
+
+
+test('suggestion arrows stay inside the rendered list', () => {
+ const list = [96, 97, 98];
+ assert.equal(moveTimeSuggestion(list, null, 1), 96);
+ assert.equal(moveTimeSuggestion(list, null, -1), 98);
+ assert.equal(moveTimeSuggestion(list, 96, 1), 97);
+ assert.equal(moveTimeSuggestion(list, 98, 1), 96);
+ assert.equal(moveTimeSuggestion(list, 96, -1), 98);
+ assert.equal(moveTimeSuggestion([], null, 1), null);
 });

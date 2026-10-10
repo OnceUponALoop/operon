@@ -20,7 +20,7 @@ import {
 	getQuarterHourSlots,
 	getSlotIndexForCanonicalTime,
 	getTimeDigitsFromCanonicalTime,
-	adjacentTimeSlotIndex,
+	moveTimeSuggestion,
 	isValidTimePrefix,
 	resolveTimeInput,
 	matchQuarterHourSlots,
@@ -375,7 +375,7 @@ export function renderDatetimePickerContent(
 				if (activeTimeIndex === index) return;
 				const previousVisualIndex = activeTimeIndex === null ? -1 : visibleTimeIndices.indexOf(activeTimeIndex);
 				const previousButton = previousVisualIndex >= 0
-					? results.children[previousVisualIndex] as HTMLElement | undefined
+					? timeResults.children[previousVisualIndex] as HTMLElement | undefined
 					: undefined;
 				activeTimeIndex = index;
 				currentMeridiem = resolveMeridiem(slot.hour24);
@@ -510,13 +510,14 @@ export function renderDatetimePickerContent(
 	};
 
 	const moveActiveTime = (delta: number) => {
-		activeTimeIndex = adjacentTimeSlotIndex(resolveTimeInput(timeBuffer, timeFormat, currentMeridiem) ?? (activeTimeIndex === null ? null : slots[activeTimeIndex]?.canonical ?? null), delta, getNextQuarterHourSlotIndex());
+		activeTimeIndex = moveTimeSuggestion(visibleTimeIndices, activeTimeIndex, delta);
+		if (activeTimeIndex === null) return;
 		currentMeridiem = resolveMeridiem(slots[activeTimeIndex].hour24);
 		hasTouchedTime = true;
 		preserveOffGridCommit = false;
 		timeBuffer = getTimeDigitsFromCanonicalTime(slots[activeTimeIndex].canonical, timeFormat, currentMeridiem).padEnd(4, '_').slice(0, 4);
 		syncTimeInputValue();
-		refreshTimeMatches();
+		renderTimeResults();
 	};
 
 	const updateTimeFromDigitInput = (nextBuffer: string, caretPosition: number) => {
