@@ -357,6 +357,7 @@ test('typed minute precision stays independent of quarter-hour suggestions', () 
 test('minute prefixes progressively offer ten exact minutes in both clock formats', () => {
  for (const prefix of ['100', '101', '102', '105']) {
   const match = matchQuarterHourSlots({ digits: prefix, anchorIndex: 0, timeFormat: '24h', meridiem: 'am' });
+  assert.equal(match.activeIndex, match.visibleIndices[0]);
   assert.deepEqual(match.additionalSlots?.map(slot => slot.canonical), Array.from({ length: 10 }, (_, i) => `10:${prefix[2]}${i}`));
  }
  const hour = matchQuarterHourSlots({ digits: '10', anchorIndex: 0, timeFormat: '24h', meridiem: 'am' });

@@ -211,7 +211,7 @@ export function matchQuarterHourSlots(options: {
 		});
 		return {
 			additionalSlots,
-			activeIndex: exactTime ? TOTAL_SLOTS : null,
+			activeIndex: TOTAL_SLOTS,
 			visibleIndices: additionalSlots.map(slot => slot.index),
 			exact: !!exactTime,
 		};
