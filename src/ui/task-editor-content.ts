@@ -1789,6 +1789,7 @@ export class TaskEditorContent {
 				dateDisplayFormat: this.settings.dateDisplayFormat,
 				fieldKey: key,
 				value: this.fieldValues[key],
+				initialDate: key === 'datetimeStart' ? this.fieldValues['dateScheduled'] : undefined,
 				canRemove: !!this.fieldValues[key],
 				onSelect: value => {
 					this.applyDraftFieldRules({ [key]: value }, [key]);
@@ -4645,6 +4646,7 @@ export class TaskEditorContent {
 				dateDisplayFormat: this.settings.dateDisplayFormat,
 				fieldKey: key,
 				value: this.fieldValues[key],
+				initialDate: key === 'datetimeStart' ? this.fieldValues['dateScheduled'] : undefined,
 				canRemove: !!this.fieldValues[key],
 				onSelect: value => {
 					this.applyDraftFieldRules({ [key]: value }, [key]);

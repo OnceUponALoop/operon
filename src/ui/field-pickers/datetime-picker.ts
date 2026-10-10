@@ -65,6 +65,8 @@ export interface DatetimePickerOptions {
 	fieldKey?: string;
 	language?: DatePickerLang;
 	value?: string;
+	/** Date-only seed for an empty picker; focuses time without creating a value. */
+	initialDate?: string;
 	retainInputFocus?: boolean;
 	classNames?: DatetimePickerClassNames;
 	onSelect: (value: string) => DatetimePickerActionResult;
@@ -86,6 +88,8 @@ export interface DatetimePickerContentOptions {
 	fieldKey?: string;
 	language?: DatePickerLang;
 	value?: string;
+	/** Date-only seed for an empty picker; focuses time without creating a value. */
+	initialDate?: string;
 	classNames?: Omit<DatetimePickerClassNames, 'panel'>;
 	onSelect: (value: string) => void;
 	onRemove?: () => void;
@@ -128,6 +132,7 @@ export function showDatetimePicker(anchor: HTMLElement | DOMRect, options: Datet
 		fieldKey: options.fieldKey,
 		language: options.language,
 		value: options.value,
+		initialDate: options.initialDate,
 		classNames: options.classNames,
 		onSelect: value => {
 			completed = true;
@@ -185,6 +190,8 @@ export function renderDatetimePickerContent(
 	const strings = getDatePickerLocaleStrings(language);
 	let slots = getQuarterHourSlots();
 	const initial = parseStoredDatetimeValue(options.value);
+	const initialDate = !options.value?.trim() ? normalizeOperonDateKey(options.initialDate ?? '') : null;
+	if (initialDate) initial.datePart = initialDate;
 	const timeFormat = options.settings.timeFormat;
 	const context = {
 		fieldKey: options.fieldKey ?? 'datetimeStart',
@@ -706,6 +713,10 @@ export function renderDatetimePickerContent(
 	return {
 		requestFocus: () => {
 			if (!input.isConnected) return;
+			if (initialDate) {
+				focusTimeInput();
+				return;
+			}
 			focusFloatingInput(input);
 			if (typeof input.select === 'function') input.select();
 		},
