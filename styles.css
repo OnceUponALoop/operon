@@ -24943,6 +24943,36 @@ button.operon-kanban-column-count-button:focus-visible {
 	scrollbar-gutter: stable;
 }
 
+/* A desktop board without lanes uses the available pane height, not a card count. */
+.operon-kanban-board.is-no-swimlanes:not(.is-mobile-layout) {
+	--operon-kanban-cell-height-limit: none;
+	--operon-kanban-cell-min-height: 0px;
+}
+
+.operon-kanban-board.is-no-swimlanes:not(.is-mobile-layout) .operon-kanban-grid-content {
+	height: 100%;
+	min-height: 0;
+}
+
+.operon-kanban-board.is-no-swimlanes:not(.is-mobile-layout) .operon-kanban-header-row {
+	flex-shrink: 0;
+}
+
+.operon-kanban-board.is-no-swimlanes:not(.is-mobile-layout) .operon-kanban-row {
+	flex: 1 1 0;
+	min-height: 0;
+}
+
+.operon-kanban-board.is-no-swimlanes:not(.is-mobile-layout) .operon-kanban-cell {
+	min-height: 0;
+	overflow-y: auto;
+	overscroll-behavior: contain;
+}
+
+.operon-kanban-board.is-no-swimlanes:not(.is-mobile-layout) .operon-kanban-card {
+	flex-shrink: 0;
+}
+
 .operon-kanban-root.is-mobile-layout {
 	transition: gap 160ms ease;
 }
