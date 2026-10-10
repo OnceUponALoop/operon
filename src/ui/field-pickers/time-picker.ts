@@ -7,7 +7,9 @@ import {
 	getNextQuarterHourSlotIndex,
 	getQuarterHourSlots,
 	getTimeDigitsFromCanonicalTime,
-	getWrappedSlotIndex,
+	adjacentTimeSlotIndex,
+	isValidTimePrefix,
+	resolveTimeInput,
 	matchQuarterHourSlots,
 	parseStoredDatetimeValue,
 	QuarterHourSlot,
@@ -114,7 +116,7 @@ export function showTimePicker(anchor: HTMLElement | DOMRect, options: TimePicke
 	};
 
 	const refreshApplyState = () => {
-		applyButton.disabled = activeTimeIndex === null || visibleTimeIndices.length === 0;
+		applyButton.disabled = !resolveTimeInput(timeBuffer, timeFormat, currentMeridiem);
 	};
 
 	const scrollActiveTimeIntoView = () => {
@@ -170,7 +172,8 @@ export function showTimePicker(anchor: HTMLElement | DOMRect, options: TimePicke
 	};
 
 	const moveActiveTime = (delta: number) => {
-		activeTimeIndex = getWrappedSlotIndex((activeTimeIndex ?? getNextQuarterHourSlotIndex()) + delta);
+		activeTimeIndex = adjacentTimeSlotIndex(resolveTimeInput(timeBuffer, timeFormat, currentMeridiem), delta, activeTimeIndex ?? getNextQuarterHourSlotIndex());
+		currentMeridiem = resolveMeridiem(slots[activeTimeIndex].hour24);
 		timeBuffer = getTimeDigitsFromCanonicalTime(slots[activeTimeIndex].canonical, timeFormat, currentMeridiem).padEnd(4, '_').slice(0, 4);
 		syncTimeInputValue();
 		refreshTimeMatches();
@@ -189,22 +192,28 @@ export function showTimePicker(anchor: HTMLElement | DOMRect, options: TimePicke
 	};
 
 	const acceptTimeDigit = (digit: string, editableIndex: number): void => {
-		if (!/^\d$/.test(digit)) return;
 		const digits = timeBuffer.split('');
+		const start = timeInput.selectionStart ?? 0;
+		const end = timeInput.selectionEnd ?? start;
+		for (let index = 0; index < 4; index++) {
+			if (EDITABLE_CARET_POSITIONS[index] >= start && EDITABLE_CARET_POSITIONS[index] < end) digits[index] = '_';
+		}
+		if (digits.slice(0, editableIndex).some(char => !/\d/.test(char))) return;
 		digits[editableIndex] = digit;
-		const prefixDigits = getMatchingDigits(digits.join(''), editableIndex);
-		const prefixMatch = prefixDigits
-			? matchQuarterHourSlots({
-				digits: prefixDigits,
-				anchorIndex: activeTimeIndex ?? getNextQuarterHourSlotIndex(),
-				timeFormat,
-				meridiem: currentMeridiem,
-			})
-			: null;
-		if (prefixDigits && (!prefixMatch || prefixMatch.visibleIndices.length === 0)) return;
-		const nextEditable = Math.min(3, editableIndex + 1);
-		updateTimeFromDigitInput(digits.join(''), EDITABLE_CARET_POSITIONS[nextEditable]);
+		if (!isValidTimePrefix(digits.slice(0, editableIndex + 1).join(''), timeFormat, false)) return;
+		// Clear an invalid suffix when changing the hour, but never round the minute.
+		const full = digits.join('');
+		if (!full.includes('_') && !isValidTimePrefix(full, timeFormat, false)) {
+			for (let index = editableIndex + 1; index < 4; index++) digits[index] = '_';
+		}
+		updateTimeFromDigitInput(digits.join(''), EDITABLE_CARET_POSITIONS[Math.min(3, editableIndex + 1)]);
 	};
+
+	// Native input events cover paste and keyboards that do not emit digit keydowns.
+	timeInput.addEventListener('input', () => {
+		const digits = timeInput.value.trim().replace(':', '');
+		updateTimeFromDigitInput(/^[\d_]{0,4}$/.test(digits) ? digits : '____', timeInput.selectionStart ?? 0);
+	});
 
 	const setMeridiem = (next: 'am' | 'pm') => {
 		if (currentMeridiem === next) return;
@@ -227,6 +236,7 @@ export function showTimePicker(anchor: HTMLElement | DOMRect, options: TimePicke
 	});
 
 	timeInput.addEventListener('keydown', event => {
+		if (event.ctrlKey || event.metaKey || event.altKey || event.isComposing) return;
 		if (event.key === 'ArrowDown') {
 			event.preventDefault();
 			moveActiveTime(1);
@@ -266,14 +276,16 @@ export function showTimePicker(anchor: HTMLElement | DOMRect, options: TimePicke
 			acceptTimeDigit(event.key, editableIndex);
 			return;
 		}
-		if (event.key === 'Enter' && activeTimeIndex !== null) {
+		if (event.key === 'Enter') {
 			event.preventDefault();
-			commit(slots[activeTimeIndex].canonical);
+			const time = resolveTimeInput(timeBuffer, timeFormat, currentMeridiem);
+			if (time) commit(time);
 		}
 	});
 
 	applyButton.addEventListener('click', () => {
-		if (activeTimeIndex !== null) commit(slots[activeTimeIndex].canonical);
+		const time = resolveTimeInput(timeBuffer, timeFormat, currentMeridiem);
+		if (time) commit(time);
 	});
 
 	if (!initial.timePart) {

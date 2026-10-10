@@ -164,6 +164,31 @@ export function getTimeDigitsFromCanonicalTime(
 	return `${String(hour12).padStart(2, '0')}${String(minute).padStart(2, '0')}`;
 }
 
+/** Validate typed clock digits independently of the quarter-hour suggestions. */
+export function isValidTimePrefix(digits: string, timeFormat: TimeFormat, allowEndOfDay = false): boolean {
+	if (!/^\d{0,4}$/.test(digits)) return false;
+	const maxHour = timeFormat === '12h' ? 12 : allowEndOfDay ? 24 : 23;
+	if (digits.length === 1) return Number(digits) <= Math.floor(maxHour / 10);
+	if (digits.length < 2) return true;
+	const hour = Number(digits.slice(0, 2));
+	if (hour > maxHour || (timeFormat === '12h' && hour === 0)) return false;
+	if (hour === 24) return /^0*$/.test(digits.slice(2));
+	return digits.length < 3 || Number(digits[2]) <= 5;
+}
+
+export function resolveTimeInput(digits: string, timeFormat: TimeFormat, meridiem: 'am' | 'pm'): string | null {
+	if (digits.length !== 4 || !isValidTimePrefix(digits, timeFormat)) return null;
+	const hour = Number(digits.slice(0, 2));
+	return `${String(timeFormat === '12h' ? toCanonicalHour24(hour, meridiem) : hour).padStart(2, '0')}:${digits.slice(2)}`;
+}
+
+export function adjacentTimeSlotIndex(time: string | null, delta: number, fallbackIndex: number): number {
+	if (!time) return getWrappedSlotIndex(fallbackIndex + delta);
+	const [hour, minute] = time.split(':').map(Number);
+	const index = (hour * 60 + minute) / 15;
+	return getWrappedSlotIndex((delta > 0 ? Math.floor(index) : Math.ceil(index)) + delta);
+}
+
 export function matchQuarterHourSlots(options: {
 	digits: string;
 	anchorIndex: number;
@@ -182,11 +207,11 @@ export function matchQuarterHourSlots(options: {
 
 	const matching = QUARTER_HOUR_SLOTS.filter(slot => getDisplayCompact(slot, options.timeFormat, options.meridiem).startsWith(digits));
 	if (matching.length === 0) {
-		return {
-			activeIndex: null,
-			visibleIndices: [],
-			exact: false,
-		};
+		// A valid non-quarter-hour time keeps nearby suggestions without selecting one.
+		const nearby = isValidTimePrefix(digits, options.timeFormat)
+			? QUARTER_HOUR_SLOTS.filter(slot => getDisplayCompact(slot, options.timeFormat, options.meridiem).startsWith(digits.slice(0, 2)))
+			: [];
+		return { activeIndex: null, visibleIndices: nearby.map(slot => slot.index), exact: false };
 	}
 
 	const activeIndex = matching[0].index;

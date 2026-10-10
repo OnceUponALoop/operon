@@ -1,3 +1,4 @@
+import { resolveTimeInput, isValidTimePrefix, matchQuarterHourSlots, adjacentTimeSlotIndex } from '../src/ui/field-pickers/datetime-time-grid';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import test from 'node:test';
@@ -335,4 +336,22 @@ test('settings backup exports and restores date display format through portable 
 	});
 	assert.equal(restored.ok, true);
 	assert.equal(restored.restorePlan?.candidateSettings.dateDisplayFormat, 'DD/MM/YYYY');
+});
+
+
+test('typed minute precision stays independent of quarter-hour suggestions', () => {
+ for (const digits of ['1652', '1343', '0001', '2359']) {
+  assert.equal(resolveTimeInput(digits, '24h', 'am'), `${digits.slice(0, 2)}:${digits.slice(2)}`);
+ }
+ for (const digits of ['2400', '2360', '1699', '165', '____']) assert.equal(resolveTimeInput(digits, '24h', 'am'), null);
+ assert.equal(resolveTimeInput('1252', '12h', 'am'), '00:52');
+ assert.equal(resolveTimeInput('1252', '12h', 'pm'), '12:52');
+ assert.equal(isValidTimePrefix('2400', '24h', true), true);
+ assert.equal(isValidTimePrefix('2401', '24h', true), false);
+ const match = matchQuarterHourSlots({ digits: '1652', anchorIndex: 0, timeFormat: '24h', meridiem: 'pm' });
+ assert.equal(match.activeIndex, null);
+ assert.deepEqual(match.visibleIndices, [64, 65, 66, 67]);
+ assert.equal(adjacentTimeSlotIndex('16:52', 1, 0), 68);
+ assert.equal(adjacentTimeSlotIndex('16:52', -1, 0), 67);
+ assert.equal(adjacentTimeSlotIndex('23:59', 1, 0), 0);
 });
