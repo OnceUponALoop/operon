@@ -13,15 +13,20 @@ async function fixture(yaml:string) {
  await ui.select({kind:'folder',path:'a.md',id:'a',name:'A'},'Task');
  return ui;
 }
-for(const [key,type,source,value] of [['Client','text','hello','hello'],['Client','text','',null],['Count','number','0',0],['Checked','checkbox','false',false],['Day','date','2026-10-10','2026-10-10'],['Time','datetime','2026-10-10T12:34:56','2026-10-10T12:34:56'],['Values','list','[3,"3",Ali,Ali]',[3,'3','Ali','Ali']],['Values','list','[]',[]],['Values','list','[""]',['']]] as const) test(`snapshot serializes ${key} ${source} to both sources`,async()=>{
+for(const [key,type,source,value] of [['Client','text','hello','hello'],['Client','text','',null],['Client','text','""',''],['Count','number','0',0],['Checked','checkbox','false',false],['Day','date','2026-10-10','2026-10-10'],['Time','datetime','2026-10-10T12:34:56','2026-10-10T12:34:56'],['Values','list','[3,"3",Ali,Ali]',[3,'3','Ali','Ali']],['Values','list','[]',[]],['Values','list','[""]',['']]] as const) test(`snapshot serializes ${key} ${source} to both sources`,async()=>{
  const ui=await fixture(`${key}: ${source}`);
+ const before=ui.submission('inline','Task','keep-completed');
  for (const mode of ['file','inline'] as const) {
   const output=prepareCreationCommit(ui.submission(mode,'Task','keep-completed'),context,{operonId:'abc1234',now:'2026-10-11T09:00:00'});
   const yaml=parseYaml(splitFrontmatterDocument(output.fileContent()).frontmatter!);
   assert.deepEqual(yaml[key],value);
   const inline=readInlinePropertyProjection(output.inlineLine,'',{[key]:type},[...context.keyMappings],{version:1,entries:output.definitions});
-  assert.deepEqual(inline?.properties[0].value,value===null && type==='text' ? '' : value);
+  if (mode === 'inline' && (value === null || value === '' || Array.isArray(value) && value.length === 0)) {
+   assert.equal(output.inlineLine.includes(`{{${key}::`),false);
+   assert.equal(output.definitions.length,0);
+  } else assert.deepEqual(inline?.properties[0].value,value===null && type==='text' ? '' : value);
   assert.equal(output.inlineLine.includes('Body'),false);
+  assert.deepEqual(ui.submission('inline','Task','keep-completed'),before);
  }
 });
 test('frozen date, malicious description and manual changes are authoritative',async()=>{

@@ -98,6 +98,7 @@ export function prepareCreationCommit(input: PreparedCreationInput, context: Cre
   const value = read.value;
   const name = key ? getVisiblePropertyName(key, mappings) : property.sourceName;
   values.set(property.id, { name, value });
+  if (input.createType === 'inline' && (value === null || value === '' || Array.isArray(value) && value.length === 0)) continue;
   if (key === 'tags') { tags = Array.isArray(value) ? value.map(String) : []; continue; }
   if (property.interpretation === 'native') {
    const definition = resolveInlinePropertyDefinition(name, property.type, mappings, context.inlineDefinitions);
