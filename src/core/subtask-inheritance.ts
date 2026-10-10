@@ -121,7 +121,7 @@ function applyInheritedField(
 	}
 }
 
-export function resolveSubtaskInitialFieldsFromParentValues(
+function resolveInheritedFields(
 	parentTaskId: string | null,
 	parentFieldValues: Record<string, string> | null | undefined,
 	settings: OperonSettings,
@@ -136,6 +136,18 @@ export function resolveSubtaskInitialFieldsFromParentValues(
 	}
 
 	return inherited;
+}
+
+/** New tasks use the configured default even when priority inheritance is disabled. */
+export function resolveSubtaskInitialFieldsFromParentValues(
+	parentTaskId: string | null,
+	parentFieldValues: Record<string, string> | null | undefined,
+	settings: OperonSettings,
+	parentTags?: readonly string[] | null,
+): SubtaskInitialFields {
+	const fields = resolveInheritedFields(parentTaskId, parentFieldValues, settings, parentTags);
+	if (!fields.priority && settings.defaultPriority?.trim()) fields.priority = settings.defaultPriority.trim();
+	return fields;
 }
 
 export function getSubtaskInitialFieldKeys(inherited: SubtaskInitialFields): string[] {
@@ -182,7 +194,7 @@ export function resolveParentLinkInheritance(
 	if (!parentId || parentId === child.operonId || parentId === (child.fieldValues.parentTask ?? '').trim()) return {};
 	const parent = getParent(parentId);
 	if (!parent) return {};
-	const inherited = resolveSubtaskInitialFieldsFromParentValues(parentId, parent.fieldValues, settings, parent.tags);
+	const inherited = resolveInheritedFields(parentId, parent.fieldValues, settings, parent.tags);
 	const additions: Record<string, string> = {};
 	for (const [key, value] of Object.entries(inherited)) {
 		if (key === 'parentTask' || value === undefined) continue;

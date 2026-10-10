@@ -1,10 +1,11 @@
+import { buildSubtaskTaskCreatorDraft, reconcileTaskCreatorParentInheritanceForDraft, buildTaskCreatorSubmitFieldSeed } from '../src/ui/task-creator-modal';
 import { parseYaml } from 'obsidian';
 import { TaskWriter } from '../src/core/task-writer';
 import { readLosslessYamlListField } from '../src/core/yaml-fields';
 import assert from 'node:assert/strict';
 import test from 'node:test';
 import { DEFAULT_SETTINGS, migrateSettings } from '../src/types/settings';
-import { resolveParentLinkInheritance, loadParentLinkListSource as loadListSource } from '../src/core/subtask-inheritance';
+import { resolveSubtaskInitialFieldsFromParentValues, resolveParentLinkInheritance, loadParentLinkListSource as loadListSource } from '../src/core/subtask-inheritance';
 import { buildOperonDataPackageFromSettings, composeOperonSettingsFromDataPackage } from '../src/storage/operon-data-package';
 import { parseListValue } from '../src/core/parser';
 
@@ -106,4 +107,41 @@ test('parent linking preserves literal backslashes and escaped semicolons', () =
 test('native parent lists reject ambiguous backslash boundaries before projection', async () => {
  const task = { ...parent, operonId: 'parent1', primary: { format: 'yaml' as const, filePath: 'Parent.md', lineNumber: 0 } };
  await assert.rejects(loadListSource(task, settings, async () => ({ operonId: 'parent1', contexts: ['A\\', 'B'] })), /cannot be represented losslessly/);
+});
+
+for (const defaultPriority of ['A', 'High', 'Önemli', '']) {
+ for (const inheritPriority of [true, false]) {
+  for (const parentPriority of ['Parent', '']) {
+   test(`new child priority: default=${defaultPriority}, inherit=${inheritPriority}, parent=${parentPriority}`, () => {
+    const configured = { ...DEFAULT_SETTINGS, defaultPriority, childTaskInheritanceFields: inheritPriority ? ['priority'] : [] };
+    const fields = resolveSubtaskInitialFieldsFromParentValues('parent1', { priority: parentPriority }, configured);
+    const expected = inheritPriority && parentPriority ? parentPriority : defaultPriority;
+    assert.equal(fields.priority, expected || undefined);
+    assert.equal(fields.parentTask, 'parent1');
+    const existingChild = { operonId: 'child01', fieldValues: {}, tags: [] };
+    const linked = resolveParentLinkInheritance(existingChild, { parentTask: 'parent1' },
+     { ...configured, inheritPropertiesOnParentLink: true }, () => ({ fieldValues: { priority: parentPriority }, tags: [] }));
+    assert.equal(linked.priority, inheritPriority ? (parentPriority || defaultPriority || undefined) : undefined);
+   });
+  }
+ }
+}
+test('parentless creation honors no-priority and arbitrary default labels', () => {
+ for (const defaultPriority of ['', 'Medium']) {
+  const fields = resolveSubtaskInitialFieldsFromParentValues(null, null, { ...DEFAULT_SETTINGS, defaultPriority, childTaskInheritanceFields: [] });
+  assert.equal(fields.priority, defaultPriority || undefined);
+ }
+});
+
+test('Task Creator seeds the default but preserves explicit priority and explicit no-priority', () => {
+ const configured = { ...DEFAULT_SETTINGS, defaultPriority: 'High', childTaskInheritanceFields: [] };
+ for (const choice of ['Medium', '']) {
+  const draft = buildSubtaskTaskCreatorDraft('parent1', { priority: 'Parent' }, [], configured);
+  assert.equal(draft.fieldValues.priority, 'High');
+  draft.fieldValues.priority = choice; draft.explicitFieldKeys.push('priority');
+  reconcileTaskCreatorParentInheritanceForDraft(draft, { priority: 'Other' }, [], configured);
+  const seed = buildTaskCreatorSubmitFieldSeed(draft);
+  assert.equal(seed.fieldValues.priority, choice);
+  assert.equal(seed.explicitEmptyFieldKeys.has('priority'), choice === '');
+ }
 });
