@@ -110,8 +110,10 @@ export interface TaskCreatorModalOptions {
 	preventFocusScroll?: boolean;
 }
 
+type TaskCreatorSuggestion = TaskFieldSuggestionItem | { action: 'template'; visibleName: string };
+
 interface SuggestionState {
-	items: TaskFieldSuggestionItem[];
+	items: TaskCreatorSuggestion[];
 	activeIndex: number;
 	range: { start: number; end: number };
 }
@@ -1137,7 +1139,13 @@ export class TaskCreatorModal extends Modal {
 			this.draft.fieldValues,
 			'creator',
 		);
-		if (!resolution.trigger || resolution.items.length === 0) {
+		const items: TaskCreatorSuggestion[] = [...resolution.items];
+		if (resolution.trigger && 'template'.startsWith(resolution.token.toLowerCase())
+			&& this.templateButtonEl && !this.templateButtonEl.disabled) {
+			const visibleName = this.templateButtonEl.querySelector('.operon-task-creator-template-label')?.textContent;
+			if (visibleName) items.unshift({ action: 'template', visibleName });
+		}
+		if (!resolution.trigger || items.length === 0) {
 			if (resolution.suppressionReason) {
 				debugTaskFieldSuggestion('task-creator', resolution.suppressionReason, {
 					token: resolution.token,
@@ -1148,8 +1156,8 @@ export class TaskCreatorModal extends Modal {
 		}
 
 		this.suggestionState = {
-			items: resolution.items,
-			activeIndex: Math.min(this.suggestionState?.activeIndex ?? 0, resolution.items.length - 1),
+			items,
+			activeIndex: Math.min(this.suggestionState?.activeIndex ?? 0, items.length - 1),
 			range: {
 				start: resolution.trigger.start,
 				end: resolution.trigger.end,
@@ -1218,7 +1226,7 @@ export class TaskCreatorModal extends Modal {
 		this.renderSuggestions();
 	}
 
-	private chooseSuggestion(item: TaskFieldSuggestionItem | null): void {
+	private chooseSuggestion(item: TaskCreatorSuggestion | null): void {
 		if (!item || !this.suggestionState) return;
 		const nextCaret = this.suggestionState.range.start;
 		this.descriptionCompactEditor?.replaceRange?.(
@@ -1228,7 +1236,8 @@ export class TaskCreatorModal extends Modal {
 		);
 		this.closeSuggestions();
 		this.focusDescription(nextCaret);
-		this.openFieldPicker(item.canonicalKey);
+		if ('action' in item) this.openFileTemplatePicker();
+		else this.openFieldPicker(item.canonicalKey);
 	}
 
 	private openFieldPicker(
