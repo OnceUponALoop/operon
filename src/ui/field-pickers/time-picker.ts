@@ -33,7 +33,7 @@ export function showTimePicker(anchor: HTMLElement | DOMRect, options: TimePicke
 	let completed = false;
 	const app = resolvePickerApp(anchor, options.app);
 	const timeFormat = options.settings.timeFormat;
-	const slots = getQuarterHourSlots();
+	let slots = getQuarterHourSlots();
 	const initial = parseStoredDatetimeValue(options.value);
 	const { panel, close } = createFloatingPanel(anchor, 'operon-floating-panel operon-time-picker-panel', () => {
 		if (!completed) options.onCancel?.();
@@ -165,6 +165,7 @@ export function showTimePicker(anchor: HTMLElement | DOMRect, options: TimePicke
 			timeFormat,
 			meridiem: currentMeridiem,
 		});
+		slots = match.additionalSlots ? [...getQuarterHourSlots(), ...match.additionalSlots] : getQuarterHourSlots();
 		activeTimeIndex = match.activeIndex;
 		visibleTimeIndices = match.visibleIndices;
 		refreshMeridiemUi();
@@ -172,7 +173,7 @@ export function showTimePicker(anchor: HTMLElement | DOMRect, options: TimePicke
 	};
 
 	const moveActiveTime = (delta: number) => {
-		activeTimeIndex = adjacentTimeSlotIndex(resolveTimeInput(timeBuffer, timeFormat, currentMeridiem), delta, activeTimeIndex ?? getNextQuarterHourSlotIndex());
+		activeTimeIndex = adjacentTimeSlotIndex(resolveTimeInput(timeBuffer, timeFormat, currentMeridiem) ?? (activeTimeIndex === null ? null : slots[activeTimeIndex]?.canonical ?? null), delta, getNextQuarterHourSlotIndex());
 		currentMeridiem = resolveMeridiem(slots[activeTimeIndex].hour24);
 		timeBuffer = getTimeDigitsFromCanonicalTime(slots[activeTimeIndex].canonical, timeFormat, currentMeridiem).padEnd(4, '_').slice(0, 4);
 		syncTimeInputValue();
@@ -218,7 +219,7 @@ export function showTimePicker(anchor: HTMLElement | DOMRect, options: TimePicke
 	const setMeridiem = (next: 'am' | 'pm') => {
 		if (currentMeridiem === next) return;
 		currentMeridiem = next;
-		if (activeTimeIndex !== null) {
+		if (activeTimeIndex !== null && activeTimeIndex < getQuarterHourSlots().length) {
 			activeTimeIndex = remapSlotIndexForMeridiem(activeTimeIndex, next);
 		}
 		if (getMatchingDigits().length === 4) {

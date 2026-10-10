@@ -183,7 +183,7 @@ export function renderDatetimePickerContent(
 	const app = resolvePickerApp(container, options.app);
 	const language = resolveDatePickerLanguage(options.language);
 	const strings = getDatePickerLocaleStrings(language);
-	const slots = getQuarterHourSlots();
+	let slots = getQuarterHourSlots();
 	const initial = parseStoredDatetimeValue(options.value);
 	const timeFormat = options.settings.timeFormat;
 	const context = {
@@ -464,6 +464,7 @@ export function renderDatetimePickerContent(
 			timeFormat,
 			meridiem: currentMeridiem,
 		});
+		slots = match.additionalSlots ? [...getQuarterHourSlots(), ...match.additionalSlots] : getQuarterHourSlots();
 		activeTimeIndex = match.activeIndex;
 		visibleTimeIndices = match.visibleIndices;
 		renderTimeResults();
@@ -509,7 +510,7 @@ export function renderDatetimePickerContent(
 	};
 
 	const moveActiveTime = (delta: number) => {
-		activeTimeIndex = adjacentTimeSlotIndex(resolveTimeInput(timeBuffer, timeFormat, currentMeridiem), delta, activeTimeIndex ?? getNextQuarterHourSlotIndex());
+		activeTimeIndex = adjacentTimeSlotIndex(resolveTimeInput(timeBuffer, timeFormat, currentMeridiem) ?? (activeTimeIndex === null ? null : slots[activeTimeIndex]?.canonical ?? null), delta, getNextQuarterHourSlotIndex());
 		currentMeridiem = resolveMeridiem(slots[activeTimeIndex].hour24);
 		hasTouchedTime = true;
 		preserveOffGridCommit = false;
@@ -665,7 +666,7 @@ export function renderDatetimePickerContent(
 	const setMeridiem = (next: 'am' | 'pm') => {
 		if (currentMeridiem === next) return;
 		currentMeridiem = next;
-		if (activeTimeIndex !== null) {
+		if (activeTimeIndex !== null && activeTimeIndex < getQuarterHourSlots().length) {
 			activeTimeIndex = remapSlotIndexForMeridiem(activeTimeIndex, next);
 		}
 		if (getMatchingDigits().length === 4) {

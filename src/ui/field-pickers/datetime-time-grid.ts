@@ -9,6 +9,7 @@ export interface QuarterHourSlot {
 }
 
 export interface TimeMatchResult {
+	additionalSlots?: QuarterHourSlot[];
 	activeIndex: number | null;
 	visibleIndices: number[];
 	exact: boolean;
@@ -205,14 +206,25 @@ export function matchQuarterHourSlots(options: {
 		};
 	}
 
-	const matching = QUARTER_HOUR_SLOTS.filter(slot => getDisplayCompact(slot, options.timeFormat, options.meridiem).startsWith(digits));
-	if (matching.length === 0) {
-		// A valid non-quarter-hour time keeps nearby suggestions without selecting one.
-		const nearby = isValidTimePrefix(digits, options.timeFormat)
-			? QUARTER_HOUR_SLOTS.filter(slot => getDisplayCompact(slot, options.timeFormat, options.meridiem).startsWith(digits.slice(0, 2)))
-			: [];
-		return { activeIndex: null, visibleIndices: nearby.map(slot => slot.index), exact: false };
+	// Once the minute tens digit is entered, offer only its ten-minute range.
+	if (digits.length >= 3 && isValidTimePrefix(digits, options.timeFormat)) {
+		const exactTime = resolveTimeInput(digits, options.timeFormat, options.meridiem);
+		const quarterIndex = exactTime ? getSlotIndexForCanonicalTime(exactTime) : null;
+		if (quarterIndex !== null) return { activeIndex: quarterIndex, visibleIndices: [quarterIndex], exact: true };
+		const additionalSlots = Array.from({ length: digits.length === 3 ? 10 : 1 }, (_, offset) => {
+			const canonical = exactTime ?? resolveTimeInput(`${digits}${offset}`, options.timeFormat, options.meridiem)!;
+			const [hour24, minute] = canonical.split(':').map(Number);
+			return { index: TOTAL_SLOTS + offset, hour24, minute, canonical, compact: canonical.replace(':', '') };
+		});
+		return {
+			additionalSlots,
+			activeIndex: exactTime ? TOTAL_SLOTS : null,
+			visibleIndices: additionalSlots.map(slot => slot.index),
+			exact: !!exactTime,
+		};
 	}
+	const matching = QUARTER_HOUR_SLOTS.filter(slot => getDisplayCompact(slot, options.timeFormat, options.meridiem).startsWith(digits));
+	if (matching.length === 0) return { activeIndex: null, visibleIndices: [], exact: false };
 
 	const activeIndex = matching[0].index;
 	const exact = digits.length === 4 && getDisplayCompact(QUARTER_HOUR_SLOTS[activeIndex], options.timeFormat, options.meridiem) === digits;

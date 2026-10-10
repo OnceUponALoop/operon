@@ -349,9 +349,25 @@ test('typed minute precision stays independent of quarter-hour suggestions', () 
  assert.equal(isValidTimePrefix('2400', '24h', true), true);
  assert.equal(isValidTimePrefix('2401', '24h', true), false);
  const match = matchQuarterHourSlots({ digits: '1652', anchorIndex: 0, timeFormat: '24h', meridiem: 'pm' });
- assert.equal(match.activeIndex, null);
- assert.deepEqual(match.visibleIndices, [64, 65, 66, 67]);
+ assert.equal(match.additionalSlots?.[0].canonical, '16:52');
+ assert.equal(match.visibleIndices.length, 1);
  assert.equal(adjacentTimeSlotIndex('16:52', 1, 0), 68);
  assert.equal(adjacentTimeSlotIndex('16:52', -1, 0), 67);
  assert.equal(adjacentTimeSlotIndex('23:59', 1, 0), 0);
+});
+
+
+test('minute prefixes progressively offer ten exact minutes in both clock formats', () => {
+ for (const prefix of ['100', '101', '102', '105']) {
+  const match = matchQuarterHourSlots({ digits: prefix, anchorIndex: 0, timeFormat: '24h', meridiem: 'am' });
+  assert.deepEqual(match.additionalSlots?.map(slot => slot.canonical), Array.from({ length: 10 }, (_, i) => `10:${prefix[2]}${i}`));
+ }
+ const hour = matchQuarterHourSlots({ digits: '10', anchorIndex: 0, timeFormat: '24h', meridiem: 'am' });
+ assert.deepEqual(hour.visibleIndices, [40, 41, 42, 43]);
+ for (const meridiem of ['am', 'pm'] as const) {
+  const match = matchQuarterHourSlots({ digits: '122', anchorIndex: 0, timeFormat: '12h', meridiem });
+  assert.equal(match.additionalSlots?.[0].canonical, `${meridiem === 'am' ? '00' : '12'}:20`);
+  assert.equal(match.additionalSlots?.length, 10);
+ }
+ assert.equal(matchQuarterHourSlots({ digits: '106', anchorIndex: 0, timeFormat: '24h', meridiem: 'am' }).visibleIndices.length, 0);
 });
