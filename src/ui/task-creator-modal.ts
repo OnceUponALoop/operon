@@ -518,7 +518,12 @@ export class TaskCreatorModal extends Modal {
 	private fieldButtonMap = new Map<TaskCreatorFieldKey, HTMLButtonElement>();
 	private nativeCloseButtonCleanup: (() => void) | null = null;
 	private suggestionState: SuggestionState | null = null;
-	private activePickerClose: (() => void) | null = null;
+	private creatorPickerClose: (() => void) | null = null;
+	private get activePickerClose(): (() => void) | null { return this.creatorPickerClose; }
+	private set activePickerClose(close: (() => void) | null) {
+		this.creatorPickerClose = close;
+		this.contentEl.toggleClass('has-open-creator-picker', close !== null);
+	}
 	private escapeScopeHandler: KeymapEventHandler | null = null;
 	private seededParentFieldValuesById = new Map<string, Record<string, string> | null>();
 	private seededParentTagsById = new Map<string, string[] | null>();

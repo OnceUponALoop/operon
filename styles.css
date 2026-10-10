@@ -36364,3 +36364,36 @@ body .operon-task-editor:not(.operon-task-editor-mobile) button.operon-editor-tr
  opacity: 0.35;
  pointer-events: none;
 }
+
+/* Creator focus mode: preserve hit targets and wrapping so picker anchors never move. */
+body:not(.is-mobile) .operon-task-creator-tool {
+	position: relative;
+}
+body:not(.is-mobile) .operon-task-creator-tool::after {
+	content: "";
+	position: absolute;
+	inset-inline: 0;
+	top: calc(50% - 2px);
+	height: 4px;
+	border-radius: 2px;
+	background: var(--background-modifier-hover);
+	opacity: 0;
+	pointer-events: none;
+}
+body:not(.is-mobile) .operon-task-creator-tool.is-active::after {
+	background: var(--interactive-accent);
+}
+body:not(.is-mobile) .operon-task-creator-tool.is-property-warning::after {
+	background: var(--text-error);
+}
+body:not(.is-mobile) .operon-task-creator:has(.is-description:focus-within):not(:has(.operon-task-creator-toolbar:hover, .operon-task-creator-action-row:hover, .operon-task-creator-tool:focus-within, .is-picker-open)):not(.has-open-creator-picker):not(.has-open-creator-picker *) .operon-task-creator-tool {
+	border-color: transparent;
+	background: transparent;
+	box-shadow: none;
+}
+body:not(.is-mobile) .operon-task-creator:has(.is-description:focus-within):not(:has(.operon-task-creator-toolbar:hover, .operon-task-creator-action-row:hover, .operon-task-creator-tool:focus-within, .is-picker-open)):not(.has-open-creator-picker):not(.has-open-creator-picker *) .operon-task-creator-tool .operon-task-creator-tool-icon {
+	opacity: 0;
+}
+body:not(.is-mobile) .operon-task-creator:has(.is-description:focus-within):not(:has(.operon-task-creator-toolbar:hover, .operon-task-creator-action-row:hover, .operon-task-creator-tool:focus-within, .is-picker-open)):not(.has-open-creator-picker):not(.has-open-creator-picker *) .operon-task-creator-tool::after {
+	opacity: 1;
+}
