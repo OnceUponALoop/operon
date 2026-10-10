@@ -337,7 +337,8 @@ function renderTableHeaderLabel(
 	}
 	if (field?.icon) {
 		const iconEl = cell.createSpan('operon-table-header-icon');
-		setIcon(iconEl, field.icon);
+		setIcon(iconEl, field.readOnlyReason === 'automatic' ? 'shield-alert' : field.icon);
+		iconEl.toggleClass('is-automatic-property', field.readOnlyReason === 'automatic');
 	}
 	if (!iconOnly) {
 		cell.createSpan({

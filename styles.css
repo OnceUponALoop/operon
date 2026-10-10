@@ -36365,6 +36365,28 @@ body .operon-task-editor:not(.operon-task-editor-mobile) button.operon-editor-tr
  pointer-events: none;
 }
 
+/* Automatic native properties stay protected; explain the missing type assignment. */
+body .operon-task-editor:not(.operon-task-editor-mobile) .is-automatic-property .operon-editor-desktop-property-icon,
+body .operon-task-editor:not(.operon-task-editor-mobile) button.operon-task-editor-workflow-action-button.is-automatic-property,
+body .operon-table-root .operon-table-header-icon.is-automatic-property {
+ color: var(--text-error);
+ opacity: 1;
+}
+body .operon-task-editor:not(.operon-task-editor-mobile) .is-automatic-property .operon-editor-desktop-property-name,
+body .operon-task-editor:not(.operon-task-editor-mobile) .is-automatic-property .operon-inline-compact-chip-label {
+ color: var(--text-muted);
+}
+
+body .operon-task-editor:not(.operon-task-editor-mobile) button.operon-editor-desktop-property-label[aria-disabled="true"] {
+ cursor: default;
+}
+
+/* Prepared Creator path: preserve theme semantics and compact action wrapping. */
+.operon-task-creator-tool.is-property-warning .operon-task-creator-tool-icon { color: var(--text-error); }
+.operon-task-creator-template-control { display: flex; flex-direction: column; min-width: 0; max-width: 100%; }
+.operon-task-creator-template-error { color: var(--text-error); font-size: var(--font-ui-small); max-width: 28ch; overflow-wrap: anywhere; }
+.operon-task-creator-template-error.is-hidden { display: none; }
+
 /* Creator focus mode: preserve hit targets and wrapping so picker anchors never move. */
 body:not(.is-mobile) .operon-task-creator-tool {
 	position: relative;

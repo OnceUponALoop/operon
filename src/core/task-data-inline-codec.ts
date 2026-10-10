@@ -4,12 +4,14 @@
  * being interpreted as a field terminator or wikilink nesting by the inline
  * parser. This intentionally does not alter historic generic field encoding.
  */
-export function encodeTaskDataInlineValue(value: string, escapeSemicolons = false): string {
+export function encodeTaskDataInlineValue(value: string, escapeSemicolons = false, preserveLineEndings = false): string {
 	let result = '';
 	for (let index = 0; index < value.length; index += 1) {
 		const character = value[index];
 		if (character === '\\') {
 			result += '\\\\';
+		} else if (character === '\r' && preserveLineEndings) {
+			result += '\\u000D';
 		} else if (character === '\r') {
 			if (index + 1 < value.length && value[index + 1] === '\n') index += 1;
 			result += '\\u000A';
@@ -26,7 +28,7 @@ export function encodeTaskDataInlineValue(value: string, escapeSemicolons = fals
 	return result;
 }
 
-export function decodeTaskDataInlineValue(value: string): string {
+export function decodeTaskDataInlineValue(value: string, preserveLineEndings = false): string {
 	let result = '';
 	for (let index = 0; index < value.length; index += 1) {
 		if (value[index] !== '\\' || index + 1 >= value.length) {
@@ -34,6 +36,11 @@ export function decodeTaskDataInlineValue(value: string): string {
 			continue;
 		}
 		const next = value[index + 1];
+		if (preserveLineEndings && value.slice(index + 1, index + 6).toLowerCase() === 'u000d') {
+			result += '\r';
+			index += 5;
+			continue;
+		}
 		if (value.slice(index + 1, index + 6).toLowerCase() === 'u000a') {
 			result += '\n';
 			index += 5;

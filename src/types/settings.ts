@@ -1,3 +1,4 @@
+import { cloneInlinePropertyDefinitions, validateInlinePropertyDefinitions } from '../core/inline-property-definitions';
 import { normalizeTaskEditorSections, type TaskEditorSection } from './task-editor-sections';
 import { DEFAULT_TASK_CARD_SETTINGS, normalizeTaskCardSettings, type TaskCardSettings } from './task-card';
 /**
@@ -1543,6 +1544,8 @@ function buildDefaultKeyMappings(): KeyMapping[] {
 
 /** Complete Operon settings interface (v1) */
 export interface OperonSettings extends TaskCardSettings {
+	/** Internal source interpretation metadata; not a user-facing preference. */
+	inlinePropertyDefinitions?: import('../core/inline-property-definitions').InlinePropertyDefinitions;
 	/** Raw optional UI preferences; preserve unknown/future content without repair. */
 	propertyValuePool?: unknown;
 	settingsVersion: number;
@@ -3979,6 +3982,10 @@ export function migrateSettings(raw: unknown): OperonSettings {
 		? Math.floor(src.settingsVersion)
 		: 0;
 	const out = { ...DEFAULT_SETTINGS };
+	if (src.inlinePropertyDefinitions !== undefined) {
+		validateInlinePropertyDefinitions(src.inlinePropertyDefinitions);
+		out.inlinePropertyDefinitions = cloneInlinePropertyDefinitions(src.inlinePropertyDefinitions);
+	}
 	if (src.propertyValuePool !== undefined) out.propertyValuePool = JSON.parse(JSON.stringify(src.propertyValuePool)) as unknown;
 	const tablePresetsSource = sourceSettingsVersion < TASK_DATA_TYPE_SETTINGS_VERSION
 		? migrateLegacyTablePresetDataTypeReferences(src.tablePresets)

@@ -1,8 +1,8 @@
 {
   "schemaVersion": 1,
   "locale": "pt-BR",
-  "keyCount": 3553,
-  "keyFingerprint": "d227b61beefc78e308eb3db9d0cb2990cebe30c87b856d481ec63d7d3b3c6a33",
+  "keyCount": 3568,
+  "keyFingerprint": "eb0da3cad5fa79ca12faafc4e55c1fb9b66593badd789e7b660dd40f45bfd7d2",
   "translations": {
     "buttons": {
       "addFileSubtask": "Adicionar subtarefa em arquivo",
@@ -3167,8 +3167,19 @@
       "copyTaskCardEmbed": "Copiar código do cartão de tarefa",
       "copyUrl": "Copiar URL",
       "core": "Núcleo",
+      "creatorCommitFailed": "Não foi possível criar a tarefa. Suas seleções foram preservadas.",
+      "creatorCommitUncertain": "Não foi possível verificar o resultado. Confira o destino antes de criar outra tarefa.",
       "creatorDescriptionPlaceholder": "Descrição da tarefa",
+      "creatorInlineTemplateProperties": "Somente as propriedades do modelo serão usadas.",
+      "creatorMetadataChanged": "As regras das propriedades mudaram. Reabra o Task Creator para revisá-las antes de criar.",
       "creatorNotePlaceholder": "Notas adicionais da tarefa",
+      "creatorParentPreviewChanged": "O destino alterou valores herdados. Revise as seleções atualizadas e crie novamente.",
+      "creatorPropertiesSkipped": "Tarefa criada. Propriedades ignoradas: {{fields}}.",
+      "creatorSkipAutomatic": "Tipo automático",
+      "creatorSkipFileOnly": "Propriedade exclusiva de arquivo",
+      "creatorSkipTemplater": "Expressão do Templater",
+      "creatorSkipUnsupported": "Valor não compatível",
+      "creatorTemplatePreparationFailed": "Não foi possível preparar o modelo. Corrija, altere ou limpe a seleção.",
       "customColor": "Cor personalizada",
       "datePlaceholder": "dd/mm/aaaa",
       "datetimeAddTime": "Adicionar hora",
@@ -3245,7 +3256,11 @@
       "fileBodyPanelTitle": "Conteúdo",
       "fileBodyPlaceholder": "Detalhes do projeto...",
       "filePropertiesUnavailable": "Propriedades indisponíveis: a origem está ausente, ambígua ou inválida.",
+      "filePropertyAutomatic": "{{name}} é somente leitura no Operon porque seu tipo de propriedade é Automático. Selecione um tipo adequado no Obsidian para habilitar a edição.",
       "filePropertyReadOnly": "{{name}} é somente leitura porque o valor atual não pode ser editado com segurança.",
+      "filePropertyTypeConflict": "{{name}} é somente leitura no Operon porque seu valor ou mapeamento entra em conflito com o tipo de propriedade.",
+      "filePropertyUnavailable": "{{name}} é somente leitura no Operon porque seu tipo de propriedade ou fonte não pôde ser verificado.",
+      "filePropertyUnsupported": "{{name}} é somente leitura no Operon porque o formato do valor não permite edição.",
       "fileTaskNameTitle": "Nome da tarefa em arquivo",
       "fileTemplateInfoLabel": "Info:",
       "filterStatus": "Filtrar status",
@@ -3598,5 +3613,5 @@
       "toggleDescendantPreview": "Alternar visualização descendente"
     }
   },
-  "sourceVersion": "71526318bcd3af78c817954719961af838ccac68bb86f1bcd844a407a1322e73"
+  "sourceVersion": "029180d9c240163d7527174e39f748a37b4c2f0f96a18d3f2f42d41ffdfa5276"
 }

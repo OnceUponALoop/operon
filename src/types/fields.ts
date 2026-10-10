@@ -12,6 +12,9 @@ export interface SourceRange {
 
 /** A single parsed inline field from a task line */
 export interface OperonField {
+	/** Immutable source baseline for lossless non-system field serialization. */
+	sourceValue?: string;
+	sourceToken?: string;
 	/** Exact key name used in markdown source */
 	sourceKey: string;
 	/** Canonical key name */

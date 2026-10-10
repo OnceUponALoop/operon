@@ -178,6 +178,8 @@ const MULTI_CONSUMER_GRANT: DeveloperApiGrantPackageV1 = {
 
 /** Verify additive card defaults separately, preserving the pre-card sealed fixtures. */
 function stripTaskCardDefaults(data: OperonDataPackageV1, verify = false): void {
+ if (verify) assert.deepEqual(data.ui.taskUiPreferences.taskEditorSections, DEFAULT_SETTINGS.taskEditorSections);
+ delete (data.ui.taskUiPreferences as Partial<typeof data.ui.taskUiPreferences>).taskEditorSections;
  if (verify) assert.equal(data.automation.taskAutomationPolicy.keepInlineTasksWithParent, false);
  delete (data.automation.taskAutomationPolicy as Partial<typeof data.automation.taskAutomationPolicy>).keepInlineTasksWithParent;
  if (verify) assert.equal(data.ui.taskUiPreferences.assigneeImageProperty, '');

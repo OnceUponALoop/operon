@@ -1,3 +1,8 @@
+import { getNativePropertyIndex } from '../indexer/native-property-index';
+import { nativeEditorPropertyTypes, nativePropertyReadOnlyReason, type NativePropertyReadOnlyReason } from '../core/task-editor-native-properties';
+import { encodeVaultPropertyValue, type VaultPropertyValue } from '../core/vault-property-codec';
+import { resolveInlinePropertyDefinition, type InlinePropertyType } from '../core/inline-property-definitions';
+import { type InlinePropertyChange, type InlinePropertySnapshot } from '../core/inline-property-source';
 import { normalizeTaskEditorSections, type TaskEditorSectionId } from '../types/task-editor-sections';
 import { taskEditorSectionDefaultLabel } from './task-editor-section-label';
 import { buildTaskWikilinkOverlayLink } from './task-wikilink-overlay-insertion';
@@ -10,9 +15,10 @@ import { normalizeTaskCardSettings } from '../types/task-card';
  * Spec Section 4.2.
  */
 
-import { readFileTaskPropertyDocument, fileTaskPropertyIdentityMatches, type FileTaskPropertyChange } from '../core/file-task-property-draft';
-import { classifyFilePropertyCell, encodeFilePropertyColumnKey, isEmptyFilePropertyValue, isSupportedRawYamlPropertyValue, isWritableRawYamlPropertyName, rawYamlPropertyExpectationsEqual, readRawYamlPropertyExpectation, type RawYamlPropertyExpectation, type RawYamlPropertyValue } from '../core/raw-yaml-property';
-import { createVaultFilePropertySnapshot, createCachedTableFilePropertyTypeResolver, getTableFilePropertyTypeIcon, loadTableFilePropertyTypesFromConfig, type TableFilePropertyField } from './table/table-file-property';
+import { type FileTaskPropertyChange } from '../core/file-task-property-draft';
+import { encodeFilePropertyColumnKey, isEmptyFilePropertyValue, isSupportedRawYamlPropertyValue, rawYamlPropertyExpectationsEqual, type RawYamlPropertyExpectation, type RawYamlPropertyValue } from '../core/raw-yaml-property';
+import { createVaultFilePropertySnapshot, createCachedTableFilePropertyTypeResolver, getTableFilePropertyTypeIcon, type TableFilePropertyField } from './table/table-file-property';
+import { bindPropertyReadOnlyWarning, propertyReadOnlyWarningText } from './property-readonly-warning';
 import { openTableFilePropertyPicker } from './table/table-file-property-editor';
 import { showTextFieldPopover } from './text-field-popover';
 import { showSearchableFieldPicker } from './field-pickers/searchable-field-picker';
@@ -127,6 +133,7 @@ import { resolveSubtaskActionIconForKind, resolveSubtaskActionLabelKeyForKind } 
 import { createInlineTaskCompactChipElement } from './compact-task-layout';
 import { normalizeTaskEditorWorkflowPickers, INLINE_TASK_COMPACT_FALLBACK_ICONS, InlineTaskCompactChipKey, TASK_CREATOR_FALLBACK_FIELD_ICONS, TaskEditorWorkflowPickerItem } from '../types/settings';
 import { openTaskFieldPicker } from './task-field-picker-dispatch';
+import { CANONICAL_KEY_MAP } from '../types/keys';
 import { getManagedTaskDataFieldPicker, type ManagedTaskDataFieldPicker } from './task-data-field-picker';
 import { formatReminderDisplayItem } from './reminder-display';
 import type { ReminderPickerFieldKey } from '../core/reminder-list-mutation';
@@ -155,6 +162,8 @@ import {
 
 /** Callback to persist editor state. Returning false/null aborts the save; a commit returns authoritative saved state. */
 export interface TaskEditorSaveRequest {
+ inlineProperties?: InlinePropertyChange[];
+ inlineSourceFields?: readonly OperonField[];
  fileProperties?: FileTaskPropertyChange[];
 	taskLine: string;
 	isNew: boolean;
@@ -174,6 +183,8 @@ export interface TaskEditorSaveRequest {
 }
 
 export interface TaskEditorCanonicalState {
+	/** Fresh source fields, separate from the managed index projection. */
+	sourceFields?: readonly OperonField[];
 	description: string;
 	checkbox: ParsedTask['checkbox'];
 	tags: string[];
@@ -185,10 +196,12 @@ export function buildTaskEditorOperonField(
 	key: string,
 	value: string,
 	keyMappings: readonly KeyMapping[],
-	existingField?: Pick<OperonField, 'sourceKey'>,
+	existingField?: Pick<OperonField, 'sourceKey' | 'sourceValue' | 'sourceToken'>,
 ): OperonField {
 	return {
 		sourceKey: existingField?.sourceKey || key,
+		sourceValue: existingField?.sourceValue,
+		sourceToken: existingField?.sourceToken,
 		key,
 		value,
 		rawValue: value,
@@ -200,7 +213,9 @@ export function buildTaskEditorOperonField(
 }
 
 export interface TaskEditorSaveCommit {
+ inlineProperties?: readonly InlinePropertySnapshot[];
  fileProperties?: FileTaskPropertyChange[];
+ filePropertySnapshots?: { propertyName: string; expectation: RawYamlPropertyExpectation }[];
 	fileBody?: TaskEditorFileBodyContext;
 	canonicalState: TaskEditorCanonicalState;
 }
@@ -449,7 +464,7 @@ const DESKTOP_CORE_FIELDS = new Set([
 ]);
 
 type EditorFieldDisplay = Pick<KeyMapping, 'canonicalKey' | 'visiblePropertyName' | 'type' | 'icon'>;
-type EditorFileProperty = { field: TableFilePropertyField; baseline: RawYamlPropertyExpectation | null; value: unknown };
+type EditorFileProperty = { field: TableFilePropertyField; baseline: RawYamlPropertyExpectation | null; value: unknown; inline?: InlinePropertySnapshot; readonly?: boolean; readOnlyReason?: NativePropertyReadOnlyReason; headerSelected?: boolean; pending?: boolean };
 
 export class TaskEditorContent {
 
@@ -523,6 +538,7 @@ export class TaskEditorContent {
 	private desktopSubtasksExpanded = false;
 	private desktopSessionsExpanded = false;
  private fileProperties = new Map<string, EditorFileProperty>();
+ private nativePropertyTypes: Record<string, InlinePropertyType> = {};
  private filePropertyRows = new Map<string, { row: HTMLElement; value: HTMLElement; action: HTMLButtonElement }>();
  private filePropertyRoot: HTMLElement | null = null;
  private filePropertyActions: HTMLElement | null = null;
@@ -2685,8 +2701,8 @@ export class TaskEditorContent {
 	private renderCustomFieldSelection(
 		container: HTMLElement,
 		mapping: EditorFieldDisplay,
-		onRemove: ((value: string) => void) | null,
-  options: { values?: readonly string[]; onActivate?: (chip: HTMLElement, value: string) => void } = {},
+		onRemove: ((value: string, index: number) => void) | null,
+  options: { values?: readonly string[]; suppressValueTooltip?: boolean; onActivate?: (chip: HTMLElement, value: string, index: number) => void } = {},
 	): void {
 		container.replaceChildren();
 		const rawValue = normalizeCustomFieldRawValue((this.fieldValues as Record<string, unknown>)[mapping.canonicalKey]);
@@ -2696,7 +2712,7 @@ export class TaskEditorContent {
 				? [rawValue]
 				: []);
 		container.classList.toggle('is-empty', values.length === 0);
-		for (const value of values) {
+		for (const [index, value] of values.entries()) {
 			const chip = createInlineTaskCompactChipElement({
 				key: mapping.canonicalKey,
 				label: this.formatCustomFieldDisplayValue(mapping, value),
@@ -2706,9 +2722,9 @@ export class TaskEditorContent {
 				colorRole: 'default',
 				linkTarget: null,
 			}, 'operon-editor-compact-selection-chip', { forceFull: true });
-			this.bindTruncatedTextTooltip(chip.querySelector<HTMLElement>('.operon-inline-compact-chip-label'));
+			if (!options.suppressValueTooltip) this.bindTruncatedTextTooltip(chip.querySelector<HTMLElement>('.operon-inline-compact-chip-label'));
 			if (mapping.type === 'date' || mapping.type === 'datetime') this.appendWeekdayHint(chip, value);
-			options.onActivate?.(chip, value);
+			options.onActivate?.(chip, value, index);
    if (!onRemove) { container.appendChild(chip); continue; }
 			const removeButton = chip.ownerDocument.win.createEl('button');
 			removeButton.type = 'button';
@@ -2717,7 +2733,7 @@ export class TaskEditorContent {
 			setAccessibleLabelWithoutTooltip(removeButton, t('taskEditor', 'removeValue', {
 				value: this.formatCustomFieldDisplayValue(mapping, value),
 			}));
-			removeButton.addEventListener('click', () => onRemove(value));
+			removeButton.addEventListener('click', () => onRemove(value, index));
 			chip.appendChild(removeButton);
 			container.appendChild(chip);
 		}
@@ -3296,7 +3312,7 @@ export class TaskEditorContent {
 			root.addClass('operon-editor-desktop-properties', 'operon-task-editor-workflow-values');
 			return root;
 		};
-		const items = this.getRenderableWorkflowPickerItems();
+		const items = this.getRenderableWorkflowPickerItems().filter(item => !this.isNativeCustomProperty(item.key));
 		const available = new Set(items.map(item => item.key));
 		const assigned = new Set<string>();
 		for (const group of TASK_EDITOR_DESKTOP_GROUPS) {
@@ -3312,29 +3328,36 @@ export class TaskEditorContent {
 		this.refreshDesktopPropertyRows();
 	}
 
+ private isNativeCustomProperty(key: string): boolean {
+  const mapping = this.settings.keyMappings.find(item => item.canonicalKey === key && item.isSystem === false);
+  if (!mapping) return false;
+  try { return resolveInlinePropertyDefinition(mapping.visiblePropertyName, mapping.type, this.settings.keyMappings, this.settings.inlinePropertyDefinitions).encoding === 'vault-v1'; }
+  catch { return false; }
+ }
+
+ private getInlinePropertyChanges(): InlinePropertyChange[] {
+  return Array.from(this.fileProperties, ([sourceName, entry]): InlinePropertyChange | null => {
+   if (!entry.inline || entry.pending || !entry.baseline || !isSupportedRawYamlPropertyValue(entry.value)
+    || rawYamlPropertyExpectationsEqual(entry.baseline, { present: true, value: entry.value })) return null;
+   return { sourceName, type: entry.inline.type, expected: { present: entry.inline.present, rawValue: entry.inline.rawValue },
+    mutation: { kind: 'set', value: (Array.isArray(entry.value) ? [...entry.value] : entry.value) as VaultPropertyValue } };
+  }).filter((change): change is InlinePropertyChange => change !== null);
+ }
+
  private getFilePropertyChanges(): FileTaskPropertyChange[] {
   return Array.from(this.fileProperties, ([propertyName, entry]) => {
-   if (!entry.baseline || !isSupportedRawYamlPropertyValue(entry.value) || rawYamlPropertyExpectationsEqual(entry.baseline, { present: true, value: entry.value })) return null;
-   return { propertyName, expected: { ...entry.baseline, value: Array.isArray(entry.baseline.value) ? [...entry.baseline.value] : entry.baseline.value }, value: Array.isArray(entry.value) ? [...entry.value] : entry.value };
+   if (entry.inline || entry.pending || !entry.baseline || !isSupportedRawYamlPropertyValue(entry.value) || rawYamlPropertyExpectationsEqual(entry.baseline, { present: true, value: entry.value })) return null;
+   return { propertyName, expected: { ...entry.baseline, value: Array.isArray(entry.baseline.value) ? [...entry.baseline.value] : entry.baseline.value }, value: Array.isArray(entry.value) ? [...entry.value] : entry.value, ...(this.isNativeCustomProperty(this.settings.keyMappings.find(mapping => [mapping.visiblePropertyName, mapping.canonicalKey].some(alias => alias.toLowerCase() === propertyName.toLowerCase()))?.canonicalKey ?? '') ? { nativeType: entry.field.type as InlinePropertyType } : {}) };
   }).filter((change): change is FileTaskPropertyChange => change !== null);
  }
 
  private mountDesktopFileProperties(root: HTMLElement): void {
-  if (Platform.isPhone || this.isNewTask || this.fileBodyContext?.format !== 'yaml') return;
+  if (Platform.isPhone || this.isNewTask || !this.fileBodyContext) return;
   this.filePropertyRoot = root.createDiv('operon-editor-desktop-file-properties');
   if (!this.filePropertyCleanup) {
-   const changed = this.app.metadataCache.on('changed', file => {
-    if (file.path === this.getCurrentIndexedTask()?.primary.filePath) void this.refreshDesktopFileProperties();
+   this.filePropertyCleanup = getNativePropertyIndex(this.app).subscribe(() => {
+    if (!this.disposed) void this.refreshDesktopFileProperties();
    });
-   const renamed = this.app.vault.on('rename', file => {
-    if (file.path === this.getCurrentIndexedTask()?.primary.filePath) void this.refreshDesktopFileProperties();
-   });
-   const deleted = this.app.vault.on('delete', file => {
-    if (file.path === this.fileBodyContext?.filePath) void this.refreshDesktopFileProperties();
-   });
-   this.filePropertyCleanup = () => {
-    this.app.metadataCache.offref(changed); this.app.vault.offref(renamed); this.app.vault.offref(deleted);
-   };
   }
   void this.refreshDesktopFileProperties();
  }
@@ -3345,34 +3368,46 @@ export class TaskEditorContent {
   const generation = ++this.filePropertyGeneration;
   const task = this.getCurrentIndexedTask();
   try {
-   if (!task || task.primary.format !== 'yaml' || this.indexer.hasDuplicateOperonIdConflict(task.operonId)) throw new Error('invalid-file-task');
-   const file = this.app.vault.getAbstractFileByPath(task.primary.filePath);
-   if (!(file instanceof TFile)) throw new Error('missing-file-task');
-   const [content, types] = await Promise.all([this.app.vault.read(file), loadTableFilePropertyTypesFromConfig(this.app).catch(() => ({}))]);
+   if (!task || this.indexer.hasDuplicateOperonIdConflict(task.operonId)) throw new Error('invalid-file-task');
+   const index = getNativePropertyIndex(this.app);
+   index.configure(this.settings);
+   root.setAttribute('aria-busy', String(!index.isReady([task])));
+   if (!index.isReady([task]) && !root.children.length) root.createDiv({ text: t('errors', 'taskCard_loading'), cls: 'operon-editor-desktop-file-loading' });
+   await index.ensure([task]);
    if (generation !== this.filePropertyGeneration || this.disposed || root !== this.filePropertyRoot) return;
-   const document = readFileTaskPropertyDocument(content);
-   if (!document) throw new Error('invalid-frontmatter');
-   if (!fileTaskPropertyIdentityMatches(document.frontmatter, task.operonId, this.settings.keyMappings)) throw new Error('invalid-task-identity');
-   this.filePropertyTypeResolver.replaceTypes(types);
-   const resolver = this.filePropertyTypeResolver;
+   root.removeAttribute('aria-busy');
+   this.nativePropertyTypes = { ...index.getNativeTypes() };
+   this.filePropertyTypeResolver.replaceTypes(index.getTypes());
+   const snapshot = index.getTask(task);
+   if (!snapshot.available) throw new Error('unverified-task-properties');
    const next = new Map<string, EditorFileProperty>();
-   for (const name of document.order) {
-    if (!isWritableRawYamlPropertyName(name, this.settings.keyMappings)) continue;
-    const raw = document.frontmatter[name];
-    const resolution = resolver.resolve(name, [raw]);
-    const previous = this.fileProperties.get(name);
-    const dirty = previous?.baseline && (this.filePropertyPickerName === name || this.submittedFileProperties.has(name) || (isSupportedRawYamlPropertyValue(previous.value) && !rawYamlPropertyExpectationsEqual(previous.baseline, { present: true, value: previous.value })));
-    next.set(name, {
-     field: { key: encodeFilePropertyColumnKey(name)!, label: name, propertyName: name, type: resolution.tableType, sourceType: resolution.sourceType, group: 'fileProperty', icon: getTableFilePropertyTypeIcon(resolution.tableType), readonly: false, aliases: [], sourceFileCount: 1 },
-     baseline: dirty ? previous.baseline : readRawYamlPropertyExpectation(document.frontmatter, name), value: dirty ? previous.value : raw,
-    });
+   for (const property of snapshot.properties.values()) {
+    const name = property.sourceName;
+    const type = property.type ?? this.filePropertyTypeResolver.resolve(name, [property.value]).tableType;
+    next.set(name, { field: this.nativePropertyField(name, type as InlinePropertyType),
+     ...(property.inline ? { inline: property.inline } : {}),
+     baseline: isSupportedRawYamlPropertyValue(property.value) ? { present: property.present, value: property.value } : null, value: property.value,
+     readonly: !!property.reason, readOnlyReason: property.reason });
    }
-   // Keep locally edited keys removed externally so the pending save reports a conflict.
-   for (const [name, entry] of this.fileProperties) if (!next.has(name) && (this.submittedFileProperties.has(name) || this.filePropertyPickerName === name || this.getFilePropertyChanges().some(change => change.propertyName === name))) next.set(name, entry);
+   // Preserve dirty baselines, active input, and submitted versions across source refreshes.
+   for (const [name, previous] of this.fileProperties) {
+    if (previous.pending && previous.headerSelected && !next.has(name)) {
+     const reason = nativePropertyReadOnlyReason(name, previous.value, index.getTypes(), this.settings.keyMappings, this.nativePropertyTypes);
+     const type = Object.entries(this.nativePropertyTypes).find(([key]) => key.toLowerCase() === name.toLowerCase())?.[1];
+     next.set(name, { ...previous, readonly: !!reason, readOnlyReason: reason,
+      ...(type ? { field: this.nativePropertyField(name, type), ...(previous.inline ? { inline: { ...previous.inline, type } } : {}) } : {}) });
+     continue;
+    }
+    const dirty = previous.pending || this.filePropertyPickerName === name || this.submittedFileProperties.has(name)
+     || previous.baseline && isSupportedRawYamlPropertyValue(previous.value)
+      && !rawYamlPropertyExpectationsEqual(previous.baseline, { present: true, value: previous.value });
+    if (dirty) next.set(name, { ...previous, ...(next.has(name) ? { readonly: next.get(name)!.readonly, readOnlyReason: next.get(name)!.readOnlyReason, field: next.get(name)!.field } : {}) });
+   }
    const same = !this.filePropertyUnavailable && next.size === this.fileProperties.size && Array.from(next).every(([name, entry], index) => {
     const previous = this.fileProperties.get(name);
     return name === Array.from(this.fileProperties.keys())[index] && previous !== undefined
      && JSON.stringify(entry.field) === JSON.stringify(previous.field)
+     && entry.readonly === previous.readonly && entry.readOnlyReason === previous.readOnlyReason && JSON.stringify(entry.inline) === JSON.stringify(previous.inline)
      && (entry.baseline === previous.baseline || (!!entry.baseline && !!previous.baseline && rawYamlPropertyExpectationsEqual(entry.baseline, previous.baseline)))
      && (Object.is(entry.value, previous.value) || (isSupportedRawYamlPropertyValue(entry.value) && isSupportedRawYamlPropertyValue(previous.value)
       && rawYamlPropertyExpectationsEqual({ present: true, value: entry.value }, { present: true, value: previous.value })));
@@ -3392,17 +3427,29 @@ export class TaskEditorContent {
    }
   } catch {
    if (generation !== this.filePropertyGeneration || this.disposed || root !== this.filePropertyRoot) return;
+   root.removeAttribute('aria-busy');
    this.filePropertyUnavailable = true;
    this.renderDesktopFileProperties(root);
   }
  }
 
+ private nativePropertyType(name: string): InlinePropertyType | undefined {
+  const mapping = this.settings.keyMappings.find(item => [item.canonicalKey, item.visiblePropertyName].some(alias => alias.toLowerCase() === name.toLowerCase()));
+  const aliases = [name, ...(mapping ? [mapping.canonicalKey, mapping.visiblePropertyName] : [])].map(alias => alias.toLowerCase());
+  const known = Object.keys(this.nativePropertyTypes).find(key => aliases.includes(key.toLowerCase()));
+  return known ? this.nativePropertyTypes[known] : undefined;
+ }
+
+ private nativePropertyField(name: string, type: InlinePropertyType): TableFilePropertyField {
+  return { key: encodeFilePropertyColumnKey(name)!, label: name, propertyName: name, type, sourceType: type === 'list' ? 'multitext' : type,
+   group: 'fileProperty', icon: getTableFilePropertyTypeIcon(type), readonly: false, aliases: [], sourceFileCount: 1 };
+ }
+
  private canEditFileProperty(entry: EditorFileProperty): boolean {
-  if (this.filePropertyUnavailable || !entry.baseline) return false;
-  const state = classifyFilePropertyCell(entry.field, { present: true, rawValue: entry.value });
-  if (state.kind === 'unsupported') return false;
-  if (entry.field.type === 'list' && !isEmptyFilePropertyValue(entry.value)) return Array.isArray(entry.value) && entry.value.every(value => typeof value === 'string') && new Set(entry.value).size === entry.value.length;
-  return true;
+  if (!entry || this.filePropertyUnavailable || entry.readonly || !entry.baseline) return false;
+  if (isEmptyFilePropertyValue(entry.value)) return true;
+  try { encodeVaultPropertyValue(entry.value as VaultPropertyValue, entry.field.type as InlinePropertyType); return true; }
+  catch { return false; }
  }
 
  private renderDesktopFileProperties(root: HTMLElement): void {
@@ -3425,7 +3472,7 @@ export class TaskEditorContent {
    if (this.additionalPropertyAdd) actions.insertBefore(action, this.additionalPropertyAdd);
    setIcon(action, entry.field.icon); setAccessibleLabelWithoutTooltip(action, name);
    action.disabled = !this.canEditFileProperty(entry);
-   bindOperonHoverTooltip(action, { content: action.disabled ? t('taskEditor', 'filePropertyReadOnly', { name }) : name, taskColor: () => this.getThemeColor() });
+   bindOperonHoverTooltip(action, { content: name, taskColor: () => this.getThemeColor() });
    action.addEventListener('click', () => this.openFilePropertyPicker(name));
    const row = group.createDiv('operon-editor-desktop-property-row'); row.dataset.propertyKey = entry.field.key;
    row.toggleClass('is-list-property', entry.field.type === 'list');
@@ -3438,9 +3485,9 @@ export class TaskEditorContent {
   }
   if (focusedName) {
    const restored = this.filePropertyRows.get(focusedName);
-   const valueTarget = restored?.row.hidden ? null : restored?.value.querySelector<HTMLElement>('[tabindex="0"]');
+   const valueTarget = restored?.row.hidden ? null : restored?.value.querySelector<HTMLElement>('[tabindex="0"]') ?? restored?.value;
    const target = (focusedValue ? valueTarget : null) ?? (restored && !restored.action.disabled && !restored.action.hidden ? restored.action : valueTarget)
-    ?? Array.from(this.filePropertyRows.values()).map(surface => !surface.action.disabled && !surface.action.hidden ? surface.action : surface.row.hidden ? null : surface.value.querySelector<HTMLElement>('[tabindex="0"]')).find(surface => surface !== null) ?? this.additionalPropertyAdd;
+    ?? Array.from(this.filePropertyRows.values()).map(surface => !surface.action.disabled && !surface.action.hidden ? surface.action : surface.row.hidden ? null : surface.value.querySelector<HTMLElement>('[tabindex="0"]') ?? surface.value).find(surface => surface !== null) ?? this.additionalPropertyAdd;
    target?.focus({ preventScroll: true });
   }
  }
@@ -3450,28 +3497,46 @@ export class TaskEditorContent {
   if (!entry || !surface) return;
   const populated = !isEmptyFilePropertyValue(entry.value);
   surface.row.hidden = !populated;
-  surface.action.hidden = !populated && !entry.baseline?.present && !entry.inline?.present;
+  surface.action.hidden = !populated && !entry.baseline?.present && !entry.inline?.present && !entry.headerSelected;
   surface.action.toggleClass('is-active', populated);
   surface.action.disabled = !this.canEditFileProperty(entry);
   const label = surface.row.querySelector<HTMLButtonElement>('.operon-editor-desktop-property-label');
-  if (label) label.disabled = surface.action.disabled;
+  if (label) { label.disabled = false; label.setAttribute('aria-disabled', String(surface.action.disabled)); }
   surface.value.toggleClass('is-readonly', surface.action.disabled);
   surface.row.querySelector<HTMLElement>('.operon-editor-desktop-property-icon')?.toggleClass('has-value', populated);
   const editable = this.canEditFileProperty(entry);
-  const values = !populated ? [] : Array.isArray(entry.value) && editable ? entry.value as string[] : [this.formatFilePropertyValue(entry.value)];
+  const reason = this.filePropertyUnavailable ? 'unavailable' : !editable ? entry.readOnlyReason ?? 'type-conflict' : undefined;
+  const automatic = reason === 'automatic';
+  surface.row.toggleClass('is-automatic-property', automatic);
+  surface.action.toggleClass('is-automatic-property', automatic);
+  surface.action.empty();
+  setIcon(surface.action, automatic ? 'shield-alert' : entry.field.icon);
+  const icon = surface.row.querySelector<HTMLElement>('.operon-editor-desktop-property-icon');
+  if (icon) { icon.empty(); setIcon(icon, automatic ? 'shield-alert' : entry.field.icon); }
+  if (reason) bindPropertyReadOnlyWarning(surface.action, name, reason, () => this.getThemeColor());
+  else bindOperonHoverTooltip(surface.action, { content: name, taskColor: () => this.getThemeColor() });
+  const labelName = label?.querySelector<HTMLElement>('.operon-editor-desktop-property-name') ?? null;
+  if (label) {
+   cleanupOperonHoverTooltips(label);
+   if (reason) bindPropertyReadOnlyWarning(label, name, reason, () => this.getThemeColor());
+   else this.bindTruncatedTextTooltip(labelName);
+  }
+  cleanupOperonHoverTooltips(surface.value);
+  const values = !populated ? [] : Array.isArray(entry.value) && editable ? entry.value.map(item => encodeVaultPropertyValue([item], 'list')) : [this.formatFilePropertyValue(entry.value)];
   const display: EditorFieldDisplay = { canonicalKey: entry.field.key, visiblePropertyName: name, type: entry.field.type as KeyMapping['type'], icon: entry.field.icon };
-  this.renderCustomFieldSelection(surface.value, display, editable ? value => {
-   const next = entry.field.type === 'list' ? (entry.value as string[]).filter(item => item !== value) : entry.field.type === 'text' ? '' : null;
+  this.renderCustomFieldSelection(surface.value, display, editable ? (_value, index) => {
+   const next = entry.field.type === 'list' ? (entry.value as (string | number)[]).filter((_item, position) => position !== index) : entry.field.type === 'text' ? '' : null;
    this.setFilePropertyValue(name, next);
    (surface.action.hidden ? this.additionalPropertyAdd : surface.action)?.focus({ preventScroll: true });
-  } : null, { values, onActivate: (chip, value) => {
-   if (!editable) { chip.setAttr('tabindex', '0'); chip.setAttr('aria-label', `${t('taskEditor', 'filePropertyReadOnly', { name })} ${this.formatCustomFieldDisplayValue(display, value)}`); bindOperonHoverTooltip(chip, { content: t('taskEditor', 'filePropertyReadOnly', { name }), taskColor: () => this.getThemeColor() }); return; }
+  } : null, { values, suppressValueTooltip: !!reason, onActivate: (chip, value, index) => {
+   if (reason) { setAccessibleLabelWithoutTooltip(chip, propertyReadOnlyWarningText(name, reason)); return; }
    chip.setAttr('tabindex', '0'); chip.setAttr('role', 'button'); setAccessibleLabelWithoutTooltip(chip, `${name}: ${this.formatCustomFieldDisplayValue(display, value)}`);
-   const open = () => this.openFilePropertyPicker(name, value, 'popover', chip);
+   const open = () => this.openFilePropertyPicker(name, value, 'popover', chip, entry.field.type === 'list' ? index : undefined);
    chip.addEventListener('click', event => { if (!(event.target as HTMLElement).closest('button')) open(); });
    chip.addEventListener('keydown', event => { if (event.target === chip && (event.key === 'Enter' || event.key === ' ')) { event.preventDefault(); open(); } });
    if (this.filePropertyPickerName === name && this.filePropertyPickerValue === value) chip.addClass('is-picker-open');
   } });
+  if (reason) bindPropertyReadOnlyWarning(surface.value, name, reason, () => this.getThemeColor());
  }
 
  private formatFilePropertyValue(value: unknown): string {
@@ -3482,24 +3547,40 @@ export class TaskEditorContent {
 
  private setFilePropertyValue(name: string, value: RawYamlPropertyValue): void {
   const entry = this.fileProperties.get(name);
-  if (!entry || !this.canEditFileProperty(entry) || !isSupportedRawYamlPropertyValue(entry.value) || rawYamlPropertyExpectationsEqual({ present: true, value: entry.value }, { present: true, value })) return;
+  if (!entry || !this.canEditFileProperty(entry) || !isSupportedRawYamlPropertyValue(entry.value) || !entry.pending && rawYamlPropertyExpectationsEqual({ present: true, value: entry.value }, { present: true, value })) return;
+  entry.pending = false;
   entry.value = Array.isArray(value) ? [...value] : value;
   this.refreshFilePropertyValue(name); this.markEdited();
  }
 
  private getVaultFilePropertySnapshot() {
-  return createVaultFilePropertySnapshot(this.app, this.filePropertyTypeResolver, { keyMappings: this.settings.keyMappings });
+  const snapshot = createVaultFilePropertySnapshot(this.app, this.filePropertyTypeResolver, { keyMappings: this.settings.keyMappings, nativeListCandidates: true });
+  const fields = new Map<string, TableFilePropertyField>();
+  for (const [name, type] of Object.entries(nativeEditorPropertyTypes(this.nativePropertyTypes, this.settings.keyMappings, this.settings.inlinePropertyDefinitions))) {
+   const mapping = this.settings.keyMappings.find(item => [item.canonicalKey, item.visiblePropertyName].some(alias => alias.toLowerCase() === name.toLowerCase()));
+   const aliases = [name, ...(mapping ? [mapping.canonicalKey, mapping.visiblePropertyName] : [])].map(alias => alias.toLowerCase());
+   const sourceName = [...this.fileProperties.keys()].find(key => aliases.includes(key.toLowerCase())) ?? name;
+   fields.set((mapping?.canonicalKey ?? sourceName).toLowerCase(), this.nativePropertyField(sourceName, type));
+  }
+  const index = getNativePropertyIndex(this.app);
+  if (index.typesAvailable()) for (const field of snapshot.fields) {
+   const name = field.propertyName, identity = name.toLowerCase();
+   if (fields.has(identity) || snapshot.fields.filter(candidate => candidate.propertyName.toLowerCase() === identity).length !== 1) continue;
+   if (nativePropertyReadOnlyReason(name, undefined, index.getTypes(), this.settings.keyMappings, this.nativePropertyTypes) !== 'automatic') continue;
+   fields.set(identity, { ...field, readonly: true, readOnlyReason: 'automatic', icon: 'shield-alert' });
+  }
+  return { ...snapshot, fields: [...fields.values()] };
  }
 
  private addFileProperty(name: string): boolean {
   if (this.disposed || this.filePropertyUnavailable || !this.filePropertyRoot || this.fileProperties.has(name)) return false;
   const field = this.getVaultFilePropertySnapshot().fields.find(candidate => candidate.propertyName === name);
-  if (!field || !isWritableRawYamlPropertyName(name, this.settings.keyMappings)) return false;
-  const value = field.type === 'checkbox' ? false : field.type === 'list' ? [] : field.type === 'text' ? '' : null;
+  if (!field) return false;
+  const value = field.readOnlyReason === 'automatic' ? null : field.type === 'checkbox' ? false : field.type === 'list' ? [] : field.type === 'text' ? '' : null;
   this.closeFilePropertyAddPicker?.();
-  this.fileProperties.set(name, { field, baseline: { present: false, value: undefined }, value });
+  this.fileProperties.set(name, { field, baseline: { present: false, value: undefined }, value, pending: true, readonly: field.readonly, readOnlyReason: field.readOnlyReason, headerSelected: field.readOnlyReason === 'automatic',
+   ...(this.fileBodyContext?.format === 'inline' ? { inline: { sourceName: name, type: field.type as InlinePropertyType, present: false, state: 'missing' as const } } : {}) });
   this.renderDesktopFileProperties(this.filePropertyRoot);
-  this.markEdited();
   return true;
  }
 
@@ -3512,13 +3593,12 @@ export class TaskEditorContent {
    .map(key => ({ field: key, label: this.getWorkflowPickerLabel(key), icon: this.resolveWorkflowPickerIcon(key), source: 'workflow' as const }));
   const fileFields = this.filePropertyRoot && !this.filePropertyUnavailable
    ? this.getVaultFilePropertySnapshot().fields
-    .filter(field => isWritableRawYamlPropertyName(field.propertyName, this.settings.keyMappings)
-     && (!this.fileProperties.has(field.propertyName) || isEmptyFilePropertyValue(this.fileProperties.get(field.propertyName)!.value)))
-    .map(field => ({ field: field.propertyName, label: field.propertyName, icon: field.icon, source: 'file' as const })) : [];
+    .filter(field => !Array.from(this.fileProperties).some(([name, entry]) => name.toLowerCase() === field.propertyName.toLowerCase() && !isEmptyFilePropertyValue(entry.value)))
+    .map(field => ({ field: field.propertyName, label: field.propertyName, icon: field.icon, iconColor: field.readOnlyReason === 'automatic' ? 'var(--text-error)' : undefined, source: 'file' as const })) : [];
   // Include empty task-local properties even if the vault pool has no candidate for them.
   if (this.filePropertyRoot && !this.filePropertyUnavailable) for (const [name, entry] of this.fileProperties) {
    if (isEmptyFilePropertyValue(entry.value) && this.canEditFileProperty(entry) && !fileFields.some(field => field.field === name)) {
-    fileFields.push({ field: name, label: name, icon: entry.field.icon, source: 'file' });
+    fileFields.push({ field: name, label: name, icon: entry.field.icon, iconColor: undefined, source: 'file' });
    }
   }
   let selected: { field: string; source: 'workflow' | 'file' } | null = null;
@@ -3541,7 +3621,7 @@ export class TaskEditorContent {
   });
  }
 
- private openFilePropertyPicker(name: string, value?: string, textEditRoute: 'picker' | 'popover' = 'picker', anchor?: HTMLElement): void {
+ private openFilePropertyPicker(name: string, value?: string, textEditRoute: 'picker' | 'popover' = 'picker', anchor?: HTMLElement, editListIndex?: number): void {
   const entry = this.fileProperties.get(name), surface = this.filePropertyRows.get(name);
   if (!entry || !surface || !this.canEditFileProperty(entry)) return;
   const epoch = ++this.propertyInteractionEpoch;
@@ -3558,13 +3638,14 @@ export class TaskEditorContent {
    if (this.closeFilePropertyPicker !== closePicker) return;
    this.closeFilePropertyPicker = null; this.filePropertyPickerName = null; this.filePropertyPickerValue = null;
    surface.action.removeClass('is-picker-open'); pickerAnchor.removeClass('is-picker-open'); this.refreshFilePropertyValue(name);
+   if (this.fileProperties.get(name)?.pending) this.fileProperties.delete(name);
    if (!this.disposed) void this.refreshDesktopFileProperties();
    if (!this.disposed && this.propertyInteractionEpoch === epoch) (surface.row.hidden ? this.additionalPropertyAdd : pickerAnchor.isConnected ? pickerAnchor : surface.value)?.focus({ preventScroll: true });
   };
   closePicker = openTableFilePropertyPicker({
    app: this.app, anchor: pickerAnchor, field: entry.field, label: name, textEditRoute,
    cellValue: { present: entry.baseline?.present ?? true, rawValue: entry.value, normalizedValue: isEmptyFilePropertyValue(entry.value) ? '' : String(entry.value) },
-   candidates: this.getVaultFilePropertySnapshot().getCandidates(entry.field.key), settings: this.settings, sourcePath: this.fileBodyContext?.filePath ?? '', lifecycleOwner: surface.action, preserveListValues: true,
+   candidates: this.getVaultFilePropertySnapshot().getCandidates(entry.field.key), settings: this.settings, sourcePath: this.fileBodyContext?.filePath ?? '', lifecycleOwner: surface.action, preserveListValues: true, nativeList: true, editListIndex,
    onMutation: mutation => { this.setFilePropertyValue(name, mutation.kind === 'delete' ? entry.field.type === 'text' ? '' : entry.field.type === 'list' ? [] : null : mutation.value); },
    onClose: close,
   });
@@ -6916,13 +6997,17 @@ export class TaskEditorContent {
 		this.existingTask.description = state.description;
 		this.existingTask.checkbox = state.checkbox;
 		this.existingTask.tags = [...state.tags];
+		if (state.sourceFields) this.existingTask.fields = state.sourceFields.map(field => ({ ...field }));
 		const existingKeys = new Set(this.existingTask.fields.map(field => field.key));
 		for (const key of existingKeys) {
-			if (!Object.prototype.hasOwnProperty.call(state.fieldValues, key)) {
+			if (isManagedTaskFieldCanonicalKey(key, this.settings.keyMappings)
+				&& !state.sourceFields?.some(field => field.key === key)
+				&& !Object.prototype.hasOwnProperty.call(state.fieldValues, key)) {
 				this.syncExistingTaskFieldSnapshot(key, '');
 			}
 		}
 		for (const [key, value] of Object.entries(state.fieldValues)) {
+            if (state.sourceFields?.some(field => field.key === key) && !CANONICAL_KEY_MAP.has(key)) continue;
 			this.syncExistingTaskFieldSnapshot(key, value);
 		}
 		this.existingTask.operonId = state.fieldValues['operonId'] ?? this.existingTask.operonId;
@@ -6949,13 +7034,13 @@ export class TaskEditorContent {
 		this.fieldValues = mergeCanonicalFieldValuesIntoDraft(
 			this.fieldValues,
 			submitted.fieldValues,
-			state.fieldValues,
+			{ ...Object.fromEntries((state.sourceFields ?? []).map(field => [field.key, field.value])), ...state.fieldValues },
 		);
 
 		this.persistedDescription = state.description;
 		this.persistedCheckbox = state.checkbox;
 		this.persistedTags = [...state.tags];
-		this.persistedFieldValues = { ...state.fieldValues };
+		this.persistedFieldValues = { ...Object.fromEntries((state.sourceFields ?? []).map(field => [field.key, field.value])), ...state.fieldValues };
 		this.syncExistingTaskCanonicalState(state);
 	}
 
@@ -7128,7 +7213,7 @@ export class TaskEditorContent {
 	}
 
 	private hasSemanticDraftChanges(): boolean {
-		if (this.isNewTask || this.getFilePropertyChanges().length > 0) return true;
+		if (this.isNewTask || this.getFilePropertyChanges().length > 0 || this.getInlinePropertyChanges().length > 0) return true;
 		const draft = this.getSemanticDraftSnapshot();
 		const persisted = this.getSemanticPersistedSnapshot();
 		if (draft.description !== persisted.description) return true;
@@ -7305,7 +7390,7 @@ export class TaskEditorContent {
 			this.fieldValues['datetimeModified'] = now;
 
 			const fields = Object.entries(this.fieldValues)
-				.filter(([key, value]) => !!value && key !== 'pinned')
+				.filter(([key, value]) => key !== 'pinned' && (!!value || !isManagedTaskFieldCanonicalKey(key, this.settings.keyMappings) || this.existingTask?.fields.some(field => field.key === key && field.value === value)))
 				.map(([key, value]) => buildTaskEditorOperonField(
 					key,
 					value,
@@ -7344,6 +7429,8 @@ export class TaskEditorContent {
 				return after ? 'explicitly-set' : 'explicitly-cleared';
 			};
 			const savedFileProperties = this.getFilePropertyChanges();
+   const savedInlineProperties = this.getInlinePropertyChanges();
+   if (savedInlineProperties.some(change => !this.canEditFileProperty(this.fileProperties.get(change.sourceName)!))) return { ok: false, reason: 'write-rejected' };
    if (savedFileProperties.length && (this.filePropertyUnavailable || savedFileProperties.some(change => !this.canEditFileProperty(this.fileProperties.get(change.propertyName)!)))) return { ok: false, reason: 'write-rejected' };
 			const savedDescription = this.description;
 			const savedCheckbox = this.checkbox;
@@ -7362,12 +7449,14 @@ export class TaskEditorContent {
 			const noteSurfaceShouldCommit =
 				noteSurface?.getCommit().shouldCommit ?? false;
 			let saveResult: TaskEditorSaveCallbackResult;
-   this.submittedFileProperties = new Set(savedFileProperties.map(change => change.propertyName));
+   this.submittedFileProperties = new Set([...savedFileProperties.map(change => change.propertyName), ...savedInlineProperties.map(change => change.sourceName)]);
 			try {
 				saveResult = await this.onSave({
 					taskLine,
+                    inlineSourceFields: this.existingTask?.fields.map(field => ({ ...field })),
 					isNew: this.isNewTask,
      ...(savedFileProperties.length ? { fileProperties: savedFileProperties } : {}),
+     ...(savedInlineProperties.length ? { inlineProperties: savedInlineProperties } : {}),
 					parentTaskIntent: resolveIntent(existingParentTaskId, nextParentTaskId),
 					dateScheduledIntent: resolveIntent(existingScheduledDate, nextScheduledDate),
 					inlineCompletionMode: savedInlineCompletionMode,
@@ -7393,10 +7482,29 @@ export class TaskEditorContent {
    for (const change of savedFileProperties) {
     const entry = this.fileProperties.get(change.propertyName);
     const result = isTaskEditorSaveCommit(saveResult) ? saveResult.fileProperties?.find(item => item.propertyName === change.propertyName) : undefined;
-    const committed = result ? result.value : change.value;
-    if (entry) entry.baseline = { present: true, value: Array.isArray(committed) ? [...committed] : committed };
+    const snapshot = isTaskEditorSaveCommit(saveResult) ? saveResult.filePropertySnapshots?.find(item => item.propertyName === change.propertyName)?.expectation : undefined;
+    const committed = snapshot ?? { present: true, value: result ? result.value : change.value };
+    if (entry) {
+     if (rawYamlPropertyExpectationsEqual({ present: true, value: entry.value as RawYamlPropertyValue }, { present: true, value: change.value })) {
+      if (!committed.present) this.fileProperties.delete(change.propertyName);
+      else entry.value = Array.isArray(committed.value) ? [...committed.value] : committed.value;
+     }
+     entry.baseline = committed;
+    }
    }
-   if (savedFileProperties.length) {
+   for (const change of savedInlineProperties) {
+    const entry = this.fileProperties.get(change.sourceName);
+    const committed = isTaskEditorSaveCommit(saveResult) ? saveResult.inlineProperties?.find(item => item.sourceName.toLowerCase() === change.sourceName.toLowerCase()) : undefined;
+    if (!entry || !committed) continue;
+    const acknowledged = committed.state === 'valid' ? committed.value : committed.rawValue ?? null;
+    if (change.mutation.kind === 'set' && rawYamlPropertyExpectationsEqual({ present: true, value: entry.value as RawYamlPropertyValue }, { present: true, value: change.mutation.value })) {
+     if (!committed.present) this.fileProperties.delete(change.sourceName);
+     else entry.value = Array.isArray(acknowledged) ? [...acknowledged] : acknowledged;
+    }
+    entry.inline = committed; entry.baseline = { present: committed.present, value: acknowledged };
+    entry.readonly = committed.state !== 'valid' && committed.state !== 'missing';
+   }
+   if (savedFileProperties.length || savedInlineProperties.length) {
     // A source read captured before this commit cannot replace its acknowledged baseline.
     this.filePropertyGeneration++;
     void this.refreshDesktopFileProperties();

@@ -1,3 +1,4 @@
+import { cloneInlinePropertyDefinitions, validateInlinePropertyDefinitions, type InlinePropertyDefinitions } from '../core/inline-property-definitions';
 import type { KanbanManualOrderBoard } from './kanban-order-store';
 import type { CalendarPresetStoreSettings } from './calendar-preset-store';
 import type { ContextualMenuStoreSettings } from './contextual-menu-store';
@@ -27,6 +28,10 @@ import {
 } from '../agent-runtime/developer-api/grants';
 
 export const OPERON_DATA_PACKAGE_SCHEMA_VERSION = 2;
+export const OPERON_TYPED_PROPERTY_SCHEMA_VERSION = 3;
+export function isSupportedDataPackageSchema(value: unknown): value is 2 | 3 {
+	return value === 2 || value === 3;
+}
 export const OPERON_TASK_CREATION_PROFILE_PACKAGE_VERSION = 3;
 export const OPERON_PINNED_TASKS_PACKAGE_VERSION = 2;
 export const OPERON_MOBILE_NOTIFICATIONS_INTEGRATION_VERSION = 1;
@@ -53,6 +58,7 @@ export type WorkspaceTweaksPackageSettings = Pick<
 
 export type OperonDataPackageOwnedSettingsKey =
 	| 'keyMappings'
+	| 'inlinePropertyDefinitions'
 	| 'filterSets'
 	| 'externalCalendars'
 	| keyof PipelineStoreSettings
@@ -70,6 +76,7 @@ export type OperonDataPackageOwnedSettingsKey =
 
 export const OPERON_DATA_PACKAGE_OWNED_SETTINGS_KEYS = [
 	'keyMappings',
+	'inlinePropertyDefinitions',
 	'filterSets',
 	'externalCalendars',
 	'pipelines',
@@ -296,6 +303,7 @@ export interface OperonPinnedTasksPackageV1 {
 }
 
 export interface OperonTaxonomyPackageV1 {
+	inlinePropertyDefinitions?: InlinePropertyDefinitions;
 	keyMappings: OperonKeyMappingsPackageV1;
 	priorities: VersionedStoreSlice<PriorityStoreSettings>;
 	pipelines: VersionedStoreSlice<PipelineStoreSettings>;
@@ -345,7 +353,7 @@ export interface OperonStatePackageV1 {
 }
 
 export interface OperonDataPackageV1 {
-	schemaVersion: typeof OPERON_DATA_PACKAGE_SCHEMA_VERSION;
+	schemaVersion: 2 | 3;
 	settings: OperonDataPackageSettings;
 	taxonomy: OperonTaxonomyPackageV1;
 	views: OperonViewsPackageV1;
@@ -362,7 +370,12 @@ export interface OperonDataPackageV1 {
  * post-write readback.
  */
 export function isStructurallyCompleteOperonDataPackageV1(value: unknown): value is OperonDataPackageV1 {
-	if (!isRecord(value) || value.schemaVersion !== OPERON_DATA_PACKAGE_SCHEMA_VERSION) return false;
+	if (!isRecord(value) || !isSupportedDataPackageSchema(value.schemaVersion)) return false;
+	try {
+		const definitions = isRecord(value.taxonomy) ? value.taxonomy.inlinePropertyDefinitions : undefined;
+		if (value.schemaVersion === 3 || definitions !== undefined) validateInlinePropertyDefinitions(definitions);
+		if (value.schemaVersion === 2 && definitions !== undefined) return false;
+	} catch { return false; }
 	return isValidDataPackageSettingsDomain(value.settings)
 		&& isValidDataPackageTaxonomyDomain(value.taxonomy)
 		&& isValidDataPackageViewsDomain(value.views)
@@ -400,6 +413,7 @@ export function composeOperonSettingsFromDataPackage(
 		...defaults,
 		...packageSettings,
 		keyMappings: keyMappings.length > 0 ? keyMappings : defaults.keyMappings,
+		inlinePropertyDefinitions: cloneInlinePropertyDefinitions(dataPackage.taxonomy.inlinePropertyDefinitions),
 		filterSets,
 		priorities: readArray(dataPackage.taxonomy.priorities.priorities, defaults.priorities),
 		defaultPriority: readString(dataPackage.taxonomy.priorities.defaultPriority, defaults.defaultPriority),
@@ -513,10 +527,12 @@ export function buildOperonDataPackageFromSettings(
 	const filterSets = options.filterSets ?? normalized.filterSets;
 	const filters = buildFiltersPackage(filterSets);
 	const keyMappings = splitKeyMappings(normalized.keyMappings);
+	const definitions = cloneInlinePropertyDefinitions(normalized.inlinePropertyDefinitions);
 	return {
-		schemaVersion: OPERON_DATA_PACKAGE_SCHEMA_VERSION,
+		schemaVersion: definitions ? OPERON_TYPED_PROPERTY_SCHEMA_VERSION : OPERON_DATA_PACKAGE_SCHEMA_VERSION,
 		settings: buildSettingsPackage(normalized),
 		taxonomy: {
+			...(definitions ? { inlinePropertyDefinitions: definitions } : {}),
 			keyMappings,
 			priorities: {
 				version: 1,
@@ -710,7 +726,7 @@ export function mergeOperonDataPackage(
 		delete ui.presetFavorites;
 	}
 	return {
-		schemaVersion: OPERON_DATA_PACKAGE_SCHEMA_VERSION,
+		schemaVersion: existing?.schemaVersion === 3 || fallback.schemaVersion === 3 ? 3 : 2,
 		settings: cloneSettingsPackageWithoutRetiredKeys(existing?.settings, fallback.settings),
 		taxonomy: mergeTaxonomyPackage(existing?.taxonomy, fallback.taxonomy),
 		views: cloneExistingDomain(existing?.views, fallback.views, isViewsDomain),
@@ -1064,6 +1080,8 @@ function mergeTaxonomyPackage(
 ): OperonTaxonomyPackageV1 {
 	const source = isRecord(existing) ? existing : {};
 	return {
+		...(source.inlinePropertyDefinitions !== undefined || fallback.inlinePropertyDefinitions !== undefined
+			? { inlinePropertyDefinitions: cloneInlinePropertyDefinitions((source.inlinePropertyDefinitions ?? fallback.inlinePropertyDefinitions)) } : {}),
 		keyMappings: cloneExistingDomain(source.keyMappings, fallback.keyMappings),
 		priorities: cloneExistingDomain(source.priorities, fallback.priorities),
 		pipelines: cloneExistingDomain(source.pipelines, fallback.pipelines),

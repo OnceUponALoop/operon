@@ -35,16 +35,18 @@ const buildTaskCreatorSubmitFieldSeed = draft => ({fieldValues:draft.fieldValues
 const t = (_namespace,key) => key;
 let notices=[];
 class Notice { constructor(message) { notices.push(message); } }
-class Probe { ${methods} }
+class Probe {
+ preparedCreatorCommits=new WeakMap(); ${methods} }
 class IndexProbe { ${forceMethod} }
 let finishOldScan;
 const oldScan=new Promise(resolve=>{finishOldScan=resolve});
 const order=[];
+const getNativePropertyIndex=()=>({markPending:()=>order.push('native-pending')});
 const actualIndex=new IndexProbe();
 Object.assign(actualIndex,{shuttingDown:false,inFlightReindexPaths:new Set(['Tasks/Test.md']),pendingFiles:new Set(),reindexTimer:null,awaitTrackedReindexPath:()=>oldScan,noteMarkdownEvent:()=>order.push('fresh'),enqueueIndexOperation:async fn=>fn(),doReindexFilePath:async()=>order.push('scan'),finishTrackedReindexPath:()=>order.push('finished')});
 const waiting=actualIndex.forceReindexFilePathAfterMutation('Tasks/Test.md');
 await Promise.resolve();assert.deepEqual(order,[],'Fresh scan must await older scan');
-finishOldScan();await waiting;assert.deepEqual(order,['fresh','scan','finished']);
+finishOldScan();await waiting;assert.deepEqual(order,['fresh','native-pending','scan','finished']);
 
 for(const kind of ['task','subtask']) for(const mode of ['normal','older-scan','missing','wrong-path','changed-repeat','duplicate-id','index-failure','write-failure','existing-series','missing-series-id','null-series','wrong-series','changed-after-followup']) {
  notices=[];let visible=null, freshScans=0, attempts=0, reopened=0;

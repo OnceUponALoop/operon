@@ -1,8 +1,8 @@
 {
   "schemaVersion": 1,
   "locale": "ru",
-  "keyCount": 3553,
-  "keyFingerprint": "d227b61beefc78e308eb3db9d0cb2990cebe30c87b856d481ec63d7d3b3c6a33",
+  "keyCount": 3568,
+  "keyFingerprint": "eb0da3cad5fa79ca12faafc4e55c1fb9b66593badd789e7b660dd40f45bfd7d2",
   "translations": {
     "buttons": {
       "addFileSubtask": "Добавить файловую подзадачу",
@@ -3167,8 +3167,19 @@
       "copyTaskCardEmbed": "Копировать код карточки задачи",
       "copyUrl": "Скопировать URL",
       "core": "Основное",
+      "creatorCommitFailed": "Не удалось создать задачу. Ваш выбор сохранён.",
+      "creatorCommitUncertain": "Не удалось проверить результат. Проверьте место назначения перед созданием другой задачи.",
       "creatorDescriptionPlaceholder": "Описание задачи",
+      "creatorInlineTemplateProperties": "Будут использованы только свойства шаблона.",
+      "creatorMetadataChanged": "Правила свойств изменились. Откройте Task Creator заново и проверьте их перед созданием.",
       "creatorNotePlaceholder": "Дополнительные заметки к задаче",
+      "creatorParentPreviewChanged": "Место назначения изменило унаследованные значения. Проверьте обновлённый выбор и повторите создание.",
+      "creatorPropertiesSkipped": "Задача создана. Пропущенные свойства: {{fields}}.",
+      "creatorSkipAutomatic": "Автоматический тип",
+      "creatorSkipFileOnly": "Свойство только для файла",
+      "creatorSkipTemplater": "Выражение Templater",
+      "creatorSkipUnsupported": "Неподдерживаемое значение",
+      "creatorTemplatePreparationFailed": "Не удалось подготовить шаблон. Исправьте, измените или отмените выбор.",
       "customColor": "Пользовательский цвет",
       "datePlaceholder": "дд.мм.гггг",
       "datetimeAddTime": "Добавить время",
@@ -3245,7 +3256,11 @@
       "fileBodyPanelTitle": "Содержимое",
       "fileBodyPlaceholder": "Детали проекта...",
       "filePropertiesUnavailable": "Свойства недоступны: источник отсутствует, неоднозначен или некорректен.",
+      "filePropertyAutomatic": "{{name}} доступно в Operon только для чтения, поскольку тип свойства — «Автоматически». Выберите подходящий тип свойства в Obsidian, чтобы включить редактирование.",
       "filePropertyReadOnly": "{{name}} доступно только для чтения: текущее значение нельзя безопасно изменить.",
+      "filePropertyTypeConflict": "{{name}} доступно в Operon только для чтения, поскольку значение или сопоставление не соответствует типу свойства.",
+      "filePropertyUnavailable": "{{name}} доступно в Operon только для чтения, поскольку не удалось проверить тип свойства или источник.",
+      "filePropertyUnsupported": "{{name}} доступно в Operon только для чтения, поскольку формат значения не поддерживает редактирование.",
       "fileTaskNameTitle": "Название файловой задачи",
       "fileTemplateInfoLabel": "Инфо:",
       "filterStatus": "Фильтр статуса",
@@ -3598,5 +3613,5 @@
       "toggleDescendantPreview": "Переключить предпросмотр потомков"
     }
   },
-  "sourceVersion": "04407119c93b413686b7e5b6e0f820a160755cc9d5006e3ed626f57fc361fd26"
+  "sourceVersion": "ade65d4ae2baa7ee135b323f88267d7f98df01a7758d3a76b5c496a3fb7b4777"
 }

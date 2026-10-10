@@ -7,6 +7,7 @@ import {
 import { tmpdir } from 'node:os';
 import path from 'node:path';
 import type { App } from 'obsidian';
+import { DEFAULT_SETTINGS } from '../../src/types/settings';
 import { OperonStorage } from '../../src/storage/operon-storage';
 import type { OperonDataPackageV1 } from '../../src/storage/operon-data-package';
 
@@ -54,7 +55,7 @@ export function assertPersonalSettingsPreserved(actual: OperonDataPackageV1, exp
 		ui: {
 			...value.ui,
 			taskCreationProfile: withoutNewFields(value.ui.taskCreationProfile, ['inheritPropertiesOnParentLink']),
-			taskUiPreferences: withoutNewFields(value.ui.taskUiPreferences, ['assigneeImageProperty', 'taskEditorHighlightActiveLine']),
+			taskUiPreferences: withoutNewFields(value.ui.taskUiPreferences, ['assigneeImageProperty', 'taskEditorHighlightActiveLine', 'taskEditorSections']),
 		},
 		automation: { ...value.automation, taskAutomationPolicy: withoutNewFields(value.automation.taskAutomationPolicy, ['keepInlineTasksWithParent']) },
 		integrations: value.integrations,
@@ -68,6 +69,7 @@ export function assertPersonalSettingsPreserved(actual: OperonDataPackageV1, exp
 		expected.automation.taskAutomationPolicy.keepInlineTasksWithParent ?? false, 'Existing inline placement preference must be preserved; missing defaults off');
 	assert.equal(actual.ui.taskUiPreferences.taskEditorHighlightActiveLine ?? true,
 		expected.ui.taskUiPreferences.taskEditorHighlightActiveLine ?? true, 'Active-line preference must be preserved; missing defaults on');
+	assert.deepEqual(actual.ui.taskUiPreferences.taskEditorSections ?? DEFAULT_SETTINGS.taskEditorSections, expected.ui.taskUiPreferences.taskEditorSections ?? DEFAULT_SETTINGS.taskEditorSections, 'Existing task editor section preferences must be preserved');
 	const expectedSlices = slices(expected);
 	for (const [key, value] of Object.entries(slices(actual))) {
 		assert.equal(sha256(JSON.stringify(value)), sha256(JSON.stringify(expectedSlices[key])), `User settings changed: ${key}`);
@@ -103,9 +105,11 @@ export class SettingsPreservationHarness {
 	canonicalCommits = 0;
 	pluginReads = 0;
 	private allowVersionBackups = false;
+	private allowInlinePropertyBackups = false;
 	private processQueue: Promise<unknown> = Promise.resolve();
 
-	constructor(options: { version?: SourceVersion; initialRaw?: string | null; configDir?: string; table?: boolean } = {}) {
+	constructor(options: { version?: SourceVersion; initialRaw?: string | null; configDir?: string; table?: boolean; inlinePropertyBackups?: boolean } = {}) {
+		this.allowInlinePropertyBackups = options.inlinePropertyBackups === true;
 		this.configDir = options.configDir ?? '.obsidian';
 		this.canonicalPath = `${this.configDir}/plugins/operon/data.json`;
 		this.source = sourcePackage(options.version);
@@ -258,13 +262,14 @@ export class SettingsPreservationHarness {
 			assert.equal(readFileSync(path.join(this.root, 'sealed-preimage.json'), 'utf8'), this.initialRaw, 'Sealed preimage changed');
 		}
 		const allowedFile = (relative: string): boolean => this.allowVersionBackups && relative.startsWith(`${this.configDir}/plugins/operon/backups/settings/`)
+			|| this.allowInlinePropertyBackups && relative.startsWith(`${this.configDir}/plugins/operon/backups/inline-properties/`)
 			|| relative === this.canonicalPath
 			|| relative.startsWith(`${this.canonicalPath}.tmp-`)
 			|| relative.startsWith(`${this.canonicalPath}.replace-backup.tmp-`)
 			|| new RegExp(`^${this.canonicalPath.replace(/[.*+?^${}()|[\]\\]/gu, '\\$&')}\\.invalid-\\d+\\.bak(?:\\.tmp-[\\w-]+)?$`, 'u').test(relative);
 		for (const operation of this.operations) {
 			if (operation.kind === 'mkdir') {
-				assert.ok([`${this.configDir}/plugins/operon`, ...(this.allowVersionBackups ? ['backups', 'backups/settings'] : []).map(name => `${this.configDir}/plugins/operon/${name}`), ...['state', 'runtime', 'cache'].map(name => `${this.configDir}/plugins/operon/${name}`)].includes(operation.path), `Unexpected directory creation: ${operation.path}`);
+				assert.ok([`${this.configDir}/plugins/operon`, ...(this.allowInlinePropertyBackups ? ['backups', 'backups/inline-properties'] : []).map(name => `${this.configDir}/plugins/operon/${name}`), ...(this.allowVersionBackups ? ['backups', 'backups/settings'] : []).map(name => `${this.configDir}/plugins/operon/${name}`), ...['state', 'runtime', 'cache'].map(name => `${this.configDir}/plugins/operon/${name}`)].includes(operation.path), `Unexpected directory creation: ${operation.path}`);
 			} else {
 				assert.ok(allowedFile(operation.path), `Write outside the allowed set: ${operation.path}`);
 				if (operation.target) assert.ok(allowedFile(operation.target), `Rename outside the allowed set: ${operation.target}`);

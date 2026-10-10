@@ -1,8 +1,8 @@
 {
   "schemaVersion": 1,
   "locale": "de",
-  "keyCount": 3553,
-  "keyFingerprint": "d227b61beefc78e308eb3db9d0cb2990cebe30c87b856d481ec63d7d3b3c6a33",
+  "keyCount": 3568,
+  "keyFingerprint": "eb0da3cad5fa79ca12faafc4e55c1fb9b66593badd789e7b660dd40f45bfd7d2",
   "translations": {
     "buttons": {
       "addFileSubtask": "Datei-Unteraufgabe hinzufügen",
@@ -3167,8 +3167,19 @@
       "copyTaskCardEmbed": "Task-Karteneinbettung kopieren",
       "copyUrl": "URL kopieren",
       "core": "Kern",
+      "creatorCommitFailed": "Die Aufgabe konnte nicht erstellt werden. Ihre Auswahl wurde beibehalten.",
+      "creatorCommitUncertain": "Das Ergebnis konnte nicht bestätigt werden. Prüfen Sie das Ziel, bevor Sie eine weitere Aufgabe erstellen.",
       "creatorDescriptionPlaceholder": "Aufgabenbeschreibung",
+      "creatorInlineTemplateProperties": "Nur die Template-Eigenschaften werden verwendet.",
+      "creatorMetadataChanged": "Die Eigenschaftsregeln wurden geändert. Öffnen Sie Task Creator erneut, um sie vor dem Erstellen zu prüfen.",
       "creatorNotePlaceholder": "Zusätzliche Aufgabennotizen",
+      "creatorParentPreviewChanged": "Das Ziel hat geerbte Werte geändert. Prüfen Sie die aktualisierte Auswahl und erstellen Sie erneut.",
+      "creatorPropertiesSkipped": "Aufgabe erstellt. Übersprungene Eigenschaften: {{fields}}.",
+      "creatorSkipAutomatic": "Automatischer Typ",
+      "creatorSkipFileOnly": "Dateieigenschaft",
+      "creatorSkipTemplater": "Templater-Ausdruck",
+      "creatorSkipUnsupported": "Nicht unterstützter Wert",
+      "creatorTemplatePreparationFailed": "Template konnte nicht vorbereitet werden. Korrigiere, ändere oder entferne die Auswahl.",
       "customColor": "Eigene Farbe",
       "datePlaceholder": "tt.mm.jjjj",
       "datetimeAddTime": "Uhrzeit hinzufügen",
@@ -3245,7 +3256,11 @@
       "fileBodyPanelTitle": "Inhalt",
       "fileBodyPlaceholder": "Projektdetails…",
       "filePropertiesUnavailable": "Dateieigenschaften sind nicht verfügbar: Die Quelle fehlt, ist mehrdeutig oder ungültig.",
+      "filePropertyAutomatic": "{{name}} ist in Operon schreibgeschützt, weil der Eigenschaftstyp Automatisch ist. Wähle in Obsidian einen passenden Eigenschaftstyp, um die Bearbeitung zu aktivieren.",
       "filePropertyReadOnly": "{{name}} ist schreibgeschützt, da der aktuelle Wert nicht sicher bearbeitet werden kann.",
+      "filePropertyTypeConflict": "{{name}} ist in Operon schreibgeschützt, weil der Wert oder die Zuordnung dem Eigenschaftstyp widerspricht.",
+      "filePropertyUnavailable": "{{name}} ist in Operon schreibgeschützt, weil der Eigenschaftstyp oder die Quelle nicht überprüft werden konnte.",
+      "filePropertyUnsupported": "{{name}} ist in Operon schreibgeschützt, weil das Wertformat nicht zur Bearbeitung unterstützt wird.",
       "fileTaskNameTitle": "Name der Datei-Aufgabe",
       "fileTemplateInfoLabel": "Info:",
       "filterStatus": "Status filtern",
@@ -3598,5 +3613,5 @@
       "toggleDescendantPreview": "Vorschau untergeordneter Aufgaben umschalten"
     }
   },
-  "sourceVersion": "1b14c950833327cac6184226478722cdd6bf7ead2801b6f993abf5dbb4c55b71"
+  "sourceVersion": "67cf76b89460fc1d17186db35f7f8fb1ccc1571b4acf384eff9521c54c397079"
 }

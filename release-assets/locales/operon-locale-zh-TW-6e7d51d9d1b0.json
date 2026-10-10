@@ -1,8 +1,8 @@
 {
   "schemaVersion": 1,
   "locale": "zh-TW",
-  "keyCount": 3553,
-  "keyFingerprint": "d227b61beefc78e308eb3db9d0cb2990cebe30c87b856d481ec63d7d3b3c6a33",
+  "keyCount": 3568,
+  "keyFingerprint": "eb0da3cad5fa79ca12faafc4e55c1fb9b66593badd789e7b660dd40f45bfd7d2",
   "translations": {
     "buttons": {
       "addFileSubtask": "新增檔案子任務",
@@ -3167,8 +3167,19 @@
       "copyTaskCardEmbed": "複製任務卡片嵌入程式碼",
       "copyUrl": "複製 URL",
       "core": "核心",
+      "creatorCommitFailed": "無法建立任務。已保留您的選擇。",
+      "creatorCommitUncertain": "無法驗證建立結果。建立其他任務前請檢查目標位置。",
       "creatorDescriptionPlaceholder": "任務描述",
+      "creatorInlineTemplateProperties": "僅使用範本屬性。",
+      "creatorMetadataChanged": "屬性規則已變更。請重新開啟 Task Creator，在建立前檢查。",
       "creatorNotePlaceholder": "附加任務筆記",
+      "creatorParentPreviewChanged": "目標位置變更了繼承值。請檢查更新後的選擇，然後再次建立。",
+      "creatorPropertiesSkipped": "任務已建立。略過的屬性：{{fields}}。",
+      "creatorSkipAutomatic": "自動類型",
+      "creatorSkipFileOnly": "僅檔案屬性",
+      "creatorSkipTemplater": "Templater 運算式",
+      "creatorSkipUnsupported": "不支援的值",
+      "creatorTemplatePreparationFailed": "無法準備範本。請修正、變更或清除選擇。",
       "customColor": "自定義顏色",
       "datePlaceholder": "dd.mm.yyyy",
       "datetimeAddTime": "新增時間",
@@ -3245,7 +3256,11 @@
       "fileBodyPanelTitle": "內容",
       "fileBodyPlaceholder": "專案詳情……",
       "filePropertiesUnavailable": "來源缺失、不明確或無效，無法使用檔案屬性。",
+      "filePropertyAutomatic": "{{name}} 的屬性類型為自動，因此在 Operon 中為唯讀。請在 Obsidian 中選擇相符的屬性類型以啟用編輯。",
       "filePropertyReadOnly": "{{name}} 的目前值無法安全編輯，因此為唯讀。",
+      "filePropertyTypeConflict": "{{name}} 的值或對應與屬性類型衝突，因此在 Operon 中為唯讀。",
+      "filePropertyUnavailable": "無法驗證 {{name}} 的屬性類型或來源，因此在 Operon 中為唯讀。",
+      "filePropertyUnsupported": "{{name}} 的值格式不支援編輯，因此在 Operon 中為唯讀。",
       "fileTaskNameTitle": "檔案任務名稱",
       "fileTemplateInfoLabel": "資訊：",
       "filterStatus": "篩選狀態",
@@ -3598,5 +3613,5 @@
       "toggleDescendantPreview": "切換子任務預覽"
     }
   },
-  "sourceVersion": "2ef0ff0536a33ce6ba84010735671a63e3de3b90ec4408adfccabfb8fd74d43a"
+  "sourceVersion": "0b2d2abd747f408c4285c75201bba6becc3acb6cb5a05b89d4a6370bb9b7afb9"
 }

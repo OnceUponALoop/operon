@@ -1,8 +1,8 @@
 {
   "schemaVersion": 1,
   "locale": "tr",
-  "keyCount": 3553,
-  "keyFingerprint": "d227b61beefc78e308eb3db9d0cb2990cebe30c87b856d481ec63d7d3b3c6a33",
+  "keyCount": 3568,
+  "keyFingerprint": "eb0da3cad5fa79ca12faafc4e55c1fb9b66593badd789e7b660dd40f45bfd7d2",
   "translations": {
     "buttons": {
       "addFileSubtask": "Dosya Tipi Alt Görev Ekle",
@@ -3167,8 +3167,19 @@
       "copyTaskCardEmbed": "Task kartı embed kodunu kopyala",
       "copyUrl": "URL'yi kopyala",
       "core": "Temel",
+      "creatorCommitFailed": "Görev oluşturulamadı. Seçimleriniz korundu.",
+      "creatorCommitUncertain": "Oluşturma sonucu doğrulanamadı. Başka görev oluşturmadan önce hedefi kontrol edin.",
       "creatorDescriptionPlaceholder": "Görev açıklaması",
+      "creatorInlineTemplateProperties": "Yalnızca şablon özellikleri kullanılacak.",
+      "creatorMetadataChanged": "Özellik kuralları değişti. Oluşturmadan önce incelemek için Task Creator’ı yeniden açın.",
       "creatorNotePlaceholder": "Ek görev notları",
+      "creatorParentPreviewChanged": "Hedef, miras alınan değerleri değiştirdi. Güncel seçimleri inceleyip yeniden oluşturun.",
+      "creatorPropertiesSkipped": "Görev oluşturuldu. Atlanan özellikler: {{fields}}.",
+      "creatorSkipAutomatic": "Otomatik tür",
+      "creatorSkipFileOnly": "dosyaya özgü özellik",
+      "creatorSkipTemplater": "Templater ifadesi",
+      "creatorSkipUnsupported": "desteklenmeyen değer",
+      "creatorTemplatePreparationFailed": "Şablon hazırlanamadı. Şablonu düzeltin, değiştirin veya seçimi kaldırın.",
       "customColor": "Özel renk",
       "datePlaceholder": "gg.aa.yyyy",
       "datetimeAddTime": "Saat ekle",
@@ -3245,7 +3256,11 @@
       "fileBodyPanelTitle": "İçerik",
       "fileBodyPlaceholder": "Proje detayları...",
       "filePropertiesUnavailable": "Kaynak eksik, belirsiz veya geçersiz olduğu için dosya özellikleri kullanılamıyor.",
+      "filePropertyAutomatic": "{{name}}, özellik türü Otomatik olduğu için Operon’da salt okunurdur. Düzenlemeyi açmak için Obsidian’da uygun bir özellik türü seçin.",
       "filePropertyReadOnly": "{{name}}: mevcut değer güvenle düzenlenemediği için salt okunur.",
+      "filePropertyTypeConflict": "{{name}}, değeri veya eşlemesi özellik türüyle çeliştiği için Operon’da salt okunurdur.",
+      "filePropertyUnavailable": "{{name}}, özellik türü veya kaynağı doğrulanamadığı için Operon’da salt okunurdur.",
+      "filePropertyUnsupported": "{{name}}, değer biçimi düzenleme için desteklenmediği için Operon’da salt okunurdur.",
       "fileTaskNameTitle": "Dosya Tipi Görev Adı",
       "fileTemplateInfoLabel": "Bilgi:",
       "filterStatus": "Durum filtrele",
@@ -3598,5 +3613,5 @@
       "toggleDescendantPreview": "Alt görev önizlemesini aç/kapat"
     }
   },
-  "sourceVersion": "18d866dedd2d945e19070d9e203469c7b5983163cfd46950817a52909022e7dc"
+  "sourceVersion": "02f86980efd4bb7ca0bc22f7bee526c40bd402aab1f8e717ae926aa0e4c8dc29"
 }

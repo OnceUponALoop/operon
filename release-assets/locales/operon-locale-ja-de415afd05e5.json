@@ -1,8 +1,8 @@
 {
   "schemaVersion": 1,
   "locale": "ja",
-  "keyCount": 3553,
-  "keyFingerprint": "d227b61beefc78e308eb3db9d0cb2990cebe30c87b856d481ec63d7d3b3c6a33",
+  "keyCount": 3568,
+  "keyFingerprint": "eb0da3cad5fa79ca12faafc4e55c1fb9b66593badd789e7b660dd40f45bfd7d2",
   "translations": {
     "buttons": {
       "addFileSubtask": "ファイルサブタスクを追加",
@@ -3167,8 +3167,19 @@
       "copyTaskCardEmbed": "タスクカードの埋め込みコードをコピー",
       "copyUrl": "URL をコピー",
       "core": "基本",
+      "creatorCommitFailed": "タスクを作成できませんでした。選択内容は保持されています。",
+      "creatorCommitUncertain": "作成結果を確認できませんでした。別のタスクを作成する前に保存先を確認してください。",
       "creatorDescriptionPlaceholder": "タスクの説明",
+      "creatorInlineTemplateProperties": "テンプレートのプロパティのみが使用されます。",
+      "creatorMetadataChanged": "プロパティのルールが変更されました。作成前に Task Creator を開き直して確認してください。",
       "creatorNotePlaceholder": "追加のタスクメモ",
+      "creatorParentPreviewChanged": "保存先により継承値が変更されました。更新された選択内容を確認し、もう一度作成してください。",
+      "creatorPropertiesSkipped": "タスクを作成しました。スキップしたプロパティ: {{fields}}。",
+      "creatorSkipAutomatic": "自動型",
+      "creatorSkipFileOnly": "ファイル専用プロパティ",
+      "creatorSkipTemplater": "Templater 式",
+      "creatorSkipUnsupported": "未対応の値",
+      "creatorTemplatePreparationFailed": "テンプレートを準備できませんでした。修正、変更、または選択を解除してください。",
       "customColor": "カスタムカラー",
       "datePlaceholder": "dd.mm.yyyy",
       "datetimeAddTime": "時刻を追加",
@@ -3245,7 +3256,11 @@
       "fileBodyPanelTitle": "本文",
       "fileBodyPlaceholder": "プロジェクトの詳細...",
       "filePropertiesUnavailable": "ソースが存在しない、曖昧、または無効なため、ファイルプロパティを利用できません。",
+      "filePropertyAutomatic": "{{name}} はプロパティの種類が自動のため、Operon では読み取り専用です。編集するには Obsidian で適切なプロパティの種類を選択してください。",
       "filePropertyReadOnly": "{{name}} は現在の値を安全に編集できないため読み取り専用です。",
+      "filePropertyTypeConflict": "{{name}} は値またはマッピングがプロパティの種類と一致しないため、Operon では読み取り専用です。",
+      "filePropertyUnavailable": "{{name}} はプロパティの種類またはソースを確認できなかったため、Operon では読み取り専用です。",
+      "filePropertyUnsupported": "{{name}} は値の形式が編集に対応していないため、Operon では読み取り専用です。",
       "fileTaskNameTitle": "ファイルタスク名",
       "fileTemplateInfoLabel": "情報:",
       "filterStatus": "ステータスで絞り込み",
@@ -3598,5 +3613,5 @@
       "toggleDescendantPreview": "子孫プレビューを切り替え"
     }
   },
-  "sourceVersion": "63a64ddbc7b3b5ecf88f69bcc5bfa00e5ba743beb6e05323b13e2cdd0326f9a6"
+  "sourceVersion": "b4064248eadcfd95d41b5ef596ce88e736a2999d2a734ef11675660496af0637"
 }

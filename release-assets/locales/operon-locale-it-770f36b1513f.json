@@ -1,8 +1,8 @@
 {
   "schemaVersion": 1,
   "locale": "it",
-  "keyCount": 3553,
-  "keyFingerprint": "d227b61beefc78e308eb3db9d0cb2990cebe30c87b856d481ec63d7d3b3c6a33",
+  "keyCount": 3568,
+  "keyFingerprint": "eb0da3cad5fa79ca12faafc4e55c1fb9b66593badd789e7b660dd40f45bfd7d2",
   "translations": {
     "buttons": {
       "addFileSubtask": "Aggiungi sotto-attività-file",
@@ -3167,8 +3167,19 @@
       "copyTaskCardEmbed": "Copia codice della scheda attività",
       "copyUrl": "Copia URL",
       "core": "Essenziale",
+      "creatorCommitFailed": "Impossibile creare l’attività. Le selezioni sono state conservate.",
+      "creatorCommitUncertain": "Impossibile verificare il risultato. Controlla la destinazione prima di creare un’altra attività.",
       "creatorDescriptionPlaceholder": "Descrizione dell'attività",
+      "creatorInlineTemplateProperties": "Verranno utilizzate solo le proprietà del modello.",
+      "creatorMetadataChanged": "Le regole delle proprietà sono cambiate. Riapri Task Creator per verificarle prima della creazione.",
       "creatorNotePlaceholder": "Note aggiuntive dell'attività",
+      "creatorParentPreviewChanged": "La destinazione ha modificato i valori ereditati. Controlla le selezioni aggiornate e crea di nuovo.",
+      "creatorPropertiesSkipped": "Attività creata. Proprietà ignorate: {{fields}}.",
+      "creatorSkipAutomatic": "Tipo automatico",
+      "creatorSkipFileOnly": "Proprietà solo per file",
+      "creatorSkipTemplater": "Espressione Templater",
+      "creatorSkipUnsupported": "Valore non supportato",
+      "creatorTemplatePreparationFailed": "Impossibile preparare il modello. Correggi, cambia o rimuovi la selezione.",
       "customColor": "Colore personalizzato",
       "datePlaceholder": "gg.mm.aaaa",
       "datetimeAddTime": "Aggiungi ora",
@@ -3245,7 +3256,11 @@
       "fileBodyPanelTitle": "Contenuto",
       "fileBodyPlaceholder": "Dettagli del progetto...",
       "filePropertiesUnavailable": "Proprietà non disponibili: la fonte è mancante, ambigua o non valida.",
+      "filePropertyAutomatic": "{{name}} è di sola lettura in Operon perché il tipo di proprietà è Automatico. Seleziona un tipo adatto in Obsidian per abilitare la modifica.",
       "filePropertyReadOnly": "{{name}} è di sola lettura perché il valore attuale non può essere modificato in sicurezza.",
+      "filePropertyTypeConflict": "{{name}} è di sola lettura in Operon perché il valore o la mappatura è in conflitto con il tipo di proprietà.",
+      "filePropertyUnavailable": "{{name}} è di sola lettura in Operon perché non è stato possibile verificare il tipo di proprietà o la fonte.",
+      "filePropertyUnsupported": "{{name}} è di sola lettura in Operon perché il formato del valore non supporta la modifica.",
       "fileTaskNameTitle": "Nome dell'attività-file",
       "fileTemplateInfoLabel": "Info:",
       "filterStatus": "Filtra stato",
@@ -3598,5 +3613,5 @@
       "toggleDescendantPreview": "Alterna anteprima discendenti"
     }
   },
-  "sourceVersion": "fd976cf98f2ad51fed972a529f8b7153628a5374ab6094ed922d9503b7f18b6f"
+  "sourceVersion": "2c850698d9baab0275d7137c3d2bcc0fc1d6f756eb86191a7aa6ef9ad32f6395"
 }

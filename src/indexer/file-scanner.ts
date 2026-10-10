@@ -6,6 +6,7 @@
  * Most non-task lines rejected in < 1 microsecond via charCodeAt checks.
  */
 
+import { captureNativePropertySource, type NativePropertySource } from './native-property-index';
 import { App, parseYaml, TFile } from 'obsidian';
 import { isValidOperonId } from '../core/id-generator';
 import { ParsedTask, PlainCheckboxProgress, TaskLocation } from '../types/fields';
@@ -17,6 +18,7 @@ import { iterateMarkdownLinesOutsideFences } from '../core/markdown-fenced-lines
 
 /** Result of scanning a single file */
 export interface FileScanResult {
+ nativeProperties: NativePropertySource;
 	filePath: string;
 	/** Inline tasks found in file body */
 	inlineTasks: ParsedTask[];
@@ -77,6 +79,7 @@ export async function scanFileWithMappings(
 
 	return {
 		filePath,
+  nativeProperties: captureNativePropertySource(content, bodyScan.inlineTasks, !!yamlTask),
 		inlineTasks: bodyScan.inlineTasks,
 		plainCheckboxProgress: bodyScan.plainCheckboxProgress,
 		yamlTask,

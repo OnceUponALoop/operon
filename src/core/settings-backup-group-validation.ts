@@ -1,3 +1,4 @@
+import { mergeImportedInlinePropertyDefinitions, validateInlinePropertyDefinitions, type InlinePropertyDefinitions } from './inline-property-definitions';
 import type { JsonValue } from '../agent-runtime/contracts/v1/primitives';
 import type { PresetFavorites } from './preset-favorites';
 import {
@@ -61,6 +62,7 @@ export interface OperonSettingsBackupSystemKeyMappingsGroupV1 {
 
 export interface OperonSettingsBackupCustomKeysGroupV1 {
 	customKeys: KeyMapping[];
+	inlinePropertyDefinitions?: InlinePropertyDefinitions;
 }
 
 export interface OperonSettingsBackupFiltersGroupV1 {
@@ -349,7 +351,11 @@ function decodeSystemMappings(data: unknown, path: string, diagnostics: OperonSe
 }
 
 function decodeCustomKeys(data: unknown, path: string, diagnostics: OperonSettingsBackupDiagnostic[]): AnyObject | null {
-	const object = inspectObject(data, path, ['customKeys'], ['customKeys'], diagnostics);
+	const object = inspectObject(data, path, ['customKeys', 'inlinePropertyDefinitions'], ['customKeys'], diagnostics);
+	if (object?.inlinePropertyDefinitions !== undefined) {
+		try { validateInlinePropertyDefinitions(object.inlinePropertyDefinitions); }
+		catch { diagnostics.push(error(path + '.inlinePropertyDefinitions', 'value', 'Invalid property interpretation definitions.')); }
+	}
 	if (!object) return null;
 	const mappings = inspectArray(object.customKeys, `${path}.customKeys`, diagnostics);
 	const canonicalKeys = new Set<string>();
@@ -742,8 +748,17 @@ function validateCanonicalProjection(
 			? applyDynamicFilterTemplatePreferences(payloads.filters.filterSets, payloads.filters.dynamicTemplates)
 			: payloads.filters.filterSets
 		: baseline.filterSets;
+	let inlineDefinitions = baseline.inlinePropertyDefinitions;
+	const importedProperties = payloads['custom-keys'];
+	if (importedProperties) {
+		try {
+			inlineDefinitions = mergeImportedInlinePropertyDefinitions(baseline.keyMappings, [...systemMappings, ...customMappings],
+				inlineDefinitions, importedProperties.inlinePropertyDefinitions, importedProperties.customKeys);
+		} catch { diagnostics.push(error('$.body.groups.custom-keys', 'value', 'Property interpretation conflicts with existing sources.')); }
+	}
 	const candidate = migrateSettings({
 		...baseline,
+		inlinePropertyDefinitions: inlineDefinitions,
 		...general,
 		pipelines: payloads.pipelines?.pipelines ?? baseline.pipelines,
 		defaultPipelineName: payloads.pipelines?.defaultPipelineName ?? baseline.defaultPipelineName,

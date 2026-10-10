@@ -1,3 +1,5 @@
+import { retainTablePropertyDraft, tablePropertyPickerDraft, tablePropertyUpdateRequest } from './table-file-property-editor';
+import { getTableNativePropertySnapshot } from './table-native-property';
 import { formatTableCompactDuration } from './table-display';
 import { registerFilterDayRefresh } from '../../core/filter-day-refresh';
 import { getScopedTrackerSessions } from '../../core/time-scope-values';
@@ -99,7 +101,6 @@ import {
 	buildTableEditableCellFocusKey,
 	buildTableRenderItems,
 	buildTableTaskOrdinalMap,
-	collectTableParentContextTasks,
 	createTableFilePropertyRenderProjection,
 	findTableEditableCellByFocusKey,
 	formatTableRowOrdinal,
@@ -887,11 +888,25 @@ export class OperonTableView extends FileView {
 			const searchContext = this.resolveTableSearchContext(filterSet, tasks, settings, filterFilePropertyContext);
 		const searchContextResolvedAt = enginePerfNow();
 		renderTrace?.mark('scope');
-		const filePropertySnapshot = getTableFilePropertyIndex(this.app).getSnapshot(
-			searchContext.scopeFilteredTasks,
+		const baseFilePropertySnapshot = getTableFilePropertyIndex(this.app).getSnapshot(
+			tasks,
 			this.indexer.getGeneration(),
 			{ keyMappings: settings.keyMappings },
 		);
+		const usesNativeProperties = [
+			...preset.columns.map(column => column.key), ...preset.sortRules.map(rule => rule.key),
+			...preset.summaries.map(rule => rule.key), preset.groupBy, preset.subgroupBy,
+		].some(key => !!key && isTableFilePropertyColumnKey(key));
+		const filePropertySnapshot = getTableNativePropertySnapshot(
+			this, this.app, baseFilePropertySnapshot, searchContext.scopeFilteredTasks, this.indexer.getGeneration(), settings,
+			() => { if (this.contentEl.isConnected) this.render(); }, usesNativeProperties,
+		);
+  if (filePropertySnapshot.loading) {
+   this.renderLoadingTableFile();
+   renderTrace?.finish('loaded', () => this.containerEl.isConnected);
+   return;
+  }
+
 		const resolvedColumns = resolveTableColumns(preset, settings);
 		const taskColumns = resolvedColumns.taskColumns.map(column => ({ ...column }));
 		const columns = resolvedColumns.renderColumns.map(column => ({ ...column }));
@@ -965,6 +980,7 @@ export class OperonTableView extends FileView {
 			this.deferSummariesForSearch = false;
 		}
 		const result = cachedNoSearchResult?.result ?? queryTableRows({
+			sortCacheOwner: this,
 			preset,
 			filterSet,
 			tasks,
@@ -1033,15 +1049,7 @@ export class OperonTableView extends FileView {
 				settings,
 			), taskOrdinals)
 			: baseItems;
-		const contextParentTasks = collectTableParentContextTasks(ordinalItems);
-		for (const item of items) {
-			if (item.kind === 'task' && item.tree?.context) contextParentTasks.push(item.task);
-		}
-		const contextFilePropertySnapshot = getTableFilePropertyIndex(this.app).getSnapshot(
-			contextParentTasks,
-			this.indexer.getGeneration(),
-			{ keyMappings: settings.keyMappings },
-		);
+		const contextFilePropertySnapshot = filePropertySnapshot;
 		const filePropertyRenderProjection = createTableFilePropertyRenderProjection(
 			filePropertySnapshot,
 			contextFilePropertySnapshot,
@@ -3463,10 +3471,11 @@ export class OperonTableView extends FileView {
 			sourcePath: task.primary.filePath,
 			editable,
 			onToggle: commit,
+ onEditListMember: index => openPicker(index),
 		})) return;
 		if (!editable || !field) return;
 		setAccessibleLabelWithoutTooltip(cell, `${label}: ${cellValue.normalizedValue || t('table', 'filePropertyNotSet')}. ${t('table', 'editCellAria')}`);
-		const openPicker = (): void => {
+		const openPicker = (editListIndex?: number): void => {
 			if (this.pendingCellKey !== null) return;
 			this.closeActivePicker();
 			let closePicker: (() => void) | null = null;
@@ -3475,7 +3484,8 @@ export class OperonTableView extends FileView {
 				anchor: snapshotFloatingRectAnchor(cell),
 				field,
 				label,
-				cellValue,
+				cellValue: tablePropertyPickerDraft(this, cellKey, cellValue),
+ nativeList: cellValue.nativeState === 'ready', preserveListValues: true, editListIndex,
 				candidates: isParentContext
 					? renderState.getContextFilePropertyCandidates(column.key)
 					: renderState.getFilePropertyCandidates(column.key),
@@ -3528,12 +3538,10 @@ export class OperonTableView extends FileView {
 		this.closeActivePicker();
 		let success = false;
 		try {
-			const outcome = await this.callbacks.onUpdateFileProperty(task.operonId, {
-				propertyName: field.propertyName,
-				expected,
-				mutation,
-			});
+			retainTablePropertyDraft(this, cellKey, mutation);
+			const outcome = await this.callbacks.onUpdateFileProperty(task.operonId, tablePropertyUpdateRequest(task, field, cellValue, mutation)!);
 			success = outcome === 'updated' || outcome === 'already-updated';
+ if (success) retainTablePropertyDraft(this, cellKey);
 			if (outcome === 'conflict') new Notice(t('table', 'filePropertyConflict'));
 			else if (!success) new Notice(t('notifications', 'taskSaveFailed'));
 		} catch (error: unknown) {
@@ -4387,6 +4395,7 @@ export class OperonTableView extends FileView {
 			summaries: [],
 		};
 		const result = queryTableRows({
+			sortCacheOwner: this,
 			preset: sortedPreset,
 			filterSet: input.filterSet,
 			tasks: input.tasks,

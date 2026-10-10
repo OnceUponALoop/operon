@@ -10,6 +10,8 @@
 import { App, normalizePath, parseYaml, stringifyYaml, TFile, TFolder } from 'obsidian';
 import { OperonIndexer } from '../indexer/indexer';
 
+import { findInlinePropertyTask, patchInlineProperties, readInlinePropertyProjection, type InlinePropertyProjection, type InlinePropertyChange } from './inline-property-source';
+import { resolveInlinePropertyDefinition, type InlinePropertyDefinition, type InlinePropertyDefinitions } from './inline-property-definitions';
 import { parseListValue, parseTaskLine } from './parser';
 import { serializeTask } from './serializer';
 import { IndexedTask, OperonField } from '../types/fields';
@@ -46,6 +48,7 @@ import {
 import { canApplyFileTaskPropertyChanges, readFileTaskPropertyDocument, fileTaskPropertyIdentityMatches, type FileTaskPropertyChange } from './file-task-property-draft';
 
 export interface TaskWriteOptions {
+    inlinePropertyDraft?: readonly InlinePropertyChange[];
     filePropertyDraft?: { changes: readonly FileTaskPropertyChange[]; body?: { expectedContent: string; content: string } };
     mode?: 'merge' | 'replace';
     reindex?: 'scheduled' | 'none';
@@ -56,6 +59,8 @@ export interface TaskWriteOptions {
 }
 
 export interface TaskWriterHooks {
+    getInlinePropertyDefinitions?: () => InlinePropertyDefinitions | undefined;
+    prepareInlineProperties?: (definitions: readonly InlinePropertyDefinition[], canCommit?: () => boolean) => Promise<InlinePropertyDefinitions>;
 	onBeforeWriteFile?: (filePath: string) => void;
 	validateWritePath?: (filePath: string, allowAbsent: boolean) => Promise<boolean>;
 	validatePluginWritePath?: (filePath: string, allowAbsent: boolean) => Promise<boolean>;
@@ -146,6 +151,7 @@ export interface TaskSourceMutationResult {
 }
 
 export interface GuardedTaskSourceFieldUpdate {
+    inlinePropertyDraft?: readonly InlinePropertyChange[];
     operonId: string;
     format: 'inline' | 'yaml';
     lineNumber?: number;
@@ -294,38 +300,9 @@ function isSafeMarkdownTaskSourcePath(originalPath: string, normalizedPath: stri
 }
 
 function findTaskLineIndex(
-    lines: string[],
-    filePath: string,
-    operonId: string,
-    lineHint: number,
-    keyMappings: KeyMapping[],
+    lines: string[], filePath: string, operonId: string, _lineHint: number, keyMappings: KeyMapping[],
 ): number {
-    if (lineHint >= 0 && lineHint < lines.length) {
-        const hinted = parseTaskLine(lines[lineHint], lineHint, filePath, keyMappings);
-        if (hinted?.operonId === operonId) {
-            return lineHint;
-        }
-    }
-
-    const matches: number[] = [];
-    for (let index = 0; index < lines.length; index++) {
-        const parsed = parseTaskLine(lines[index], index, filePath, keyMappings);
-        if (parsed?.operonId === operonId) {
-            matches.push(index);
-        }
-    }
-    if (matches.length === 0) return -1;
-
-    let best = matches[0];
-    let bestDistance = Number.POSITIVE_INFINITY;
-    for (const index of matches) {
-        const distance = Math.abs(index - lineHint);
-        if (distance < bestDistance) {
-            best = index;
-            bestDistance = distance;
-        }
-    }
-    return best;
+    return findInlinePropertyTask(lines.join('\n'), filePath, operonId, keyMappings)?.index ?? -1;
 }
 
 export function tryPatchInlineTaskLineContent(
@@ -336,6 +313,7 @@ export function tryPatchInlineTaskLineContent(
     lineHint: number,
     mode: 'merge' | 'replace',
     keyMappings: KeyMapping[] = [],
+    protectedKeys: ReadonlySet<string> = new Set(),
 ): InlineTaskLinePatchResult {
     const lines = content.split('\n');
     const patch = tryPatchInlineTaskLines(
@@ -346,6 +324,7 @@ export function tryPatchInlineTaskLineContent(
         lineHint,
         mode,
         keyMappings,
+        protectedKeys,
     );
     return patch.ok
         ? { ok: true, content: lines.join('\n'), fallbackReason: 'none' }
@@ -360,6 +339,7 @@ function tryPatchInlineTaskLines(
     lineHint: number,
     mode: 'merge' | 'replace',
     keyMappings: KeyMapping[],
+    protectedKeys: ReadonlySet<string> = new Set(),
 ): { ok: true; fallbackReason: 'none' } | {
     ok: false;
     fallbackReason: 'inline-task-not-found' | 'inline-task-parse-failed';
@@ -381,7 +361,7 @@ function tryPatchInlineTaskLines(
         if (canonicalKey === 'pinned') continue;
         if (canonicalKey === 'tags') continue;
         const fieldType = getManagedTaskFieldType(canonicalKey, keyMappings);
-        if (!fieldType) {
+        if (!fieldType || keyMappings.some(mapping => mapping.isSystem === false && mapping.canonicalKey === canonicalKey)) {
             unmanagedFields.push(field);
             continue;
         }
@@ -408,7 +388,8 @@ function tryPatchInlineTaskLines(
 
 	for (const [key, rawValue] of Object.entries(fieldValues)) {
 		if (key.startsWith('_')) continue;
-		if (key === 'pinned') continue;
+		if (key === 'pinned' || protectedKeys.has(key)) continue;
+        if (parsed.fields.filter(field => field.key === key).length > 1) return { ok: false, fallbackReason: 'inline-task-parse-failed' };
 		const fieldType = getManagedTaskFieldType(key, keyMappings);
 		if (!fieldType) continue;
 		const value = key === 'taskGallery'
@@ -441,7 +422,7 @@ function tryPatchInlineTaskLines(
         );
         parsed.fields = parsed.fields.filter(f => {
             if (!isManagedTaskFieldCanonicalKey(f.key, keyMappings)) return true;
-            if (incomingKeys.has(f.key)) return true;
+            if (incomingKeys.has(f.key) || protectedKeys.has(f.key)) return true;
             if (f.key === 'operonId' || f.key === 'datetimeCreated' || f.key === 'related') return true;
             return false;
         });
@@ -464,7 +445,7 @@ export function tryPatchYamlTaskContent(
     }
     let frontmatter: unknown;
     try {
-        frontmatter = parseYaml(match[2]);
+        frontmatter = parseYaml(match[2] + '\n');
     } catch {
         return { ok: false, content, fallbackReason: 'yaml-parse-failed' };
     }
@@ -488,7 +469,7 @@ export function tryPatchYamlTaskContent(
         mode,
         keyMappings,
     );
-    const serialized = stringifyYaml(mutable).trimEnd();
+    const serialized = stringifyYaml(mutable).replace(/\r?\n$/, '');
     const rebuilt = `${match[1]}${serialized}${match[3]}${content.slice(match[0].length)}`;
     return {
         ok: true,
@@ -507,7 +488,7 @@ export function tryDetachYamlTaskPropertiesContent(
     if (!match) return { ok: false, content };
     let frontmatter: unknown;
     try {
-        frontmatter = parseYaml(match[2]);
+        frontmatter = parseYaml(match[2] + '\n');
     } catch {
         return { ok: false, content };
     }
@@ -537,7 +518,7 @@ export function tryDetachYamlTaskPropertiesContent(
             delete mutable[yamlKey];
         }
     }
-    const serialized = stringifyYaml(mutable).trimEnd();
+    const serialized = stringifyYaml(mutable).replace(/\r?\n$/, '');
     return {
         ok: true,
         content: `${match[1]}${serialized}${match[3]}${content.slice(match[0].length)}`,
@@ -558,7 +539,7 @@ export class TaskWriter {
     constructor(app: App, indexer: TaskWriterIndexerPort, keyMappings: KeyMapping[], hooks: TaskWriterHooks = {}) {
         this.app = app;
         this.indexer = indexer;
-        this.keyMappings = keyMappings;
+        this.keyMappings = keyMappings.map(mapping => ({ ...mapping }));
         this.hooks = hooks;
     }
 
@@ -608,7 +589,7 @@ export class TaskWriter {
 
     /** Update key mappings when settings change. */
     updateKeyMappings(keyMappings: KeyMapping[]): void {
-        this.keyMappings = keyMappings;
+        this.keyMappings = keyMappings.map(mapping => ({ ...mapping }));
     }
 
     /**
@@ -1041,7 +1022,7 @@ export class TaskWriter {
 				return { ok: false, content, reason: 'expected-fields-mismatch' };
 			}
 		}
-        if (taskUpdates.every(update => update.format === 'inline')) {
+        if (!this.hooks.getInlinePropertyDefinitions?.()?.entries.length && taskUpdates.every(update => update.format === 'inline' && !update.inlinePropertyDraft?.length)) {
             const lines = content.split('\n');
             for (const update of taskUpdates) {
                 const patch = tryPatchInlineTaskLines(
@@ -1062,11 +1043,21 @@ export class TaskWriter {
         let renderedContent = content;
         for (const update of taskUpdates) {
             if (update.format === 'inline') {
-                const patch = tryPatchInlineTaskLineContent(
+                const fields = { ...update.fieldValues };
+                if (update.inlinePropertyDraft?.length) {
+                    try { renderedContent = patchInlineProperties(renderedContent, filePath, update.operonId, update.inlinePropertyDraft, this.keyMappings, this.hooks.getInlinePropertyDefinitions?.()); }
+                    catch { return { ok: false, content, reason: 'inline-property-conflict' }; }
+                    for (const change of update.inlinePropertyDraft) {
+                        delete fields[change.sourceName];
+                        const mapping = this.keyMappings.find(item => item.visiblePropertyName === change.sourceName || item.canonicalKey === change.sourceName);
+                        if (mapping) delete fields[mapping.canonicalKey];
+                    }
+                }
+                const patch = this.patchInlineTaskContent(
                     renderedContent,
                     filePath,
                     update.operonId,
-                    update.fieldValues,
+                    fields,
                     update.lineNumber ?? -1,
                     'merge',
                     this.keyMappings,
@@ -1195,7 +1186,25 @@ export class TaskWriter {
         options: TaskWriteOptions = {},
     ): Promise<boolean> {
         const startedAt = enginePerfNow();
+        // Settings acquisition precedes the task gate; mapping saves use the exclusive gate.
+        const preparedMappings = this.keyMappings;
+        let preparedDefinitions: InlinePropertyDefinitions | undefined;
+        if (options.inlinePropertyDraft) {
+            if (!options.inlinePropertyDraft.length || options.filePropertyDraft || options.canCommit?.() === false
+                || !this.hooks.prepareInlineProperties) return false;
+            const target = this.indexer.getTask(operonId);
+            if (!target || target.primary.format !== 'inline' || this.blockDuplicateConflict(operonId)) return false;
+            const sourceFile = this.app.vault.getAbstractFileByPath(target.primary.filePath);
+            if (!(sourceFile instanceof TFile)) return false;
+            try {
+                patchInlineProperties(await this.app.vault.read(sourceFile), sourceFile.path, operonId, options.inlinePropertyDraft,
+                    preparedMappings, this.hooks.getInlinePropertyDefinitions?.());
+            } catch { return false; }
+            preparedDefinitions = await this.hooks.prepareInlineProperties(options.inlinePropertyDraft.map(change =>
+                resolveInlinePropertyDefinition(change.sourceName, change.type, preparedMappings, this.hooks.getInlinePropertyDefinitions?.())), options.canCommit);
+        }
         const admitted = await this.runSharedTaskMutation(async permit => {
+            if (preparedDefinitions && this.keyMappings !== preparedMappings) return null;
             const task = this.indexer.getTask(operonId);
             if (!task) {
                 console.warn(`Operon TaskWriter [${operonId}]: task not found in index`);
@@ -1222,7 +1231,9 @@ export class TaskWriter {
             const ancestorIds = modifiedTimestamp && options.touchAncestors !== false
                 ? this.collectAffectedAncestorIdsForWrite(task, fieldValues, mode)
                 : new Set<string>();
-            const writeResult = options.filePropertyDraft
+            const writeResult = options.inlinePropertyDraft
+                ? { wrote: await this.writeInlinePropertyDraft(file, task, fieldValues, options, permit, preparedDefinitions!), yamlFastPath: 'none' as const, fallbackReason: 'none' }
+                : options.filePropertyDraft
                 ? { wrote: await this.writeFileTaskEditorDraft(file, task, fieldValues, options, permit), yamlFastPath: 'none' as const, fallbackReason: 'none' }
                 : options.expectedFieldValues
                 ? { wrote: await this.writeExpectedTaskFields(file, task, fieldValues, options, permit), yamlFastPath: 'none' as const, fallbackReason: 'none' }
@@ -1282,6 +1293,92 @@ export class TaskWriter {
         return true;
     }
 
+
+    /** Legacy managed strings cannot express native edits. Preserve unchanged typed tokens and reject ambiguous writes. */
+    private patchInlineTaskContent(
+        content: string, filePath: string, operonId: string, fields: Record<string, string>, lineHint: number,
+        mode: 'merge' | 'replace', mappings: KeyMapping[], protectedKeys: ReadonlySet<string> = new Set(),
+    ): InlineTaskLinePatchResult {
+        const definitions = this.hooks.getInlinePropertyDefinitions?.();
+        const values = { ...fields }, protectedFields = new Set(protectedKeys);
+        const parsed = findInlinePropertyTask(content, filePath, operonId, mappings)?.parsed;
+        if (!parsed) return { ok: false, content, fallbackReason: 'inline-task-not-found' };
+        try {
+            for (const mapping of mappings.filter(item => item.isSystem === false)) {
+                if (resolveInlinePropertyDefinition(mapping.visiblePropertyName, mapping.type, mappings, definitions).encoding !== 'vault-v1') continue;
+                protectedFields.add(mapping.canonicalKey);
+                if (!Object.prototype.hasOwnProperty.call(values, mapping.canonicalKey)) continue;
+                const matches = parsed.fields.filter(field => field.key === mapping.canonicalKey);
+                if (matches.length !== 1 || values[mapping.canonicalKey] !== matches[0].value)
+                    return { ok: false, content, fallbackReason: 'inline-native-value-required' };
+                delete values[mapping.canonicalKey];
+            }
+        } catch { return { ok: false, content, fallbackReason: 'inline-property-conflict' }; }
+        return tryPatchInlineTaskLineContent(content, filePath, operonId, values, lineHint, mode, mappings, protectedFields);
+    }
+
+    /** Rebuildable native projection; it is never persisted in the task index. */
+    async readInlineProperties(operonId: string, types: Readonly<Record<string, KeyMapping['type']>>): Promise<InlinePropertyProjection | null> {
+        const task = this.indexer.getTask(operonId);
+        if (!task || task.primary.format !== 'inline' || this.blockDuplicateConflict(operonId)) return null;
+        const file = this.app.vault.getAbstractFileByPath(task.primary.filePath);
+        if (!(file instanceof TFile)) return null;
+        const content = await this.app.vault.read(file);
+        const match = findInlinePropertyTask(content, file.path, operonId, this.keyMappings);
+        if (!match) return null;
+        return readInlinePropertyProjection(content.split('\n')[match.index], file.path, types, this.keyMappings, this.hooks.getInlinePropertyDefinitions?.());
+    }
+
+    /** Native typed property writes share the same source transaction as managed changes. */
+    private async writeInlinePropertyDraft(
+        file: TFile, task: IndexedTask, fields: Record<string, string>, options: TaskWriteOptions,
+        permit: TaskWriterSharedMutationPermit, definitions: InlinePropertyDefinitions,
+    ): Promise<boolean> {
+        const changes = options.inlinePropertyDraft;
+        if (!changes?.length || task.primary.format !== 'inline') return false;
+        const mappings = this.keyMappings;
+        return this.enqueueFileMutation(this.getFileWriteQueueKey(file.path), async () => {
+            const validatePath = this.hooks.validatePluginWritePath ?? this.hooks.validateWritePath;
+            if (validatePath && !await validatePath(file.path, false)) return false;
+            let next: string | null = null;
+            try {
+                await this.app.vault.process(file, content => {
+                    const current = this.indexer.getTask(task.operonId);
+                    if (options.canCommit?.() === false || this.keyMappings !== mappings || !current
+                        || current.primary.filePath !== file.path || current.primary.format !== 'inline'
+                        || this.blockDuplicateConflict(task.operonId)) throw EXACT_MARKDOWN_SOURCE_MUTATION_ABORT;
+                    if (options.expectedFieldValues && !this.taskFieldsMatchSourceContent(file.path, content,
+                        { operonId: task.operonId, format: 'inline', fieldValues: fields, expectedFieldValues: options.expectedFieldValues })) throw EXACT_MARKDOWN_SOURCE_MUTATION_ABORT;
+                    let patched: string;
+                    try { patched = patchInlineProperties(content, file.path, task.operonId, changes, mappings, definitions); }
+                    catch { throw EXACT_MARKDOWN_SOURCE_MUTATION_ABORT; }
+                    // Raw mutations own their target fields. A stale managed projection must not overwrite them.
+                    const managed = { ...fields };
+                    const protectedKeys = new Set<string>();
+                    for (const change of changes) {
+                        delete managed[change.sourceName];
+                        const mapping = mappings.find(item => item.visiblePropertyName === change.sourceName || item.canonicalKey === change.sourceName);
+                        if (mapping) {
+                            delete managed[mapping.canonicalKey];
+                            protectedKeys.add(mapping.canonicalKey);
+                        }
+                    }
+                    const update = this.patchInlineTaskContent(patched, file.path, task.operonId, managed,
+                        current.primary.lineNumber, options.mode ?? 'merge', mappings, protectedKeys);
+                    if (!update.ok) throw EXACT_MARKDOWN_SOURCE_MUTATION_ABORT;
+                    next = update.content;
+                    if (next !== content) this.hooks.onBeforeWriteFile?.(file.path);
+                    return next;
+                });
+                return next !== null;
+            } catch (error) {
+                if (error === EXACT_MARKDOWN_SOURCE_MUTATION_ABORT) return false;
+                if (next !== null && await this.app.vault.read(file).catch(() => null) === next) return true;
+                throw error;
+            }
+        }, permit);
+    }
+
     /** File properties and managed editor/body changes commit in one native file transaction. */
     private async writeFileTaskEditorDraft(file: TFile, task: IndexedTask, fieldValues: Record<string, string>, options: TaskWriteOptions, permit: TaskWriterSharedMutationPermit): Promise<boolean> {
         if (task.primary.format !== 'yaml' || !options.filePropertyDraft) return false;
@@ -1297,7 +1394,7 @@ export class TaskWriter {
                     if (options.canCommit?.() === false || !currentTask || currentTask.primary.format !== 'yaml'
                         || currentTask.primary.filePath !== file.path || this.blockDuplicateConflict(task.operonId)
                         || !document || !fileTaskPropertyIdentityMatches(document.frontmatter, task.operonId, this.keyMappings)
-                        || !canApplyFileTaskPropertyChanges(document.frontmatter, draft.changes, this.keyMappings)
+                        || !canApplyFileTaskPropertyChanges(document.frontmatter, draft.changes, this.keyMappings, this.hooks.getInlinePropertyDefinitions?.())
                         || (draft.body && document.body !== draft.body.expectedContent)) throw EXACT_MARKDOWN_SOURCE_MUTATION_ABORT;
                     if (options.expectedFieldValues) {
                         const expected = this.prepareIndexedYamlExpectedFields(content, options.expectedFieldValues);
@@ -1311,10 +1408,15 @@ export class TaskWriter {
                         const created = resolveYamlTaskCreatedBackfillValue(file.stat.ctime);
                         if (created) nextFields.datetimeCreated = created;
                     }
-                    const plan = applyYamlTaskFieldValues(document.frontmatter, nextFields, options.mode ?? 'replace', this.keyMappings);
-                    for (const change of draft.changes) document.frontmatter[change.propertyName] = change.value;
+                    const nativeMappings = this.keyMappings.filter(mapping => draft.changes.some(change => change.nativeType && [mapping.canonicalKey, mapping.visiblePropertyName].some(alias => alias.toLowerCase() === change.propertyName.toLowerCase())));
+                    for (const mapping of nativeMappings) delete nextFields[mapping.canonicalKey];
+                    const plan = applyYamlTaskFieldValues(document.frontmatter, nextFields, options.mode ?? 'replace', this.keyMappings.filter(mapping => !nativeMappings.includes(mapping)));
+                    for (const change of draft.changes) {
+                        if (change.remove) delete document.frontmatter[change.propertyName];
+                        else document.frontmatter[change.propertyName] = change.value;
+                    }
                     const opening = content.startsWith('---\r\n') ? '---\r\n' : '---\n';
-                    nextContent = normalizeYamlFrontmatterFormatting(`${opening}${[...document.order.filter(key => Object.prototype.hasOwnProperty.call(document.frontmatter, key)), ...Object.keys(document.frontmatter).filter(key => !document.order.includes(key))].map(key => stringifyYaml({ [key]: document.frontmatter[key] }).trimEnd()).join('\n')}\n---\n${draft.body?.content ?? document.body}`, plan);
+                    nextContent = normalizeYamlFrontmatterFormatting(`${opening}${[...document.order.filter(key => Object.prototype.hasOwnProperty.call(document.frontmatter, key)), ...Object.keys(document.frontmatter).filter(key => !document.order.includes(key))].map(key => stringifyYaml({ [key]: document.frontmatter[key] }).replace(/\r?\n$/, '')).join('\n')}\n---\n${draft.body?.content ?? document.body}`, plan);
                     if (nextContent !== content) this.hooks.onBeforeWriteFile?.(file.path);
                     return nextContent;
                 });
@@ -1537,7 +1639,7 @@ export class TaskWriter {
                     || (filePropertyDraft.bodyContent !== undefined && document.body !== filePropertyDraft.bodyContent)
                     || !filePropertyDraft.changes.every(change => {
                         const actual = readRawYamlPropertyExpectation(document.frontmatter, change.propertyName);
-                        return actual !== null && rawYamlPropertyExpectationsEqual(actual, { present: true, value: change.value });
+                        return actual !== null && rawYamlPropertyExpectationsEqual(actual, change.remove ? { present: false, value: undefined } : { present: true, value: change.value });
                     })) return false;
             }
 
@@ -1712,7 +1814,7 @@ export class TaskWriter {
         const mode = options.mode ?? 'merge';
         const result = await this.enqueueFileMutation(this.getFileWriteQueueKey(file.path), async () => {
             const content = await this.app.vault.read(file);
-            const inlinePatch = tryPatchInlineTaskLineContent(
+            const inlinePatch = this.patchInlineTaskContent(
                 content,
                 file.path,
                 childOperonId,
@@ -1737,7 +1839,13 @@ export class TaskWriter {
 
             if (yamlPatch.content !== content) {
 				this.hooks.onBeforeWriteFile?.(file.path);
-				await this.app.vault.modify(file, yamlPatch.content);
+                let applied = false;
+                await this.app.vault.process(file, current => {
+                    if (current !== content) return current;
+                    applied = true;
+                    return yamlPatch.content;
+                });
+                if (!applied) return { wrote: false, fallbackReason: 'source-changed' };
             }
             return { wrote: true, fallbackReason: 'none' };
         });
@@ -1800,7 +1908,7 @@ export class TaskWriter {
                 const original = await this.app.vault.read(file);
                 let content = original;
                 for (const entry of inlineEntries) {
-                    const patch = tryPatchInlineTaskLineContent(
+                    const patch = this.patchInlineTaskContent(
                         content,
                         filePath,
                         entry.operonId,
@@ -1833,7 +1941,17 @@ export class TaskWriter {
                 if (wroteOperonIds.length > 0 && content !== original) {
                     lineNumbersShifted = content.split('\n').length !== original.split('\n').length;
 					this.hooks.onBeforeWriteFile?.(file.path);
-					await this.app.vault.modify(file, content);
+                    let applied = false;
+                    await this.app.vault.process(file, current => {
+                        if (current !== original) return current;
+                        applied = true;
+                        return content;
+                    });
+                    if (!applied) {
+                        failedOperonIds.push(...wroteOperonIds);
+                        wroteOperonIds.length = 0;
+                        lineNumbersShifted = false;
+                    }
                 }
             });
         }
@@ -2067,22 +2185,20 @@ export class TaskWriter {
         permit?: TaskWriterSharedMutationPermit,
     ): Promise<boolean> {
         return await this.enqueueFileMutation(this.getFileWriteQueueKey(file.path), async () => {
-            const content = await this.app.vault.read(file);
-            const patch = tryPatchInlineTaskLineContent(
-                content,
-                file.path,
-                operonId,
-                fieldValues,
-                lineHint,
-                mode,
-                this.keyMappings,
-            );
-			if (!patch.ok) return false;
-			if (patch.content !== content) {
-				this.hooks.onBeforeWriteFile?.(file.path);
-				await this.app.vault.modify(file, patch.content);
-			}
-            return true;
+            let next: string | null = null;
+            try {
+                await this.app.vault.process(file, content => {
+                    const patch = this.patchInlineTaskContent(content, file.path, operonId, fieldValues, lineHint, mode, this.keyMappings);
+                    if (!patch.ok) return content;
+                    next = patch.content;
+                    if (next !== content) this.hooks.onBeforeWriteFile?.(file.path);
+                    return next;
+                });
+            } catch (error) {
+                if (next !== null && await this.app.vault.read(file).catch(() => null) === next) return true;
+                throw error;
+            }
+            return next !== null;
         }, permit);
     }
 
@@ -2219,7 +2335,7 @@ export class TaskWriter {
                     return content;
                 }
 
-                const patch = tryPatchInlineTaskLineContent(
+                const patch = this.patchInlineTaskContent(
                     content,
                     file.path,
                     operonId,

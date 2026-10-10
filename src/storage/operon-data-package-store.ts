@@ -1,3 +1,5 @@
+import { prepareInlinePropertyUpgradeBackup } from './inline-property-upgrade';
+import { isSupportedDataPackageSchema, OPERON_TYPED_PROPERTY_SCHEMA_VERSION } from './operon-data-package';
 import { prepareSettingsVersionBackup } from './settings-version-backup';
 import type { DataAdapter } from 'obsidian';
 import {
@@ -275,14 +277,14 @@ export class OperonDataPackageStore {
 		const archiveRoutingMigrationRequired = !!existingPackage
 			&& isLegacyArchiveRoutingSettings(existingPackage.settings);
 		const dataPackageSchemaMigrationRequired = !!existingPackage
-			&& existingPackage.schemaVersion !== OPERON_DATA_PACKAGE_SCHEMA_VERSION;
+			&& !isSupportedDataPackageSchema(existingPackage.schemaVersion);
 		const hasRetiredSettings = hasRetiredOperonDataPackageSettings(existingPackage);
 		const mergedPackage = mergeOperonDataPackage(migratedExistingPackage, buildFallbackDataPackage(defaults));
 		const normalizedPackage = shouldNormalizePipelineTaxonomy(this.startupPipelineTaxonomyDiagnostics)
 			? normalizePipelineTaxonomySlice(mergedPackage, defaults)
 			: mergedPackage;
 		const baseDataPackage = existingPackage
-			&& existingPackage.schemaVersion === OPERON_DATA_PACKAGE_SCHEMA_VERSION
+			&& isSupportedDataPackageSchema(existingPackage.schemaVersion)
 			&& tablePresetRecovery.health !== 'ready'
 			? preserveTableManifestForDegradedRecovery(
 				existingPackage,
@@ -640,6 +642,13 @@ export class OperonDataPackageStore {
 					};
 				}
 
+                const retained = current.taxonomy.inlinePropertyDefinitions?.entries ?? [];
+                const externalDefinitions = externalPackage.taxonomy?.inlinePropertyDefinitions;
+                if (current.schemaVersion === 3 && externalPackage.schemaVersion !== 3 || retained.some(entry => !externalDefinitions?.entries.some(next =>
+                    next.sourceName === entry.sourceName && next.type === entry.type && next.encoding === entry.encoding))) {
+                    this.suspendWrites('Inline property definitions were removed or changed outside the settings transaction');
+                    throw new Error('Reload cannot discard inline property interpretation metadata');
+                }
 				const reloadSource = this.canonicalSource;
 				const fallback = this.dataPackage ?? buildFallbackDataPackage(defaults);
 				const legacyArchiveReload = isLegacyArchiveRoutingSettings(externalPackage.settings);
@@ -746,11 +755,12 @@ export class OperonDataPackageStore {
 		});
 	}
 
-	async updateDataPackage(mutator: (dataPackage: OperonDataPackageV1) => OperonDataPackageV1): Promise<void> {
+	async updateDataPackage(mutator: (dataPackage: OperonDataPackageV1) => OperonDataPackageV1, canCommit: () => boolean = () => true): Promise<void> {
 		await this.enqueueMutation(async () => {
+            if (!canCommit()) throw new Error('Settings operation cancelled');
 			const next = this.cloneDataPackage(mutator(this.getDataPackage()));
 			if (await this.isCommittedCandidate(next)) return;
-			await this.persistCandidate(next);
+			await this.persistCandidate(next, canCommit);
 			this.setDataPackage(next);
 		});
 	}
@@ -780,7 +790,7 @@ export class OperonDataPackageStore {
 	private async recoverTablePresetManifestV2Now(
 		existingPackage: Partial<OperonDataPackageV1>,
 	): Promise<TableRecoveryAttemptResult> {
-		if (existingPackage.schemaVersion !== OPERON_DATA_PACKAGE_SCHEMA_VERSION) {
+		if (!isSupportedDataPackageSchema(existingPackage.schemaVersion)) {
 			return { dataPackage: existingPackage, diagnostics: createTablePresetRecoveryDiagnostics() };
 		}
 		const markerRead = await this.readTableManifestV2RecoveryMarker();
@@ -820,7 +830,7 @@ export class OperonDataPackageStore {
 				null,
 			);
 		}
-		if (parsedSource.schemaVersion !== OPERON_DATA_PACKAGE_SCHEMA_VERSION) {
+		if (!isSupportedDataPackageSchema(parsedSource.schemaVersion)) {
 			return { dataPackage: existingPackage, diagnostics: createTablePresetRecoveryDiagnostics() };
 		}
 		const sourceSha256 = await sha256HexForStorage(rawSource);
@@ -1469,7 +1479,13 @@ export class OperonDataPackageStore {
 		allowReloadRecovery = false,
 	): Promise<boolean> {
 		this.assertWritesAllowed(allowReloadRecovery);
+		if (!canCommit()) throw new Error('Settings operation cancelled');
 		const expected = this.canonicalSource;
+		if (!isStructurallyCompleteOperonDataPackageV1(dataPackage)) throw new Error('Invalid settings candidate');
+		if (typeof expected === 'string' && dataPackage.schemaVersion === 3) {
+			const previous = JSON.parse(expected) as { schemaVersion?: number };
+			if (previous.schemaVersion === 2) await prepareInlinePropertyUpgradeBackup(this.adapter, this.paths.pluginDir, expected);
+		}
 		const serialized = JSON.stringify(dataPackage, null, '\t');
 		let accepted = false, cancelled = false;
 		let acknowledgementFailed = false;
@@ -1742,7 +1758,7 @@ function isUnrecognizableCanonicalDataPackage(value: unknown): boolean {
 	// Legacy partial packages may omit a version, but a present version must be
 	// supported. A property name alone is not evidence of readable settings.
 	for (const [version, maximum] of [
-		[value.schemaVersion, OPERON_DATA_PACKAGE_SCHEMA_VERSION],
+		[value.schemaVersion, OPERON_TYPED_PROPERTY_SCHEMA_VERSION],
 		[value.settings.settingsVersion, CURRENT_SETTINGS_VERSION],
 	] as const) {
 		if (version !== undefined && (typeof version !== 'number'
@@ -2056,7 +2072,7 @@ function sortJsonForStableSignature(value: unknown): unknown {
 
 /** Validate known domain versions without normalizing the raw backup source. */
 function isVersionBackupSourceSupported(source: Partial<OperonDataPackageV1>, defaults: OperonSettings): boolean {
-	if (!isStructurallyCompleteOperonDataPackageV1({ ...source, schemaVersion: OPERON_DATA_PACKAGE_SCHEMA_VERSION })) return false;
+	if (!isStructurallyCompleteOperonDataPackageV1({ ...source, schemaVersion: isSupportedDataPackageSchema(source.schemaVersion) ? source.schemaVersion : OPERON_DATA_PACKAGE_SCHEMA_VERSION })) return false;
 	const current = buildFallbackDataPackage(defaults);
 	for (const domain of ['taxonomy', 'views', 'ui', 'automation', 'integrations', 'state'] as const) {
 		const slices = source[domain];

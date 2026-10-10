@@ -130,7 +130,8 @@ test('task and custom picker wiring passes the display preference while excluded
 	assert.ok(customDatetimeSource.includes('dateDisplayFormat: options.dateDisplayFormat'));
 	assert.ok(dispatchSource.includes('dateDisplayFormat: options.settings.dateDisplayFormat'));
 	assert.equal(reminderSource.includes('dateDisplayFormat'), false);
-	assert.equal(filePropertySource.includes('dateDisplayFormat'), false);
+	assert.ok(filePropertySource.includes('dateDisplayFormat: options.settings.dateDisplayFormat'));
+	assert.ok(filePropertySource.includes('formatUiTaskDatetime(options.app,'));
 });
 
 test('Filter date groups separate their display label from the canonical Daily Note key', () => {

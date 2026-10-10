@@ -323,6 +323,8 @@ function parseFieldContent(
 		value = normalizeTaskIconValue(value);
 	}
 	return {
+		sourceValue: value,
+		sourceToken: '{{' + content + '}}',
 		sourceKey,
 		key,
 		value,

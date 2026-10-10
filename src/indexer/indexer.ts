@@ -1,3 +1,4 @@
+import { getNativePropertyIndex, type NativePropertySource } from './native-property-index';
 /**
  * Operon task indexer.
  * Builds and maintains the in-memory task index with storage-managed persistence.
@@ -308,6 +309,7 @@ interface PendingIndexPersistenceSnapshot {
 }
 
 interface IndexState {
+ nativeSources: Map<string, NativePropertySource>;
 	tasks: Map<string, IndexedTask>;
 	taskInstances: Map<string, IndexedTaskInstance>;
 	operonIdInstances: Map<string, Set<string>>;
@@ -352,6 +354,7 @@ export class OperonIndexer {
 	/** File mtime cache for incremental detection */
 	private fileMtimes: Map<string, number> = new Map();
 	private fileSizes: Map<string, number> = new Map();
+ private nativePublicationPaths = new Set<string>();
 	/** Rebuildable persistence indexes; values reference taskInstances rather than copying tasks. */
 	private sourceInstanceKeys: Map<string, Set<string>> = new Map();
 	private sourcePathsByShard: Map<IndexV8ShardId, Set<string>> = new Map();
@@ -421,6 +424,7 @@ export class OperonIndexer {
 	) {
 		this.app = app;
 		this.storage = storage;
+  getNativePropertyIndex(app).bindSourceRefresh(path => this.reindexFilePath(path));
 		this.secondary = new SecondaryIndexes();
 		this.debounceMs = storage.getSettings().indexEventDebounceMs;
 		this.durableRevisionState = indexV8PersistenceCoordinator || indexV8Store
@@ -538,7 +542,7 @@ export class OperonIndexer {
 	private async buildFullIndexState(): Promise<FullIndexBuild> {
 		const setupStartedAt = enginePerfNow();
 		const staged = this.createEmptyIndexState();
-		const settingsSnapshot = structuredClone(this.storage.getSettings());
+		const settingsSnapshot = structuredClone(this.storage.getSettings({ committedMappings: true }));
 		const pipelineSnapshot = settingsSnapshot.pipelines.map(pipeline => clonePipeline(pipeline));
 		const workflowStatusSemanticsSignature = buildWorkflowStatusSemanticsSignature(pipelineSnapshot);
 		const indexV8SemanticsSignature = buildIndexV8SemanticsSignature(settingsSnapshot);
@@ -597,7 +601,7 @@ export class OperonIndexer {
 			const loadStartedAt = collectTimings ? enginePerfNow() : 0;
 			const loaded = await this.indexV8Store.load();
 			const loadMs = collectTimings ? enginePerfNow() - loadStartedAt : 0;
-			const expectedSignature = buildIndexV8SemanticsSignature(this.storage.getSettings());
+			const expectedSignature = buildIndexV8SemanticsSignature(this.storage.getSettings({ committedMappings: true }));
 			const decision = prepareIndexV8Startup(loaded, expectedSignature);
 			if (decision.status === 'incompatible') {
 				this.markDurableRevisionState('missing');
@@ -656,7 +660,7 @@ export class OperonIndexer {
 					if (collectTimings && loaded.status === 'loaded') loaded.metrics.secondaryRebuildMs = secondaryMs;
 					const committedAtMs = Date.parse(decision.manifest.committedAt);
 					const workflowStatusSemanticsSignature = buildWorkflowStatusSemanticsSignature(
-						this.storage.getSettings().pipelines,
+						this.storage.getSettings({ committedMappings: true }).pipelines,
 					);
 					const startupSourceStats = new Map(decision.sourceStats);
 					this.rebuildSourcePersistenceIndexes(staged);
@@ -749,7 +753,7 @@ export class OperonIndexer {
 			if (this.lastSavedAt === 0) return; // no timestamp — skip
 			const startTime = performance.now();
 			const files = this.app.vault.getMarkdownFiles()
-				.filter(file => !isOperonExcludedPath(file.path, this.storage.getSettings()));
+				.filter(file => !isOperonExcludedPath(file.path, this.storage.getSettings({ committedMappings: true })));
 			const changed = files.filter(f => f.stat.mtime > this.lastSavedAt);
 
 			if (changed.length === 0) return;
@@ -769,7 +773,7 @@ export class OperonIndexer {
 		this.startupV8CommittedAtMs = 0;
 		await this.enqueueIndexOperation(async () => {
 			const startedAt = enginePerfNow();
-			const settings = this.storage.getSettings();
+			const settings = this.storage.getSettings({ committedMappings: true });
 			const currentFiles = this.app.vault.getMarkdownFiles();
 			const currentByPath = new Map(currentFiles.map(file => [file.path, file]));
 			const candidates: string[] = [];
@@ -841,6 +845,7 @@ export class OperonIndexer {
 		if (this.shuttingDown) return;
 		this.noteMarkdownEvent();
 		this.pendingFiles.add(filePath);
+  getNativePropertyIndex(this.app).markPending(filePath);
 
 		if (this.reindexTimer) {
 			clearWindowTimeout(this.reindexTimer);
@@ -875,6 +880,7 @@ export class OperonIndexer {
 		}
 		this.noteMarkdownEvent();
 		this.inFlightReindexPaths.add(filePath);
+  getNativePropertyIndex(this.app).markPending(filePath);
 		try {
 			await this.enqueueIndexOperation(() => this.doReindexFilePath(filePath, options));
 		} finally {
@@ -889,7 +895,7 @@ export class OperonIndexer {
 		knownContent?: string,
 	): Promise<void> {
 		const startedAt = enginePerfNow();
-		if (isOperonExcludedPath(filePath, this.storage.getSettings())) {
+		if (isOperonExcludedPath(filePath, this.storage.getSettings({ committedMappings: true }))) {
 			const beforeById = this.snapshotCanonicalTasksByInstanceFile(filePath);
 			const removedTasks = this.removeTasksByFile(filePath);
 			this.fileMtimes.delete(filePath);
@@ -937,7 +943,8 @@ export class OperonIndexer {
 				knownContent,
 			);
 		} catch (error) {
-			console.warn(`Operon: failed to reindex ${filePath}; keeping previous index state`, error);
+			getNativePropertyIndex(this.app).fail(filePath);
+   console.warn(`Operon: failed to reindex ${filePath}; keeping previous index state`, error);
 			return;
 		}
 		const scanMs = enginePerfNow() - scanStartedAt;
@@ -1004,7 +1011,7 @@ export class OperonIndexer {
 			return;
 		}
 		this.noteMarkdownEvent();
-		for (const filePath of newPaths) this.inFlightReindexPaths.add(filePath);
+		for (const filePath of newPaths) { this.inFlightReindexPaths.add(filePath); getNativePropertyIndex(this.app).markPending(filePath); }
 		try {
 			await this.enqueueIndexOperation(() => this.doReindexFilesBatch(newPaths, options));
 		} finally {
@@ -1066,7 +1073,7 @@ export class OperonIndexer {
 			this.reindexTimer = null;
 		}
 		this.noteMarkdownEvent();
-		for (const filePath of paths) this.inFlightReindexPaths.add(filePath);
+		for (const filePath of paths) { this.inFlightReindexPaths.add(filePath); getNativePropertyIndex(this.app).markPending(filePath); }
 		try {
 			await this.enqueueIndexOperation(() => this.doReindexFilesBatch(paths, options));
 		} finally {
@@ -1094,6 +1101,7 @@ export class OperonIndexer {
 		}
 		this.noteMarkdownEvent();
 		this.inFlightReindexPaths.add(filePath);
+  getNativePropertyIndex(this.app).markPending(filePath);
 		try {
 			await this.enqueueIndexOperation(() => this.doReindexFilePath(filePath, options));
 		} finally {
@@ -1117,6 +1125,7 @@ export class OperonIndexer {
 		}
 		this.noteMarkdownEvent();
 		this.inFlightReindexPaths.add(filePath);
+  getNativePropertyIndex(this.app).markPending(filePath);
 		try {
 			await this.enqueueIndexOperation(() => this.doHandleFileDelete(filePath, options));
 		} finally {
@@ -1144,6 +1153,7 @@ export class OperonIndexer {
 		}
 		this.noteMarkdownEvent();
 		this.inFlightReindexPaths.add(file.path);
+  getNativePropertyIndex(this.app).markPending(file.path);
 		try {
 			await this.enqueueIndexOperation(
 				() => this.doReindexFilePath(file.path, options, file, knownContent),
@@ -1176,6 +1186,7 @@ export class OperonIndexer {
 		}
 		this.noteMarkdownEvent();
 		this.inFlightReindexPaths.add(file.path);
+  getNativePropertyIndex(this.app).markPending(file.path);
 		try {
 			return await this.enqueueIndexOperation(async () => {
 				await this.doReindexFilePath(file.path, options, file, knownContent);
@@ -1261,14 +1272,14 @@ export class OperonIndexer {
 	private async doReindexFilesBatch(filePaths: string[], options: ReindexOptions = {}): Promise<void> {
 		const startedAt = enginePerfNow();
 		const scanAndHydrationStartedAt = enginePerfNow();
-		const pipelines = this.storage.getSettings().pipelines;
+		const pipelines = this.storage.getSettings({ committedMappings: true }).pipelines;
 		const workflowStatusIdentityIndex = buildWorkflowStatusIdentityIndex(pipelines);
 		const removedTasks: IndexedTask[] = [];
 		const beforeById = new Map<string, IndexedTask | undefined>();
 		const scannedIds = new Set<string>();
 		let mutated = false;
 		for (const fp of filePaths) {
-			if (isOperonExcludedPath(fp, this.storage.getSettings())) {
+			if (isOperonExcludedPath(fp, this.storage.getSettings({ committedMappings: true }))) {
 				for (const [operonId, task] of this.snapshotCanonicalTasksByInstanceFile(fp)) {
 					if (!beforeById.has(operonId)) beforeById.set(operonId, task);
 				}
@@ -1296,7 +1307,8 @@ export class OperonIndexer {
 			try {
 				fileScannedIds = await this.indexFile(file, staged, pipelines, workflowStatusIdentityIndex);
 			} catch (error) {
-				console.warn(`Operon: failed to reindex ${fp}; keeping previous index state`, error);
+				getNativePropertyIndex(this.app).fail(fp);
+    console.warn(`Operon: failed to reindex ${fp}; keeping previous index state`, error);
 				continue;
 			}
 			for (const [operonId, task] of this.snapshotCanonicalTasksByInstanceFile(fp)) {
@@ -1385,8 +1397,9 @@ export class OperonIndexer {
 	}
 
 	private async doHandleFileRename(oldPath: string, newPath: string): Promise<void> {
+  getNativePropertyIndex(this.app).remove(oldPath);
 		const beforeById = this.snapshotCanonicalTasksByInstanceFile(oldPath);
-		if (isOperonExcludedPath(newPath, this.storage.getSettings())) {
+		if (isOperonExcludedPath(newPath, this.storage.getSettings({ committedMappings: true }))) {
 			const removedTasks = this.removeTasksByFile(oldPath);
 			this.fileMtimes.delete(oldPath);
 			this.fileMtimes.delete(newPath);
@@ -1405,7 +1418,8 @@ export class OperonIndexer {
 			this.notifyIndexUpdated();
 			return;
 		}
-		const movedInstances = Array.from(this.taskInstances.values())
+		getNativePropertyIndex(this.app).markPending(newPath);
+  const movedInstances = Array.from(this.taskInstances.values())
 			.filter(task => task.primary.filePath === oldPath);
 		const affectedOperonIds = new Set<string>();
 
@@ -1480,10 +1494,10 @@ export class OperonIndexer {
 	private async indexFile(
 		file: TFile,
 		state: IndexState = this.getLiveIndexState(),
-		pipelines: Pipeline[] = this.storage.getSettings().pipelines,
+		pipelines: Pipeline[] = this.storage.getSettings({ committedMappings: true }).pipelines,
 		workflowStatusIdentityIndex: WorkflowStatusIdentityIndex = buildWorkflowStatusIdentityIndex(pipelines),
-		keyMappings: KeyMapping[] = this.storage.getSettings().keyMappings,
-		exclusionSettings: OperonSettings = this.storage.getSettings(),
+		keyMappings: KeyMapping[] = this.storage.getSettings({ committedMappings: true }).keyMappings,
+		exclusionSettings: OperonSettings = this.storage.getSettings({ committedMappings: true }),
 		knownContent?: string,
 	): Promise<Set<string>> {
 		const scannedIds = new Set<string>();
@@ -1495,6 +1509,7 @@ export class OperonIndexer {
 
 		const result = await scanFileWithMappings(this.app, file, keyMappings, knownContent);
 		state.fileMtimes.set(file.path, result.mtime);
+  if (result.inlineTasks.length || result.yamlTask) state.nativeSources.set(file.path, result.nativeProperties);
 		state.fileSizes.set(file.path, result.sizeBytes);
 
 		// Process inline tasks
@@ -1624,6 +1639,8 @@ export class OperonIndexer {
 	 */
 	private removeTasksByFile(filePath: string, state: IndexState = this.getLiveIndexState()): IndexedTask[] {
 		const removedTasks: IndexedTask[] = [];
+  state.nativeSources.delete(filePath);
+  if (state.taskInstances === this.taskInstances) this.nativePublicationPaths.add(filePath);
 		try {
 			if (!state.sourceInstanceKeys.get(normalizeIndexV8SourcePath(filePath))?.size) return removedTasks;
 		} catch {
@@ -1670,6 +1687,7 @@ export class OperonIndexer {
 			duplicateConflicts: new Map(),
 			fileMtimes: new Map(),
 			fileSizes: new Map(),
+   nativeSources: new Map(),
 			sourceInstanceKeys: new Map(),
 			sourcePathsByShard: new Map(),
 			secondary: new SecondaryIndexes(),
@@ -1684,6 +1702,7 @@ export class OperonIndexer {
 			duplicateConflicts: this.duplicateConflicts,
 			fileMtimes: this.fileMtimes,
 			fileSizes: this.fileSizes,
+   nativeSources: new Map(),
 			sourceInstanceKeys: this.sourceInstanceKeys,
 			sourcePathsByShard: this.sourcePathsByShard,
 			secondary: this.secondary,
@@ -1697,12 +1716,20 @@ export class OperonIndexer {
 		this.duplicateConflicts = state.duplicateConflicts;
 		this.fileMtimes = state.fileMtimes;
 		this.fileSizes = state.fileSizes;
+  const native = getNativePropertyIndex(this.app);
+  native.configure(this.storage.getSettings({ committedMappings: true }));
+  for (const [path, source] of state.nativeSources) { native.accept(path, source, false); this.nativePublicationPaths.add(path); }
+  state.nativeSources.clear();
 		this.sourceInstanceKeys = state.sourceInstanceKeys;
 		this.sourcePathsByShard = state.sourcePathsByShard;
 		this.secondary = state.secondary;
 	}
 
 	private commitFileScanState(state: IndexState): void {
+  const native = getNativePropertyIndex(this.app);
+  native.configure(this.storage.getSettings({ committedMappings: true }));
+  for (const [path, source] of state.nativeSources) { native.accept(path, source, false); this.nativePublicationPaths.add(path); }
+  state.nativeSources.clear();
 		for (const task of state.taskInstances.values()) {
 			this.insertTaskInstance(task);
 		}
@@ -1809,7 +1836,7 @@ export class OperonIndexer {
 				committedAt,
 				lastFullScanAt: this.lastFullScanAt || committedAt,
 				indexSemanticsSignature: this.coherentIndexV8SemanticsSignature
-					?? buildIndexV8SemanticsSignature(this.storage.getSettings()),
+					?? buildIndexV8SemanticsSignature(this.storage.getSettings({ committedMappings: true })),
 				coherenceBasis,
 				incrementalParityProjection: projectIndexV8IncrementalParity(this.tasks, this.secondary),
 			},
@@ -2229,7 +2256,7 @@ export class OperonIndexer {
 	/** Downgrade V8 provenance immediately when settings can change scan semantics. */
 	invalidateV8Coherence(): void {
 		this.coherenceBasis = 'unverified';
-		this.coherentIndexV8SemanticsSignature = buildIndexV8SemanticsSignature(this.storage.getSettings());
+		this.coherentIndexV8SemanticsSignature = buildIndexV8SemanticsSignature(this.storage.getSettings({ committedMappings: true }));
 	}
 
 	async drainV8Persistence(): Promise<void> {
@@ -2479,7 +2506,7 @@ export class OperonIndexer {
 
 	/** Whether a source path can contribute tasks to this index. */
 	isPathIndexable(filePath: string): boolean {
-		return !isOperonExcludedPath(filePath, this.storage.getSettings());
+		return !isOperonExcludedPath(filePath, this.storage.getSettings({ committedMappings: true }));
 	}
 
 	/** Get task by operonId. O(1) lookup. */
@@ -2814,6 +2841,7 @@ export class OperonIndexer {
 
 	destroy(): void {
 		this.shuttingDown = true;
+  getNativePropertyIndex(this.app).dispose();
 		if (this.reindexTimer) {
 			clearWindowTimeout(this.reindexTimer);
 			this.reindexTimer = null;
@@ -2897,6 +2925,16 @@ export class OperonIndexer {
 	}
 
 	private emitIndexReconciliation(event: IndexReconciliationEvent): void {
+  const native = getNativePropertyIndex(this.app);
+  native.configure(this.storage.getSettings({ committedMappings: true }));
+  const tasks = [...this.taskInstances.values()];
+  native.reconcile(tasks, new Set(this.duplicateConflicts.keys()), new Map([...this.fileMtimes].map(([path, mtime]) => [path, `${mtime}:${this.fileSizes.get(path) ?? 0}`])));
+  for (const path of this.nativePublicationPaths) native.finishPending(path);
+  this.nativePublicationPaths.clear();
+  native.prepare(tasks);
+  native.publish();
+  // A restored V8 index has no native fragments. Hydrate only its known sources.
+  if (event.kind === 'full') void native.ensure(tasks, false);
 		for (const listener of this.reconciliationListeners) {
 			try {
 				listener(event);
@@ -2991,6 +3029,7 @@ export class OperonIndexer {
 	}
 
 	private finishTrackedReindexPath(filePath: string): void {
+  getNativePropertyIndex(this.app).finishPending(filePath);
 		this.inFlightReindexPaths.delete(filePath);
 		const waiters = this.reindexPathWaiters.get(filePath);
 		if (!waiters) return;
