@@ -35,6 +35,7 @@ export interface PreparedTaskCreatorSubmission {
 export class PreparedTaskCreatorDraft {
  readonly draft: TaskCreationDraft;
  readonly session: CreationTemplateSession;
+ readonly hasUserChanges: () => boolean;
  private readonly catalog: CreationDraftProperties;
  private closed = false;
  private parentReady = true;
@@ -56,6 +57,7 @@ export class PreparedTaskCreatorDraft {
    } else this.draft.setValue(field.sourceName, read.value);
   }
   this.refreshParent();
+  this.hasUserChanges = this.draft.createUserChangeCheck();
  }
  field(key: string): CreationDraftFieldSnapshot { return this.draft.getField(key); }
  key(field: CreationDraftFieldSnapshot): string { return field.property.canonicalKey ?? field.property.sourceName; }

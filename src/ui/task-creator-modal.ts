@@ -513,6 +513,9 @@ export class TaskCreatorModal extends Modal {
  private templateErrorEl: HTMLElement | null = null;
 	private readonly submitMode: TaskCreatorSubmitMode;
 	private draft: TaskCreatorDraft;
+ private readonly initialDraftSnapshot: TaskCreatorDraft;
+ private readonly templateSelectionBaselines = new Map<TaskCreatorCreateType, string>();
+ private readonly userTemplateSelections = new Map<TaskCreatorCreateType, string>();
 	private activeCreateType: TaskCreatorCreateType;
  private inlineParentPreviewBase: TaskCreatorDraft | null = null;
 	private descriptionHostEl!: HTMLElement;
@@ -586,6 +589,10 @@ export class TaskCreatorModal extends Modal {
    this.draft.fileTemplateId ||= this.getModeDefaultTemplateId();
   } else this.applyDefaultFileTemplateForActiveMode();
   this.refreshInlineParentPreview();
+  this.initialDraftSnapshot = this.getSnapshot();
+  this.templateSelectionBaselines.set('file', options.defaultFileTemplateId?.trim() ?? '');
+  this.templateSelectionBaselines.set('inline', options.defaultInlineTemplateId?.trim() ?? '');
+  this.templateSelectionBaselines.set(this.activeCreateType, this.draft.fileTemplateId);
 	}
 
 	onOpen(): void {
@@ -1061,8 +1068,9 @@ export class TaskCreatorModal extends Modal {
 		const close = showFileTaskTemplatePicker(this.templateButtonEl, {
 			value: this.draft.fileTemplateId,
 			options: templateOptions,
-   onClear: this.prepared ? () => { this.closeActivePicker(); void this.selectPreparedTemplate(null); } : undefined,
+   onClear: this.prepared ? () => { this.userTemplateSelections.set(this.activeCreateType, ''); this.closeActivePicker(); void this.selectPreparedTemplate(null); } : undefined,
 			onSelect: template => {
+    this.userTemplateSelections.set(this.activeCreateType, template.id);
 				this.suppressOutsidePointerBriefly();
 				this.draft.fileTemplateId = template.id;
 				if (this.prepared) void this.selectPreparedTemplate(template);
@@ -2215,16 +2223,18 @@ export class TaskCreatorModal extends Modal {
 	}
 
 	private hasUnsavedDraft(): boolean {
-		const snapshot = this.getSnapshotForCreateType(this.activeCreateType);
-		return (
-			!!snapshot.description
-			|| !!snapshot.note
-			|| snapshot.tags.length > 0
-			|| snapshot.subtaskIds.length > 0
-			|| Object.values(snapshot.fieldValues).some(value => !!value.trim())
-			|| snapshot.noteOpen
-			|| !!snapshot.fileTemplateId
-		);
+  const snapshot = this.getSnapshotForCreateType(this.activeCreateType);
+  if (snapshot.description !== this.initialDraftSnapshot.description) return true;
+  if (snapshot.inlineCompletionMode !== this.initialDraftSnapshot.inlineCompletionMode) return true;
+  if ([...this.userTemplateSelections].some(([mode, id]) => id !== this.templateSelectionBaselines.get(mode))) return true;
+  if (this.prepared) return this.prepared.hasUserChanges();
+  const initial = this.initialDraftSnapshot;
+  const ownTags = (draft: TaskCreatorDraft): string[] => draft.tags.filter(tag => !draft.inheritedTags.includes(tag));
+  return snapshot.note !== initial.note
+   || JSON.stringify(ownTags(snapshot)) !== JSON.stringify(ownTags(initial))
+   || JSON.stringify(snapshot.subtaskIds) !== JSON.stringify(initial.subtaskIds)
+   || [...new Set([...snapshot.explicitFieldKeys, ...initial.explicitFieldKeys])].some(key =>
+    (snapshot.fieldValues[key] ?? '') !== (initial.fieldValues[key] ?? ''));
 	}
 
 	private promptDiscardDraft(): void {

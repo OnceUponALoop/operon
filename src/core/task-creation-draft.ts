@@ -244,10 +244,24 @@ export class TaskCreationDraft {
 		return fields;
 	}
 
-	private resolve(property: CreationDraftProperty, excludedSource?: CreationDraftSource): CreationDraftFieldSnapshot {
+	/** Compare user edits against opening state using the same current automatic sources. */
+	createUserChangeCheck(): () => boolean {
+		const initialUsers: ReadonlyMap<string, UserField> = structuredClone(this.users);
+		return () => [...new Set([...initialUsers.keys(), ...this.users.keys()])].some(id => {
+			const property = this.properties.get(id)!;
+			const initial = this.resolve(property, undefined, initialUsers);
+			const current = this.resolve(property);
+			const comparable = (field: CreationDraftFieldSnapshot): string =>
+				property.interpretation !== 'native' && (field.state === 'missing' || field.state === 'empty')
+					? 'empty' : JSON.stringify([field.state, field.value]);
+			return comparable(initial) !== comparable(current);
+		});
+	}
+
+	private resolve(property: CreationDraftProperty, excludedSource?: CreationDraftSource, users: ReadonlyMap<string, UserField> = this.users): CreationDraftFieldSnapshot {
 		const sources = SOURCE_ORDER.filter(source => source !== excludedSource);
 		const contributions = sources.flatMap(source => this.sources.get(source)?.fields.get(property.id) ?? []);
-		const user = this.users.get(property.id);
+		const user = users.get(property.id);
 		const duplicateAlias = sources.some(source => (this.sources.get(source)?.fields.get(property.id)?.length ?? 0) > 1);
 		const readOnlyReason = duplicateAlias ? 'type-conflict' : contributions.find(item => item.readOnlyReason)?.readOnlyReason ?? property.readOnlyReason;
 		const base = { property, contributions, userModified: !!user, readOnlyReason };

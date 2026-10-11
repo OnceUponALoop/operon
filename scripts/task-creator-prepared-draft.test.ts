@@ -2,7 +2,8 @@ import assert from 'node:assert/strict';
 import { test } from 'node:test';
 import { PreparedTaskCreatorDraft, type PreparedTaskCreatorAdapter } from '../src/ui/task-creator-prepared-draft';
 import { DEFAULT_SETTINGS, migrateSettings } from '../src/types/settings';
-import { createEmptyTaskCreatorDraft } from '../src/ui/task-creator-modal';
+import { createEmptyTaskCreatorDraft, TaskCreatorModal } from '../src/ui/task-creator-modal';
+import { App } from 'obsidian';
 import { applyTaskFieldPatchToState } from '../src/core/task-field-patch';
 import type { FileTaskTemplateOption } from '../src/core/file-task-templates';
 const option = (id='A'): FileTaskTemplateOption => ({id,name:id,path:id,kind:'folder'});
@@ -149,4 +150,142 @@ test('unavailable template invalidates old read and preserves user fields',async
  f.ui.draft.setValue('Client','manual');const pending=f.ui.select(option(),'Task');f.ui.session.selectUnavailable('missing');finish(yaml('Count: 3'));await pending;
  assert.equal(f.ui.session.snapshot().status,'error');assert.equal(f.ui.canSubmit('inline'),false);assert.equal(f.ui.field('Client').value,'manual');assert.equal(f.ui.field('Count').state,'missing');
  await f.ui.select(null,'Task');assert.equal(f.ui.canSubmit('inline'),true);
+});
+
+test('Creator user-change check ignores defaults, template loading and parent refresh', async () => {
+ const f = fixture(yaml('Client: template\npriority: Medium\nnote: Template note'), {
+  seeds: { defaults: [{sourceName:'status',value:'Todo'},{sourceName:'priority',value:'Low'}] },
+  parent: () => ({ fields:{contexts:'Work'},tags:['inherited'],nativeValues:new Map() }),
+ });
+ assert.equal(f.ui.hasUserChanges(),false);
+ await f.ui.select(option(),'');
+ f.ui.setPreviewParent('P'); f.ui.updateInputs(''); f.ui.refreshParent();
+ assert.equal(f.ui.hasUserChanges(),false);
+ await f.ui.select(option('B'),'');
+ assert.equal(f.ui.hasUserChanges(),false);
+ await f.ui.select(null,'');
+ assert.equal(f.ui.hasUserChanges(),false);
+});
+
+test('Creator detects native scalar/list edits, clears and removals, with value restoration', async () => {
+ for (const action of ['scalar','list','clear','remove'] as const) {
+  const f=fixture(yaml('Client: initial\nValues: [first, second]'));await f.ui.select(option(),'');
+  if(action==='scalar')f.ui.draft.setValue('Client','changed');
+  if(action==='list')f.ui.draft.editMember('Values',f.ui.field('Values').members[0].id,'changed');
+  if(action==='clear')f.ui.draft.clearValue('Client');
+  if(action==='remove')f.ui.draft.removeField('Client');
+  assert.equal(f.ui.hasUserChanges(),true,action);
+  if(action==='list')f.ui.draft.setValue('Values',['first','second']);
+  else f.ui.draft.setValue('Client','initial');
+  assert.equal(f.ui.hasUserChanges(),false,`${action} restored`);
+ }
+});
+
+test('Creator opening user seeds are clean and source refresh does not mask later edits', async () => {
+ const f=fixture(yaml('Client: automatic\ncontexts: [template]'),{seeds:{user:[{sourceName:'note',value:'Opening note'},{sourceName:'contexts',value:['opening']}]}});
+ await f.ui.select(option(),'');assert.equal(f.ui.hasUserChanges(),false);
+ f.ui.draft.setValue('note','Edited note');assert.equal(f.ui.hasUserChanges(),true);
+ await f.ui.select(option('B'),'');assert.equal(f.ui.hasUserChanges(),true);
+ f.ui.draft.setValue('note','Opening note');assert.equal(f.ui.hasUserChanges(),false);
+ f.ui.draft.appendMember('contexts','extra');assert.equal(f.ui.hasUserChanges(),true);
+ f.ui.draft.removeMember('contexts',f.ui.field('contexts').members.find(member=>member.value==='extra')!.id);
+ assert.equal(f.ui.hasUserChanges(),false);
+});
+
+test('late automatic template completion never becomes a user change',async()=>{
+ let finish!:(content:string)=>void;const f=fixture('',{readTemplate:()=>new Promise(resolve=>{finish=resolve;})});
+ const loading=f.ui.select(option(),'');assert.equal(f.ui.hasUserChanges(),false);
+ finish(yaml('Client: late\nnote: Automatic note'));await loading;assert.equal(f.ui.hasUserChanges(),false);
+ f.ui.applyPayload({note:'User note'});await f.ui.select(null,'');assert.equal(f.ui.hasUserChanges(),true);
+});
+
+function closeProbe(prepared=true, initialDraft=createEmptyTaskCreatorDraft()) {
+ const f=fixture(yaml('Client: template\nstatus: Todo\npriority: Medium\nnote: Automatic note'),{seeds:{defaults:[{sourceName:'priority',value:'Low'}]}});
+ const modal:any=new TaskCreatorModal(new App(),{
+  settings:structuredClone(DEFAULT_SETTINGS),allTasks:[],initialDraft,initialCreateType:'inline',
+  defaultInlineTemplateId:'A',defaultFileTemplateId:'B',fileTaskTemplateOptions:[option('A'),option('B'),option('C')],
+  ...(prepared?{preparedAdapter:f.adapter}:{}),onSubmitInline:()=>true,onSubmitFile:()=>true,
+ });
+ modal.renderSubmitControls=()=>{};modal.renderFieldButtons=()=>{};modal.applyThemeColor=()=>{};
+ modal.closeActivePicker=()=>{};modal.focusDescription=()=>{};
+ return modal;
+}
+
+test('real Creator close check ignores automatic fields and empty note visibility',async()=>{
+ const modal=closeProbe();assert.equal(modal.hasUnsavedDraft(),false);
+ await modal.selectPreparedTemplateId('A');assert.equal(modal.hasUnsavedDraft(),false);
+ modal.draft.noteOpen=true;assert.equal(modal.hasUnsavedDraft(),false);
+ modal.prepared.draft.setValue('Client','User value');modal.refreshPreparedDraft();
+ assert.equal(modal.hasUnsavedDraft(),true,'native-only edit');
+});
+
+test('File/Inline mode changes stay clean and preserve actual user edits',async()=>{
+ const savedWindow=globalThis.window;
+ Object.assign(globalThis,{window:{setTimeout:()=>0}});
+ try {
+  const modal=closeProbe();await modal.selectPreparedTemplateId('A');
+  for(const mode of ['file','inline','file','inline']) {
+   modal.setActiveCreateType(mode);await modal.selectPreparedTemplateId(mode==='file'?'B':'A');
+   assert.equal(modal.hasUnsavedDraft(),false,mode);
+  }
+  modal.prepared.draft.setValue('Client','Manual');modal.refreshPreparedDraft();
+  modal.setActiveCreateType('file');await modal.selectPreparedTemplateId('B');
+  assert.equal(modal.hasUnsavedDraft(),true);assert.equal(modal.prepared.field('Client').value,'Manual');
+ } finally {Object.assign(globalThis,{window:savedWindow});}
+});
+
+test('Creator description/note changes warn and restoring opening values stays clean',()=>{
+ const opening=createEmptyTaskCreatorDraft();opening.description='Opening description';opening.note='Opening note';
+ const modal=closeProbe(false,opening);assert.equal(modal.hasUnsavedDraft(),false);
+ modal.draft.description='Edited';assert.equal(modal.hasUnsavedDraft(),true);
+ modal.draft.description=opening.description;assert.equal(modal.hasUnsavedDraft(),false);
+ modal.draft.note='Edited note';assert.equal(modal.hasUnsavedDraft(),true);
+ modal.draft.note=opening.note;modal.draft.noteOpen=true;assert.equal(modal.hasUnsavedDraft(),false);
+});
+
+test('manual template changes and clearing warn independently of automatic mode selection',async()=>{
+ const modal=closeProbe();await modal.selectPreparedTemplateId('A');
+ modal.userTemplateSelections.set('inline','A');assert.equal(modal.hasUnsavedDraft(),false);
+ modal.userTemplateSelections.set('inline','C');await modal.selectPreparedTemplateId('C');assert.equal(modal.hasUnsavedDraft(),true);
+ await modal.selectPreparedTemplateId('B');assert.equal(modal.hasUnsavedDraft(),true,'automatic switch cannot clear explicit template change');
+ modal.userTemplateSelections.set('inline','A');await modal.selectPreparedTemplateId('A');assert.equal(modal.hasUnsavedDraft(),false);
+ modal.userTemplateSelections.set('inline','');await modal.selectPreparedTemplateId('');assert.equal(modal.hasUnsavedDraft(),true);
+});
+
+test('Escape, outside click and close share the corrected discard decision',async()=>{
+ for(const route of ['escape','outside','close']) {
+  const modal=closeProbe();await modal.selectPreparedTemplateId('A');let closed=0,prompted=0;
+  modal.forceClose=()=>{closed++;};modal.promptDiscardDraft=()=>{prompted++;};modal.modalEl.contains=()=>false;
+  const invoke=()=>route==='escape'?modal.handleEscapeIntent():route==='close'?modal.close():modal.handleContainerPointerDown({target:{nodeType:1,closest:()=>null},preventDefault(){},stopPropagation(){}});
+  invoke();assert.equal(closed,1,route);assert.equal(prompted,0,route);
+  modal.draft.description='User task';invoke();assert.equal(closed,1,route);assert.equal(prompted,1,route);
+ }
+});
+
+test('legacy Creator defaults are clean but explicit field and list changes warn',()=>{
+ const opening=createEmptyTaskCreatorDraft();opening.fieldValues.priority='Medium';
+ const modal=closeProbe(false,opening);assert.equal(modal.hasUnsavedDraft(),false);
+ modal.draft.fieldValues.priority='High';modal.draft.explicitFieldKeys=['priority'];assert.equal(modal.hasUnsavedDraft(),true);
+ modal.draft.fieldValues.priority='Medium';assert.equal(modal.hasUnsavedDraft(),false);
+ modal.draft.tags=['User'];assert.equal(modal.hasUnsavedDraft(),true);modal.draft.tags=[];
+ modal.draft.subtaskIds=['Child'];assert.equal(modal.hasUnsavedDraft(),true);
+});
+
+
+test('repeat completion choice is a real picker change in prepared and legacy Creator',()=>{
+ for(const prepared of [true,false]) {
+  const modal=closeProbe(prepared);assert.equal(modal.hasUnsavedDraft(),false);
+  const initial=modal.draft.inlineCompletionMode;
+  modal.draft.inlineCompletionMode=initial==='replace-completed'?'keep-completed':'replace-completed';
+  assert.equal(modal.hasUnsavedDraft(),true);
+  modal.draft.inlineCompletionMode=initial;assert.equal(modal.hasUnsavedDraft(),false);
+ }
+});
+
+test('empty opening note and tags become clean when user content is fully removed',()=>{
+ const f=fixture('');f.ui.applyPayload({note:'Typed note'});assert.equal(f.ui.hasUserChanges(),true);
+ f.ui.applyPayload({note:''});assert.equal(f.ui.hasUserChanges(),false);
+ f.ui.draft.appendMember('tags','first');assert.equal(f.ui.hasUserChanges(),true);
+ f.ui.draft.removeMember('tags',f.ui.field('tags').members[0].id);assert.equal(f.ui.hasUserChanges(),false);
+ f.ui.draft.setValue('Client',null);assert.equal(f.ui.hasUserChanges(),true,'native explicit empty remains meaningful');
 });
