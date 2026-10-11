@@ -1,8 +1,8 @@
 {
   "schemaVersion": 1,
   "locale": "zh-CN",
-  "keyCount": 3642,
-  "keyFingerprint": "548e3bd29826fa27f221de64fabbedc76a89e53077baad6e25aa70693d73c23b",
+  "keyCount": 3645,
+  "keyFingerprint": "16fb077f2299ab1c25cfe05b4f6416fb6ef581064a3891481c8676923be3307f",
   "translations": {
     "buttons": {
       "addFileSubtask": "添加文件子任务",
@@ -1014,6 +1014,7 @@
       "taskChangeOutcomeUnknown": "Operon 无法确认任务更改是否已应用。未进行重试；请检查任务的最新状态。",
       "taskChangedElsewhere": "此任务已在其他位置更改。Operon 已刷新任务；请检查最新版本后重试。",
       "taskCreated": "已创建新任务",
+      "taskCreatedTemplatePreferencesSaveFailed": "任务已创建，但无法保存模板偏好设置。",
       "taskDeleteRecoveryRequired": "任务未被删除，部分相关任务更改需要检查。",
       "taskDescriptionRequired": "任务描述为必填项。",
       "taskFieldsInvalid": "Operon 无法保存此任务。请检查任务字段后重试。",
@@ -2872,6 +2873,8 @@
       "upcomingTaskColorSourceDesc": "独立于置顶任务的卡片颜色。",
       "upcomingTimedFirst": "定时任务优先",
       "upcomingTimedGroup": "定时",
+      "useLastTemplateAsDefault": "将上次使用的模板设为默认模板",
+      "useLastTemplateAsDefaultDesc": "在 Task Creator 中成功创建任务后，将所用模板保存为此任务类型的默认模板。命令和转换也会使用此默认模板。",
       "visualPropertyPool": "Canvas 和 Excalidraw Property Pool",
       "visualTaskPool": "Canvas 和 Excalidraw 任务池",
       "weeklyNoteFolder": "笔记文件夹",
@@ -3687,5 +3690,5 @@
       "toggleDescendantPreview": "切换子任务预览"
     }
   },
-  "sourceVersion": "e7dbae68108cfc73ea477f2ff170aee18fb56d1c18196a9567e029c43e77aa31"
+  "sourceVersion": "d37c314bb485509427529442c13f29bcaf2132e1bdb4adbdb245d480783f7331"
 }

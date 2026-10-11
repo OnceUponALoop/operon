@@ -392,7 +392,8 @@
 		"canvasGroupSaveFailed": "グループは Canvas の履歴にありますが、保存に失敗しました。再試行前に Canvas を確認してください。",
 		"canvasGroupDropBlocked": "グループの変更を適用できませんでした。カードは元の位置に戻りました。",
 		"canvasGroupOverlap": "同じ単一値プロパティを持つ Operon グループは重ねられません。変更は適用されませんでした。",
-		"canvasGroupDropPartial": "グループの変更を安全に完了できませんでした。続行する前にタスクとCanvasを確認してください。"
+		"canvasGroupDropPartial": "グループの変更を安全に完了できませんでした。続行する前にタスクとCanvasを確認してください。",
+		"taskCreatedTemplatePreferencesSaveFailed": "タスクは作成されましたが、テンプレート設定を保存できませんでした。"
 	},
 	"duplicateOperonId": {
 		"title": "Operon ID の競合",
@@ -2221,7 +2222,9 @@
 		"tasksBulkErrorDetails": "エラー: {{reason}}",
 		"tasksBulkUnavailable": "Operon の準備ができると変換できます。",
 		"tasksBulkReviewUnchanged": "変更のないファイルを確認",
-		"tasksBulkSkippedSource": "スキャン時と異なるためスキップ: {{path}}"
+		"tasksBulkSkippedSource": "スキャン時と異なるためスキップ: {{path}}",
+		"useLastTemplateAsDefault": "最後に使用したテンプレートを既定にする",
+		"useLastTemplateAsDefaultDesc": "Task Creatorでタスクを正常に作成した後、使用したテンプレートをこのタスクの種類の既定として保存します。コマンドや変換でもこの既定が使用されます。"
 	},
 	"buttons": {
 		"ok": "OK",

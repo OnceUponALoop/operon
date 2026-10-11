@@ -341,6 +341,9 @@ function pickTaskCreationProfileStoreSettings(settings: OperonSettings): TaskCre
 		taskCreatorDefaultToFileTask: settings.taskCreatorDefaultToFileTask,
 		taskCreatorDefaultFileTemplateId: settings.taskCreatorDefaultFileTemplateId,
 		defaultInlineTaskTemplateId: settings.defaultInlineTaskTemplateId,
+		inlineTaskUseLastTemplateAsDefault: settings.inlineTaskUseLastTemplateAsDefault,
+		fileTaskUseLastTemplateAsDefault: settings.fileTaskUseLastTemplateAsDefault,
+
 		fileTaskTemplateFolder: settings.fileTaskTemplateFolder,
 		manageDailyNotesWithOperon: settings.manageDailyNotesWithOperon,
 		dailyNoteFormat: settings.dailyNoteFormat,
@@ -719,6 +722,27 @@ export class OperonStorage {
 			const definitions = this.getCommittedInlinePropertyDefinitions();
 			if (!definitions) throw new Error('Missing property definitions');
 			return definitions;
+		});
+	}
+
+	/** Record only verified Creator success, preserving preferences changed during submission. */
+	async saveTaskCreatorTemplateUsage(change: { createType: 'inline' | 'file'; templateId: string; enabledAtSubmit: boolean; expectedDefaultId: string | null }): Promise<void> {
+		await this.enqueueSettingsTransaction(async () => {
+			const defaultKey = change.createType === 'inline' ? 'defaultInlineTaskTemplateId' : 'taskCreatorDefaultFileTemplateId';
+			const toggleKey = change.createType === 'inline' ? 'inlineTaskUseLastTemplateAsDefault' : 'fileTaskUseLastTemplateAsDefault';
+			const eligible = () => change.enabledAtSubmit && this.settings[toggleKey] && this.settings[defaultKey] === change.expectedDefaultId;
+			const learn = eligible() && this.settings[defaultKey] !== change.templateId;
+			const patch: Partial<OperonSettings> = {};
+			if (this.settings.lastUsedFileTaskTemplateId !== change.templateId) patch.lastUsedFileTaskTemplateId = change.templateId;
+			if (learn) Object.assign(patch, { [defaultKey]: change.templateId });
+			if (!Object.keys(patch).length) return;
+			const canCommit = () => !learn || eligible();
+			try {
+				await this.persistSettings({ forceRecoveredWrite: true }, [], undefined, false, patch, canCommit);
+			} catch (error) {
+				if (!canCommit()) return;
+				throw error;
+			}
 		});
 	}
 

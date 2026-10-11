@@ -1,8 +1,8 @@
 {
   "schemaVersion": 1,
   "locale": "es",
-  "keyCount": 3642,
-  "keyFingerprint": "548e3bd29826fa27f221de64fabbedc76a89e53077baad6e25aa70693d73c23b",
+  "keyCount": 3645,
+  "keyFingerprint": "16fb077f2299ab1c25cfe05b4f6416fb6ef581064a3891481c8676923be3307f",
   "translations": {
     "buttons": {
       "addFileSubtask": "Añadir subtarea de archivo",
@@ -1014,6 +1014,7 @@
       "taskChangeOutcomeUnknown": "Operon no pudo confirmar si se aplicó el cambio. No se volvió a intentar; revisa el estado más reciente de la tarea.",
       "taskChangedElsewhere": "Esta tarea cambió en otro lugar. Operon la actualizó; revisa la última versión e inténtalo de nuevo.",
       "taskCreated": "Nueva tarea creada",
+      "taskCreatedTemplatePreferencesSaveFailed": "Tarea creada, pero no se pudieron guardar las preferencias de plantilla.",
       "taskDeleteRecoveryRequired": "La tarea no se eliminó y algunos cambios relacionados requieren revisión.",
       "taskDescriptionRequired": "La descripción de la tarea es obligatoria.",
       "taskFieldsInvalid": "Operon no pudo guardar esta tarea. Revisa sus campos e inténtalo de nuevo.",
@@ -2872,6 +2873,8 @@
       "upcomingTaskColorSourceDesc": "Colores independientes de las tareas fijadas.",
       "upcomingTimedFirst": "Primero tareas con hora",
       "upcomingTimedGroup": "Con hora",
+      "useLastTemplateAsDefault": "Usar la última plantilla utilizada como predeterminada",
+      "useLastTemplateAsDefaultDesc": "Tras crear una tarea correctamente en Task Creator, guardar la plantilla utilizada como predeterminada para este tipo de tarea. Los comandos y las conversiones también usan esta plantilla.",
       "visualPropertyPool": "Property Pool de Canvas y Excalidraw",
       "visualTaskPool": "Grupo de tareas de Canvas y Excalidraw",
       "weeklyNoteFolder": "Carpeta de notas",
@@ -3687,5 +3690,5 @@
       "toggleDescendantPreview": "Alternar vista previa de descendientes"
     }
   },
-  "sourceVersion": "8c2234852d5035ef3a4f7ab99cb8f08b0765d702a170b909d648aa05f28aa202"
+  "sourceVersion": "bee94f19c5115c29b1b885950c29313cd30ddf114e46df3093f065f20de0ffeb"
 }

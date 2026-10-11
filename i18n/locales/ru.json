@@ -392,7 +392,8 @@
 		"canvasGroupSaveFailed": "Группа есть в истории Canvas, но сохранить её не удалось. Проверьте Canvas перед повторной попыткой.",
 		"canvasGroupDropBlocked": "Не удалось применить изменение группы. Карточка вернулась на прежнее место.",
 		"canvasGroupOverlap": "Группы Operon с одним и тем же однозначным свойством не могут пересекаться. Изменение не применено.",
-		"canvasGroupDropPartial": "Не удалось безопасно завершить изменение группы. Проверьте задачу и Canvas, прежде чем продолжить."
+		"canvasGroupDropPartial": "Не удалось безопасно завершить изменение группы. Проверьте задачу и Canvas, прежде чем продолжить.",
+		"taskCreatedTemplatePreferencesSaveFailed": "Задача создана, но настройки шаблона не удалось сохранить."
 	},
 	"duplicateOperonId": {
 		"title": "Конфликт ID Operon",
@@ -2221,7 +2222,9 @@
 		"tasksBulkErrorDetails": "Ошибка: {{reason}}",
 		"tasksBulkUnavailable": "Преобразование доступно, когда Operon готов.",
 		"tasksBulkReviewUnchanged": "Проверить неизменённые файлы",
-		"tasksBulkSkippedSource": "Пропущен из-за отличия от результата сканирования: {{path}}"
+		"tasksBulkSkippedSource": "Пропущен из-за отличия от результата сканирования: {{path}}",
+		"useLastTemplateAsDefault": "Использовать последний шаблон по умолчанию",
+		"useLastTemplateAsDefaultDesc": "После успешного создания задачи в Task Creator сохранить использованный шаблон по умолчанию для этого типа задач. Команды и преобразования также используют этот шаблон."
 	},
 	"buttons": {
 		"ok": "ОК",

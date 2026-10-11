@@ -392,7 +392,8 @@
 		"canvasGroupSaveFailed": "Grup Canvas geçmişinde, ancak kayıt başarısız. Tekrar denemeden önce Canvas’ı kontrol edin.",
 		"canvasGroupDropBlocked": "Grup değişikliği uygulanamadı. Kart önceki konumuna döndü.",
 		"canvasGroupOverlap": "Aynı tek değerli property’ye ait Operon grupları kesişemez. Değişiklik uygulanmadı.",
-		"canvasGroupDropPartial": "Grup değişikliği güvenle tamamlanamadı. Devam etmeden task ve Canvas’ı kontrol edin."
+		"canvasGroupDropPartial": "Grup değişikliği güvenle tamamlanamadı. Devam etmeden task ve Canvas’ı kontrol edin.",
+		"taskCreatedTemplatePreferencesSaveFailed": "Görev oluşturuldu, ancak şablon tercihleri kaydedilemedi."
 	},
 	"duplicateOperonId": {
 		"title": "Operon ID Çakışması",
@@ -2221,7 +2222,9 @@
 		"tasksBulkErrorDetails": "Hata: {{reason}}",
 		"tasksBulkUnavailable": "Operon hazır olduğunda dönüşüm kullanılabilir.",
 		"tasksBulkReviewUnchanged": "Değişmeyen dosyalarla devam et",
-		"tasksBulkSkippedSource": "Taramadan farklı olduğu için atlandı: {{path}}"
+		"tasksBulkSkippedSource": "Taramadan farklı olduğu için atlandı: {{path}}",
+		"useLastTemplateAsDefault": "Son kullanılan şablonu varsayılan yap",
+		"useLastTemplateAsDefaultDesc": "Task Creator ile görev başarıyla oluşturulduğunda kullanılan şablonu bu görev türünün varsayılanı olarak kaydeder. Komutlar ve dönüştürme de bu varsayılanı kullanır."
 	},
 	"buttons": {
 		"ok": "Tamam",

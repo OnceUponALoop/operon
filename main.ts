@@ -30113,6 +30113,8 @@ export default class OperonPlugin extends Plugin {
     candidates: name => { const field=candidates.fields.find(item=>item.propertyName.toLowerCase()===name.toLowerCase());return field ? candidates.getCandidates(field.key) : []; },
     onSubmit: async request => {
      if (metadataKey() !== initialMetadataKey) return { outcome:'failed',message:t('taskEditor','creatorMetadataChanged') };
+     const enabledAtSubmit=request.createType==='inline' ? this.settings.inlineTaskUseLastTemplateAsDefault : this.settings.fileTaskUseLastTemplateAsDefault;
+     const expectedDefaultId=request.createType==='inline' ? this.settings.defaultInlineTaskTemplateId : this.settings.taskCreatorDefaultFileTemplateId;
      const draft=this.preparedCreatorLegacyDraft(request);
      let parentId=draft.fieldValues.parentTask;
      const parent=parentId ? this.indexer.getTask(parentId) : null;
@@ -30139,8 +30141,8 @@ export default class OperonPlugin extends Plugin {
       if (commit.outcome==='uncertain') return {outcome:'uncertain',message:t('taskEditor','creatorCommitUncertain')};
       if (!ok || commit.outcome!=='committed') return {outcome:'failed'};
       if (request.template.status==='ready') {
-       this.settings.lastUsedFileTaskTemplateId=request.template.sourceId;
-       try { await this.storage.saveSettings(); } catch { new Notice(t('notifications','taskSaveFailed')); }
+       try { await this.storage.saveTaskCreatorTemplateUsage({createType:request.createType,templateId:request.template.sourceId,enabledAtSubmit,expectedDefaultId}); }
+       catch { new Notice(t('notifications','taskCreatedTemplatePreferencesSaveFailed')); }
       }
       if (request.createType==='inline' && commit.content?.skipped.length) new Notice(t('taskEditor','creatorPropertiesSkipped',{fields:commit.content.skipped.map(item=>`${item.sourceName} (${t('taskEditor', item.reason==='automatic' ? 'creatorSkipAutomatic' : item.reason==='templater' ? 'creatorSkipTemplater' : item.reason==='file-only' ? 'creatorSkipFileOnly' : 'creatorSkipUnsupported')})`).join(', ')}));
       return {outcome:'committed'};

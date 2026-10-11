@@ -392,7 +392,8 @@
 		"canvasGroupSaveFailed": "群組已記錄於 Canvas 歷程中，但儲存失敗。請檢查 Canvas 後再重試。",
 		"canvasGroupDropBlocked": "無法套用群組變更。卡片已返回原來的位置。",
 		"canvasGroupOverlap": "具有相同單值屬性的 Operon 群組不能重疊。變更未套用。",
-		"canvasGroupDropPartial": "無法安全完成群組變更。繼續之前，請檢查任務和 Canvas。"
+		"canvasGroupDropPartial": "無法安全完成群組變更。繼續之前，請檢查任務和 Canvas。",
+		"taskCreatedTemplatePreferencesSaveFailed": "任務已建立，但無法儲存範本偏好設定。"
 	},
 	"duplicateOperonId": {
 		"title": "Operon ID 衝突",
@@ -2221,7 +2222,9 @@
 		"tasksBulkErrorDetails": "錯誤：{{reason}}",
 		"tasksBulkUnavailable": "Operon 準備就緒後即可轉換。",
 		"tasksBulkReviewUnchanged": "檢查未變更的檔案",
-		"tasksBulkSkippedSource": "因與掃描時不同而略過：{{path}}"
+		"tasksBulkSkippedSource": "因與掃描時不同而略過：{{path}}",
+		"useLastTemplateAsDefault": "將上次使用的範本設為預設範本",
+		"useLastTemplateAsDefaultDesc": "在 Task Creator 中成功建立任務後，將所用範本儲存為此任務類型的預設範本。命令和轉換也會使用此預設範本。"
 	},
 	"buttons": {
 		"ok": "確定",

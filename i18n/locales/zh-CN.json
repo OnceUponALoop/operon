@@ -392,7 +392,8 @@
 		"canvasGroupSaveFailed": "分组已记录在 Canvas 历史中，但保存失败。请检查 Canvas 后再重试。",
 		"canvasGroupDropBlocked": "无法应用分组更改。卡片已返回原来的位置。",
 		"canvasGroupOverlap": "具有相同单值属性的 Operon 分组不能重叠。更改未应用。",
-		"canvasGroupDropPartial": "无法安全完成分组更改。继续之前，请检查任务和 Canvas。"
+		"canvasGroupDropPartial": "无法安全完成分组更改。继续之前，请检查任务和 Canvas。",
+		"taskCreatedTemplatePreferencesSaveFailed": "任务已创建，但无法保存模板偏好设置。"
 	},
 	"duplicateOperonId": {
 		"title": "Operon ID 冲突",
@@ -2221,7 +2222,9 @@
 		"tasksBulkErrorDetails": "错误：{{reason}}",
 		"tasksBulkUnavailable": "Operon 准备就绪后即可转换。",
 		"tasksBulkReviewUnchanged": "检查未更改的文件",
-		"tasksBulkSkippedSource": "因与扫描时不同而跳过：{{path}}"
+		"tasksBulkSkippedSource": "因与扫描时不同而跳过：{{path}}",
+		"useLastTemplateAsDefault": "将上次使用的模板设为默认模板",
+		"useLastTemplateAsDefaultDesc": "在 Task Creator 中成功创建任务后，将所用模板保存为此任务类型的默认模板。命令和转换也会使用此默认模板。"
 	},
 	"buttons": {
 		"ok": "确定",

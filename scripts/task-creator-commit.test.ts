@@ -1,5 +1,6 @@
 import assert from 'node:assert/strict';
 import './creation-index-integration.test';
+import './task-creator-template-defaults.test';
 import { test } from 'node:test';
 import { parseYaml } from 'obsidian';
 import { PreparedTaskCreatorDraft } from '../src/ui/task-creator-prepared-draft';

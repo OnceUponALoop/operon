@@ -1577,7 +1577,7 @@ export class OperonSettingsTab extends PluginSettingTab {
 	private buildTaskCaptureSearchSections(tabId: string, entries: OperonSettingsSearchEntry[]): SettingDefinitionItem[] {
 		if (tabId === 'tasksInlineTasks') {
 			return this.buildTaskSettingsGroups([
-				['defaultInlineTaskTemplate', ['defaultInlineTaskTemplateId'], el => this.renderInlineCreationDefaultSettings(el), 'DOCS-020 Task Creator'],
+				['defaultInlineTaskTemplate', ['defaultInlineTaskTemplateId', 'inlineTaskUseLastTemplateAsDefault'], (el, key) => this.renderInlineCreationDefaultSettings(el, key), 'DOCS-020 Task Creator'],
 				['dailyNoteInlineTaskDefaults', ['inlineTaskDailyNoteAddStartDate', 'inlineTaskDailyNoteAddScheduledDate'], (el, key) => this.renderInlineDailyNoteDefaultsSettings(el, key), 'DOCS-050 Daily Notes workflows'],
 				['checkboxConversion', ['inlineTaskShowTasksEmojiConvertIcon', 'inlineTaskShowPlainCheckboxConvertIcon'], (el, key) => this.renderInlineConversionSettings(el, key), 'DOCS-049 Obsidian Tasks migration'],
 				['tasksBulkTitle', ['tasksEmojiBulkConversion'], el => this.renderTasksBulkConversion(el)],
@@ -1585,7 +1585,7 @@ export class OperonSettingsTab extends PluginSettingTab {
 		}
 		if (tabId !== 'tasksFileTasks') return [];
 		return this.buildTaskSettingsGroups([
-			['newFileTaskCreationDefaults', ['taskCreatorDefaultToFileTask', 'taskCreatorDefaultFileTemplateId'], (el, key) => this.renderFileCreationDefaultsSection(el, key), 'DOCS-020 Task Creator'],
+			['newFileTaskCreationDefaults', ['taskCreatorDefaultToFileTask', 'taskCreatorDefaultFileTemplateId', 'fileTaskUseLastTemplateAsDefault'], (el, key) => this.renderFileCreationDefaultsSection(el, key), 'DOCS-020 Task Creator'],
 			['fileTaskTemplates', ['fileTaskTemplateFolder'], el => this.renderFileTemplatesSection(el), 'DOCS-024 Task templates'],
 			['fileTaskDailyNotes', ['manageDailyNotesWithOperon', 'dailyNoteFormat', 'dailyNoteTemplate', 'dailyNoteFolder', 'createDailyNotesAsOperonTask'], (el, key) => this.renderFileDailyNotesSettings(el, key), ['DOCS-050 Daily Notes workflows', 'DOCS-137 Daily and Weekly Notes']],
 			['fileTaskWeeklyNotes', ['manageWeeklyNotesWithOperon', 'weeklyNoteFormat', 'weeklyNoteTemplate', 'weeklyNoteFolder', 'createWeeklyNotesAsOperonTask'], (el, key) => this.renderFileWeeklyNotesSettings(el, key), 'DOCS-137 Daily and Weekly Notes'],
@@ -13250,15 +13250,20 @@ export class OperonSettingsTab extends PluginSettingTab {
 		) ?? '';
 	}
 
-	private renderInlineCreationDefaultSettings(containerEl: HTMLElement): void {
-		this.renderBoundDropdownSetting<'defaultInlineTaskTemplateId', string>(
-			containerEl, t('settings', 'defaultInlineTaskTemplate'), t('settings', 'defaultInlineTaskTemplateDesc'),
-			'defaultInlineTaskTemplateId', {
-				value: this.settings.defaultInlineTaskTemplateId ?? '',
-				dropdownOptions: this.getDefaultFileTaskTemplateDropdownOptions(this.settings.defaultInlineTaskTemplateId ?? ''),
-				normalize: value => value.trim() || null,
-			},
-		);
+	private renderInlineCreationDefaultSettings(containerEl: HTMLElement, selectedKey?: string): void {
+		if (!selectedKey || selectedKey === 'defaultInlineTaskTemplateId') {
+			this.renderBoundDropdownSetting<'defaultInlineTaskTemplateId', string>(
+				containerEl, t('settings', 'defaultInlineTaskTemplate'), t('settings', 'defaultInlineTaskTemplateDesc'),
+				'defaultInlineTaskTemplateId', {
+					value: this.settings.defaultInlineTaskTemplateId ?? '',
+					dropdownOptions: this.getDefaultFileTaskTemplateDropdownOptions(this.settings.defaultInlineTaskTemplateId ?? ''),
+					normalize: value => value.trim() || null,
+				},
+			);
+		}
+		if (!selectedKey || selectedKey === 'inlineTaskUseLastTemplateAsDefault') {
+			this.renderBoundToggleSetting(containerEl, t('settings', 'useLastTemplateAsDefault'), t('settings', 'useLastTemplateAsDefaultDesc'), 'inlineTaskUseLastTemplateAsDefault');
+		}
 	}
 
 	private renderNewFileTaskCreationDefaultSettings(containerEl: HTMLElement, selectedKey?: string): void {
@@ -13282,6 +13287,9 @@ export class OperonSettingsTab extends PluginSettingTab {
 					normalize: value => value.trim() || null,
 				},
 			);
+		}
+		if (!selectedKey || selectedKey === 'fileTaskUseLastTemplateAsDefault') {
+			this.renderBoundToggleSetting(containerEl, t('settings', 'useLastTemplateAsDefault'), t('settings', 'useLastTemplateAsDefaultDesc'), 'fileTaskUseLastTemplateAsDefault');
 		}
 	}
 

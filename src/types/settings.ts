@@ -1939,6 +1939,9 @@ export interface OperonSettings extends TaskCardSettings {
 	/** Optional default template applied when Task Creator enters File Task mode. */
 	taskCreatorDefaultFileTemplateId: string | null;
 	defaultInlineTaskTemplateId: string | null;
+	inlineTaskUseLastTemplateAsDefault: boolean;
+	fileTaskUseLastTemplateAsDefault: boolean;
+
 	/** Folder whose top-level markdown files are offered in the file-task template picker. */
 	fileTaskTemplateFolder: string;
 	/** Additional vault folders excluded from Operon's global task index. */
@@ -2455,6 +2458,9 @@ export const DEFAULT_SETTINGS: OperonSettings = {
 	taskCreatorDefaultToFileTask: false,
 	taskCreatorDefaultFileTemplateId: null,
 	defaultInlineTaskTemplateId: null,
+	inlineTaskUseLastTemplateAsDefault: false,
+	fileTaskUseLastTemplateAsDefault: false,
+
 	fileTaskTemplateFolder: '',
 	excludedFolders: [],
 	manageDailyNotesWithOperon: false,
@@ -4893,6 +4899,8 @@ export function migrateSettings(raw: unknown): OperonSettings {
 	out.fileTaskAutoArchiveEnabled = hasEffectiveFileTaskArchiveTarget(out);
 	out.fileTaskArchiveDelaySeconds = FILE_TASK_ARCHIVE_DELAY_SECONDS;
 	out.fileTaskArchiveOnlyFromFileTasksFolder = false;
+	out.inlineTaskUseLastTemplateAsDefault = src.inlineTaskUseLastTemplateAsDefault === true;
+	out.fileTaskUseLastTemplateAsDefault = src.fileTaskUseLastTemplateAsDefault === true;
 	out.defaultInlineTaskTemplateId = normalizeOptionalString(src.defaultInlineTaskTemplateId) ?? null;
 	out.taskCreatorDefaultFileTemplateId = normalizeStoredFileTaskTemplateId(
 		src.taskCreatorDefaultFileTemplateId,

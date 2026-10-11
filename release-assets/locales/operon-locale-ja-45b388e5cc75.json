@@ -1,8 +1,8 @@
 {
   "schemaVersion": 1,
   "locale": "ja",
-  "keyCount": 3642,
-  "keyFingerprint": "548e3bd29826fa27f221de64fabbedc76a89e53077baad6e25aa70693d73c23b",
+  "keyCount": 3645,
+  "keyFingerprint": "16fb077f2299ab1c25cfe05b4f6416fb6ef581064a3891481c8676923be3307f",
   "translations": {
     "buttons": {
       "addFileSubtask": "ファイルサブタスクを追加",
@@ -1014,6 +1014,7 @@
       "taskChangeOutcomeUnknown": "Operon はタスク変更が適用されたか確認できませんでした。再試行はしていません。タスクの最新状態を確認してください。",
       "taskChangedElsewhere": "このタスクは別の場所で変更されました。Operon が更新した最新の内容を確認して、もう一度お試しください。",
       "taskCreated": "新しいタスクを作成しました",
+      "taskCreatedTemplatePreferencesSaveFailed": "タスクは作成されましたが、テンプレート設定を保存できませんでした。",
       "taskDeleteRecoveryRequired": "タスクは削除されておらず、関連する一部のタスク変更を確認する必要があります。",
       "taskDescriptionRequired": "タスクの説明は必須です。",
       "taskFieldsInvalid": "Operon はこのタスクを保存できませんでした。タスクのフィールドを確認して、もう一度お試しください。",
@@ -2872,6 +2873,8 @@
       "upcomingTaskColorSourceDesc": "ピン留めタスクとは別のカード色。",
       "upcomingTimedFirst": "時刻指定を先に表示",
       "upcomingTimedGroup": "時刻指定",
+      "useLastTemplateAsDefault": "最後に使用したテンプレートを既定にする",
+      "useLastTemplateAsDefaultDesc": "Task Creatorでタスクを正常に作成した後、使用したテンプレートをこのタスクの種類の既定として保存します。コマンドや変換でもこの既定が使用されます。",
       "visualPropertyPool": "CanvasとExcalidrawのProperty Pool",
       "visualTaskPool": "CanvasとExcalidrawのタスクプール",
       "weeklyNoteFolder": "ノートフォルダー",
@@ -3687,5 +3690,5 @@
       "toggleDescendantPreview": "子孫プレビューを切り替え"
     }
   },
-  "sourceVersion": "8418172a8d4479d4e77878cf3773f0fc5bbb5d93ed41ff86903f01fd490a3278"
+  "sourceVersion": "2fb9dcfd71c73b5746d39f34b14055cc66bb88faf9797407dd2e22d415a3b683"
 }

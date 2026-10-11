@@ -392,7 +392,8 @@
 		"canvasGroupSaveFailed": "El grupo está en el historial de Canvas, pero no se pudo guardar. Revisa el Canvas antes de reintentarlo.",
 		"canvasGroupDropBlocked": "No se pudo aplicar el cambio del grupo. La tarjeta volvió a su posición anterior.",
 		"canvasGroupOverlap": "Los grupos Operon con la misma propiedad de valor único no pueden superponerse. No se aplicó el cambio.",
-		"canvasGroupDropPartial": "No se pudo completar un cambio del grupo de forma segura. Revisa la tarea y el Canvas antes de continuar."
+		"canvasGroupDropPartial": "No se pudo completar un cambio del grupo de forma segura. Revisa la tarea y el Canvas antes de continuar.",
+		"taskCreatedTemplatePreferencesSaveFailed": "Tarea creada, pero no se pudieron guardar las preferencias de plantilla."
 	},
 	"duplicateOperonId": {
 		"title": "Conflicto de Operon ID",
@@ -2221,7 +2222,9 @@
 		"tasksBulkErrorDetails": "Error: {{reason}}",
 		"tasksBulkUnavailable": "La conversión estará disponible cuando Operon esté listo.",
 		"tasksBulkReviewUnchanged": "Revisar archivos sin cambios",
-		"tasksBulkSkippedSource": "Omitido porque difiere del escaneo: {{path}}"
+		"tasksBulkSkippedSource": "Omitido porque difiere del escaneo: {{path}}",
+		"useLastTemplateAsDefault": "Usar la última plantilla utilizada como predeterminada",
+		"useLastTemplateAsDefaultDesc": "Tras crear una tarea correctamente en Task Creator, guardar la plantilla utilizada como predeterminada para este tipo de tarea. Los comandos y las conversiones también usan esta plantilla."
 	},
 	"buttons": {
 		"ok": "OK",

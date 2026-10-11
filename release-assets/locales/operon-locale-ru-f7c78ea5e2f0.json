@@ -1,8 +1,8 @@
 {
   "schemaVersion": 1,
   "locale": "ru",
-  "keyCount": 3642,
-  "keyFingerprint": "548e3bd29826fa27f221de64fabbedc76a89e53077baad6e25aa70693d73c23b",
+  "keyCount": 3645,
+  "keyFingerprint": "16fb077f2299ab1c25cfe05b4f6416fb6ef581064a3891481c8676923be3307f",
   "translations": {
     "buttons": {
       "addFileSubtask": "Добавить файловую подзадачу",
@@ -1014,6 +1014,7 @@
       "taskChangeOutcomeUnknown": "Operon не удалось подтвердить, было ли применено изменение. Повторная попытка не выполнялась; проверьте актуальное состояние задачи.",
       "taskChangedElsewhere": "Эта задача была изменена в другом месте. Operon обновил её; проверьте последнюю версию и повторите попытку.",
       "taskCreated": "Создана новая задача",
+      "taskCreatedTemplatePreferencesSaveFailed": "Задача создана, но настройки шаблона не удалось сохранить.",
       "taskDeleteRecoveryRequired": "Задача не удалена, а некоторые связанные изменения требуют проверки.",
       "taskDescriptionRequired": "Требуется описание задачи.",
       "taskFieldsInvalid": "Operon не удалось сохранить эту задачу. Проверьте поля задачи и повторите попытку.",
@@ -2872,6 +2873,8 @@
       "upcomingTaskColorSourceDesc": "Цвета независимо от закреплённых задач.",
       "upcomingTimedFirst": "Сначала задачи со временем",
       "upcomingTimedGroup": "Со временем",
+      "useLastTemplateAsDefault": "Использовать последний шаблон по умолчанию",
+      "useLastTemplateAsDefaultDesc": "После успешного создания задачи в Task Creator сохранить использованный шаблон по умолчанию для этого типа задач. Команды и преобразования также используют этот шаблон.",
       "visualPropertyPool": "Property Pool для Canvas и Excalidraw",
       "visualTaskPool": "Пул задач Canvas и Excalidraw",
       "weeklyNoteFolder": "Папка заметок",
@@ -3687,5 +3690,5 @@
       "toggleDescendantPreview": "Переключить предпросмотр потомков"
     }
   },
-  "sourceVersion": "03ee395a830698d05906276d1cf32a490518be8a93f66d5420e52559c86a7194"
+  "sourceVersion": "f720a98da0eeba7f7de2704a22c915cd7e79e7b70209c6189085d4a41cd1eaee"
 }

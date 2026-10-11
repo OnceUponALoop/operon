@@ -12,7 +12,6 @@ import { parseFrontmatterDocument } from '../src/core/file-task-template-merge';
 import { readFileTaskPropertyDocument } from '../src/core/file-task-property-draft';
 import { resolveDefaultFileTaskStatus } from '../src/core/file-task-defaults';
 import { resolveWorkflowStatus } from '../src/types/pipeline';
-import { DEFAULT_SETTINGS } from '../src/types/settings';
 import { TaskWriter } from '../src/core/task-writer';
 import { OperonIndexer } from '../src/indexer/indexer';
 import { getNativePropertyIndex } from '../src/indexer/native-property-index';
@@ -46,9 +45,10 @@ const template = '---\nClient: hello\nCount: 0\nChecked: false\nValues: [3,"3",A
 async function fixture() {
  const disk = new SettingsPreservationHarness({inlinePropertyBackups:true,table:false});
  const storage = disk.createStorage(); await storage.initialize();
- const settings = structuredClone(DEFAULT_SETTINGS);
+ const settings = storage.getSettings();
  const files = new Map<string,TFile>(), contents = new Map<string,string>();
  const reads: string[] = [], writes: string[] = [];
+ const notices:string[]=[];
  let ids = 0, failure = '', metadataReads = 0, targetParent = '';
  function seed(path:string, content:string) {
   const file = files.get(path) ?? new (TFile as unknown as new (path:string)=>TFile)(path);
@@ -99,7 +99,7 @@ async function fixture() {
   refreshPreparedSources(){this.model.refreshParent();}
   acceptPreparedTargetParent(id:string){this.model.backgroundParent(id,null,null);return this.model.submission('inline','Task','keep-completed');}
  }
- const prepare=method('prepareTaskCreator','initialDraft=null,options={}',{getNativePropertyIndex,TaskCreatorModal:ModalBoundary,TFile,CreationDraftProperties,decodeVaultPropertyValue,createCachedTableFilePropertyTypeResolver,createVaultFilePropertySnapshot,resolveDefaultFileTaskStatus,localNow:()=> '2026-10-10T12:34:56',t,Notice});
+ const prepare=method('prepareTaskCreator','initialDraft=null,options={}',{getNativePropertyIndex,TaskCreatorModal:ModalBoundary,TFile,CreationDraftProperties,decodeVaultPropertyValue,createCachedTableFilePropertyTypeResolver,createVaultFilePropertySnapshot,resolveDefaultFileTaskStatus,localNow:()=> '2026-10-10T12:34:56',t,Notice:class {constructor(message:string){notices.push(message);}}});
  async function open(initial=emptyDraft()) {
   await prepare.call(host,initial,{
    onSubmitInline:async(draft:any)=>{const content=host.buildTaskCreatorInlineTaskLine(draft,hostFile.path,0,{parentTask:targetParent},'2026-10-11T10:00:00');const before=contents.get(hostFile.path)!;return host.writePreparedCreatorInline(draft,hostFile,before,`${before}${content.taskLine}\n`);},
@@ -117,7 +117,7 @@ async function fixture() {
   e.nativePropertyField=(name:string,type:string)=>({propertyName:name,type});
   await e.refreshDesktopFileProperties();assert.equal(e.filePropertyUnavailable,false);return e;
  }
- return {disk,storage,settings,app,native,indexer,writer,host,open,scan,snapshot,editor,contents,reads,writes,seed,metadataReads:()=>metadataReads,failure:(value:string)=>failure=value,targetParent:(value:string)=>targetParent=value,close:async()=>{indexer.destroy();await disk.dispose();}};
+ return {notices,disk,storage,settings,app,native,indexer,writer,host,open,scan,snapshot,editor,contents,reads,writes,seed,metadataReads:()=>metadataReads,failure:(value:string)=>failure=value,targetParent:(value:string)=>targetParent=value,close:async()=>{indexer.destroy();await disk.dispose();}};
 }
 
 for(const mode of ['file','inline'] as const)test(`production Creator adapter -> writer/storage -> index -> table: 20 ${mode} cycles`,async()=>{
@@ -247,5 +247,41 @@ test('note selection command: 10 files / 100 tasks use the default template and 
   }
   assert.equal(f.reads.length,warm);assert.equal(f.reads.filter(path=>path==='Template.md').length,20,'one read per command, including no-op commands');
   console.log('NOTE_CONVERSION_CHAIN',JSON.stringify({files:10,tasks:100,transactions,templateReads:20,warmReads:0,notices:notices.length}));
+ }finally{await f.close();}
+});
+
+for(const mode of ['inline','file'] as const)test(`Creator integration learns only verified ${mode} template and next open receives it`,async()=>{
+ const f=await fixture();try{
+  await f.storage.updateSettings({inlineTaskUseLastTemplateAsDefault:true,fileTaskUseLastTemplateAsDefault:true});
+  const ui=await f.open();const key=mode==='inline'?'defaultInlineTaskTemplateId':'taskCreatorDefaultFileTemplateId';
+  assert.equal(f.settings[key],null);
+  const result=await ui.options.preparedAdapter.onSubmit(ui.model.submission(mode,'Created','keep-completed'));
+  assert.equal(result.outcome,'committed');assert.equal(f.settings[key],'template');
+  assert.equal(f.settings[mode==='inline'?'taskCreatorDefaultFileTemplateId':'defaultInlineTaskTemplateId'],null);
+  const next=await f.open();assert.equal(next.options[mode==='inline'?'defaultInlineTemplateId':'defaultFileTemplateId'],'template');
+ }finally{await f.close();}
+});
+for(const scenario of ['cancel','failed','uncertain','empty','save-error','changed-toggle','changed-default','preview'])test(`Creator learning excludes ${scenario}`,async()=>{
+ const f=await fixture();try{
+  await f.storage.updateSettings({inlineTaskUseLastTemplateAsDefault:true,defaultInlineTaskTemplateId:'original'});
+  const ui=await f.open();
+  if(scenario==='cancel'){ui.onClose();assert.equal(f.settings.defaultInlineTaskTemplateId,'original');return;}
+  if(scenario==='failed')f.failure('before');
+  if(scenario==='uncertain')f.failure('lost');
+  if(scenario==='empty')await ui.model.select(null,'Created');
+  if(scenario==='save-error')f.storage.saveTaskCreatorTemplateUsage=async()=>{throw Error('settings write failed');};
+  if(scenario==='changed-toggle'||scenario==='changed-default'||scenario==='preview'){
+   const write=f.host.writePreparedCreatorInline;
+   f.host.writePreparedCreatorInline=async(...args:unknown[])=>{
+    if(scenario==='changed-toggle')f.settings.inlineTaskUseLastTemplateAsDefault=false;
+    else if(scenario==='changed-default')f.settings.defaultInlineTaskTemplateId='manual';
+    else {f.host.preparedCreatorCommits.get(args[0]).outcome='preview';return false;}
+    return write.apply(f.host,args);
+   };
+  }
+  const result=await ui.options.preparedAdapter.onSubmit(ui.model.submission('inline','Created','keep-completed'));
+  assert.equal(result.outcome,scenario==='failed'?'failed':scenario==='uncertain'?'uncertain':scenario==='preview'?'preview':'committed');
+  assert.equal(f.settings.defaultInlineTaskTemplateId,scenario==='changed-default'?'manual':'original');
+  if(scenario==='save-error'){assert.equal(f.writes.length,1);assert.deepEqual(f.notices,['taskCreatedTemplatePreferencesSaveFailed']);}
  }finally{await f.close();}
 });

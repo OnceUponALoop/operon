@@ -342,6 +342,8 @@ export const ALL_OPERON_SETTINGS_BACKUP_KEYS = [
 	'taskCreatorDefaultToFileTask',
 	'taskCreatorDefaultFileTemplateId',
 	'defaultInlineTaskTemplateId',
+	'inlineTaskUseLastTemplateAsDefault',
+	'fileTaskUseLastTemplateAsDefault',
 	'fileTaskTemplateFolder',
 	'excludedFolders',
 	'manageDailyNotesWithOperon',

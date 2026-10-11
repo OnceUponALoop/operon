@@ -392,7 +392,8 @@
 		"canvasGroupSaveFailed": "Die Gruppe ist im Canvas-Verlauf, aber das Speichern ist fehlgeschlagen. Canvas vor einem weiteren Versuch prüfen.",
 		"canvasGroupDropBlocked": "Die Gruppenänderung konnte nicht angewendet werden. Die Karte wurde an ihre vorherige Position zurückgesetzt.",
 		"canvasGroupOverlap": "Operon-Gruppen mit derselben einwertigen Eigenschaft dürfen sich nicht überschneiden. Die Änderung wurde nicht angewendet.",
-		"canvasGroupDropPartial": "Eine Gruppenänderung konnte nicht sicher abgeschlossen werden. Prüfe die Aufgabe und das Canvas, bevor du fortfährst."
+		"canvasGroupDropPartial": "Eine Gruppenänderung konnte nicht sicher abgeschlossen werden. Prüfe die Aufgabe und das Canvas, bevor du fortfährst.",
+		"taskCreatedTemplatePreferencesSaveFailed": "Aufgabe erstellt, aber die Vorlageneinstellungen konnten nicht gespeichert werden."
 	},
 	"duplicateOperonId": {
 		"title": "Operon-ID-Konflikt",
@@ -2221,7 +2222,9 @@
 		"tasksBulkErrorDetails": "Fehler: {{reason}}",
 		"tasksBulkUnavailable": "Die Konvertierung ist verfügbar, sobald Operon bereit ist.",
 		"tasksBulkReviewUnchanged": "Unveränderte Dateien prüfen",
-		"tasksBulkSkippedSource": "Weicht vom Scan ab und wird übersprungen: {{path}}"
+		"tasksBulkSkippedSource": "Weicht vom Scan ab und wird übersprungen: {{path}}",
+		"useLastTemplateAsDefault": "Zuletzt verwendete Vorlage als Standard verwenden",
+		"useLastTemplateAsDefaultDesc": "Nach erfolgreicher Erstellung im Task Creator wird die verwendete Vorlage als Standard für diesen Aufgabentyp gespeichert. Befehle und Konvertierungen verwenden ebenfalls diesen Standard."
 	},
 	"buttons": {
 		"ok": "OK",

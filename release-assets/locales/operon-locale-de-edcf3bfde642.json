@@ -1,8 +1,8 @@
 {
   "schemaVersion": 1,
   "locale": "de",
-  "keyCount": 3642,
-  "keyFingerprint": "548e3bd29826fa27f221de64fabbedc76a89e53077baad6e25aa70693d73c23b",
+  "keyCount": 3645,
+  "keyFingerprint": "16fb077f2299ab1c25cfe05b4f6416fb6ef581064a3891481c8676923be3307f",
   "translations": {
     "buttons": {
       "addFileSubtask": "Datei-Unteraufgabe hinzufügen",
@@ -1014,6 +1014,7 @@
       "taskChangeOutcomeUnknown": "Operon konnte nicht bestätigen, ob die Aufgabenänderung angewendet wurde. Sie wurde nicht erneut versucht; prüfe den neuesten Aufgabenstand.",
       "taskChangedElsewhere": "Diese Aufgabe wurde an anderer Stelle geändert. Operon hat sie aktualisiert; prüfe die neueste Version und versuche es erneut.",
       "taskCreated": "Neue Aufgabe erstellt",
+      "taskCreatedTemplatePreferencesSaveFailed": "Aufgabe erstellt, aber die Vorlageneinstellungen konnten nicht gespeichert werden.",
       "taskDeleteRecoveryRequired": "Die Aufgabe wurde nicht gelöscht und einige zugehörige Aufgabenänderungen müssen geprüft werden.",
       "taskDescriptionRequired": "Eine Aufgabenbeschreibung ist erforderlich.",
       "taskFieldsInvalid": "Operon konnte diese Aufgabe nicht speichern. Prüfe die Aufgabenfelder und versuche es erneut.",
@@ -2872,6 +2873,8 @@
       "upcomingTaskColorSourceDesc": "Kartenfarben unabhängig von angehefteten Aufgaben.",
       "upcomingTimedFirst": "Aufgaben mit Uhrzeit zuerst",
       "upcomingTimedGroup": "Mit Uhrzeit",
+      "useLastTemplateAsDefault": "Zuletzt verwendete Vorlage als Standard verwenden",
+      "useLastTemplateAsDefaultDesc": "Nach erfolgreicher Erstellung im Task Creator wird die verwendete Vorlage als Standard für diesen Aufgabentyp gespeichert. Befehle und Konvertierungen verwenden ebenfalls diesen Standard.",
       "visualPropertyPool": "Canvas und Excalidraw Property Pool",
       "visualTaskPool": "Canvas- und Excalidraw-Aufgabenpool",
       "weeklyNoteFolder": "Notizordner",
@@ -3687,5 +3690,5 @@
       "toggleDescendantPreview": "Vorschau untergeordneter Aufgaben umschalten"
     }
   },
-  "sourceVersion": "74fc819a191dd89a954f7c1086e196bf414af14b8e66846e08ab3aa8833b38a1"
+  "sourceVersion": "9ec97d7961b4a7f8be18ae82c4fb8397ab75788fcfc9422256040a8676b5727f"
 }

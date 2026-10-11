@@ -1,8 +1,8 @@
 {
   "schemaVersion": 1,
   "locale": "pt-BR",
-  "keyCount": 3642,
-  "keyFingerprint": "548e3bd29826fa27f221de64fabbedc76a89e53077baad6e25aa70693d73c23b",
+  "keyCount": 3645,
+  "keyFingerprint": "16fb077f2299ab1c25cfe05b4f6416fb6ef581064a3891481c8676923be3307f",
   "translations": {
     "buttons": {
       "addFileSubtask": "Adicionar subtarefa em arquivo",
@@ -1014,6 +1014,7 @@
       "taskChangeOutcomeUnknown": "O Operon não conseguiu confirmar se a alteração foi aplicada. Ela não foi repetida; revise o estado mais recente da tarefa.",
       "taskChangedElsewhere": "Esta tarefa foi alterada em outro lugar. O Operon a atualizou; revise a versão mais recente e tente novamente.",
       "taskCreated": "Nova tarefa criada",
+      "taskCreatedTemplatePreferencesSaveFailed": "Tarefa criada, mas não foi possível salvar as preferências de modelo.",
       "taskDeleteRecoveryRequired": "A tarefa não foi excluída e algumas alterações relacionadas precisam ser revisadas.",
       "taskDescriptionRequired": "A descrição da tarefa é obrigatória.",
       "taskFieldsInvalid": "O Operon não conseguiu salvar esta tarefa. Revise os campos e tente novamente.",
@@ -2872,6 +2873,8 @@
       "upcomingTaskColorSourceDesc": "Cores independentes das tarefas fixadas.",
       "upcomingTimedFirst": "Tarefas com horário primeiro",
       "upcomingTimedGroup": "Com horário",
+      "useLastTemplateAsDefault": "Usar o último modelo utilizado como padrão",
+      "useLastTemplateAsDefaultDesc": "Após criar uma tarefa com sucesso no Task Creator, salvar o modelo utilizado como padrão para este tipo de tarefa. Comandos e conversões também usam esse padrão.",
       "visualPropertyPool": "Property Pool do Canvas e Excalidraw",
       "visualTaskPool": "Conjunto de tarefas do Canvas e Excalidraw",
       "weeklyNoteFolder": "Pasta de Notas Semanais",
@@ -3687,5 +3690,5 @@
       "toggleDescendantPreview": "Alternar visualização descendente"
     }
   },
-  "sourceVersion": "8b9d547aa30b0a563ee76826fdb336e913a883777d61f3256e42d62a89eeeb21"
+  "sourceVersion": "d483dd1c0ecd5da51889c9a27965be21b4d51014220453139fa4016917d60f8d"
 }

@@ -176,6 +176,8 @@ export const OPERON_DATA_PACKAGE_OWNED_SETTINGS_KEYS = [
 	'taskCreatorDefaultToFileTask',
 	'taskCreatorDefaultFileTemplateId',
 	'defaultInlineTaskTemplateId',
+	'inlineTaskUseLastTemplateAsDefault',
+	'fileTaskUseLastTemplateAsDefault',
 	'fileTaskTemplateFolder',
 	'manageDailyNotesWithOperon',
 	'dailyNoteFormat',
@@ -322,7 +324,7 @@ export interface OperonUiPackageV1 {
 	propertyValuePool?: unknown;
 	contextualMenu: VersionedStoreSlice<ContextualMenuStoreSettings>;
 	taskUiPreferences: VersionedStoreSlice<TaskUiPreferenceStoreSettings>;
-	taskCreationProfile: VersionedStoreSlice<Omit<TaskCreationProfileStoreSettings, 'defaultInlineTaskTemplateId'>> & { defaultInlineTaskTemplateId?: string | null };
+	taskCreationProfile: VersionedStoreSlice<Omit<TaskCreationProfileStoreSettings, 'defaultInlineTaskTemplateId' | 'inlineTaskUseLastTemplateAsDefault' | 'fileTaskUseLastTemplateAsDefault'>> & { defaultInlineTaskTemplateId?: string | null; inlineTaskUseLastTemplateAsDefault?: boolean; fileTaskUseLastTemplateAsDefault?: boolean };
 	workspaceTweaks: VersionedStoreSlice<WorkspaceTweaksPackageSettings>;
 	presetFavorites?: VersionedStoreSlice<PresetFavorites>;
 }
@@ -339,6 +341,8 @@ export function mergeTaskCreationProfilePreservingUnknownV1(
 	};
 	// None is absent on disk: avoid startup churn and retire a previous selection on reset.
 	if (!Object.prototype.hasOwnProperty.call(known, 'defaultInlineTaskTemplateId')) delete merged.defaultInlineTaskTemplateId;
+	if (!Object.prototype.hasOwnProperty.call(known, 'inlineTaskUseLastTemplateAsDefault')) delete merged.inlineTaskUseLastTemplateAsDefault;
+	if (!Object.prototype.hasOwnProperty.call(known, 'fileTaskUseLastTemplateAsDefault')) delete merged.fileTaskUseLastTemplateAsDefault;
 	return merged;
 }
 
@@ -651,6 +655,9 @@ export function buildOperonDataPackageFromSettings(
 				childTaskInheritanceStatusPipelineSource: normalized.childTaskInheritanceStatusPipelineSource,
 				taskCreatorDefaultToFileTask: normalized.taskCreatorDefaultToFileTask,
 				taskCreatorDefaultFileTemplateId: normalized.taskCreatorDefaultFileTemplateId,
+				...(normalized.inlineTaskUseLastTemplateAsDefault ? { inlineTaskUseLastTemplateAsDefault: true } : {}),
+				...(normalized.fileTaskUseLastTemplateAsDefault ? { fileTaskUseLastTemplateAsDefault: true } : {}),
+
 				...(normalized.defaultInlineTaskTemplateId ? { defaultInlineTaskTemplateId: normalized.defaultInlineTaskTemplateId } : {}),
 				fileTaskTemplateFolder: normalized.fileTaskTemplateFolder,
 				manageDailyNotesWithOperon: normalized.manageDailyNotesWithOperon,

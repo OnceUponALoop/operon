@@ -1,8 +1,8 @@
 {
   "schemaVersion": 1,
   "locale": "fr",
-  "keyCount": 3642,
-  "keyFingerprint": "548e3bd29826fa27f221de64fabbedc76a89e53077baad6e25aa70693d73c23b",
+  "keyCount": 3645,
+  "keyFingerprint": "16fb077f2299ab1c25cfe05b4f6416fb6ef581064a3891481c8676923be3307f",
   "translations": {
     "buttons": {
       "addFileSubtask": "Ajouter une sous-tâche-fichier",
@@ -1014,6 +1014,7 @@
       "taskChangeOutcomeUnknown": "Operon n'a pas pu confirmer si la modification a été appliquée. Elle n'a pas été retentée ; vérifiez l'état actuel de la tâche.",
       "taskChangedElsewhere": "Cette tâche a été modifiée ailleurs. Operon l'a actualisée ; vérifiez la dernière version et réessayez.",
       "taskCreated": "Nouvelle tâche créée",
+      "taskCreatedTemplatePreferencesSaveFailed": "Tâche créée, mais les préférences de modèle n’ont pas pu être enregistrées.",
       "taskDeleteRecoveryRequired": "La tâche n'a pas été supprimée et certaines modifications associées doivent être vérifiées.",
       "taskDescriptionRequired": "La description de la tâche est requise.",
       "taskFieldsInvalid": "Operon n'a pas pu enregistrer cette tâche. Vérifiez ses champs et réessayez.",
@@ -2872,6 +2873,8 @@
       "upcomingTaskColorSourceDesc": "Couleurs indépendantes des tâches épinglées.",
       "upcomingTimedFirst": "Tâches horaires en premier",
       "upcomingTimedGroup": "Avec horaire",
+      "useLastTemplateAsDefault": "Utiliser le dernier modèle utilisé par défaut",
+      "useLastTemplateAsDefaultDesc": "Après une création réussie dans Task Creator, enregistrer le modèle utilisé comme modèle par défaut pour ce type de tâche. Les commandes et conversions utilisent aussi ce modèle.",
       "visualPropertyPool": "Property Pool de Canvas et Excalidraw",
       "visualTaskPool": "Réservoir de tâches Canvas et Excalidraw",
       "weeklyNoteFolder": "Dossier des notes",
@@ -3687,5 +3690,5 @@
       "toggleDescendantPreview": "Basculer l'aperçu des descendants"
     }
   },
-  "sourceVersion": "72ce9a7a1b92a859b2f83dc70c48f6dd64d8d6ae55f4acd1e32d2d03b85ee47c"
+  "sourceVersion": "07204694c5ee35145b10328e44fdb46ffaa2fb2db444b6a94fe13e0360672f5e"
 }

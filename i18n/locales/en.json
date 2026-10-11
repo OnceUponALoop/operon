@@ -392,7 +392,8 @@
 		"canvasGroupSaveFailed": "The group is in Canvas history, but saving failed. Check the Canvas before trying again.",
 		"canvasGroupDropBlocked": "The group change could not be applied. The card returned to its previous position.",
 		"canvasGroupOverlap": "Operon groups with the same single-value property cannot overlap. The change was not applied.",
-		"canvasGroupDropPartial": "A group change could not finish safely. Check the task and Canvas before continuing."
+		"canvasGroupDropPartial": "A group change could not finish safely. Check the task and Canvas before continuing.",
+		"taskCreatedTemplatePreferencesSaveFailed": "Task created, but template preferences could not be saved."
 	},
 	"duplicateOperonId": {
 		"title": "Operon ID Conflict",
@@ -2221,7 +2222,9 @@
 		"tasksBulkErrorDetails": "Error: {{reason}}",
 		"tasksBulkUnavailable": "Conversion is available when Operon is ready.",
 		"tasksBulkReviewUnchanged": "Review unchanged files",
-		"tasksBulkSkippedSource": "Skipped because it differs from the scan: {{path}}"
+		"tasksBulkSkippedSource": "Skipped because it differs from the scan: {{path}}",
+		"useLastTemplateAsDefault": "Use last used template as default",
+		"useLastTemplateAsDefaultDesc": "After successful creation in Task Creator, save the used template as the default for this task type. Commands and conversion also use this default."
 	},
 	"buttons": {
 		"ok": "OK",

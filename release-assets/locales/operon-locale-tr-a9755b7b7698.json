@@ -1,8 +1,8 @@
 {
   "schemaVersion": 1,
   "locale": "tr",
-  "keyCount": 3642,
-  "keyFingerprint": "548e3bd29826fa27f221de64fabbedc76a89e53077baad6e25aa70693d73c23b",
+  "keyCount": 3645,
+  "keyFingerprint": "16fb077f2299ab1c25cfe05b4f6416fb6ef581064a3891481c8676923be3307f",
   "translations": {
     "buttons": {
       "addFileSubtask": "Dosya Tipi Alt Görev Ekle",
@@ -1014,6 +1014,7 @@
       "taskChangeOutcomeUnknown": "Operon görev değişikliğinin uygulanıp uygulanmadığını doğrulayamadı. İşlem tekrarlanmadı; görevin son durumunu inceleyin.",
       "taskChangedElsewhere": "Bu görev başka bir yerde değişti. Operon görevi yeniledi; en son sürümü inceleyip yeniden deneyin.",
       "taskCreated": "Yeni görev oluşturuldu",
+      "taskCreatedTemplatePreferencesSaveFailed": "Görev oluşturuldu, ancak şablon tercihleri kaydedilemedi.",
       "taskDeleteRecoveryRequired": "Görev silinmedi ve ilişkili bazı görev değişikliklerinin incelenmesi gerekiyor.",
       "taskDescriptionRequired": "Görev açıklaması zorunlu.",
       "taskFieldsInvalid": "Operon bu görevi kaydedemedi. Görev alanlarını inceleyip yeniden deneyin.",
@@ -2872,6 +2873,8 @@
       "upcomingTaskColorSourceDesc": "Sabitlenmiş görevlerden bağımsız kart renkleri.",
       "upcomingTimedFirst": "Önce saatli görevler",
       "upcomingTimedGroup": "Saatli",
+      "useLastTemplateAsDefault": "Son kullanılan şablonu varsayılan yap",
+      "useLastTemplateAsDefaultDesc": "Task Creator ile görev başarıyla oluşturulduğunda kullanılan şablonu bu görev türünün varsayılanı olarak kaydeder. Komutlar ve dönüştürme de bu varsayılanı kullanır.",
       "visualPropertyPool": "Canvas ve Excalidraw Property Pool",
       "visualTaskPool": "Canvas ve Excalidraw Görev Havuzu",
       "weeklyNoteFolder": "Not klasörü",
@@ -3687,5 +3690,5 @@
       "toggleDescendantPreview": "Alt görev önizlemesini aç/kapat"
     }
   },
-  "sourceVersion": "41d5cd4d82372d3d1372ee83b146b11927110cfcb5760e529537587898ee6b83"
+  "sourceVersion": "6a4a095e4e8127a16a41318b03445e0d761db2df716d48296ab0cd81ce492d8a"
 }

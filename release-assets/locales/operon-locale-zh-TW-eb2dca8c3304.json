@@ -1,8 +1,8 @@
 {
   "schemaVersion": 1,
   "locale": "zh-TW",
-  "keyCount": 3642,
-  "keyFingerprint": "548e3bd29826fa27f221de64fabbedc76a89e53077baad6e25aa70693d73c23b",
+  "keyCount": 3645,
+  "keyFingerprint": "16fb077f2299ab1c25cfe05b4f6416fb6ef581064a3891481c8676923be3307f",
   "translations": {
     "buttons": {
       "addFileSubtask": "新增檔案子任務",
@@ -1014,6 +1014,7 @@
       "taskChangeOutcomeUnknown": "Operon 無法確認任務變更是否已套用。未進行重試；請檢查任務的最新狀態。",
       "taskChangedElsewhere": "此任務已在其他位置變更。Operon 已重新整理任務；請檢查最新版本後再試一次。",
       "taskCreated": "已建立新任務",
+      "taskCreatedTemplatePreferencesSaveFailed": "任務已建立，但無法儲存範本偏好設定。",
       "taskDeleteRecoveryRequired": "任務未被刪除，部分相關任務變更需要檢查。",
       "taskDescriptionRequired": "任務描述為必填項。",
       "taskFieldsInvalid": "Operon 無法儲存此任務。請檢查任務欄位後再試一次。",
@@ -2872,6 +2873,8 @@
       "upcomingTaskColorSourceDesc": "獨立於釘選任務的卡片色彩。",
       "upcomingTimedFirst": "定時任務優先",
       "upcomingTimedGroup": "定時",
+      "useLastTemplateAsDefault": "將上次使用的範本設為預設範本",
+      "useLastTemplateAsDefaultDesc": "在 Task Creator 中成功建立任務後，將所用範本儲存為此任務類型的預設範本。命令和轉換也會使用此預設範本。",
       "visualPropertyPool": "Canvas 和 Excalidraw Property Pool",
       "visualTaskPool": "Canvas 和 Excalidraw 任務池",
       "weeklyNoteFolder": "筆記資料夾",
@@ -3687,5 +3690,5 @@
       "toggleDescendantPreview": "切換子任務預覽"
     }
   },
-  "sourceVersion": "f613cfce855b9d28b7e9c68166732552e24eb24bf49c57a20eec378e7055a902"
+  "sourceVersion": "62cee1e8fa0ebaa0ef9bcb5496cfc55fad6d3d3b8c9f1a8c636f706aa9c7cbd5"
 }
