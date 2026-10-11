@@ -7,7 +7,35 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### New
+
+- Added **Tasks bulk conversion** in Settings → Tasks → Inline tasks: select files or folders, scan, and convert eligible Tasks emoji tasks with an inline confirmation. Progress, cancellation, results, and interrupted-conversion recovery stay in Settings. Template and excluded folders are skipped before reading their contents, and information preserved in task notes is distinguished from warnings and errors.
+
+### Improved
+
+- Expanded **Tasks emoji conversion** with dependency linking within the conversion set and support for more recurrence patterns, preserving unsupported metadata in task notes. Bulk-converted tasks remain independent without inheriting parent fields.
+
+- Improved **Live Preview and Reading Mode** responsiveness in notes with many inline tasks by reusing shared preparation, retaining unchanged rows and filters, and preparing note tooltips when opened. Hidden metadata and the top task filter now participate in editor height calculations for more stable scrolling.
+
+- **Date/time and time-only pickers** now accept any minute while keeping quarter-hour suggestions initially. Typing a minute prefix offers matching minute choices, with keyboard navigation and highlighting following the visible suggestions.
+
+- Opening an empty **Starts at** picker in Task Editor now fills in the task’s scheduled date and focuses the time field; the date remains editable.
+
+### Fixed
+
+- Fixed **Tasks emoji time conversion** adding a default duration when only a start time was specified. Supported time ranges now preserve their start, end, and duration across midnight, while invalid or ambiguous expressions are retained in task notes.
+
+- Fixed **multilingual tags and protected Markdown text** losing characters or spacing during parsing and conversion, and kept code, frontmatter, and comments protected across task conversion commands.
+
+- Fixed newly created subtasks ignoring the selected **default priority** when priority inheritance is disabled, while preserving the choice to use no default priority.
+
+- Fixed desktop **Kanban without swimlanes** leaving unused space below its columns. Columns now fill the available panel height and scroll internally, while swimlane task limits remain unchanged.
+
+- Fixed **Calendar week → 1 Day** preset changes retaining the previous weekly range until the view was reopened.
+
 ### Validation
+
+- Local Plugin checks, strict lint, production build, release guard, and focused code review passed, along with **4,598/4,598** local regression tests.
 
 ## [3.12.0] - 2026-10-06
 
