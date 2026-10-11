@@ -3170,7 +3170,7 @@
       "creatorCommitFailed": "无法创建任务。已保留您的选择。",
       "creatorCommitUncertain": "无法验证创建结果。创建其他任务前请检查目标位置。",
       "creatorDescriptionPlaceholder": "任务描述",
-      "creatorInlineTemplateProperties": "仅使用模板属性。",
+      "creatorInlineTemplateProperties": "对于行内任务，此模板的属性会添加到任务中，但不会包含模板正文。",
       "creatorMetadataChanged": "属性规则已更改。请重新打开 Task Creator，在创建前检查。",
       "creatorNotePlaceholder": "附加任务笔记",
       "creatorParentPreviewChanged": "目标位置更改了继承值。请检查更新后的选择，然后再次创建。",
@@ -3613,5 +3613,5 @@
       "toggleDescendantPreview": "切换子任务预览"
     }
   },
-  "sourceVersion": "b5782189025287006c131119bcb0fddd25f49aad7cda47b749fc95282ecb59ae"
+  "sourceVersion": "54f50fc894958c57d48503d14026c202a3881a532394d8ba11f1607cba0a3989"
 }

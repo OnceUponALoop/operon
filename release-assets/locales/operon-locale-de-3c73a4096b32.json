@@ -3170,7 +3170,7 @@
       "creatorCommitFailed": "Die Aufgabe konnte nicht erstellt werden. Ihre Auswahl wurde beibehalten.",
       "creatorCommitUncertain": "Das Ergebnis konnte nicht bestätigt werden. Prüfen Sie das Ziel, bevor Sie eine weitere Aufgabe erstellen.",
       "creatorDescriptionPlaceholder": "Aufgabenbeschreibung",
-      "creatorInlineTemplateProperties": "Nur die Template-Eigenschaften werden verwendet.",
+      "creatorInlineTemplateProperties": "Bei Inline-Aufgaben werden die Eigenschaften dieser Vorlage zur Aufgabe hinzugefügt. Der Haupttext der Vorlage wird nicht übernommen.",
       "creatorMetadataChanged": "Die Eigenschaftsregeln wurden geändert. Öffnen Sie Task Creator erneut, um sie vor dem Erstellen zu prüfen.",
       "creatorNotePlaceholder": "Zusätzliche Aufgabennotizen",
       "creatorParentPreviewChanged": "Das Ziel hat geerbte Werte geändert. Prüfen Sie die aktualisierte Auswahl und erstellen Sie erneut.",
@@ -3613,5 +3613,5 @@
       "toggleDescendantPreview": "Vorschau untergeordneter Aufgaben umschalten"
     }
   },
-  "sourceVersion": "67cf76b89460fc1d17186db35f7f8fb1ccc1571b4acf384eff9521c54c397079"
+  "sourceVersion": "64dba9e581dc6f398db13ad944e7c0c495fc65aa5ab6db84348e20c9ab1abbe7"
 }

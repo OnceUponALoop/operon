@@ -2572,7 +2572,7 @@
 		"invalidReminder": "無効なリマインダー"
 	},
 	"taskEditor": {
-		"creatorInlineTemplateProperties": "テンプレートのプロパティのみが使用されます。",
+		"creatorInlineTemplateProperties": "インラインタスクには、このテンプレートのプロパティが追加されます。テンプレートの本文は含まれません。",
 		"creatorMetadataChanged": "プロパティのルールが変更されました。作成前に Task Creator を開き直して確認してください。",
 		"creatorParentPreviewChanged": "保存先により継承値が変更されました。更新された選択内容を確認し、もう一度作成してください。",
 		"creatorCommitUncertain": "作成結果を確認できませんでした。別のタスクを作成する前に保存先を確認してください。",

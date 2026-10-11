@@ -3170,7 +3170,7 @@
       "creatorCommitFailed": "Görev oluşturulamadı. Seçimleriniz korundu.",
       "creatorCommitUncertain": "Oluşturma sonucu doğrulanamadı. Başka görev oluşturmadan önce hedefi kontrol edin.",
       "creatorDescriptionPlaceholder": "Görev açıklaması",
-      "creatorInlineTemplateProperties": "Yalnızca şablon özellikleri kullanılacak.",
+      "creatorInlineTemplateProperties": "Inline görevlerde bu şablonun özellikleri göreve eklenir. Şablonun gövde metni dahil edilmez.",
       "creatorMetadataChanged": "Özellik kuralları değişti. Oluşturmadan önce incelemek için Task Creator’ı yeniden açın.",
       "creatorNotePlaceholder": "Ek görev notları",
       "creatorParentPreviewChanged": "Hedef, miras alınan değerleri değiştirdi. Güncel seçimleri inceleyip yeniden oluşturun.",
@@ -3613,5 +3613,5 @@
       "toggleDescendantPreview": "Alt görev önizlemesini aç/kapat"
     }
   },
-  "sourceVersion": "02f86980efd4bb7ca0bc22f7bee526c40bd402aab1f8e717ae926aa0e4c8dc29"
+  "sourceVersion": "700135e4060803a8080bf6ba9abf966a084f1ffdd5a99a51c1c14b45e8b73446"
 }

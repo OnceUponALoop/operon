@@ -3170,7 +3170,7 @@
       "creatorCommitFailed": "Impossibile creare l’attività. Le selezioni sono state conservate.",
       "creatorCommitUncertain": "Impossibile verificare il risultato. Controlla la destinazione prima di creare un’altra attività.",
       "creatorDescriptionPlaceholder": "Descrizione dell'attività",
-      "creatorInlineTemplateProperties": "Verranno utilizzate solo le proprietà del modello.",
+      "creatorInlineTemplateProperties": "Per le attività inline, le proprietà di questo modello vengono aggiunte all’attività. Il testo del corpo del modello non viene incluso.",
       "creatorMetadataChanged": "Le regole delle proprietà sono cambiate. Riapri Task Creator per verificarle prima della creazione.",
       "creatorNotePlaceholder": "Note aggiuntive dell'attività",
       "creatorParentPreviewChanged": "La destinazione ha modificato i valori ereditati. Controlla le selezioni aggiornate e crea di nuovo.",
@@ -3613,5 +3613,5 @@
       "toggleDescendantPreview": "Alterna anteprima discendenti"
     }
   },
-  "sourceVersion": "2c850698d9baab0275d7137c3d2bcc0fc1d6f756eb86191a7aa6ef9ad32f6395"
+  "sourceVersion": "ee1b911e3bfd8225a64a6cb998cd8f79684afe760a2485de7dd6908338b61e34"
 }

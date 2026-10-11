@@ -3170,7 +3170,7 @@
       "creatorCommitFailed": "無法建立任務。已保留您的選擇。",
       "creatorCommitUncertain": "無法驗證建立結果。建立其他任務前請檢查目標位置。",
       "creatorDescriptionPlaceholder": "任務描述",
-      "creatorInlineTemplateProperties": "僅使用範本屬性。",
+      "creatorInlineTemplateProperties": "對於行內任務，此範本的屬性會新增至任務中，但不會包含範本正文。",
       "creatorMetadataChanged": "屬性規則已變更。請重新開啟 Task Creator，在建立前檢查。",
       "creatorNotePlaceholder": "附加任務筆記",
       "creatorParentPreviewChanged": "目標位置變更了繼承值。請檢查更新後的選擇，然後再次建立。",
@@ -3613,5 +3613,5 @@
       "toggleDescendantPreview": "切換子任務預覽"
     }
   },
-  "sourceVersion": "0b2d2abd747f408c4285c75201bba6becc3acb6cb5a05b89d4a6370bb9b7afb9"
+  "sourceVersion": "2d4d5586dd4acbe6d5803e12bafa11fdf098853c216ea013476ab574ff9c7bd0"
 }

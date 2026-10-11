@@ -6745,7 +6745,7 @@
       "The task could not be created. Your selections have been kept.",
       "The creation result could not be verified. Check the destination before creating another task.",
       "Task description",
-      "Only template properties will be used.",
+      "For inline tasks, properties from this template are added to the task. The template’s body text is not included.",
       "Property rules changed. Reopen Task Creator to review them before creating.",
       "Additional task notes",
       "The destination changed inherited values. Review the updated selections and create again.",

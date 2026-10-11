@@ -2572,7 +2572,7 @@
 		"invalidReminder": "無效提醒"
 	},
 	"taskEditor": {
-		"creatorInlineTemplateProperties": "僅使用範本屬性。",
+		"creatorInlineTemplateProperties": "對於行內任務，此範本的屬性會新增至任務中，但不會包含範本正文。",
 		"creatorMetadataChanged": "屬性規則已變更。請重新開啟 Task Creator，在建立前檢查。",
 		"creatorParentPreviewChanged": "目標位置變更了繼承值。請檢查更新後的選擇，然後再次建立。",
 		"creatorCommitUncertain": "無法驗證建立結果。建立其他任務前請檢查目標位置。",

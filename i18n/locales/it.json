@@ -2572,7 +2572,7 @@
 		"invalidReminder": "Promemoria non valido"
 	},
 	"taskEditor": {
-		"creatorInlineTemplateProperties": "Verranno utilizzate solo le proprietà del modello.",
+		"creatorInlineTemplateProperties": "Per le attività inline, le proprietà di questo modello vengono aggiunte all’attività. Il testo del corpo del modello non viene incluso.",
 		"creatorMetadataChanged": "Le regole delle proprietà sono cambiate. Riapri Task Creator per verificarle prima della creazione.",
 		"creatorParentPreviewChanged": "La destinazione ha modificato i valori ereditati. Controlla le selezioni aggiornate e crea di nuovo.",
 		"creatorCommitUncertain": "Impossibile verificare il risultato. Controlla la destinazione prima di creare un’altra attività.",

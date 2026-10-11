@@ -2572,7 +2572,7 @@
 		"invalidReminder": "Ungültige Erinnerung"
 	},
 	"taskEditor": {
-		"creatorInlineTemplateProperties": "Nur die Template-Eigenschaften werden verwendet.",
+		"creatorInlineTemplateProperties": "Bei Inline-Aufgaben werden die Eigenschaften dieser Vorlage zur Aufgabe hinzugefügt. Der Haupttext der Vorlage wird nicht übernommen.",
 		"creatorMetadataChanged": "Die Eigenschaftsregeln wurden geändert. Öffnen Sie Task Creator erneut, um sie vor dem Erstellen zu prüfen.",
 		"creatorParentPreviewChanged": "Das Ziel hat geerbte Werte geändert. Prüfen Sie die aktualisierte Auswahl und erstellen Sie erneut.",
 		"creatorCommitUncertain": "Das Ergebnis konnte nicht bestätigt werden. Prüfen Sie das Ziel, bevor Sie eine weitere Aufgabe erstellen.",

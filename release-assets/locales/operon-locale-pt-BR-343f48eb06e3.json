@@ -3170,7 +3170,7 @@
       "creatorCommitFailed": "Não foi possível criar a tarefa. Suas seleções foram preservadas.",
       "creatorCommitUncertain": "Não foi possível verificar o resultado. Confira o destino antes de criar outra tarefa.",
       "creatorDescriptionPlaceholder": "Descrição da tarefa",
-      "creatorInlineTemplateProperties": "Somente as propriedades do modelo serão usadas.",
+      "creatorInlineTemplateProperties": "Nas tarefas inline, as propriedades deste modelo são adicionadas à tarefa. O texto do corpo do modelo não é incluído.",
       "creatorMetadataChanged": "As regras das propriedades mudaram. Reabra o Task Creator para revisá-las antes de criar.",
       "creatorNotePlaceholder": "Notas adicionais da tarefa",
       "creatorParentPreviewChanged": "O destino alterou valores herdados. Revise as seleções atualizadas e crie novamente.",
@@ -3613,5 +3613,5 @@
       "toggleDescendantPreview": "Alternar visualização descendente"
     }
   },
-  "sourceVersion": "029180d9c240163d7527174e39f748a37b4c2f0f96a18d3f2f42d41ffdfa5276"
+  "sourceVersion": "98e726891c5bb2cdeed71ff2cbaa503fe72af1ff08ec57b63495c5d20973ddf5"
 }

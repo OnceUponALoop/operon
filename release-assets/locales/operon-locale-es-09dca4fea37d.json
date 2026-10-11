@@ -3170,7 +3170,7 @@
       "creatorCommitFailed": "No se pudo crear la tarea. Se conservaron tus selecciones.",
       "creatorCommitUncertain": "No se pudo verificar el resultado. Comprueba el destino antes de crear otra tarea.",
       "creatorDescriptionPlaceholder": "Descripción de la tarea",
-      "creatorInlineTemplateProperties": "Solo se usarán las propiedades de la plantilla.",
+      "creatorInlineTemplateProperties": "En las tareas inline, las propiedades de esta plantilla se añaden a la tarea. El texto del cuerpo de la plantilla no se incluye.",
       "creatorMetadataChanged": "Las reglas de propiedades cambiaron. Vuelve a abrir Task Creator para revisarlas antes de crear.",
       "creatorNotePlaceholder": "Notas adicionales de la tarea",
       "creatorParentPreviewChanged": "El destino cambió los valores heredados. Revisa las selecciones actualizadas y vuelve a crear.",
@@ -3613,5 +3613,5 @@
       "toggleDescendantPreview": "Alternar vista previa de descendientes"
     }
   },
-  "sourceVersion": "95bfe1357be0cafa681168cd2a2fd75d55dc0b70a9a53fc3fd22d2d947da7e99"
+  "sourceVersion": "c37c0ce8dc3702ce615971d01862657a3074d48f228c782b39ece826b0e46507"
 }

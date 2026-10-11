@@ -2572,7 +2572,7 @@
 		"invalidReminder": "Geçersiz hatırlatıcı"
 	},
 	"taskEditor": {
-		"creatorInlineTemplateProperties": "Yalnızca şablon özellikleri kullanılacak.",
+		"creatorInlineTemplateProperties": "Inline görevlerde bu şablonun özellikleri göreve eklenir. Şablonun gövde metni dahil edilmez.",
 		"creatorMetadataChanged": "Özellik kuralları değişti. Oluşturmadan önce incelemek için Task Creator’ı yeniden açın.",
 		"creatorParentPreviewChanged": "Hedef, miras alınan değerleri değiştirdi. Güncel seçimleri inceleyip yeniden oluşturun.",
 		"creatorCommitUncertain": "Oluşturma sonucu doğrulanamadı. Başka görev oluşturmadan önce hedefi kontrol edin.",
