@@ -65,6 +65,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Validation
 
+- Passed the unified local regression suite: **4,890/4,890 checks**, with all imported test groups registered and no test filter.
 - Passed combined local validation, including strict lint, production build, Runtime and Developer API regressions, Index V8 checks, locale checks, and the Plugin release guard.
 - Passed 66 creation-draft, 31 prepared-Creator, and 164 native-property and index tests on the combined source.
 - Passed 40 File/Inline creation and index round trips, 100-task note conversion and 100-task Settings conversion scenarios, and 33 focused Creator and property-warning UI checks.
