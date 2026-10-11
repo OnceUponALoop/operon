@@ -1206,8 +1206,7 @@ export class TaskCreatorModal extends Modal {
 		const items: TaskCreatorSuggestion[] = [...resolution.items];
 		if (resolution.trigger && 'template'.startsWith(resolution.token.toLowerCase())
 			&& this.templateButtonEl && !this.templateButtonEl.disabled) {
-			const visibleName = this.templateButtonEl.querySelector('.operon-task-creator-template-label')?.textContent;
-			if (visibleName) items.unshift({ action: 'template', visibleName });
+			items.unshift({ action: 'template', visibleName: t('taskEditor', 'pickFileTaskTemplate') });
 		}
 		if (!resolution.trigger || items.length === 0) {
 			if (resolution.suppressionReason) {
@@ -1966,8 +1965,8 @@ export class TaskCreatorModal extends Modal {
 
 	private renderSubmitControls(): void {
 		const selectedTemplate = this.prepared || this.activeCreateType === 'file' ? this.getSelectedFileTemplate() : null;
-		const templateLabel = t('taskEditor', 'pickFileTaskTemplate');
-		const templateAccessibleLabel = templateLabel;
+		const templateLabel = selectedTemplate?.name || (this.prepared && this.draft.fileTemplateId ? `${t('settings', 'defaultFileTaskTemplateUnavailable')} (${this.draft.fileTemplateId})` : '') || (Platform.isPhone ? t('taskEditor', 'pickFileTaskTemplateShort') : t('taskEditor', 'pickFileTaskTemplate'));
+		const templateAccessibleLabel = selectedTemplate?.name || t('taskEditor', 'pickFileTaskTemplate');
 		const templateControlEnabled = !!this.prepared || isTaskCreatorTemplateControlEnabled(this.submitMode, this.activeCreateType);
 		this.templateButtonEl.toggleClass('is-active', !!selectedTemplate);
 		this.templateButtonEl.toggleClass('is-picker-open', !!this.activePickerClose && this.templateButtonEl.hasClass('is-picker-open'));
