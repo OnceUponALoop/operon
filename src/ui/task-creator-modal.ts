@@ -1966,8 +1966,8 @@ export class TaskCreatorModal extends Modal {
 
 	private renderSubmitControls(): void {
 		const selectedTemplate = this.prepared || this.activeCreateType === 'file' ? this.getSelectedFileTemplate() : null;
-		const templateLabel = selectedTemplate?.name || (this.prepared && this.draft.fileTemplateId ? `${t('settings', 'defaultFileTaskTemplateUnavailable')} (${this.draft.fileTemplateId})` : '') || (Platform.isPhone ? t('taskEditor', 'pickFileTaskTemplateShort') : t('taskEditor', 'pickFileTaskTemplate'));
-		const templateAccessibleLabel = selectedTemplate?.name || t('taskEditor', 'pickFileTaskTemplate');
+		const templateLabel = t('taskEditor', 'pickFileTaskTemplate');
+		const templateAccessibleLabel = templateLabel;
 		const templateControlEnabled = !!this.prepared || isTaskCreatorTemplateControlEnabled(this.submitMode, this.activeCreateType);
 		this.templateButtonEl.toggleClass('is-active', !!selectedTemplate);
 		this.templateButtonEl.toggleClass('is-picker-open', !!this.activePickerClose && this.templateButtonEl.hasClass('is-picker-open'));
