@@ -7,9 +7,31 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### New
+
+- Added **Vault Properties** to the desktop Task Editor and main and embedded Tables for both File and Inline Tasks, with editors for Text, List, Number, Checkbox, Date, and Date & time values.
+- Added **Inline Task templates** in Task Creator using the same template picker as File Tasks. Inline Tasks use supported template properties without copying the template body.
+- Added **Default Inline Task Template** in Inline Tasks settings, including None and minimal pipeline templates, for Task Creator, quick creation, and supported checkbox and selection conversions.
+- Added desktop **Task Editor section customization** to rename, reorder, and hide sections while keeping Description available and mobile preferences separate.
+- Added **active-line highlighting** for the Task Editor File Body, with editor commands for line numbers and workspace scrollbar visibility.
+
 ### Improved
 
-- Matched the **Task Editor** line-number area to the File Body background for a consistent editing surface.
+- Reorganized the desktop **Task Editor** into compact property groups with consistent task colors, expandable description and notes, clearer identity actions, and stable split-panel sizing.
+- Unified custom and vault properties in **Additional**. Existing empty properties appear as header shortcuts, and Automatic properties can be selected with a warning icon and an explanation of why editing is unavailable.
+- Made **Automatic and incompatible property warnings** clearer in Task Editor and Tables, including empty cells. Automatic fields use a red shield icon, and read-only explanations take precedence over truncated-value tooltips.
+- Improved **Vault Property loading and updates** with a shared in-memory index, reducing repeated source reads and unnecessary table sorting when opening presets or changing task values.
+- Made **Task Creator** show the combined user, parent, surface, and template values before creation. Relevant hidden properties appear temporarily, empty template fields remain available to fill, and user edits and removals survive template changes. Previewed template dates remain fixed when saved.
+- Reduced **Task Creator** visual clutter with compact spacing and one line per property icon when the controls are inactive. Icons expand during property interaction, and typing Template in the description offers a shortcut to the template picker.
+- Made **Stats and Sessions** more compact and easier to scan, with time summaries, subtask counters, collapsible session lists, and clearer duration and weekday hints. Empty Stats sections stay hidden.
+- Improved **File Body** source focus, cursor placement, active-line feedback, and line-number background, alongside more consistent hover controls, date pickers, truncated-text hints, and theme compatibility.
+- Made **template-based creation and conversion** preserve native value types, repeated list members, source priorities, and user changes. Bulk conversions reuse template content and keep existing Operon tasks unchanged. Destination inheritance is applied in the same submission without an extra review step.
+
+### Changed
+
+- Switching between **File and Inline** in Task Creator now loads the destination mode's default template while preserving user edits. Manual template selection or clearing remains in effect until the mode changes.
+- **Inline template creation** omits empty property values and empty lists while preserving `0`, `false`, and lists containing an empty string. File Task template fields keep their existing behavior.
+- Inline template creation skips **Automatic, Templater, nested unsupported, and file-only fields**, then reports skipped fields together after successful creation. Invalid template YAML stops creation without changing the task source.
 
 ### Security
 
@@ -17,9 +39,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Validation
 
-- Task Editor line-number background checks passed in **40/40** browser scenarios across light and dark themes, with strict lint, production build, and release guard also passing.
-- Development and production dependency audits passed with **0** vulnerabilities.
-- Plugin and Runtime checks, strict lint, production build, and release guard passed, along with **3,806/3,806** local regression tests.
+- Plugin and Runtime checks, Developer API and channel-parity checks, Index V8 regressions, strict lint, locale validation, production build, release guard, and code review passed, along with **4,096/4,096** local regression tests.
+- Integrated default-template checks passed for **20 individual and 20 bulk conversions** through indexing, Task Editor, and Tables. The bulk run used one template read and one source transaction; ready Editor and Table reads required no additional source or property-type reads.
 
 ## [3.11.0] - 2026-10-01
 
