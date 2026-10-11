@@ -1,8 +1,8 @@
 {
   "schemaVersion": 1,
   "locale": "zh-CN",
-  "keyCount": 3568,
-  "keyFingerprint": "eb0da3cad5fa79ca12faafc4e55c1fb9b66593badd789e7b660dd40f45bfd7d2",
+  "keyCount": 3570,
+  "keyFingerprint": "22c9d9215d767286be725026f80172b52ab61d64a19a04a9cc692ec05ffcc615",
   "translations": {
     "buttons": {
       "addFileSubtask": "添加文件子任务",
@@ -1347,6 +1347,8 @@
       "default": "默认",
       "defaultFileTaskTemplateNone": "无默认模板",
       "defaultFileTaskTemplateUnavailable": "不可用模板",
+      "defaultInlineTaskTemplate": "默认行内任务模板",
+      "defaultInlineTaskTemplateDesc": "选择 Task Creator 的 Inline 模式预选的模板。仅使用模板属性。选择“无”以不使用模板。",
       "defaultPipelineAria": "默认工作流：{{name}}",
       "defaultPriority": "新任务的默认优先级",
       "defaultPriorityDesc": "创建新任务时自动分配。留空则无默认值。",
@@ -3613,5 +3615,5 @@
       "toggleDescendantPreview": "切换子任务预览"
     }
   },
-  "sourceVersion": "54f50fc894958c57d48503d14026c202a3881a532394d8ba11f1607cba0a3989"
+  "sourceVersion": "db2e51bddbd2ed9b8bbe89a2941cfd835a821a51a799718e8876e46acdbbb6cd"
 }

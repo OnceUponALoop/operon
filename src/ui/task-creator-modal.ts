@@ -105,6 +105,7 @@ export interface TaskCreatorModalOptions {
 	submitMode?: TaskCreatorSubmitMode;
 	initialCreateType?: TaskCreatorCreateType;
 	defaultFileTemplateId?: string | null;
+	defaultInlineTemplateId?: string | null;
 	fileTaskTemplateOptions?: FileTaskTemplateOption[];
 	onFileTemplateSelected?: (template: FileTaskTemplateOption) => void | Promise<void>;
 	getAllRepeatSeriesIds?: () => Set<string>;
@@ -579,7 +580,9 @@ export class TaskCreatorModal extends Modal {
 			options.initialCreateType,
 			!!this.draft.fileTemplateId,
 		);
-		this.applyDefaultFileTemplateForActiveMode();
+		if (this.prepared) {
+   this.draft.fileTemplateId ||= this.getModeDefaultTemplateId();
+  } else this.applyDefaultFileTemplateForActiveMode();
 	}
 
 	onOpen(): void {
@@ -600,7 +603,7 @@ export class TaskCreatorModal extends Modal {
 		this.updateMobileViewportHeight();
 		this.registerMobilePickerListeners();
 		this.render();
-  if (this.prepared && this.getSelectedFileTemplate()) void this.selectPreparedTemplate(this.getSelectedFileTemplate());
+  if (this.prepared) void this.selectPreparedTemplateId(this.draft.fileTemplateId);
 		this.indexUpdatesUnsubscribe?.();
 		this.indexUpdatesUnsubscribe = this.options.subscribeIndexUpdates?.(() => {
 			this.refreshBlockedByDependencyControl();
@@ -994,6 +997,26 @@ export class TaskCreatorModal extends Modal {
 		return !!this.getSelectedFileTemplate();
 	}
 
+ private getModeDefaultTemplateId(): string {
+  return (this.activeCreateType === 'inline' ? this.options.defaultInlineTemplateId : this.options.defaultFileTemplateId)?.trim() ?? '';
+ }
+
+ private async selectPreparedTemplateId(id: string): Promise<void> {
+  if (!this.prepared || this.preparedClosed) return;
+  const selected = this.prepared.session.selectedOption();
+  const state = this.prepared.session.snapshot();
+  if (id && selected?.id === id && (state.status === 'ready' || state.status === 'loading')) return;
+  const option = id ? this.getFileTemplateOptions().find(item => item.id === id) : null;
+  if (id && !option) {
+   this.draft.fileTemplateId = id;
+   this.prepared.session.selectUnavailable(id);
+   this.prepared.refreshParent();
+   this.refreshPreparedDraft();
+   return;
+  }
+  await this.selectPreparedTemplate(option ?? null);
+ }
+
 	private applyDefaultFileTemplateForActiveMode(): void {
 		const nextTemplateId = resolveTaskCreatorFileTemplateIdForMode(
 			this.activeCreateType,
@@ -1008,6 +1031,10 @@ export class TaskCreatorModal extends Modal {
 	private setActiveCreateType(nextType: TaskCreatorCreateType): void {
 		if (this.activeCreateType === nextType) return;
 		this.activeCreateType = nextType;
+		if (this.prepared) {
+   this.closeActivePicker();
+   void this.selectPreparedTemplateId(this.getModeDefaultTemplateId());
+  }
 		if (nextType === 'file' && !this.prepared) {
 			this.applyDefaultFileTemplateForActiveMode();
 		}
@@ -1022,7 +1049,7 @@ export class TaskCreatorModal extends Modal {
 	private openFileTemplatePicker(): void {
 		if (!this.prepared && !isTaskCreatorTemplateControlEnabled(this.submitMode, this.activeCreateType)) return;
 		const templateOptions = this.getFileTemplateOptions();
-		if (templateOptions.length === 0) return;
+		if (templateOptions.length === 0 && !this.prepared) return;
 		this.closeSuggestions();
 		this.closeActivePicker();
 		this.templateButtonEl.addClass('is-picker-open');
@@ -1895,12 +1922,12 @@ export class TaskCreatorModal extends Modal {
 
 	private renderSubmitControls(): void {
 		const selectedTemplate = this.prepared || this.activeCreateType === 'file' ? this.getSelectedFileTemplate() : null;
-		const templateLabel = selectedTemplate?.name || (Platform.isPhone ? t('taskEditor', 'pickFileTaskTemplateShort') : t('taskEditor', 'pickFileTaskTemplate'));
+		const templateLabel = selectedTemplate?.name || (this.prepared && this.draft.fileTemplateId ? `${t('settings', 'defaultFileTaskTemplateUnavailable')} (${this.draft.fileTemplateId})` : '') || (Platform.isPhone ? t('taskEditor', 'pickFileTaskTemplateShort') : t('taskEditor', 'pickFileTaskTemplate'));
 		const templateAccessibleLabel = selectedTemplate?.name || t('taskEditor', 'pickFileTaskTemplate');
 		const templateControlEnabled = !!this.prepared || isTaskCreatorTemplateControlEnabled(this.submitMode, this.activeCreateType);
 		this.templateButtonEl.toggleClass('is-active', !!selectedTemplate);
 		this.templateButtonEl.toggleClass('is-picker-open', !!this.activePickerClose && this.templateButtonEl.hasClass('is-picker-open'));
-		this.templateButtonEl.disabled = this.isSubmitting || !templateControlEnabled || this.getFileTemplateOptions().length === 0;
+		this.templateButtonEl.disabled = this.isSubmitting || !templateControlEnabled || (!this.prepared && this.getFileTemplateOptions().length === 0);
 		this.templateButtonEl.empty();
 		this.templateButtonEl.removeClass('is-overflowing-label');
 		const labelEl = this.templateButtonEl.createSpan({

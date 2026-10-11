@@ -1,8 +1,8 @@
 {
   "schemaVersion": 1,
   "locale": "pt-BR",
-  "keyCount": 3568,
-  "keyFingerprint": "eb0da3cad5fa79ca12faafc4e55c1fb9b66593badd789e7b660dd40f45bfd7d2",
+  "keyCount": 3570,
+  "keyFingerprint": "22c9d9215d767286be725026f80172b52ab61d64a19a04a9cc692ec05ffcc615",
   "translations": {
     "buttons": {
       "addFileSubtask": "Adicionar subtarefa em arquivo",
@@ -1347,6 +1347,8 @@
       "default": "Padrão",
       "defaultFileTaskTemplateNone": "Nenhum template padrão",
       "defaultFileTaskTemplateUnavailable": "Template indisponível",
+      "defaultInlineTaskTemplate": "Modelo padrão de tarefas inline",
+      "defaultInlineTaskTemplateDesc": "Escolha o modelo pré-selecionado no modo Inline do Task Creator. Apenas as propriedades do modelo são usadas. Escolha Nenhum para começar sem modelo.",
       "defaultPipelineAria": "Pipeline padrão: {{name}}",
       "defaultPriority": "Prioridade padrão para novas tarefas",
       "defaultPriorityDesc": "Atribuído automaticamente ao criar uma nova tarefa. Deixe vazio se não houver padrão.",
@@ -3613,5 +3615,5 @@
       "toggleDescendantPreview": "Alternar visualização descendente"
     }
   },
-  "sourceVersion": "98e726891c5bb2cdeed71ff2cbaa503fe72af1ff08ec57b63495c5d20973ddf5"
+  "sourceVersion": "f60629f29818e2c87cb03a5d3afb6f6cefb19c9183a00eb7db0477677a5d2015"
 }

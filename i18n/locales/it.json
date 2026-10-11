@@ -1814,6 +1814,8 @@
 		"priorityRenameMigrationMessage": "Questa modifica aggiornerà {{fileTaskCount}} attività-file e {{inlineTaskCount}} attività in linea in {{touchedFileCount}} file. Continuare?",
 		"taskCreatorDefaultToFileTask": "Predefinita ad Attività-file nel Creatore di attività",
 		"taskCreatorDefaultToFileTaskDesc": "Quando attivo, il Creatore di attività generico si apre con Attività-file selezionata invece di Attività in linea.",
+		"defaultInlineTaskTemplate": "Modello predefinito per attività inline",
+		"defaultInlineTaskTemplateDesc": "Scegli il modello preselezionato nella modalità Inline di Task Creator. Vengono usate solo le proprietà del modello. Scegli Nessuno per iniziare senza modello.",
 		"taskCreatorDefaultFileTemplate": "Modello attività-file predefinito",
 		"taskCreatorDefaultFileTemplateDesc": "Scegli il modello preselezionato quando il Creatore di attività entra in modalità Attività-file. Lascia vuoto per continuare a mostrare Scegli un modello.",
 		"defaultFileTaskTemplateNone": "Nessun modello predefinito",

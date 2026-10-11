@@ -1814,6 +1814,8 @@
 		"priorityRenameMigrationMessage": "Diese Änderung aktualisiert {{fileTaskCount}} Datei-Aufgaben und {{inlineTaskCount}} Inline-Aufgaben in {{touchedFileCount}} Dateien. Fortfahren?",
 		"taskCreatorDefaultToFileTask": "Im Aufgaben-Ersteller standardmäßig Datei-Aufgabe wählen",
 		"taskCreatorDefaultToFileTaskDesc": "Wenn aktiviert, öffnet der allgemeine Aufgaben-Ersteller mit Datei-Aufgabe statt Inline-Aufgabe.",
+		"defaultInlineTaskTemplate": "Standardvorlage für Inline-Aufgaben",
+		"defaultInlineTaskTemplateDesc": "Wähle die im Inline-Modus von Task Creator vorausgewählte Vorlage. Es werden nur Vorlageneigenschaften verwendet. Wähle Keine, um ohne Vorlage zu beginnen.",
 		"taskCreatorDefaultFileTemplate": "Standardvorlage für Datei-Aufgaben",
 		"taskCreatorDefaultFileTemplateDesc": "Wähle die Vorlage, die vorab ausgewählt wird, wenn der Aufgaben-Ersteller in den Datei-Aufgabenmodus wechselt. Leer lassen, um weiterhin „Vorlage auswählen“ anzuzeigen.",
 		"defaultFileTaskTemplateNone": "Keine Standardvorlage",

@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
 import { PreparedTaskCreatorDraft, type PreparedTaskCreatorAdapter } from '../src/ui/task-creator-prepared-draft';
-import { DEFAULT_SETTINGS } from '../src/types/settings';
+import { DEFAULT_SETTINGS, migrateSettings } from '../src/types/settings';
 import { createEmptyTaskCreatorDraft } from '../src/ui/task-creator-modal';
 import { applyTaskFieldPatchToState } from '../src/core/task-field-patch';
 import type { FileTaskTemplateOption } from '../src/core/file-task-templates';
@@ -73,4 +73,23 @@ test('review: stale set picker preserves unseen parent values and applies only i
  f.ui.refreshParent();assert.deepEqual(f.ui.field('contexts').value,['c','a','b']);
  f.ui.applyPayload({contexts:[]},baseline);assert.deepEqual(f.ui.field('contexts').value,['c','b']);
  f.ui.draft.clearValue('contexts');f.ui.refreshParent();assert.deepEqual(f.ui.field('contexts').value,[]);
+});
+
+test('inline default settings preserve unavailable IDs, roundtrip in schema 2/3, and default to None', async()=>{
+ const {buildOperonDataPackageFromSettings,composeOperonSettingsFromDataPackage}=await import('../src/storage/operon-data-package');
+ const {ALL_OPERON_SETTINGS_BACKUP_KEYS,SETTINGS_BACKUP_COMPATIBILITY_BY_KEY}=await import('../src/core/settings-backup-compatibility');
+ assert.equal(migrateSettings({}).defaultInlineTaskTemplateId,null);
+ assert.equal(migrateSettings({defaultInlineTaskTemplateId:'  '}).defaultInlineTaskTemplateId,null);
+ const id='builtin-minimal-file-task-template:unavailable';
+ const settings=migrateSettings({...DEFAULT_SETTINGS,defaultInlineTaskTemplateId:id});assert.equal(settings.defaultInlineTaskTemplateId,id);
+ const pkg=buildOperonDataPackageFromSettings(settings);assert.equal(pkg.ui.taskCreationProfile.defaultInlineTaskTemplateId,id);
+ for(const schemaVersion of [2,3] as const){const loaded=composeOperonSettingsFromDataPackage({...pkg,schemaVersion},DEFAULT_SETTINGS);assert.equal(loaded.defaultInlineTaskTemplateId,id);}
+ assert.ok(ALL_OPERON_SETTINGS_BACKUP_KEYS.includes('defaultInlineTaskTemplateId'));
+ assert.ok(SETTINGS_BACKUP_COMPATIBILITY_BY_KEY.defaultInlineTaskTemplateId);
+});
+test('unavailable template invalidates old read and preserves user fields',async()=>{
+ let finish!:(text:string)=>void;const f=fixture('',{readTemplate:()=>new Promise(r=>finish=r)});
+ f.ui.draft.setValue('Client','manual');const pending=f.ui.select(option(),'Task');f.ui.session.selectUnavailable('missing');finish(yaml('Count: 3'));await pending;
+ assert.equal(f.ui.session.snapshot().status,'error');assert.equal(f.ui.canSubmit('inline'),false);assert.equal(f.ui.field('Client').value,'manual');assert.equal(f.ui.field('Count').state,'missing');
+ await f.ui.select(null,'Task');assert.equal(f.ui.canSubmit('inline'),true);
 });

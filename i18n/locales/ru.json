@@ -1814,6 +1814,8 @@
 		"priorityRenameMigrationMessage": "Это изменение обновит {{fileTaskCount}} файловых задач и {{inlineTaskCount}} встроенных задач в {{touchedFileCount}} файлах. Продолжить?",
 		"taskCreatorDefaultToFileTask": "По умолчанию файловая задача в конструкторе задач",
 		"taskCreatorDefaultToFileTaskDesc": "Если включено, общий конструктор задач открывается с выбранной файловой задачей вместо встроенной.",
+		"defaultInlineTaskTemplate": "Шаблон по умолчанию для inline-задач",
+		"defaultInlineTaskTemplateDesc": "Выберите шаблон для режима Inline в Task Creator. Используются только свойства шаблона. Выберите «Нет», чтобы начать без шаблона.",
 		"taskCreatorDefaultFileTemplate": "Шаблон файловой задачи по умолчанию",
 		"taskCreatorDefaultFileTemplateDesc": "Выберите шаблон, предварительно выбираемый, когда конструктор задач переходит в режим файловой задачи. Оставьте пустым, чтобы по-прежнему показывать «Выбрать шаблон».",
 		"defaultFileTaskTemplateNone": "Нет шаблона по умолчанию",

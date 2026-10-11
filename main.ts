@@ -27825,17 +27825,6 @@ export default class OperonPlugin extends Plugin {
 		);
 	}
 
-	private getAvailableTaskCreatorDefaultFileTemplateId(): string {
-		const templateId = normalizeStoredFileTaskTemplateId(
-			this.settings.taskCreatorDefaultFileTemplateId,
-			this.settings.pipelines,
-			this.settings.defaultPipelineName,
-		);
-		return findFileTaskTemplateOptionById(
-			this.getFileTaskTemplateOptions(),
-			templateId,
-		)?.id ?? '';
-	}
 
 	private applyPipelineMinimalFileTaskTemplateStatus(
 		option: FileTaskTemplateOption,
@@ -29258,9 +29247,8 @@ export default class OperonPlugin extends Plugin {
 			&& options.initialCreateType === undefined
 			&& !options.onSubmitInline
 			&& !options.onSubmitFile);
-		const defaultFileTemplateId = shouldApplyGenericDefaults
-			? this.getAvailableTaskCreatorDefaultFileTemplateId()
-			: '';
+		const defaultFileTemplateId = this.settings.taskCreatorDefaultFileTemplateId ?? '';
+  const defaultInlineTemplateId = this.settings.defaultInlineTaskTemplateId ?? '';
   const properties: CreationDraftPropertyContext = { keyMappings: structuredClone(this.settings.keyMappings), propertyTypes: native.typesAvailable() ? { ...native.getTypes() } : null,
    inlineDefinitions: structuredClone(this.storage.getCommittedInlinePropertyDefinitions()) };
   const metadataKey = () => JSON.stringify([this.settings.keyMappings, native.typesAvailable(), native.getTypes(), this.settings.pipelines, this.settings.childTaskInheritanceFields]);
@@ -29376,6 +29364,7 @@ export default class OperonPlugin extends Plugin {
 				? 'file'
 				: options.initialCreateType,
 			defaultFileTemplateId,
+   defaultInlineTemplateId,
 			fileTaskTemplateOptions: this.getFileTaskTemplateOptionsForPicker(),
 			onFileTemplateSelected: async (template) => {
 				this.settings.lastUsedFileTaskTemplateId = template.id;

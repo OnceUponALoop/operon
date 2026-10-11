@@ -340,6 +340,7 @@ function pickTaskCreationProfileStoreSettings(settings: OperonSettings): TaskCre
 		childTaskInheritanceStatusPipelineSource: settings.childTaskInheritanceStatusPipelineSource,
 		taskCreatorDefaultToFileTask: settings.taskCreatorDefaultToFileTask,
 		taskCreatorDefaultFileTemplateId: settings.taskCreatorDefaultFileTemplateId,
+		defaultInlineTaskTemplateId: settings.defaultInlineTaskTemplateId,
 		fileTaskTemplateFolder: settings.fileTaskTemplateFolder,
 		manageDailyNotesWithOperon: settings.manageDailyNotesWithOperon,
 		dailyNoteFormat: settings.dailyNoteFormat,

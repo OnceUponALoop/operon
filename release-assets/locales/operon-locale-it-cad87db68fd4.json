@@ -1,8 +1,8 @@
 {
   "schemaVersion": 1,
   "locale": "it",
-  "keyCount": 3568,
-  "keyFingerprint": "eb0da3cad5fa79ca12faafc4e55c1fb9b66593badd789e7b660dd40f45bfd7d2",
+  "keyCount": 3570,
+  "keyFingerprint": "22c9d9215d767286be725026f80172b52ab61d64a19a04a9cc692ec05ffcc615",
   "translations": {
     "buttons": {
       "addFileSubtask": "Aggiungi sotto-attività-file",
@@ -1347,6 +1347,8 @@
       "default": "Predefinito",
       "defaultFileTaskTemplateNone": "Nessun modello predefinito",
       "defaultFileTaskTemplateUnavailable": "Modello non disponibile",
+      "defaultInlineTaskTemplate": "Modello predefinito per attività inline",
+      "defaultInlineTaskTemplateDesc": "Scegli il modello preselezionato nella modalità Inline di Task Creator. Vengono usate solo le proprietà del modello. Scegli Nessuno per iniziare senza modello.",
       "defaultPipelineAria": "Pipeline predefinita: {{name}}",
       "defaultPriority": "Priorità predefinita per le nuove attività",
       "defaultPriorityDesc": "Assegnata automaticamente alla creazione di una nuova attività. Lascia vuoto per nessuna predefinita.",
@@ -3613,5 +3615,5 @@
       "toggleDescendantPreview": "Alterna anteprima discendenti"
     }
   },
-  "sourceVersion": "ee1b911e3bfd8225a64a6cb998cd8f79684afe760a2485de7dd6908338b61e34"
+  "sourceVersion": "101968b8d4635d0f818855390a9a5f988355ccba8f5c8c342038ceb46bb9becb"
 }

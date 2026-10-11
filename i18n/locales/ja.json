@@ -1814,6 +1814,8 @@
 		"priorityRenameMigrationMessage": "この変更により、{{touchedFileCount}} 個のファイルにわたって、ファイルタスク {{fileTaskCount}} 件とインラインタスク {{inlineTaskCount}} 件が更新されます。続行しますか？",
 		"taskCreatorDefaultToFileTask": "タスク作成でファイルタスクをデフォルトにする",
 		"taskCreatorDefaultToFileTaskDesc": "有効にすると、一般のタスク作成はインラインタスクではなくファイルタスクが選択された状態で開きます。",
+		"defaultInlineTaskTemplate": "インラインタスクの既定テンプレート",
+		"defaultInlineTaskTemplateDesc": "Task Creator の Inline モードで事前選択するテンプレートを選びます。テンプレートのプロパティのみが使われます。テンプレートなしで始めるには「なし」を選んでください。",
 		"taskCreatorDefaultFileTemplate": "デフォルトのファイルタスクテンプレート",
 		"taskCreatorDefaultFileTemplateDesc": "タスク作成がファイルタスクモードに入ったときに事前選択されるテンプレートを選択します。「テンプレートを選択」を表示し続けるには空のままにします。",
 		"defaultFileTaskTemplateNone": "デフォルトテンプレートなし",

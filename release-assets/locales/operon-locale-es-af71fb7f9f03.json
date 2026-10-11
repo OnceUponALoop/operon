@@ -1,8 +1,8 @@
 {
   "schemaVersion": 1,
   "locale": "es",
-  "keyCount": 3568,
-  "keyFingerprint": "eb0da3cad5fa79ca12faafc4e55c1fb9b66593badd789e7b660dd40f45bfd7d2",
+  "keyCount": 3570,
+  "keyFingerprint": "22c9d9215d767286be725026f80172b52ab61d64a19a04a9cc692ec05ffcc615",
   "translations": {
     "buttons": {
       "addFileSubtask": "Añadir subtarea de archivo",
@@ -1347,6 +1347,8 @@
       "default": "Predeterminado",
       "defaultFileTaskTemplateNone": "Sin plantilla predeterminada",
       "defaultFileTaskTemplateUnavailable": "Plantilla no disponible",
+      "defaultInlineTaskTemplate": "Plantilla predeterminada de tareas inline",
+      "defaultInlineTaskTemplateDesc": "Elige la plantilla preseleccionada en el modo Inline de Task Creator. Solo se usan las propiedades de la plantilla. Elige Ninguna para empezar sin plantilla.",
       "defaultPipelineAria": "Flujo de trabajo predeterminado: {{name}}",
       "defaultPriority": "Prioridad predeterminada para nuevas tareas",
       "defaultPriorityDesc": "Se asigna automáticamente al crear una nueva tarea. Dejar vacío para no tener predeterminada.",
@@ -3613,5 +3615,5 @@
       "toggleDescendantPreview": "Alternar vista previa de descendientes"
     }
   },
-  "sourceVersion": "c37c0ce8dc3702ce615971d01862657a3074d48f228c782b39ece826b0e46507"
+  "sourceVersion": "65e8c8eae21517422d44aae2c707c5acbe8b4ce68e99e3c528d7ebb4e40d16a1"
 }

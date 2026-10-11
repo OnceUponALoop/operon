@@ -1571,6 +1571,7 @@ export class OperonSettingsTab extends PluginSettingTab {
 	private buildTaskCaptureSearchSections(tabId: string, entries: OperonSettingsSearchEntry[]): SettingDefinitionItem[] {
 		if (tabId === 'tasksInlineTasks') {
 			return this.buildTaskSettingsGroups([
+				['defaultInlineTaskTemplate', ['defaultInlineTaskTemplateId'], el => this.renderInlineCreationDefaultSettings(el), 'DOCS-020 Task Creator'],
 				['dailyNoteInlineTaskDefaults', ['inlineTaskDailyNoteAddStartDate', 'inlineTaskDailyNoteAddScheduledDate'], (el, key) => this.renderInlineDailyNoteDefaultsSettings(el, key), 'DOCS-050 Daily Notes workflows'],
 				['checkboxConversion', ['inlineTaskShowTasksEmojiConvertIcon', 'inlineTaskShowPlainCheckboxConvertIcon'], (el, key) => this.renderInlineConversionSettings(el, key), 'DOCS-049 Obsidian Tasks migration'],
 			], entries, t('settings', 'subtabInlineTasks'), 'DOCS-011 Inline tasks');
@@ -3341,7 +3342,7 @@ export class OperonSettingsTab extends PluginSettingTab {
 		if (key === 'fileRepeatDestination') {
 			return text === 'custom-folder' ? 'custom-folder' : 'same-folder';
 		}
-		if (key === 'taskCreatorDefaultFileTemplateId') {
+		if (key === 'taskCreatorDefaultFileTemplateId' || key === 'defaultInlineTaskTemplateId') {
 			return text || null;
 		}
 		if (key === 'dynamicFileTaskFilterPlacement') {
@@ -3445,6 +3446,7 @@ export class OperonSettingsTab extends PluginSettingTab {
 		if (isCalendarMobileSourcePresetSettingKey(key) || key === 'calendarMobileDefaultSourcePresetId') {
 			return this.stringifySettingsSearchValue(value ?? this.settings.calendarDefaultPresetId ?? this.settings.calendarPresets[0]?.id ?? '');
 		}
+		if (key === 'defaultInlineTaskTemplateId') return this.settings.defaultInlineTaskTemplateId ?? '';
 		if (key === 'taskCreatorDefaultFileTemplateId') {
 			return this.getEffectiveDefaultFileTaskTemplateId();
 		}
@@ -3798,8 +3800,8 @@ export class OperonSettingsTab extends PluginSettingTab {
 				? Object.fromEntries(this.settings.calendarPresets.map(preset => [preset.id, preset.name]))
 				: { '': t('settings', 'default') };
 		}
-		if (key === 'taskCreatorDefaultFileTemplateId') {
-			return Object.fromEntries(this.getDefaultFileTaskTemplateDropdownOptions().map(option => [option.value, option.label]));
+		if (key === 'taskCreatorDefaultFileTemplateId' || key === 'defaultInlineTaskTemplateId') {
+			return Object.fromEntries(this.getDefaultFileTaskTemplateDropdownOptions(key === 'defaultInlineTaskTemplateId' ? this.settings.defaultInlineTaskTemplateId ?? '' : undefined).map(option => [option.value, option.label]));
 		}
 		if (key === 'calendarWeekStart') {
 			return {
@@ -13196,8 +13198,7 @@ export class OperonSettingsTab extends PluginSettingTab {
 		renderPreview();
 	}
 
-	private getDefaultFileTaskTemplateDropdownOptions(): DropdownSettingOption<string>[] {
-		const currentValue = this.getEffectiveDefaultFileTaskTemplateId();
+	private getDefaultFileTaskTemplateDropdownOptions(currentValue = this.getEffectiveDefaultFileTaskTemplateId()): DropdownSettingOption<string>[] {
 		const options: DropdownSettingOption<string>[] = [
 			{ value: '', label: t('settings', 'defaultFileTaskTemplateNone') },
 			...buildFileTaskTemplateOptions(
@@ -13224,6 +13225,17 @@ export class OperonSettingsTab extends PluginSettingTab {
 			this.settings.pipelines,
 			this.settings.defaultPipelineName,
 		) ?? '';
+	}
+
+	private renderInlineCreationDefaultSettings(containerEl: HTMLElement): void {
+		this.renderBoundDropdownSetting<'defaultInlineTaskTemplateId', string>(
+			containerEl, t('settings', 'defaultInlineTaskTemplate'), t('settings', 'defaultInlineTaskTemplateDesc'),
+			'defaultInlineTaskTemplateId', {
+				value: this.settings.defaultInlineTaskTemplateId ?? '',
+				dropdownOptions: this.getDefaultFileTaskTemplateDropdownOptions(this.settings.defaultInlineTaskTemplateId ?? ''),
+				normalize: value => value.trim() || null,
+			},
+		);
 	}
 
 	private renderNewFileTaskCreationDefaultSettings(containerEl: HTMLElement, selectedKey?: string): void {

@@ -1,8 +1,8 @@
 {
   "schemaVersion": 1,
   "locale": "tr",
-  "keyCount": 3568,
-  "keyFingerprint": "eb0da3cad5fa79ca12faafc4e55c1fb9b66593badd789e7b660dd40f45bfd7d2",
+  "keyCount": 3570,
+  "keyFingerprint": "22c9d9215d767286be725026f80172b52ab61d64a19a04a9cc692ec05ffcc615",
   "translations": {
     "buttons": {
       "addFileSubtask": "Dosya Tipi Alt Görev Ekle",
@@ -1347,6 +1347,8 @@
       "default": "Varsayılan",
       "defaultFileTaskTemplateNone": "Varsayılan şablon yok",
       "defaultFileTaskTemplateUnavailable": "Kullanılamayan şablon",
+      "defaultInlineTaskTemplate": "Varsayılan inline görev şablonu",
+      "defaultInlineTaskTemplateDesc": "Task Creator’da Inline modunda seçilecek şablonu belirleyin. Yalnızca şablon özellikleri kullanılır. Şablonsuz başlamak için Yok seçin.",
       "defaultPipelineAria": "Varsayılan akış: {{name}}",
       "defaultPriority": "Yeni görevler için varsayılan öncelik",
       "defaultPriorityDesc": "Yeni görev oluştururken otomatik atanır. Varsayılan olmasın istiyorsan boş bırak.",
@@ -3613,5 +3615,5 @@
       "toggleDescendantPreview": "Alt görev önizlemesini aç/kapat"
     }
   },
-  "sourceVersion": "700135e4060803a8080bf6ba9abf966a084f1ffdd5a99a51c1c14b45e8b73446"
+  "sourceVersion": "72d9f72b511dbb80cd53a499df262fdcf99f632eb0bdd4e474faf88a25b19433"
 }

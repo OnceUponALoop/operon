@@ -1814,6 +1814,8 @@
 		"priorityRenameMigrationMessage": "此更改將更新 {{touchedFileCount}} 個檔案中的 {{fileTaskCount}} 個檔案任務和 {{inlineTaskCount}} 個行內任務。是否繼續？",
 		"taskCreatorDefaultToFileTask": "任務建立器 預設選擇檔案任務",
 		"taskCreatorDefaultToFileTaskDesc": "啟用後，通用 任務建立器 會以檔案任務而不是行內任務開啟。",
+		"defaultInlineTaskTemplate": "預設行內任務範本",
+		"defaultInlineTaskTemplateDesc": "選擇 Task Creator 的 Inline 模式預選的範本。僅使用範本屬性。選擇「無」以不使用範本。",
 		"taskCreatorDefaultFileTemplate": "預設檔案任務模板",
 		"taskCreatorDefaultFileTemplateDesc": "選擇 任務建立器 進入檔案任務模式時預先選中的模板。留空則繼續顯示「選擇模板」。",
 		"defaultFileTaskTemplateNone": "無預設模板",

@@ -60,6 +60,12 @@ export class CreationTemplateSession {
 		this.state = { status: 'empty' };
 	}
 
+	selectUnavailable(sourceId: string): void {
+		this.cancel();
+		const token = this.draft.beginSource('template', sourceId);
+		this.fail(sourceId, token.revision, 'read-failed');
+	}
+
 	selectedOption(): FileTaskTemplateOption | null { return structuredClone(this.selection); }
 
 	snapshot(): CreationTemplateSessionSnapshot { return structuredClone(this.state); }

@@ -92,6 +92,7 @@ function changedTarget(): OperonSettings {
 		operonDocsFolder: 'Private/Docs',
 		fileTasksFolder: 'Private/Tasks',
 		inlineTaskTargetFile: 'Private/Inbox.md',
+		defaultInlineTaskTemplateId: 'folder-file-task-template:Templates/Inline.md',
 		externalCalendars: [{
 			id: 'private-calendar',
 			name: 'Private calendar',

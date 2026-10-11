@@ -1,8 +1,8 @@
 {
   "schemaVersion": 1,
   "locale": "ja",
-  "keyCount": 3568,
-  "keyFingerprint": "eb0da3cad5fa79ca12faafc4e55c1fb9b66593badd789e7b660dd40f45bfd7d2",
+  "keyCount": 3570,
+  "keyFingerprint": "22c9d9215d767286be725026f80172b52ab61d64a19a04a9cc692ec05ffcc615",
   "translations": {
     "buttons": {
       "addFileSubtask": "ファイルサブタスクを追加",
@@ -1347,6 +1347,8 @@
       "default": "デフォルト",
       "defaultFileTaskTemplateNone": "デフォルトテンプレートなし",
       "defaultFileTaskTemplateUnavailable": "利用できないテンプレート",
+      "defaultInlineTaskTemplate": "インラインタスクの既定テンプレート",
+      "defaultInlineTaskTemplateDesc": "Task Creator の Inline モードで事前選択するテンプレートを選びます。テンプレートのプロパティのみが使われます。テンプレートなしで始めるには「なし」を選んでください。",
       "defaultPipelineAria": "デフォルトのワークフロー: {{name}}",
       "defaultPriority": "新しいタスクのデフォルト優先度",
       "defaultPriorityDesc": "新しいタスクの作成時に自動的に割り当てられます。デフォルトなしにする場合は空のままにします。",
@@ -3613,5 +3615,5 @@
       "toggleDescendantPreview": "子孫プレビューを切り替え"
     }
   },
-  "sourceVersion": "9078b9311a0437d80c5bb9ab82361f890e26acd203593b6c60700474f6841ceb"
+  "sourceVersion": "6a85fd9d559e096ef5c093b17d25c7202a502d43a3d767434f6401d0941cd60a"
 }

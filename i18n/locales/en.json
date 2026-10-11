@@ -1813,6 +1813,8 @@
 		"priorityRenameMigrationMessage": "This change will update {{fileTaskCount}} file tasks and {{inlineTaskCount}} inline tasks across {{touchedFileCount}} files. Continue?",
 		"taskCreatorDefaultToFileTask": "Default to File Task in Task Creator",
 		"taskCreatorDefaultToFileTaskDesc": "When enabled, generic Task Creator opens with File Task selected instead of Inline Task.",
+		"defaultInlineTaskTemplate": "Default inline task template",
+		"defaultInlineTaskTemplateDesc": "Choose the template preselected in Inline mode in Task Creator. Only template properties are used. Choose None to start without a template.",
 		"taskCreatorDefaultFileTemplate": "Default file task template",
 		"taskCreatorDefaultFileTemplateDesc": "Choose the template preselected when Task Creator enters File Task mode. Leave empty to keep showing Pick a template.",
 		"defaultFileTaskTemplateNone": "No default template",

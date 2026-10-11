@@ -1814,6 +1814,8 @@
 		"priorityRenameMigrationMessage": "Ce changement mettra à jour {{fileTaskCount}} tâches-fichiers et {{inlineTaskCount}} tâches en ligne réparties sur {{touchedFileCount}} fichiers. Continuer ?",
 		"taskCreatorDefaultToFileTask": "Utiliser Tâche-fichier par défaut dans le créateur de tâches",
 		"taskCreatorDefaultToFileTaskDesc": "Lorsque cette option est activée, le créateur de tâches général s'ouvre avec Tâche-fichier sélectionné au lieu de Tâche en ligne.",
+		"defaultInlineTaskTemplate": "Modèle par défaut des tâches inline",
+		"defaultInlineTaskTemplateDesc": "Choisissez le modèle présélectionné en mode Inline dans Task Creator. Seules les propriétés du modèle sont utilisées. Choisissez Aucun pour commencer sans modèle.",
 		"taskCreatorDefaultFileTemplate": "Modèle par défaut de tâche-fichier",
 		"taskCreatorDefaultFileTemplateDesc": "Choisissez le modèle présélectionné lorsque le créateur de tâches passe en mode Tâche-fichier. Laissez vide pour continuer à afficher Choisir un modèle.",
 		"defaultFileTaskTemplateNone": "Aucun modèle par défaut",
