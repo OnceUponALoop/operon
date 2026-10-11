@@ -40,6 +40,7 @@ export type TaskCreationProfileStoreSettings = Pick<
 	| 'childTaskInheritanceStatusPipelineSource'
 	| 'taskCreatorDefaultToFileTask'
 	| 'taskCreatorDefaultFileTemplateId'
+	| 'defaultInlineTaskTemplateId'
 	| 'fileTaskTemplateFolder'
 	| 'manageDailyNotesWithOperon'
 	| 'dailyNoteFormat'
@@ -220,6 +221,7 @@ function readStoreData(
 			raw.taskCreatorDefaultToFileTask,
 			fallback.taskCreatorDefaultToFileTask,
 		),
+		defaultInlineTaskTemplateId: readNullableString(raw.defaultInlineTaskTemplateId, fallback.defaultInlineTaskTemplateId),
 		taskCreatorDefaultFileTemplateId: readNullableString(
 			raw.taskCreatorDefaultFileTemplateId,
 			fallback.taskCreatorDefaultFileTemplateId,
@@ -275,8 +277,8 @@ export class TaskCreationProfileStore {
 		this.packagePersist = persist;
 	}
 
-	loadFromPackage(settings: TaskCreationProfileStoreSettings): void {
-		this.settings = cloneSettings(settings);
+	loadFromPackage(settings: Omit<TaskCreationProfileStoreSettings, 'defaultInlineTaskTemplateId'> & { defaultInlineTaskTemplateId?: string | null }): void {
+		this.settings = cloneSettings({ ...settings, defaultInlineTaskTemplateId: settings.defaultInlineTaskTemplateId ?? null });
 		this.serializedSettings = JSON.stringify(this.settings);
 		this.recoveredFromMalformed = false;
 	}

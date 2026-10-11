@@ -1,4 +1,4 @@
-import type { App } from 'obsidian';
+import { Platform, type App } from 'obsidian';
 import { parseListValue } from '../core/parser';
 import { isRetiredKeyMapping, KeyMapping, OperonSettings } from '../types/settings';
 import { IndexedTask } from '../types/fields';
@@ -38,11 +38,11 @@ export function isProjectedCustomFieldType(mapping: KeyMapping): boolean {
 	return isManagedCustomFieldOptionType(mapping);
 }
 
-export function getCustomFieldLabel(mapping: KeyMapping): string {
+export function getCustomFieldLabel(mapping: Pick<KeyMapping, 'visiblePropertyName' | 'canonicalKey'>): string {
 	return mapping.visiblePropertyName?.trim() || mapping.canonicalKey;
 }
 
-export function getCustomFieldIcon(mapping: KeyMapping): string {
+export function getCustomFieldIcon(mapping: Pick<KeyMapping, 'type' | 'icon'>): string {
 	return mapping.icon?.trim() || getCustomFieldTypeFallbackIcon(mapping.type);
 }
 
@@ -138,6 +138,7 @@ function getCustomSurfaceItems(
 			...collect(settings.taskWikilinkOverlayCompactChips),
 		];
 	}
+	if (!Platform.isPhone) return [];
 	return [
 		...collect(settings.taskEditorWorkflowPickers),
 		...collect(settings.taskEditorMobileCoreTools),

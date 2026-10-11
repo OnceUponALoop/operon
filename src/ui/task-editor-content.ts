@@ -1,3 +1,10 @@
+import { getNativePropertyIndex } from '../indexer/native-property-index';
+import { nativeEditorPropertyTypes, nativePropertyReadOnlyReason, type NativePropertyReadOnlyReason } from '../core/task-editor-native-properties';
+import { encodeVaultPropertyValue, type VaultPropertyValue } from '../core/vault-property-codec';
+import { resolveInlinePropertyDefinition, type InlinePropertyType } from '../core/inline-property-definitions';
+import { type InlinePropertyChange, type InlinePropertySnapshot } from '../core/inline-property-source';
+import { normalizeTaskEditorSections, type TaskEditorSectionId } from '../types/task-editor-sections';
+import { taskEditorSectionDefaultLabel } from './task-editor-section-label';
 import { buildTaskWikilinkOverlayLink } from './task-wikilink-overlay-insertion';
 import { bindAssigneeChipImage } from './assignee-chip-image';
 import { normalizeTaskCardSettings } from '../types/task-card';
@@ -8,7 +15,14 @@ import { normalizeTaskCardSettings } from '../types/task-card';
  * Spec Section 4.2.
  */
 
-import { App, Component, MarkdownRenderer, Setting, Notice, getIcon, setIcon, TFile, Platform } from 'obsidian';
+import { type FileTaskPropertyChange } from '../core/file-task-property-draft';
+import { encodeFilePropertyColumnKey, isEmptyFilePropertyValue, isSupportedRawYamlPropertyValue, rawYamlPropertyExpectationsEqual, type RawYamlPropertyExpectation, type RawYamlPropertyValue } from '../core/raw-yaml-property';
+import { createVaultFilePropertySnapshot, createCachedTableFilePropertyTypeResolver, getTableFilePropertyTypeIcon, type TableFilePropertyField } from './table/table-file-property';
+import { bindPropertyReadOnlyWarning, propertyReadOnlyWarningText } from './property-readonly-warning';
+import { openTableFilePropertyPicker } from './table/table-file-property-editor';
+import { showTextFieldPopover } from './text-field-popover';
+import { showSearchableFieldPicker } from './field-pickers/searchable-field-picker';
+import { App, Component, MarkdownRenderer, Setting, Notice, getIcon, setIcon, stringifyYaml, TFile, Platform } from 'obsidian';
 import { OperonIndexer } from '../indexer/indexer';
 import { PinnedCache } from '../storage/pinned-cache';
 
@@ -23,6 +37,7 @@ import {
 	shouldTriggerOneShotAutomation,
 } from '../types/pipeline';
 import { serializeTask } from '../core/serializer';
+import { parseTaskLine } from '../core/parser';
 import {
 	getManagedTaskFieldType,
 	isManagedTaskFieldCanonicalKey,
@@ -36,7 +51,6 @@ import { deriveCountModeRepeatEndFromFieldValues } from '../core/task-field-patc
 import { t } from '../core/i18n';
 import { formatTaskNotice } from '../core/task-notice';
 import { localNow, localToday } from '../core/local-time';
-import { resolveTaskDateTone, resolveTaskDateToneColor } from '../core/task-date-tone';
 import {
 	resolveBlockedByAggregateVisualState,
 	resolveBlockedByVisualStateColor,
@@ -44,10 +58,12 @@ import {
 } from '../core/blocked-by-visual-state';
 import { parseRepeatRule } from '../core/repeat-rule';
 import { REMINDER_RULE_ANCHORS } from '../core/reminder-rules';
+import { applyReminderListMutation } from '../core/reminder-list-mutation';
 import { formatRepeatRuleSummaryI18n } from '../core/repeat-rule-i18n';
 import { getAvailableReminderRuleAnchors } from './field-pickers/reminder-picker-model';
 import { formatUiTaskDatetime, formatUiTime } from '../core/ui-time-format';
 import { formatUiDate } from '../core/ui-date-format';
+import { getAppLocale } from '../core/obsidian-app';
 import { formatShortLocationCoordinate, parseLocationCoordinate } from '../core/location-coordinates';
 import { getLocationPlaceIndex } from '../core/location-source-resolver';
 import { TimeTracker, type TimeTrackerEvent } from '../systems/time-tracker';
@@ -68,6 +84,7 @@ import {
 	TASK_EDITOR_MOBILE_PICKER_CLOSE_EVENT,
 	TASK_EDITOR_MOBILE_PICKER_OPEN_EVENT,
 	positionFloatingElement,
+	resolveSurfaceFloatingHostOptions,
 } from './field-pickers/common';
 import { showDatePicker } from './field-pickers/date-picker';
 import { showDatetimePicker } from './field-pickers/datetime-picker';
@@ -95,7 +112,6 @@ import {
 	type CompactMarkdownEditorSurface,
 } from './compact-markdown-editor-surface';
 import type { CompactEditorKeyIntent } from './compact-editor-key-intent';
-import { renderCompactTaskMarkdown } from './compact-task-markdown-renderer';
 import { showTagPicker } from './field-pickers/tag-picker';
 import { showContextsPicker } from './field-pickers/contexts-picker';
 import { showAssigneesPicker } from './field-pickers/assignees-picker';
@@ -114,10 +130,10 @@ import { getConfiguredKeyMappingIcon } from '../core/key-mapping-icons';
 import { getVisiblePropertyName } from '../core/yaml-fields';
 import { resolveTaskEditorProgressFromStats } from '../core/task-stats-read-model';
 import { resolveSubtaskActionIconForKind, resolveSubtaskActionLabelKeyForKind } from '../core/subtask-action';
-import { createInlineTaskCompactChipElement, InlineTaskCompactChipEntry } from './compact-task-layout';
-import { createProjectSerialChipElement } from './project-serial-chip';
-import { INLINE_TASK_COMPACT_FALLBACK_ICONS, InlineTaskCompactChipKey, TASK_CREATOR_FALLBACK_FIELD_ICONS, TaskEditorWorkflowPickerItem } from '../types/settings';
+import { createInlineTaskCompactChipElement } from './compact-task-layout';
+import { normalizeTaskEditorWorkflowPickers, INLINE_TASK_COMPACT_FALLBACK_ICONS, InlineTaskCompactChipKey, TASK_CREATOR_FALLBACK_FIELD_ICONS, TaskEditorWorkflowPickerItem } from '../types/settings';
 import { openTaskFieldPicker } from './task-field-picker-dispatch';
+import { CANONICAL_KEY_MAP } from '../types/keys';
 import { getManagedTaskDataFieldPicker, type ManagedTaskDataFieldPicker } from './task-data-field-picker';
 import { formatReminderDisplayItem } from './reminder-display';
 import type { ReminderPickerFieldKey } from '../core/reminder-list-mutation';
@@ -146,6 +162,9 @@ import {
 
 /** Callback to persist editor state. Returning false/null aborts the save; a commit returns authoritative saved state. */
 export interface TaskEditorSaveRequest {
+ inlineProperties?: InlinePropertyChange[];
+ inlineSourceFields?: readonly OperonField[];
+ fileProperties?: FileTaskPropertyChange[];
 	taskLine: string;
 	isNew: boolean;
 	/** Distinguishes a deliberate clear from an omitted serialized field. */
@@ -164,6 +183,8 @@ export interface TaskEditorSaveRequest {
 }
 
 export interface TaskEditorCanonicalState {
+	/** Fresh source fields, separate from the managed index projection. */
+	sourceFields?: readonly OperonField[];
 	description: string;
 	checkbox: ParsedTask['checkbox'];
 	tags: string[];
@@ -175,10 +196,12 @@ export function buildTaskEditorOperonField(
 	key: string,
 	value: string,
 	keyMappings: readonly KeyMapping[],
-	existingField?: Pick<OperonField, 'sourceKey'>,
+	existingField?: Pick<OperonField, 'sourceKey' | 'sourceValue' | 'sourceToken'>,
 ): OperonField {
 	return {
 		sourceKey: existingField?.sourceKey || key,
+		sourceValue: existingField?.sourceValue,
+		sourceToken: existingField?.sourceToken,
 		key,
 		value,
 		rawValue: value,
@@ -190,6 +213,9 @@ export function buildTaskEditorOperonField(
 }
 
 export interface TaskEditorSaveCommit {
+ inlineProperties?: readonly InlinePropertySnapshot[];
+ fileProperties?: FileTaskPropertyChange[];
+ filePropertySnapshots?: { propertyName: string; expectation: RawYamlPropertyExpectation }[];
 	fileBody?: TaskEditorFileBodyContext;
 	canonicalState: TaskEditorCanonicalState;
 }
@@ -251,6 +277,7 @@ export function scheduleTaskEditorReminderFocus(options: {
 
 export interface TaskEditorSubtaskRequest {
  acceptFile?: (file: import('obsidian').TFile) => boolean;
+	requestedKind?: 'inline';
 	canCommit?: () => boolean;
 	parentOperonId: string;
 	parentDescription: string;
@@ -261,14 +288,15 @@ export interface TaskEditorSubtaskRequest {
 }
 
 export interface TaskEditorContentOptions {
+	onSetShowLineNumbers?: (visible: boolean) => Promise<void>;
+	onSetHideScrollbars?: (hidden: boolean) => Promise<void>;
 	focusDescriptionOnMount?: boolean;
 	selectDescriptionOnMount?: boolean;
 	subtaskActionKind?: 'inline' | 'file';
 	onRequestSubtask?: (context: TaskEditorSubtaskRequest) => void | Promise<void>;
 	onRequestDelete?: (task: ParsedTask, expectedDirectChildCount: number) => void | Promise<boolean | void>;
 	getDeleteDirectChildCount?: (task: ParsedTask) => number;
-	onOpenTask?: (operonId: string) => void;
-	onMarkSubtaskDone?: (operonId: string) => Promise<boolean>;
+	onOpenSubtasksStats?: (operonId: string, anchor: HTMLElement) => (() => void) | null;
 	onUpdateExistingSubtaskParent?: (childId: string, parentId: string | null) => void | Promise<void>;
 	getRepeatSkipDates?: (repeatSeriesId: string) => string[];
 	onUpdateRepeatSkips?: (request: TaskEditorRepeatSkipUpdateRequest) => Promise<TaskEditorRepeatSkipUpdateResult> | TaskEditorRepeatSkipUpdateResult;
@@ -325,7 +353,6 @@ type PersistReason = 'autosave' | 'explicit-save' | 'estimate-reallocation' | 'c
 type TaskEditorWorkflowSyncResult =
 	| { ok: true }
 	| { ok: false; reason: 'terminal-conflict' | 'workflow-resolution-failed' };
-type RelationContextChipKey = Extract<InlineTaskCompactChipKey, 'priority' | 'status' | 'dateScheduled' | 'dateDue' | 'dateCompleted' | 'dateCancelled' | 'duration' | 'totalDuration'>;
 
 const TASK_EDITOR_DAY_PICKER_DATE_KEYS = new Set<string>([
 	'dateStarted',
@@ -348,9 +375,11 @@ type EditorProgressSectionState = {
 	checkboxProgressPct: number;
 	ownDuration: number;
 	subtaskDuration: number;
+	trackedSubtaskCount: number;
 	totalDuration: number;
 	ownEstimate: number;
 	subtaskEstimate: number;
+	estimatedSubtaskCount: number;
 	totalEstimate: number;
 	hasAnyTimeData: boolean;
 };
@@ -362,13 +391,6 @@ interface TaskEditorSemanticSnapshot {
 	fieldValues: Record<string, string>;
 	fileBodyDraft: string | null;
 	inlineCompletionMode: InlineRepeatCompletionMode;
-}
-
-function formatDuration(seconds: number): string {
-	const h = Math.floor(seconds / 3600);
-	const m = Math.floor((seconds % 3600) / 60);
-	if (h > 0) return `${h}h ${m}m`;
-	return `${m}m`;
 }
 
 function formatTaskEditorDatetime(app: App, settings: OperonSettings, value: string): string {
@@ -430,6 +452,21 @@ function isTaskEditorSaveCommit(value: TaskEditorSaveCallbackResult): value is T
 		&& Object.values(state.fieldValues).every(fieldValue => typeof fieldValue === 'string');
 }
 
+export const TASK_EDITOR_DESKTOP_GROUPS = [
+	{ key: 'overview', fields: ['taskType', 'taskIcon', 'taskColor', 'status', 'priority', 'taskImage', 'taskGallery'] },
+	{ key: 'planning', fields: ['dateStarted', 'dateDue', 'repeat', 'reminderDatetimes', 'reminderRules'] },
+	{ key: 'activity', fields: ['assignees', 'location', 'dateScheduled', 'datetimeStart', 'estimate', 'datetimeEnd', 'dateCompleted', 'dateCancelled'] },
+	{ key: 'connections', fields: ['contexts', 'tags', 'links', 'parentTask', 'subtasks', 'blockedBy', 'blocking'] },
+] as const;
+
+const DESKTOP_CORE_FIELDS = new Set([
+	'taskIcon', 'taskColor', 'status', 'priority', 'dateStarted', 'dateDue', 'repeat',
+	'dateScheduled', 'datetimeStart', 'estimate', 'datetimeEnd', 'dateCompleted', 'dateCancelled',
+]);
+
+type EditorFieldDisplay = Pick<KeyMapping, 'canonicalKey' | 'visiblePropertyName' | 'type' | 'icon'>;
+type EditorFileProperty = { field: TableFilePropertyField; baseline: RawYamlPropertyExpectation | null; value: unknown; inline?: InlinePropertySnapshot; readonly?: boolean; readOnlyReason?: NativePropertyReadOnlyReason; headerSelected?: boolean; pending?: boolean };
+
 export class TaskEditorContent {
 
 	private app: App;
@@ -468,8 +505,9 @@ export class TaskEditorContent {
 	private onRequestSubtask: ((context: TaskEditorSubtaskRequest) => void | Promise<void>) | null = null;
 	private onRequestDelete: ((task: ParsedTask, expectedDirectChildCount: number) => void | Promise<boolean | void>) | null = null;
 	private getDeleteDirectChildCount: ((task: ParsedTask) => number) | null = null;
-	private onOpenTask: ((operonId: string) => void) | null = null;
-	private onMarkSubtaskDone: ((operonId: string) => Promise<boolean>) | null = null;
+	private refreshStatsCounters: (() => void) | null = null;
+	private closeStatsSubtasks: (() => void) | null = null;
+	private onOpenSubtasksStats: TaskEditorContentOptions['onOpenSubtasksStats'] = undefined;
 	private onUpdateExistingSubtaskParent: ((childId: string, parentId: string | null) => void | Promise<void>) | null = null;
 	private getRepeatSkipDates: ((repeatSeriesId: string) => string[]) | null = null;
 	private onUpdateRepeatSkips: ((request: TaskEditorRepeatSkipUpdateRequest) => Promise<TaskEditorRepeatSkipUpdateResult> | TaskEditorRepeatSkipUpdateResult) | null = null;
@@ -483,18 +521,42 @@ export class TaskEditorContent {
 	private trackerUnsubscribe: (() => void) | null = null;
 	private indexUpdatesUnsubscribe: (() => void) | null = null;
 	private refreshCorePinControl: (() => void) | null = null;
+	private onSetShowLineNumbers: TaskEditorContentOptions['onSetShowLineNumbers'];
+	private onSetHideScrollbars: TaskEditorContentOptions['onSetHideScrollbars'];
+	private scrollbarsSavePending = false;
+	private scrollbarsObserver: MutationObserver | null = null;
+	private lineNumbersSavePending = false;
+	private refreshLineNumbersControl: (() => void) | null = null;
 	private bodyDropdowns: HTMLElement[] = [];
 	private refreshCoreTrackerControl: (() => void) | null = null;
 	private refreshTrackingSessionsSection: (() => void) | null = null;
 	private refreshEstimateReallocationControl: (() => void) | null = null;
-	private refreshParentContextSection: (() => void) | null = null;
-	private subtaskCardOrder: string[] = [];
-	private subtaskCardsExpanded = false;
-	private subtaskCompletionInProgress = false;
 	private schedulingDraftRefreshers = new Set<() => void>();
 	private workflowExpanded = false;
 	private workflowActionsEl: HTMLElement | null = null;
 	private workflowRowsEl: HTMLElement | null = null;
+	private desktopPropertyRows = new Map<string, { row: HTMLElement; value: HTMLElement; core: boolean; signature: string }>();
+	private desktopSubtasksExpanded = false;
+	private desktopSessionsExpanded = false;
+ private fileProperties = new Map<string, EditorFileProperty>();
+ private nativePropertyTypes: Record<string, InlinePropertyType> = {};
+ private filePropertyRows = new Map<string, { row: HTMLElement; value: HTMLElement; action: HTMLButtonElement }>();
+ private filePropertyRoot: HTMLElement | null = null;
+ private filePropertyActions: HTMLElement | null = null;
+ private additionalPropertyAdd: HTMLButtonElement | null = null;
+ private additionalPropertyKeys: readonly string[] = [];
+ private filePropertyGeneration = 0;
+ private filePropertyUnavailable = false;
+ private filePropertyCleanup: (() => void) | null = null;
+ private closeFilePropertyPicker: (() => void) | null = null;
+ private closeFilePropertyAddPicker: (() => void) | null = null;
+ private filePropertyTypeResolver = createCachedTableFilePropertyTypeResolver();
+ private filePropertyPickerName: string | null = null;
+ private filePropertyPickerValue: string | null = null;
+ private propertyInteractionEpoch = 0;
+ private submittedFileProperties = new Set<string>();
+	private desktopSubtaskLayoutCleanup: (() => void) | null = null;
+	private desktopSubtaskToggleNeedsFocus = false;
 	private workflowActionButtons = new Map<string, HTMLButtonElement>();
 	private workflowActionPickerClose: (() => void) | null = null;
 	private workflowDraftSubtaskParentId: string | null = null;
@@ -507,6 +569,7 @@ export class TaskEditorContent {
 	private descriptionCompactEditor: CompactMarkdownEditorSurface | null = null;
 	private noteCompactEditor: CompactMarkdownEditorSurface | null = null;
 	private descriptionCompactHostEl: HTMLElement | null = null;
+	private compactTextResizeObserver: ResizeObserver | null = null;
 	private noteCompactHostEl: HTMLElement | null = null;
 	private initialDescriptionFocusTimers: WindowTimeoutHandle[] = [];
 	private rootEl: HTMLElement | null = null;
@@ -588,8 +651,9 @@ export class TaskEditorContent {
 		this.onRequestSubtask = options.onRequestSubtask ?? null;
 		this.onRequestDelete = options.onRequestDelete ?? null;
 		this.getDeleteDirectChildCount = options.getDeleteDirectChildCount ?? null;
-		this.onOpenTask = options.onOpenTask ?? null;
-		this.onMarkSubtaskDone = options.onMarkSubtaskDone ?? null;
+		this.onOpenSubtasksStats = options.onOpenSubtasksStats;
+		this.onSetShowLineNumbers = options.onSetShowLineNumbers;
+		this.onSetHideScrollbars = options.onSetHideScrollbars;
 		this.onUpdateExistingSubtaskParent = options.onUpdateExistingSubtaskParent ?? null;
 		this.getRepeatSkipDates = options.getRepeatSkipDates ?? null;
 		this.onUpdateRepeatSkips = options.onUpdateRepeatSkips ?? null;
@@ -847,6 +911,25 @@ export class TaskEditorContent {
 		return cursorOffset;
 	}
 
+	private resolveFileBodyCursorOffset(): number {
+		const context = this.fileBodyContext;
+		const fallback = Math.min(Math.max(context?.cursorOffset ?? 0, 0), this.fileBodyDraft.length);
+		if (context?.format !== 'inline') return fallback;
+
+		// Resolve against the current body without changing the source identity used by saves.
+		const operonId = this.getCurrentOperonId();
+		const lines = this.fileBodyDraft.split('\n');
+		let targetLine: number | null = null;
+		for (let index = 0; index < lines.length; index++) {
+			const task = parseTaskLine(lines[index], index, context.filePath, this.settings.keyMappings);
+			if (!task || !(operonId ? task.operonId === operonId : task.rawLine === this.existingTask?.rawLine)) continue;
+			// An absent or ambiguous task must not redirect focus to another task.
+			if (targetLine !== null) return fallback;
+			targetLine = index;
+		}
+		return targetLine === null ? fallback : this.getBodyCursorOffset(this.fileBodyDraft, targetLine);
+	}
+
 	private async refreshFileBodyDraftFromSource(): Promise<void> {
 		if (!this.fileBodyContext || this.isFileBodyDirty) return;
 		const file = this.app.vault.getAbstractFileByPath(this.fileBodyContext.filePath);
@@ -895,7 +978,7 @@ export class TaskEditorContent {
 	private bindTaskEditorTooltip(target: HTMLElement, content: string): void {
 		bindOperonHoverTooltip(target, {
 			content,
-			taskColor: this.getThemeColor(),
+			taskColor: () => this.getThemeColor(),
 		});
 	}
 
@@ -928,6 +1011,25 @@ export class TaskEditorContent {
 			}
 		}
 		button.createSpan({ text: options.text, cls: 'operon-editor-picker-button-text' });
+	}
+
+	private bindTruncatedTextTooltip(target: HTMLElement | null): void {
+		if (!target || Platform.isPhone) return;
+		bindOperonHoverTooltip(target, {
+			content: target.textContent ?? '',
+			taskColor: () => this.getThemeColor(),
+			shouldOpen: () => target.clientWidth > 0 && target.scrollWidth > target.clientWidth + 1,
+		});
+	}
+
+	private appendWeekdayHint(target: HTMLElement, value: string): void {
+		if (Platform.isPhone || !value) return;
+		const canonical = value.length === 10 ? `${value}T12:00:00`
+			: value.length === 16 ? `${value}:00` : value;
+		const date = parseLocalDatetime(canonical);
+		if (!date) return;
+		const weekday = new Intl.DateTimeFormat(getAppLocale(this.app), { weekday: 'long' }).format(date);
+		target.createSpan({ cls: 'operon-editor-weekday', text: ` - ${weekday}` });
 	}
 
 	private focusDescriptionField(selectAll = this.selectDescriptionOnMount): boolean {
@@ -992,12 +1094,45 @@ export class TaskEditorContent {
 	}
 
 	private destroyCompactTextEditors(): void {
+		this.compactTextResizeObserver?.disconnect();
+		this.compactTextResizeObserver = null;
 		this.descriptionCompactEditor?.destroy();
 		this.noteCompactEditor?.destroy();
 		this.descriptionCompactEditor = null;
 		this.noteCompactEditor = null;
 		this.descriptionCompactHostEl = null;
 		this.noteCompactHostEl = null;
+	}
+
+	private autoSizeCompactTextarea(textarea: HTMLTextAreaElement): void {
+		const owner = textarea.ownerDocument.defaultView;
+		if (!owner) return;
+		const style = owner.getComputedStyle(textarea);
+		const borders = (Number.parseFloat(style.borderTopWidth) || 0)
+			+ (Number.parseFloat(style.borderBottomWidth) || 0);
+		textarea.setCssProps({ height: '0px' });
+		textarea.style.height = `${Math.ceil(textarea.scrollHeight + borders)}px`;
+	}
+
+	private observeCompactTextEditorWidths(): void {
+		this.compactTextResizeObserver?.disconnect();
+		const owner = this.descriptionCompactHostEl?.ownerDocument.defaultView;
+		const Observer = (owner as (Window & { ResizeObserver?: typeof ResizeObserver }) | null)?.ResizeObserver;
+		if (!Observer) return;
+		const widths = new WeakMap<Element, number>();
+		this.compactTextResizeObserver = new Observer(entries => {
+			if (this.disposed) return;
+			let changed = false;
+			for (const entry of entries) {
+				if (widths.get(entry.target) === entry.contentRect.width) continue;
+				widths.set(entry.target, entry.contentRect.width);
+				changed = true;
+			}
+			if (changed) this.refreshCompactTextEditorLayouts();
+		});
+		for (const host of [this.descriptionCompactHostEl, this.noteCompactHostEl]) {
+			if (host) this.compactTextResizeObserver.observe(host);
+		}
 	}
 
 	private refreshCompactTextEditorLayouts(): void {
@@ -1216,11 +1351,10 @@ export class TaskEditorContent {
 			placeholder: t('taskEditor', 'fileBodyPlaceholder'),
 			className: 'operon-task-editor-file-source-editor',
 			file: sourceFile instanceof TFile ? sourceFile : null,
-			cursorOffset: this.fileBodyContext?.format === 'inline'
-				? 0
-				: this.fileBodyContext?.cursorOffset ?? 0,
+			cursorOffset: this.resolveFileBodyCursorOffset(),
 			lineNumberOffset: this.fileBodyContext?.lineNumberOffset ?? 0,
 			showLineNumbers: this.settings.taskEditorShowLineNumbers,
+			showActiveLine: this.settings.taskEditorHighlightActiveLine,
 			onChange: (value) => this.handleFileBodyChanged(value),
 			onEscape: () => {
 				if (!(this.fileBodyWide ?? this.isWideFileBodyViewport())) {
@@ -1258,6 +1392,10 @@ export class TaskEditorContent {
 		}
 	}
 
+	private desktopSectionLabel(id: TaskEditorSectionId): string {
+		return this.settings.taskEditorSections?.find(section => section.id === id)?.name.trim() || taskEditorSectionDefaultLabel(id);
+	}
+
 	private renderTaskEditorBody(container: HTMLElement): void {
 		const progressState = this.getProgressSectionState();
 		// Title
@@ -1268,37 +1406,43 @@ export class TaskEditorContent {
 			text: this.isNewTask ? t('modals', 'newTask') : t('modals', 'editTask'),
 			cls: 'operon-task-editor-title',
 		});
-		const titleRight = titleRow.createDiv('operon-task-editor-title-side is-right');
-		this.renderProjectSerialTitleChip(titleRight);
-		this.renderCopyOperonIdButton(titleRight);
+		titleRow.createDiv('operon-task-editor-title-side is-right');
 
-		this.renderTopContextSection(container, progressState);
-
-		const primaryFields = container.createDiv('operon-task-editor-primary-fields');
-
-		// Primary edit fields should remain in normal document flow when the file body panel toggles.
-		this.renderDescriptionNoteSection(primaryFields);
-		this.renderTimeSummarySection(primaryFields, progressState);
-
-		// High-frequency fields directly under the primary text and time summaries.
-		this.renderCoreSection(container);
-		this.renderWorkflowSurface(container);
-		this.renderDetailsSection(container);
+		const sections = container.createDiv('operon-task-editor-section-layout');
+		this.workflowRowsEl = sections;
+		const hosts = new Map<TaskEditorSectionId, HTMLElement>();
+		for (const section of normalizeTaskEditorSections(this.settings.taskEditorSections)) {
+			const host = sections.createDiv('operon-task-editor-section-host');
+			host.dataset.editorSection = section.id;
+			host.toggleClass('is-section-disabled', section.enabled === false);
+			hosts.set(section.id, host);
+		}
+		// Create hosts in display/tab order, then initialize dependent controls in their existing order.
+		const host = (id: TaskEditorSectionId): HTMLElement => hosts.get(id)!;
+		for (const id of ['description', 'notes'] as const) {
+			host(id).addClass('operon-task-editor-primary-fields');
+			this.renderDescriptionNoteSection(host(id), id);
+		}
+		this.observeCompactTextEditorWidths();
+		host('stats').addClass('operon-task-editor-primary-fields');
+		this.renderTimeSummarySection(host('stats'), progressState);
+		this.renderDesktopPropertyGroups(host);
+		this.renderDetailsSection(host('sessions'));
 
 		// Actions bar
 		this.renderActions(container);
 	}
 
-	private renderProjectSerialTitleChip(container: HTMLElement): void {
+	private renderProjectSerialControl(container: HTMLElement): void {
 		const operonId = this.taskOperonId?.trim();
 		if (!operonId) return;
 		const display = this.getProjectSerialDisplay?.(operonId) ?? null;
 		if (!display) return;
-		container.appendChild(createProjectSerialChipElement(
-			display,
-			'operon-task-editor-project-serial-chip operon-task-chip',
-			{ keyMappings: this.settings.keyMappings, owner: container },
-		));
+		const serial = container.createSpan('operon-task-editor-workflow-action-button operon-editor-project-serial');
+		const icon = serial.createSpan({ attr: { 'aria-hidden': 'true' } });
+		setIcon(icon, getConfiguredKeyMappingIcon('operonId', this.settings.keyMappings) || 'fingerprint');
+		serial.createSpan({ cls: 'operon-editor-project-serial-label', text: display.label });
+		this.bindTaskEditorTooltip(serial, display.label);
 	}
 
 	private renderMobileTaskEditorBody(container: HTMLElement): void {
@@ -2158,6 +2302,9 @@ export class TaskEditorContent {
 	 * Clears the container first, then renders all sections.
 	 */
 	mountInto(container: HTMLElement): void {
+		this.closeStatsSubtasks?.();
+		this.closeStatsSubtasks = null;
+		this.refreshStatsCounters = null;
 		if (this.rootEl && this.rootEl !== container) cleanupOperonHoverTooltips(this.rootEl);
 		cleanupOperonHoverTooltips(container);
 		this.destroyCompactTextEditors();
@@ -2172,6 +2319,9 @@ export class TaskEditorContent {
 		this.schedulingDraftRefreshers.clear();
 		this.mobileCoreButtonRefreshers.clear();
 		this.refreshCorePinControl = null;
+		this.refreshLineNumbersControl = null;
+		this.scrollbarsObserver?.disconnect();
+		this.scrollbarsObserver = null;
 		this.clearMobileCoreToolbarState();
 		this.clearInitialDescriptionFocusTimers();
 		window.removeEventListener('resize', this.mobileResizeHandler);
@@ -2184,6 +2334,8 @@ export class TaskEditorContent {
 		this.indexUpdatesUnsubscribe = this.indexer.subscribeIndexUpdates(() => {
 			this.refreshMobileCoreButtons();
 			this.refreshRenderedBlockedBySelectionStates();
+			this.refreshStatsCounters?.();
+   void this.refreshDesktopFileProperties();
 		});
 		this.pinnedCacheUnsubscribe?.();
 		this.pinnedCacheUnsubscribe = this.pinnedCache?.subscribe(() => {
@@ -2238,12 +2390,19 @@ export class TaskEditorContent {
 		this.syncTrackingFieldsFromIndex();
 		this.schedulingDraftRefreshers.clear();
 		this.refreshCorePinControl = null;
+		this.refreshLineNumbersControl = null;
+		this.scrollbarsObserver?.disconnect();
+		this.scrollbarsObserver = null;
 		this.refreshCoreTrackerControl = null;
 		this.refreshEstimateReallocationControl = null;
-		this.refreshParentContextSection = null;
 		this.refreshTrackingSessionsSection = null;
 		this.workflowActionsEl = null;
 		this.workflowRowsEl = null;
+		this.clearDesktopSubtaskLayout();
+		this.closeFilePropertyPicker?.();
+  this.closeFilePropertyAddPicker?.();
+  this.filePropertyRows.clear();
+  this.desktopPropertyRows.clear();
 		this.workflowActionButtons.clear();
 		this.closeActiveWorkflowActionPicker();
 		this.workflowDraftSubtaskParentId = null;
@@ -2257,6 +2416,9 @@ export class TaskEditorContent {
 		this.clearMobileCoreToolbarState();
 		this.clearInitialDescriptionFocusTimers();
 
+		this.closeStatsSubtasks?.();
+		this.closeStatsSubtasks = null;
+		this.refreshStatsCounters = null;
 		cleanupOperonHoverTooltips(this.mainPanelEl);
 		this.mainPanelEl.empty();
 		if (Platform.isPhone) {
@@ -2311,11 +2473,23 @@ export class TaskEditorContent {
 				this.destroyCloseSaveInFlight = false;
 			});
 		}
+		this.closeStatsSubtasks?.();
+		this.closeStatsSubtasks = null;
+		this.refreshStatsCounters = null;
 		if (this.rootEl) {
 			closeFloatingPanelsForRoot(this.rootEl);
 			cleanupOperonHoverTooltips(this.rootEl);
 		}
-		this.disposed = true;
+		this.closeFilePropertyPicker?.();
+  this.closeFilePropertyAddPicker?.();
+  this.filePropertyCleanup?.();
+  this.filePropertyCleanup = null;
+  this.filePropertyRoot = null;
+  this.filePropertyActions = null;
+  this.additionalPropertyAdd = null;
+  this.additionalPropertyKeys = [];
+  this.filePropertyGeneration++;
+  this.disposed = true;
 		this.checkboxSaveListenerController.abort();
 		window.removeEventListener('resize', this.mobileResizeHandler);
 		this.pinnedCacheUnsubscribe?.();
@@ -2329,11 +2503,18 @@ export class TaskEditorContent {
 		this.schedulingDraftRefreshers.clear();
 		this.mobileCoreButtonRefreshers.clear();
 		this.refreshCorePinControl = null;
+		this.refreshLineNumbersControl = null;
+		this.scrollbarsObserver?.disconnect();
+		this.scrollbarsObserver = null;
 		this.refreshCoreTrackerControl = null;
 		this.refreshEstimateReallocationControl = null;
-		this.refreshParentContextSection = null;
 		this.workflowActionsEl = null;
 		this.workflowRowsEl = null;
+		this.clearDesktopSubtaskLayout();
+		this.closeFilePropertyPicker?.();
+  this.closeFilePropertyAddPicker?.();
+  this.filePropertyRows.clear();
+  this.desktopPropertyRows.clear();
 		this.workflowActionButtons.clear();
 		this.closeActiveWorkflowActionPicker();
 		this.workflowDraftSubtaskParentId = null;
@@ -2521,18 +2702,19 @@ export class TaskEditorContent {
 
 	private renderCustomFieldSelection(
 		container: HTMLElement,
-		mapping: KeyMapping,
-		onRemove: (value: string) => void,
+		mapping: EditorFieldDisplay,
+		onRemove: ((value: string, index: number) => void) | null,
+  options: { values?: readonly string[]; suppressValueTooltip?: boolean; onActivate?: (chip: HTMLElement, value: string, index: number) => void } = {},
 	): void {
 		container.replaceChildren();
 		const rawValue = normalizeCustomFieldRawValue((this.fieldValues as Record<string, unknown>)[mapping.canonicalKey]);
-		const values = mapping.type === 'list'
+		const values = options.values ?? (mapping.type === 'list'
 			? splitTaskListValue(rawValue)
 			: rawValue
 				? [rawValue]
-				: [];
+				: []);
 		container.classList.toggle('is-empty', values.length === 0);
-		for (const value of values) {
+		for (const [index, value] of values.entries()) {
 			const chip = createInlineTaskCompactChipElement({
 				key: mapping.canonicalKey,
 				label: this.formatCustomFieldDisplayValue(mapping, value),
@@ -2542,6 +2724,10 @@ export class TaskEditorContent {
 				colorRole: 'default',
 				linkTarget: null,
 			}, 'operon-editor-compact-selection-chip', { forceFull: true });
+			if (!options.suppressValueTooltip) this.bindTruncatedTextTooltip(chip.querySelector<HTMLElement>('.operon-inline-compact-chip-label'));
+			if (mapping.type === 'date' || mapping.type === 'datetime') this.appendWeekdayHint(chip, value);
+			options.onActivate?.(chip, value, index);
+   if (!onRemove) { container.appendChild(chip); continue; }
 			const removeButton = chip.ownerDocument.win.createEl('button');
 			removeButton.type = 'button';
 			removeButton.className = 'operon-editor-compact-selection-chip-remove';
@@ -2549,13 +2735,13 @@ export class TaskEditorContent {
 			setAccessibleLabelWithoutTooltip(removeButton, t('taskEditor', 'removeValue', {
 				value: this.formatCustomFieldDisplayValue(mapping, value),
 			}));
-			removeButton.addEventListener('click', () => onRemove(value));
+			removeButton.addEventListener('click', () => onRemove(value, index));
 			chip.appendChild(removeButton);
 			container.appendChild(chip);
 		}
 	}
 
-	private formatCustomFieldDisplayValue(mapping: KeyMapping, value: string): string {
+	private formatCustomFieldDisplayValue(mapping: EditorFieldDisplay, value: string): string {
 		const trimmed = value.trim();
 		if (mapping.type === 'datetime') return formatTaskEditorDatetime(this.app, this.settings, trimmed);
 		if (mapping.type === 'date') return formatUiDate(trimmed, this.settings);
@@ -2563,174 +2749,6 @@ export class TaskEditorContent {
 	}
 
 	// --- Renderers ---
-
-	private renderTopContextSection(container: HTMLElement, progressState: EditorProgressSectionState | null): void {
-		const section = container.createDiv('operon-editor-top-context-section');
-		const relations = section.createDiv('operon-editor-top-context-relations');
-		const updateVisibility = () => {
-			const hasRelations = relations.querySelector(
-				'.operon-editor-parent-card, .operon-editor-subtask-card, .operon-subtask-show-more',
-			) != null;
-			const hasProgress = section.querySelector('.operon-editor-progress') != null;
-			relations.hidden = !hasRelations;
-			section.hidden = !hasRelations && !hasProgress;
-		};
-
-		this.renderParentContext(relations, updateVisibility);
-		const subtaskHost = relations.createDiv('operon-editor-subtask-context-host');
-		this.renderSubtaskCards(subtaskHost);
-
-		const progressHost = section.createDiv('operon-editor-progress-context-host');
-		if (progressState) this.renderProgressSection(progressHost, progressState);
-		updateVisibility();
-	}
-
-	private renderParentContext(container: HTMLElement, onRender?: () => void): void {
-		const host = container.createDiv('operon-editor-parent-context-host');
-		const render = (): void => {
-			cleanupOperonHoverTooltips(host);
-			host.empty();
-			const parentId = this.fieldValues['parentTask'];
-			if (!parentId) {
-				onRender?.();
-				return;
-			}
-
-			const parent = this.indexer.getTask(parentId);
-			if (!parent) {
-				onRender?.();
-				return;
-			}
-
-			const parentEl = host.createDiv('operon-editor-parent-card');
-			parentEl.style.setProperty('--operon-relation-context-color', this.resolveRelationContextColor(parent, 'parent'));
-			const line1 = parentEl.createDiv('operon-parent-line-1');
-			const iconWrap = line1.createSpan('operon-parent-header-icon');
-			const parentIcon = getIcon('arrow-big-up');
-			if (parentIcon) {
-				iconWrap.appendChild(parentIcon);
-			} else {
-				iconWrap.setText('↑');
-			}
-			const parentTitle = line1.createSpan('operon-parent-inline-title');
-			renderCompactTaskMarkdown(parentTitle, {
-				value: parent.description || parentId,
-				mode: 'visual-only',
-			});
-
-			if (this.onOpenTask) {
-				const editBtn = line1.createEl('button', {
-					cls: 'operon-parent-edit-btn',
-					attr: { type: 'button' },
-				});
-				setIcon(editBtn, 'settings-2');
-				setAccessibleLabelWithoutTooltip(editBtn, t('taskEditor', 'openParentTask'));
-				bindOperonHoverTooltip(editBtn, {
-					content: t('taskEditor', 'openParentTask'),
-					taskColor: this.resolveRelationContextColor(parent, 'parent'),
-				});
-				editBtn.addEventListener('click', (e) => {
-					e.stopPropagation();
-					this.onOpenTask?.(parentId);
-				});
-			}
-
-			const parentChips = this.buildRelationContextChipEntries(parent);
-			if (parentChips.length > 0) {
-				const line2 = parentEl.createDiv('operon-parent-line-2');
-				this.renderRelationContextChips(line2, parent, parentChips, 'operon-parent-chip');
-			}
-			onRender?.();
-		};
-
-		this.refreshParentContextSection = render;
-		render();
-	}
-
-	private buildRelationContextChipEntries(task: IndexedTask): InlineTaskCompactChipEntry[] {
-		const entries: InlineTaskCompactChipEntry[] = [];
-		for (const key of this.getRelationContextChipKeys(task)) {
-			const entry = this.createRelationContextChipEntry(task, key);
-			if (entry) entries.push(entry);
-		}
-		return entries;
-	}
-
-	private getRelationContextChipKeys(task: IndexedTask): RelationContextChipKey[] {
-		if (task.fieldValues['dateCancelled']?.trim() || task.checkbox === 'cancelled') {
-			return ['priority', 'dateCancelled', 'duration', 'totalDuration'];
-		}
-		if (task.fieldValues['dateCompleted']?.trim() || task.checkbox === 'done') {
-			return ['priority', 'dateCompleted', 'duration', 'totalDuration'];
-		}
-		return ['priority', 'status', 'dateScheduled', 'dateDue', 'duration', 'totalDuration'];
-	}
-
-	private createRelationContextChipEntry(task: IndexedTask, key: RelationContextChipKey): InlineTaskCompactChipEntry | null {
-		const rawValue = task.fieldValues[key]?.trim() ?? '';
-		let label = rawValue;
-		if (key === 'duration' || key === 'totalDuration') {
-			const seconds = Number.parseInt(rawValue, 10);
-			if (!Number.isFinite(seconds) || seconds <= 0) return null;
-			label = formatDuration(seconds);
-		} else if (!rawValue) {
-			return null;
-		} else if (TASK_EDITOR_DAY_PICKER_DATE_KEYS.has(key)) {
-			label = formatUiDate(rawValue, this.settings);
-		}
-
-		const entry: InlineTaskCompactChipEntry = {
-			key,
-			label,
-			icon: this.resolveCompactChipIcon(key),
-			iconOnly: false,
-			interactive: false,
-			colorRole: key === 'priority' ? 'priority' : key === 'status' ? 'status' : 'default',
-			linkTarget: null,
-		};
-		if (key === 'dateScheduled' || key === 'dateDue') {
-			entry.iconTone = resolveTaskDateTone(key, rawValue, task.fieldValues);
-		}
-		return entry;
-	}
-
-	private renderRelationContextChips(
-		container: HTMLElement,
-		task: IndexedTask,
-		entries: InlineTaskCompactChipEntry[],
-		extraClass: string,
-	): void {
-		for (const entry of entries) {
-			const chip = createInlineTaskCompactChipElement(entry, `operon-relation-context-chip ${extraClass}`, { forceFull: true });
-			this.applyRelationContextChipVisualStyles(chip, entry, task);
-			container.appendChild(chip);
-		}
-	}
-
-	private applyRelationContextChipVisualStyles(
-		chip: HTMLElement,
-		entry: InlineTaskCompactChipEntry,
-		task: IndexedTask,
-	): void {
-		if (entry.colorRole === 'priority') {
-			const def = this.settings.priorities.find(priority => priority.label === task.fieldValues['priority']);
-			if (def) chip.style.setProperty('--operon-inline-chip-icon-color', def.color);
-		}
-		if (entry.colorRole === 'status') {
-			const status = resolveWorkflowStatus(this.settings.pipelines, task.fieldValues['status']);
-			chip.style.setProperty('--operon-inline-chip-icon-color', status?.definition.color ?? '#6b7280');
-		}
-		const dateToneColor = resolveTaskDateToneColor(entry.iconTone ?? 'default');
-		if (dateToneColor) chip.setCssProps({ '--operon-inline-chip-icon-color': dateToneColor });
-	}
-
-	private resolveRelationContextColor(task: IndexedTask, role: 'parent' | 'child'): string {
-		const color = (task.fieldValues['taskColor'] ?? '').trim().replace(/^#/, '');
-		if (/^([0-9a-fA-F]{6})$/.test(color)) return `#${color}`;
-		return role === 'parent'
-			? 'var(--color-red)'
-			: 'var(--operon-task-editor-accent, var(--interactive-accent))';
-	}
 
 	private getProgressDescendantTasks(operonId: string): IndexedTask[] {
 		const descendants: IndexedTask[] = [];
@@ -2742,223 +2760,30 @@ export class TaskEditorContent {
 		return descendants;
 	}
 
-	private renderSubtaskCards(container: HTMLElement): void {
-		const operonId = this.existingTask?.operonId;
-		if (!operonId) return;
-
-		const childIds = this.indexer.secondary.getChildIds(operonId);
-		if (!childIds || childIds.size === 0) return;
-
-		const SUBTASK_PREVIEW_COUNT = 1;
-
-		const tasks = [...childIds]
-			.map(id => this.indexer.getTask(id))
-			.filter((c): c is IndexedTask => !!c);
-		const orderedTasks = this.reconcileSubtaskCardOrder(tasks);
-
-		const hiddenCards: HTMLElement[] = [];
-
-		for (let i = 0; i < orderedTasks.length; i++) {
-			const child = orderedTasks[i];
-			const cardEl = container.createDiv('operon-editor-subtask-card');
-			cardEl.dataset.operonId = child.operonId;
-			cardEl.style.setProperty('--operon-relation-context-color', this.resolveRelationContextColor(child, 'child'));
-
-			const line1 = cardEl.createDiv('operon-subtask-line-1');
-			const iconWrap = line1.createSpan('operon-subtask-header-icon');
-			const subtaskIcon = getIcon('arrow-big-down');
-			if (subtaskIcon) {
-				iconWrap.appendChild(subtaskIcon);
-			} else {
-				iconWrap.setText('↓');
-			}
-			const childTitle = line1.createSpan('operon-subtask-inline-title');
-			renderCompactTaskMarkdown(childTitle, {
-				value: child.description || child.operonId,
-				mode: 'visual-only',
-			});
-
-			if (this.onOpenTask || (child.checkbox === 'open' && this.onMarkSubtaskDone)) {
-				const actions = line1.createDiv('operon-subtask-actions');
-				if (child.checkbox === 'open' && this.onMarkSubtaskDone) {
-					const markDoneLabel = t('settings', 'contextualMenuActionMarkDone');
-					const markDoneBtn = actions.createEl('button', {
-						cls: 'operon-subtask-action-btn operon-subtask-mark-done-btn',
-						attr: { type: 'button' },
-					});
-					setIcon(markDoneBtn, 'check');
-					setAccessibleLabelWithoutTooltip(markDoneBtn, markDoneLabel);
-					bindOperonHoverTooltip(markDoneBtn, {
-						content: markDoneLabel,
-						taskColor: this.resolveRelationContextColor(child, 'child'),
-					});
-					markDoneBtn.addEventListener('click', (event) => {
-						event.preventDefault();
-						event.stopPropagation();
-						void this.handleSubtaskMarkDone(child.operonId, markDoneBtn);
-					});
-				}
-
-				if (this.onOpenTask) {
-					const editBtn = actions.createEl('button', {
-						cls: 'operon-subtask-action-btn operon-subtask-edit-btn',
-						attr: { type: 'button' },
-					});
-					setIcon(editBtn, 'settings-2');
-					setAccessibleLabelWithoutTooltip(editBtn, t('taskEditor', 'editSubtask'));
-					bindOperonHoverTooltip(editBtn, {
-						content: t('taskEditor', 'editSubtask'),
-						taskColor: this.resolveRelationContextColor(child, 'child'),
-					});
-					editBtn.addEventListener('click', (e) => {
-						e.stopPropagation();
-						this.onOpenTask?.(child.operonId);
-					});
-				}
-			}
-
-			const childChips = this.buildRelationContextChipEntries(child);
-			if (childChips.length > 0) {
-				const line2 = cardEl.createDiv('operon-subtask-line-2');
-				this.renderRelationContextChips(line2, child, childChips, 'operon-subtask-chip');
-			}
-
-			if (i >= SUBTASK_PREVIEW_COUNT && !this.subtaskCardsExpanded) {
-				cardEl.setAttribute('hidden', '');
-				hiddenCards.push(cardEl);
-			} else if (i >= SUBTASK_PREVIEW_COUNT) {
-				hiddenCards.push(cardEl);
-			}
-		}
-
-		if (hiddenCards.length > 0) {
-			const bar = container.createDiv('operon-subtask-show-more');
-			const label = bar.createSpan('operon-subtask-show-more-label');
-			const chevron = bar.createSpan('operon-subtask-show-more-chevron');
-			const refresh = () => {
-				if (this.subtaskCardsExpanded) {
-					label.textContent = t('taskEditor', 'showLess');
-					const icon = getIcon('chevron-up');
-					chevron.empty();
-					if (icon) chevron.appendChild(icon);
-				} else {
-					label.textContent = t('taskEditor', hiddenCards.length === 1 ? 'showMoreSubtasksOne' : 'showMoreSubtasksMany', {
-						count: String(hiddenCards.length),
-					});
-					const icon = getIcon('chevron-down');
-					chevron.empty();
-					if (icon) chevron.appendChild(icon);
-				}
-			};
-			refresh();
-
-			bar.addEventListener('click', () => {
-				this.subtaskCardsExpanded = !this.subtaskCardsExpanded;
-				for (const card of hiddenCards) {
-					if (this.subtaskCardsExpanded) card.removeAttribute('hidden');
-					else card.setAttribute('hidden', '');
-				}
-				refresh();
-			});
-		}
-	}
-
-	private reconcileSubtaskCardOrder(tasks: IndexedTask[]): IndexedTask[] {
-		const tasksById = new Map(tasks.map(task => [task.operonId, task]));
-		const retainedOrder = this.subtaskCardOrder.filter(id => tasksById.has(id));
-		const retainedIds = new Set(retainedOrder);
-		const appendedOrder = tasks
-			.filter(task => !retainedIds.has(task.operonId))
-			.sort((a, b) => b.datetimeModified.localeCompare(a.datetimeModified))
-			.map(task => task.operonId);
-		this.subtaskCardOrder = [...retainedOrder, ...appendedOrder];
-		return this.subtaskCardOrder
-			.map(id => tasksById.get(id))
-			.filter((task): task is IndexedTask => !!task);
-	}
-
-	private getCurrentCanonicalStateFromIndex(): TaskEditorCanonicalState | null {
-		const indexed = this.getCurrentIndexedTask();
-		if (!indexed) return null;
-		return {
-			description: indexed.description,
-			checkbox: indexed.checkbox,
-			tags: [...indexed.tags],
-			fieldValues: {
-				...indexed.fieldValues,
-				operonId: indexed.operonId,
-			},
-		};
-	}
-
-	private restoreFocusAfterSubtaskCompletion(operonId: string): void {
-		const cards = Array.from(this.mainPanelEl?.querySelectorAll<HTMLElement>('.operon-editor-subtask-card') ?? []);
-		const completedCard = cards.find(card => card.dataset.operonId === operonId);
-		const target = completedCard?.querySelector<HTMLButtonElement>('.operon-subtask-edit-btn')
-			?? this.mainPanelEl?.querySelector<HTMLButtonElement>('.operon-subtask-mark-done-btn')
-			?? this.mainPanelEl?.querySelector<HTMLButtonElement>('.operon-subtask-edit-btn');
-		target?.focus({ preventScroll: true });
-	}
-
-	private async handleSubtaskMarkDone(operonId: string, button: HTMLButtonElement): Promise<void> {
-		const markDone = this.onMarkSubtaskDone;
-		if (!markDone || this.subtaskCompletionInProgress) return;
-		const restoreFocus = button.ownerDocument.activeElement === button;
-		const buttons = new Set<HTMLButtonElement>([
-			button,
-			...Array.from(this.mainPanelEl?.querySelectorAll<HTMLButtonElement>('.operon-subtask-mark-done-btn') ?? []),
-		]);
-
-		this.subtaskCompletionInProgress = true;
-		for (const actionButton of buttons) actionButton.disabled = true;
-		button.setAttribute('aria-busy', 'true');
-		this.suspendAutoSave();
-		try {
-			const saved = await this.flushPendingEdits();
-			if (!saved) return;
-			const submitted = {
-				description: this.description,
-				checkbox: this.checkbox,
-				tags: [...this.tags],
-				fieldValues: { ...this.fieldValues },
-			};
-			const completed = await markDone(operonId);
-			const refreshedChild = this.indexer.getTask(operonId);
-			if (!completed && refreshedChild?.checkbox === 'open') return;
-
-			const canonical = this.getCurrentCanonicalStateFromIndex();
-			if (canonical) this.applyCanonicalSaveCommit(canonical, submitted);
-			await this.refreshAfterExternalTaskMutation(false);
-			if (restoreFocus) this.restoreFocusAfterSubtaskCompletion(operonId);
-		} catch (error) {
-			console.error('Operon: Task Editor subtask completion failed', error);
-			new Notice(t('notifications', 'taskSaveFailed'));
-		} finally {
-			this.subtaskCompletionInProgress = false;
-			for (const actionButton of buttons) {
-				if (actionButton.isConnected) actionButton.disabled = false;
-			}
-			if (button.isConnected) button.removeAttribute('aria-busy');
-			this.resumeAutoSave();
-		}
-	}
-
-	private renderDescriptionNoteSection(container: HTMLElement): void {
+	private renderDescriptionNoteSection(container: HTMLElement, id: 'description' | 'notes'): void {
 		const section = container.createDiv('operon-editor-text-fields');
 
-		const descriptionGroup = section.createDiv('operon-editor-text-field-group is-description');
-		descriptionGroup.createEl('h6', {
-			cls: 'operon-editor-core-title-badge operon-editor-text-field-title',
-			text: t('taskEditor', 'description'),
-		});
-		this.renderDescription(descriptionGroup, false);
+		if (id === 'description') {
+			const descriptionGroup = section.createDiv('operon-editor-text-field-group is-description');
+			const descriptionHeader = descriptionGroup.createDiv('operon-editor-desktop-group-header');
+			descriptionHeader.createEl('h6', {
+				cls: 'operon-editor-core-title-badge operon-editor-text-field-title operon-editor-desktop-group-title',
+				text: this.desktopSectionLabel('description'),
+			});
+			const descriptionActions = descriptionHeader.createDiv('operon-task-editor-workflow-actions operon-editor-description-actions');
+			this.renderProjectSerialControl(descriptionActions);
+			this.renderCopyOperonIdButton(descriptionActions);
+			this.renderDescription(descriptionGroup, false);
 
-		const notesGroup = section.createDiv('operon-editor-text-field-group is-notes');
-		notesGroup.createEl('h6', {
-			cls: 'operon-editor-core-title-badge operon-editor-text-field-title',
-			text: t('taskEditor', 'notes'),
-		});
-		this.renderNote(notesGroup, false);
+		} else {
+			const notesGroup = section.createDiv('operon-editor-text-field-group is-notes');
+			const notesHeader = notesGroup.createDiv('operon-editor-desktop-group-header');
+			notesHeader.createEl('h6', {
+				cls: 'operon-editor-core-title-badge operon-editor-text-field-title operon-editor-desktop-group-title',
+				text: this.desktopSectionLabel('notes'),
+			});
+			this.renderNote(notesGroup, false);
+		}
 	}
 
 	private renderDescription(container: HTMLElement, showLabel = true): void {
@@ -2975,6 +2800,7 @@ export class TaskEditorContent {
 			sourcePath: this.getCompactTextSourcePath(),
 			placeholder: t('taskEditor', 'descriptionPlaceholder'),
 			ariaLabel: t('taskEditor', 'description'),
+			onTextareaLayout: textarea => this.autoSizeCompactTextarea(textarea),
 			onUserChange: draft => {
 				const value = draft.persistableValue;
 				if (value === this.description) return;
@@ -3083,6 +2909,7 @@ export class TaskEditorContent {
 				colorRole: 'default',
 				linkTarget: null,
 			}, 'operon-editor-compact-selection-chip', { forceFull: true });
+			this.bindTruncatedTextTooltip(chip.querySelector<HTMLElement>('.operon-inline-compact-chip-label'));
 			if (canonicalKey === 'assignees' && value.trim().startsWith('[[') && value.trim().endsWith(']]')) {
 				const target = value.trim().slice(2, -2).split('|')[0];
 				bindAssigneeChipImage(chip, { key: canonicalKey, linkTarget: target }, this.app, this.getCompactTextSourcePath(), this.settings.assigneeImageProperty);
@@ -3126,6 +2953,7 @@ export class TaskEditorContent {
 			colorRole: 'default',
 			linkTarget: null,
 		}, 'operon-editor-compact-selection-chip', { forceFull: true });
+		this.bindTruncatedTextTooltip(chip.querySelector<HTMLElement>('.operon-inline-compact-chip-label'));
 		const removeButton = chip.ownerDocument.win.createEl('button');
 		removeButton.type = 'button';
 		removeButton.className = 'operon-editor-compact-selection-chip-remove';
@@ -3210,6 +3038,7 @@ export class TaskEditorContent {
 			placeholder: t('taskEditor', 'notesPlaceholder'),
 			ariaLabel: t('taskEditor', 'notes'),
 			textPolicy: 'task-note',
+			onTextareaLayout: textarea => this.autoSizeCompactTextarea(textarea),
 			onUserChange: draft => {
 				const value = draft.persistableValue;
 				const previous = this.fieldValues['note'] ?? '';
@@ -3334,6 +3163,17 @@ export class TaskEditorContent {
 			totalEstimate,
 		].some(value => value > 0);
 
+		// Count each descendant's own contribution, never its rolled-up child totals.
+		const timeDescendants = hasSubtasks && hasAnyTimeData
+			? (statsProgress ? this.getProgressDescendantTasks(operonId) : allDesc)
+			: [];
+		let trackedSubtaskCount = 0;
+		let estimatedSubtaskCount = 0;
+		for (const descendant of timeDescendants) {
+			if (parseInt(descendant.fieldValues['duration'] ?? '0', 10) > 0) trackedSubtaskCount++;
+			if (parseInt(descendant.fieldValues['estimate'] ?? '0', 10) > 0) estimatedSubtaskCount++;
+		}
+
 		if (!hasSubtasks && !hasAnyTimeData && !hasPlainCheckboxes) return null;
 
 		return {
@@ -3347,161 +3187,727 @@ export class TaskEditorContent {
 			checkboxProgressPct,
 			ownDuration,
 			subtaskDuration,
+			trackedSubtaskCount,
 			totalDuration,
 			ownEstimate,
 			subtaskEstimate,
+			estimatedSubtaskCount,
 			totalEstimate,
 			hasAnyTimeData,
 		};
 	}
 
 	private renderTimeSummarySection(container: HTMLElement, state: EditorProgressSectionState | null): void {
-		if (!state?.hasAnyTimeData) return;
-		const hasAnyDuration = state.ownDuration > 0 || (state.hasSubtasks && state.subtaskDuration > 0) || state.totalDuration > 0;
-		const hasAnyEstimate = state.ownEstimate > 0 || (state.hasSubtasks && state.subtaskEstimate > 0) || state.totalEstimate > 0;
-		if (!hasAnyDuration && !hasAnyEstimate) return;
-
 		const summary = container.createDiv('operon-editor-time-summary');
-		const table = summary.createDiv('operon-editor-time-summary-table');
-		const tableHeader = table.createDiv('operon-editor-time-summary-row is-header');
-		tableHeader.createDiv('operon-editor-time-summary-row-label operon-editor-time-summary-row-corner');
-		for (const columnLabel of [
-			t('taskEditor', 'timeOwn'),
-			t('taskEditor', 'subtasks'),
-			t('taskEditor', 'timeTotal'),
-		]) {
-			tableHeader.createDiv({
-				text: columnLabel,
-				cls: 'operon-editor-time-summary-col-label',
-			});
-		}
+		this.renderStatsHeader(summary, state);
+	}
 
-		const appendRow = (
-			label: string,
-			rowClass: string,
-			cells: Array<{ label: string; value: string | null; tone?: 'good' | 'bad' }>,
-		) => {
-			const row = table.createDiv(`operon-editor-time-summary-row ${rowClass}`.trim());
-			row.createDiv({ text: label, cls: 'operon-editor-time-summary-row-label' });
-			let hasVisibleValue = false;
-
-			for (const cell of cells) {
-				const cellEl = row.createDiv('operon-editor-time-summary-cell');
-				cellEl.dataset.colLabel = cell.label;
-				const valueEl = cellEl.createSpan('operon-editor-time-summary-cell-value');
-				if (cell.value == null) {
-					cellEl.addClass('is-empty');
-					valueEl.setText('\u00a0');
-				} else {
-					hasVisibleValue = true;
-					valueEl.setText(cell.value);
-				}
-				if (cell.tone) cellEl.addClass(`is-${cell.tone}`);
+	private renderTimeSummaryCards(summary: HTMLElement, state: EditorProgressSectionState | null): void {
+		summary.querySelector('.operon-editor-time-summary-cards')?.remove();
+		if (!state) return;
+		const cards = summary.createDiv('operon-editor-time-summary-cards');
+		for (const [kind, label, own, subtasks, total, contributorCount] of [
+			['duration', t('filterSets', 'fieldTrackedOn'), state.ownDuration, state.subtaskDuration, state.totalDuration, state.trackedSubtaskCount],
+			['estimate', t('settings', 'chipEstimate'), state.ownEstimate, state.subtaskEstimate, state.totalEstimate, state.estimatedSubtaskCount],
+		] as const) {
+			if (total <= 0) continue;
+			const card = cards.createDiv(`operon-editor-time-card is-${kind}`);
+			const heading = card.createDiv('operon-editor-time-card-heading');
+			heading.createSpan({ cls: 'operon-editor-time-card-label', text: label });
+			heading.createSpan({ cls: 'operon-editor-time-card-total', text: formatDurationHuman(total, 'minutes') });
+			const breakdown = card.createDiv('operon-editor-time-card-breakdown');
+			for (const [scope, name, seconds] of [
+				['own', t('taskEditor', 'timeOwn'), own],
+				['subtasks', t('taskEditor', 'progressSubtasksCount', { count: String(contributorCount) }), subtasks],
+			] as const) {
+				const item = breakdown.createSpan(`operon-editor-time-card-scope is-${scope}`);
+				item.createSpan({ text: name });
+				item.createSpan({ cls: 'operon-editor-time-card-value', text: kind === 'estimate' && seconds === 0 ? '—' : formatDurationHuman(seconds, 'minutes') });
 			}
+			// Each bar shows its own composition, never a remaining-estimate segment.
+			const bar = card.createDiv({ cls: 'operon-editor-time-card-bar', attr: { 'aria-hidden': 'true' } });
+			const sum = own + subtasks;
+			const ownPercent = sum > 0 ? Math.max(0, Math.min(100, own / sum * 100)) : 0;
+			bar.setCssProps({ '--operon-stats-own-share': `${ownPercent}%` });
+			bar.createSpan('operon-editor-time-card-bar-own');
+			bar.createSpan('operon-editor-time-card-bar-subtasks');
+			bar.hidden = sum === 0;
+		}
+		if (!cards.childElementCount) cards.remove();
+	}
 
-			if (!hasVisibleValue) row.addClass('is-muted');
+	private renderStatsHeader(summary: HTMLElement, state: EditorProgressSectionState | null): void {
+		const header = summary.createDiv('operon-editor-desktop-group-header operon-editor-stats-header');
+		const title = header.createEl('h6', { text: this.desktopSectionLabel('stats'), cls: 'operon-editor-core-title-badge operon-editor-desktop-group-title', attr: { tabindex: '0' } });
+		const actions = header.createDiv('operon-editor-stats-actions');
+		const makeCounter = (kind: 'subtasks' | 'checkboxes', name: string, label: string, open: (anchor: HTMLElement) => void) => {
+			const button = actions.createEl('button', { cls: `operon-editor-stats-counter is-${kind}`, attr: { type: 'button' } });
+			const ring = button.createSpan({ cls: 'operon-editor-stats-counter-ring', attr: { 'aria-hidden': 'true' } });
+			const text = button.createSpan('operon-editor-stats-counter-value');
+			button.addEventListener('click', () => { if (!this.disposed) open(button); });
+			return { button, ring, text, name, label, tooltip: '' };
 		};
+		const subtasks = makeCounter('subtasks', t('taskEditor', 'subtasks'), t('filterSets', 'dynamicSubtasksFilterTitle'), anchor => {
+			runAsyncAction('task editor stats subtasks open failed', async () => {
+				const id = this.getCurrentOperonId();
+				if (!id) return;
+				this.closeStatsSubtasks?.();
+				this.closeStatsSubtasks = this.onOpenSubtasksStats?.(id, anchor) ?? null;
+			});
+		});
+		const checkboxes = makeCounter('checkboxes', t('settings', 'contextualMenuActionCheckboxes'), t('taskEditor', 'showCheckboxes'), anchor => {
+			runAsyncAction('task editor stats checkboxes open failed', () => this.openTaskEditorCheckboxPopover(anchor));
+		});
+		let timeSignature: string | null = null;
+		const render = (next: EditorProgressSectionState | null) => {
+			const focused = summary.ownerDocument.activeElement;
+			const closingPopoverHadFocus = !next?.hasSubtasks && focused?.closest('.operon-subtasks-filter-popover') != null && this.rootEl?.contains(focused);
+			summary.hidden = !next || !(next.hasSubtasks || next.hasPlainCheckboxes || next.totalDuration > 0 || next.totalEstimate > 0);
+			if (summary.parentElement?.hasClass('operon-task-editor-section-host')) summary.parentElement.hidden = summary.hidden;
+			const nextTimeSignature = JSON.stringify(next && [next.trackedSubtaskCount, next.estimatedSubtaskCount, next.ownDuration, next.subtaskDuration, next.totalDuration, next.ownEstimate, next.subtaskEstimate, next.totalEstimate]);
+			if (timeSignature !== nextTimeSignature) {
+				timeSignature = nextTimeSignature;
+				this.renderTimeSummaryCards(summary, next);
+			}
+			for (const [control, available, done, total, percent, labelKey] of [
+				[subtasks, next?.hasSubtasks, next?.done ?? 0, next?.total ?? 0, next?.progressPct ?? 0, 'progressSubtasksCount'],
+				[checkboxes, next?.hasPlainCheckboxes, next?.checkboxDone ?? 0, next?.checkboxTotal ?? 0, next?.checkboxProgressPct ?? 0, 'progressCheckboxesCount'],
+			] as const) {
+				control.button.hidden = !available;
+				control.text.setText(`${percent}% ${control.name}`);
+				control.ring.setCssProps({ '--operon-stats-progress': `${Math.max(0, Math.min(100, percent))}%` });
+				const counts = `${t('taskEditor', 'progressDoneCount', { count: String(done) })} / ${t('taskEditor', labelKey, { count: String(total) })}`;
+				const tooltip = `${control.label}\n${counts}`;
+				if (control.tooltip !== tooltip) {
+					this.bindTaskEditorTooltip(control.button, tooltip);
+					control.tooltip = tooltip;
+				}
+				setAccessibleLabelWithoutTooltip(control.button, `${counts} · ${percent}%`);
+			}
+			subtasks.button.disabled = !this.onOpenSubtasksStats;
+			if (!next?.hasSubtasks) {
+				this.closeStatsSubtasks?.();
+				this.closeStatsSubtasks = null;
+			}
+			if (closingPopoverHadFocus || (summary.hidden && focused && summary.contains(focused)) || [subtasks.button, checkboxes.button].some(button => button === focused && button.hidden)) {
+				const target = [subtasks.button, checkboxes.button].find(button => !button.hidden && !button.disabled);
+				if (target) target.focus({ preventScroll: true });
+				else if (!summary.hidden) title.focus({ preventScroll: true });
+				else this.focusDescriptionField(false);
+			}
+		};
+		render(state);
+		this.refreshStatsCounters = () => { if (!this.disposed && summary.isConnected) render(this.getProgressSectionState()); };
+	}
 
-		if (hasAnyDuration) {
-			appendRow(t('taskEditor', 'timeDuration'), 'is-duration', [
-				{
-					label: t('taskEditor', 'timeOwn'),
-					value: state.ownDuration > 0 ? formatDurationHuman(state.ownDuration) : null,
-					tone: state.ownEstimate > 0
-						? (state.ownDuration < state.ownEstimate ? 'good' : state.ownDuration > state.ownEstimate ? 'bad' : undefined)
-						: undefined,
-				},
-				{
-					label: t('taskEditor', 'subtasks'),
-					value: state.hasSubtasks && state.subtaskDuration > 0 ? formatDurationHuman(state.subtaskDuration) : null,
-					tone: state.hasSubtasks && state.subtaskEstimate > 0
-						? (state.subtaskDuration < state.subtaskEstimate ? 'good' : state.subtaskDuration > state.subtaskEstimate ? 'bad' : undefined)
-						: undefined,
-				},
-				{
-					label: t('taskEditor', 'timeTotal'),
-					value: state.totalDuration > 0 ? formatDurationHuman(state.totalDuration) : null,
-					tone: state.totalEstimate > 0
-						? (state.totalDuration < state.totalEstimate ? 'good' : state.totalDuration > state.totalEstimate ? 'bad' : undefined)
-						: undefined,
-				},
-			]);
+	private renderDesktopPropertyGroups(host: (id: TaskEditorSectionId) => HTMLElement): void {
+		const container = host('commands');
+		const commands = container.createDiv('operon-editor-group operon-editor-desktop-commands');
+		const header = commands.createDiv('operon-editor-desktop-group-header');
+		header.createDiv({ text: this.desktopSectionLabel('commands'), cls: 'operon-editor-core-title-badge operon-editor-desktop-group-title' });
+		const actions = header.createDiv('operon-editor-core-actions operon-task-editor-workflow-actions');
+		this.renderCoreActionButtons(actions);
+		this.renderRemoveControl(actions);
+
+		const propertyHost = (id: TaskEditorSectionId): HTMLElement => {
+			const root = host(id);
+			root.addClass('operon-editor-desktop-properties', 'operon-task-editor-workflow-values');
+			return root;
+		};
+		const items = this.getRenderableWorkflowPickerItems().filter(item => !this.isNativeCustomProperty(item.key));
+		const available = new Set(items.map(item => item.key));
+		const assigned = new Set<string>();
+		for (const group of TASK_EDITOR_DESKTOP_GROUPS) {
+			const keys = group.fields.filter(key => {
+				assigned.add(key);
+				return DESKTOP_CORE_FIELDS.has(key) || available.has(key);
+			});
+			this.renderDesktopPropertyGroup(propertyHost(group.key), group.key, keys);
+		}
+		this.additionalPropertyKeys = items.filter(item => !assigned.has(item.key)).map(item => item.key);
+		const additional = this.renderDesktopPropertyGroup(propertyHost('additional'), 'additional', this.additionalPropertyKeys);
+  this.mountDesktopFileProperties(additional);
+		this.refreshDesktopPropertyRows();
+	}
+
+ private isNativeCustomProperty(key: string): boolean {
+  const mapping = this.settings.keyMappings.find(item => item.canonicalKey === key && item.isSystem === false);
+  if (!mapping) return false;
+  try { return resolveInlinePropertyDefinition(mapping.visiblePropertyName, mapping.type, this.settings.keyMappings, this.settings.inlinePropertyDefinitions).encoding === 'vault-v1'; }
+  catch { return false; }
+ }
+
+ private getInlinePropertyChanges(): InlinePropertyChange[] {
+  return Array.from(this.fileProperties, ([sourceName, entry]): InlinePropertyChange | null => {
+   if (!entry.inline || entry.pending || !entry.baseline || !isSupportedRawYamlPropertyValue(entry.value)
+    || rawYamlPropertyExpectationsEqual(entry.baseline, { present: true, value: entry.value })) return null;
+   return { sourceName, type: entry.inline.type, expected: { present: entry.inline.present, rawValue: entry.inline.rawValue },
+    mutation: { kind: 'set', value: (Array.isArray(entry.value) ? [...entry.value] : entry.value) as VaultPropertyValue } };
+  }).filter((change): change is InlinePropertyChange => change !== null);
+ }
+
+ private getFilePropertyChanges(): FileTaskPropertyChange[] {
+  return Array.from(this.fileProperties, ([propertyName, entry]) => {
+   if (entry.inline || entry.pending || !entry.baseline || !isSupportedRawYamlPropertyValue(entry.value) || rawYamlPropertyExpectationsEqual(entry.baseline, { present: true, value: entry.value })) return null;
+   return { propertyName, expected: { ...entry.baseline, value: Array.isArray(entry.baseline.value) ? [...entry.baseline.value] : entry.baseline.value }, value: Array.isArray(entry.value) ? [...entry.value] : entry.value, ...(this.isNativeCustomProperty(this.settings.keyMappings.find(mapping => [mapping.visiblePropertyName, mapping.canonicalKey].some(alias => alias.toLowerCase() === propertyName.toLowerCase()))?.canonicalKey ?? '') ? { nativeType: entry.field.type as InlinePropertyType } : {}) };
+  }).filter((change): change is FileTaskPropertyChange => change !== null);
+ }
+
+ private mountDesktopFileProperties(root: HTMLElement): void {
+  if (Platform.isPhone || this.isNewTask || !this.fileBodyContext) return;
+  this.filePropertyRoot = root.createDiv('operon-editor-desktop-file-properties');
+  if (!this.filePropertyCleanup) {
+   this.filePropertyCleanup = getNativePropertyIndex(this.app).subscribe(() => {
+    if (!this.disposed) void this.refreshDesktopFileProperties();
+   });
+  }
+  void this.refreshDesktopFileProperties();
+ }
+
+ private async refreshDesktopFileProperties(): Promise<void> {
+  const root = this.filePropertyRoot;
+  if (!root || this.disposed) return;
+  const generation = ++this.filePropertyGeneration;
+  const task = this.getCurrentIndexedTask();
+  try {
+   if (!task || this.indexer.hasDuplicateOperonIdConflict(task.operonId)) throw new Error('invalid-file-task');
+   const index = getNativePropertyIndex(this.app);
+   index.configure(this.settings);
+   root.setAttribute('aria-busy', String(!index.isReady([task])));
+   if (!index.isReady([task]) && !root.children.length) root.createDiv({ text: t('errors', 'taskCard_loading'), cls: 'operon-editor-desktop-file-loading' });
+   await index.ensure([task]);
+   if (generation !== this.filePropertyGeneration || this.disposed || root !== this.filePropertyRoot) return;
+   root.removeAttribute('aria-busy');
+   this.nativePropertyTypes = { ...index.getNativeTypes() };
+   this.filePropertyTypeResolver.replaceTypes(index.getTypes());
+   const snapshot = index.getTask(task);
+   if (!snapshot.available) throw new Error('unverified-task-properties');
+   const next = new Map<string, EditorFileProperty>();
+   for (const property of snapshot.properties.values()) {
+    const name = property.sourceName;
+    const type = property.type ?? this.filePropertyTypeResolver.resolve(name, [property.value]).tableType;
+    next.set(name, { field: this.nativePropertyField(name, type as InlinePropertyType),
+     ...(property.inline ? { inline: property.inline } : {}),
+     baseline: isSupportedRawYamlPropertyValue(property.value) ? { present: property.present, value: property.value } : null, value: property.value,
+     readonly: !!property.reason, readOnlyReason: property.reason });
+   }
+   // Preserve dirty baselines, active input, and submitted versions across source refreshes.
+   for (const [name, previous] of this.fileProperties) {
+    if (previous.pending && previous.headerSelected && !next.has(name)) {
+     const reason = nativePropertyReadOnlyReason(name, previous.value, index.getTypes(), this.settings.keyMappings, this.nativePropertyTypes);
+     const type = Object.entries(this.nativePropertyTypes).find(([key]) => key.toLowerCase() === name.toLowerCase())?.[1];
+     next.set(name, { ...previous, readonly: !!reason, readOnlyReason: reason,
+      ...(type ? { field: this.nativePropertyField(name, type), ...(previous.inline ? { inline: { ...previous.inline, type } } : {}) } : {}) });
+     continue;
+    }
+    const dirty = previous.pending || this.filePropertyPickerName === name || this.submittedFileProperties.has(name)
+     || previous.baseline && isSupportedRawYamlPropertyValue(previous.value)
+      && !rawYamlPropertyExpectationsEqual(previous.baseline, { present: true, value: previous.value });
+    if (dirty) next.set(name, { ...previous, ...(next.has(name) ? { readonly: next.get(name)!.readonly, readOnlyReason: next.get(name)!.readOnlyReason, field: next.get(name)!.field } : {}) });
+   }
+   const same = !this.filePropertyUnavailable && next.size === this.fileProperties.size && Array.from(next).every(([name, entry], index) => {
+    const previous = this.fileProperties.get(name);
+    return name === Array.from(this.fileProperties.keys())[index] && previous !== undefined
+     && JSON.stringify(entry.field) === JSON.stringify(previous.field)
+     && entry.readonly === previous.readonly && entry.readOnlyReason === previous.readOnlyReason && JSON.stringify(entry.inline) === JSON.stringify(previous.inline)
+     && (entry.baseline === previous.baseline || (!!entry.baseline && !!previous.baseline && rawYamlPropertyExpectationsEqual(entry.baseline, previous.baseline)))
+     && (Object.is(entry.value, previous.value) || (isSupportedRawYamlPropertyValue(entry.value) && isSupportedRawYamlPropertyValue(previous.value)
+      && rawYamlPropertyExpectationsEqual({ present: true, value: entry.value }, { present: true, value: previous.value })));
+   });
+   this.fileProperties = next;
+   this.filePropertyUnavailable = false;
+   if (this.fileBodyContext) this.fileBodyContext.filePath = task.primary.filePath;
+   if (!same || root.children.length === 0 || JSON.stringify([...this.filePropertyRows.keys()]) !== JSON.stringify([...next.keys()])) {
+    if (this.closeFilePropertyAddPicker || (this.filePropertyPickerName && next.has(this.filePropertyPickerName))) {
+     // Keep the active picker and its uncommitted input. Structural changes wait for close.
+     for (const [name, surface] of this.filePropertyRows) {
+      if (name === this.filePropertyPickerName) continue;
+      if (next.has(name)) this.refreshFilePropertyValue(name);
+      else { surface.row.hidden = true; surface.action.disabled = true; }
+     }
+    } else this.renderDesktopFileProperties(root);
+   }
+  } catch {
+   if (generation !== this.filePropertyGeneration || this.disposed || root !== this.filePropertyRoot) return;
+   root.removeAttribute('aria-busy');
+   this.filePropertyUnavailable = true;
+   this.renderDesktopFileProperties(root);
+  }
+ }
+
+ private nativePropertyType(name: string): InlinePropertyType | undefined {
+  const mapping = this.settings.keyMappings.find(item => [item.canonicalKey, item.visiblePropertyName].some(alias => alias.toLowerCase() === name.toLowerCase()));
+  const aliases = [name, ...(mapping ? [mapping.canonicalKey, mapping.visiblePropertyName] : [])].map(alias => alias.toLowerCase());
+  const known = Object.keys(this.nativePropertyTypes).find(key => aliases.includes(key.toLowerCase()));
+  return known ? this.nativePropertyTypes[known] : undefined;
+ }
+
+ private nativePropertyField(name: string, type: InlinePropertyType): TableFilePropertyField {
+  return { key: encodeFilePropertyColumnKey(name)!, label: name, propertyName: name, type, sourceType: type === 'list' ? 'multitext' : type,
+   group: 'fileProperty', icon: getTableFilePropertyTypeIcon(type), readonly: false, aliases: [], sourceFileCount: 1 };
+ }
+
+ private canEditFileProperty(entry: EditorFileProperty): boolean {
+  if (!entry || this.filePropertyUnavailable || entry.readonly || !entry.baseline) return false;
+  if (isEmptyFilePropertyValue(entry.value)) return true;
+  try { encodeVaultPropertyValue(entry.value as VaultPropertyValue, entry.field.type as InlinePropertyType); return true; }
+  catch { return false; }
+ }
+
+ private renderDesktopFileProperties(root: HTMLElement): void {
+  const activeElement = root.ownerDocument.activeElement;
+
+  const focusedEntry = Array.from(this.filePropertyRows).find(([, entry]) => entry.row.contains(activeElement) || entry.action === activeElement);
+  const focusedName = focusedEntry?.[0];
+  const focusedValue = focusedEntry?.[1].value.contains(activeElement) ?? false;
+  this.closeFilePropertyPicker?.();
+  this.closeFilePropertyAddPicker?.();
+  cleanupOperonHoverTooltips(root); root.empty();
+  for (const { action } of this.filePropertyRows.values()) { cleanupOperonHoverTooltips(action); action.remove(); }
+  this.filePropertyRows.clear();
+  const actions = this.filePropertyActions;
+  if (!actions) return;
+  const group = root;
+  if (this.filePropertyUnavailable) group.createDiv({ text: t('taskEditor', 'filePropertiesUnavailable'), cls: 'operon-editor-desktop-file-warning' });
+  for (const [name, entry] of this.fileProperties) {
+   const action = actions.createEl('button', { cls: 'operon-task-editor-workflow-action-button', attr: { type: 'button' } });
+   if (this.additionalPropertyAdd) actions.insertBefore(action, this.additionalPropertyAdd);
+   setIcon(action, entry.field.icon); setAccessibleLabelWithoutTooltip(action, name);
+   action.disabled = !this.canEditFileProperty(entry);
+   bindOperonHoverTooltip(action, { content: name, taskColor: () => this.getThemeColor() });
+   action.addEventListener('click', () => this.openFilePropertyPicker(name));
+   const row = group.createDiv('operon-editor-desktop-property-row'); row.dataset.propertyKey = entry.field.key;
+   row.toggleClass('is-list-property', entry.field.type === 'list');
+   const label = row.createEl('button', { cls: 'operon-editor-desktop-property-label', attr: { type: 'button' } });
+   setIcon(label.createSpan('operon-editor-desktop-property-icon'), entry.field.icon); label.createSpan({ text: name, cls: 'operon-editor-desktop-property-name' });
+   const value = row.createDiv('operon-editor-desktop-property-value operon-editor-picker-selected operon-editor-custom-field-selection-row');
+   this.filePropertyRows.set(name, { row, value, action });
+   this.bindDesktopPropertyInteraction(row, label, value, () => this.openFilePropertyPicker(name, undefined, 'picker', label), () => this.openFilePropertyPicker(name, undefined, 'popover', value), () => { const current = this.fileProperties.get(name); return !!current && this.canEditFileProperty(current); });
+   this.refreshFilePropertyValue(name);
+  }
+  if (focusedName) {
+   const restored = this.filePropertyRows.get(focusedName);
+   const valueTarget = restored?.row.hidden ? null : restored?.value.querySelector<HTMLElement>('[tabindex="0"]') ?? restored?.value;
+   const target = (focusedValue ? valueTarget : null) ?? (restored && !restored.action.disabled && !restored.action.hidden ? restored.action : valueTarget)
+    ?? Array.from(this.filePropertyRows.values()).map(surface => !surface.action.disabled && !surface.action.hidden ? surface.action : surface.row.hidden ? null : surface.value.querySelector<HTMLElement>('[tabindex="0"]') ?? surface.value).find(surface => surface !== null) ?? this.additionalPropertyAdd;
+   target?.focus({ preventScroll: true });
+  }
+ }
+
+ private refreshFilePropertyValue(name: string): void {
+  const entry = this.fileProperties.get(name), surface = this.filePropertyRows.get(name);
+  if (!entry || !surface) return;
+  const populated = !isEmptyFilePropertyValue(entry.value);
+  surface.row.hidden = !populated;
+  surface.action.hidden = !populated && !entry.baseline?.present && !entry.inline?.present && !entry.headerSelected;
+  surface.action.toggleClass('is-active', populated);
+  surface.action.disabled = !this.canEditFileProperty(entry);
+  const label = surface.row.querySelector<HTMLButtonElement>('.operon-editor-desktop-property-label');
+  if (label) { label.disabled = false; label.setAttribute('aria-disabled', String(surface.action.disabled)); }
+  surface.value.toggleClass('is-readonly', surface.action.disabled);
+  surface.row.querySelector<HTMLElement>('.operon-editor-desktop-property-icon')?.toggleClass('has-value', populated);
+  const editable = this.canEditFileProperty(entry);
+  const reason = this.filePropertyUnavailable ? 'unavailable' : !editable ? entry.readOnlyReason ?? 'type-conflict' : undefined;
+  const automatic = reason === 'automatic';
+  surface.row.toggleClass('is-automatic-property', automatic);
+  surface.action.toggleClass('is-automatic-property', automatic);
+  surface.action.empty();
+  setIcon(surface.action, automatic ? 'shield-alert' : entry.field.icon);
+  const icon = surface.row.querySelector<HTMLElement>('.operon-editor-desktop-property-icon');
+  if (icon) { icon.empty(); setIcon(icon, automatic ? 'shield-alert' : entry.field.icon); }
+  if (reason) bindPropertyReadOnlyWarning(surface.action, name, reason, () => this.getThemeColor());
+  else bindOperonHoverTooltip(surface.action, { content: name, taskColor: () => this.getThemeColor() });
+  const labelName = label?.querySelector<HTMLElement>('.operon-editor-desktop-property-name') ?? null;
+  if (label) {
+   cleanupOperonHoverTooltips(label);
+   if (reason) bindPropertyReadOnlyWarning(label, name, reason, () => this.getThemeColor());
+   else this.bindTruncatedTextTooltip(labelName);
+  }
+  cleanupOperonHoverTooltips(surface.value);
+  const values = !populated ? [] : Array.isArray(entry.value) && editable ? entry.value.map(item => encodeVaultPropertyValue([item], 'list')) : [this.formatFilePropertyValue(entry.value)];
+  const display: EditorFieldDisplay = { canonicalKey: entry.field.key, visiblePropertyName: name, type: entry.field.type as KeyMapping['type'], icon: entry.field.icon };
+  this.renderCustomFieldSelection(surface.value, display, editable ? (_value, index) => {
+   const next = entry.field.type === 'list' ? (entry.value as (string | number)[]).filter((_item, position) => position !== index) : entry.field.type === 'text' ? '' : null;
+   this.setFilePropertyValue(name, next);
+   (surface.action.hidden ? this.additionalPropertyAdd : surface.action)?.focus({ preventScroll: true });
+  } : null, { values, suppressValueTooltip: !!reason, onActivate: (chip, value, index) => {
+   if (reason) { setAccessibleLabelWithoutTooltip(chip, propertyReadOnlyWarningText(name, reason)); return; }
+   chip.setAttr('tabindex', '0'); chip.setAttr('role', 'button'); setAccessibleLabelWithoutTooltip(chip, `${name}: ${this.formatCustomFieldDisplayValue(display, value)}`);
+   const open = () => this.openFilePropertyPicker(name, value, 'popover', chip, entry.field.type === 'list' ? index : undefined);
+   chip.addEventListener('click', event => { if (!(event.target as HTMLElement).closest('button')) open(); });
+   chip.addEventListener('keydown', event => { if (event.target === chip && (event.key === 'Enter' || event.key === ' ')) { event.preventDefault(); open(); } });
+   if (this.filePropertyPickerName === name && this.filePropertyPickerValue === value) chip.addClass('is-picker-open');
+  } });
+  if (reason) bindPropertyReadOnlyWarning(surface.value, name, reason, () => this.getThemeColor());
+ }
+
+ private formatFilePropertyValue(value: unknown): string {
+  if (typeof value === 'string' || typeof value === 'number' || typeof value === 'boolean') return String(value);
+  try { return isSupportedRawYamlPropertyValue(value) ? JSON.stringify(value) : stringifyYaml(value).trim(); }
+  catch { return t('taskEditor', 'filePropertyReadOnly', { name: '' }); }
+ }
+
+ private setFilePropertyValue(name: string, value: RawYamlPropertyValue): void {
+  const entry = this.fileProperties.get(name);
+  if (!entry || !this.canEditFileProperty(entry) || !isSupportedRawYamlPropertyValue(entry.value) || !entry.pending && rawYamlPropertyExpectationsEqual({ present: true, value: entry.value }, { present: true, value })) return;
+  entry.pending = false;
+  entry.value = Array.isArray(value) ? [...value] : value;
+  this.refreshFilePropertyValue(name); this.markEdited();
+ }
+
+ private getVaultFilePropertySnapshot() {
+  const snapshot = createVaultFilePropertySnapshot(this.app, this.filePropertyTypeResolver, { keyMappings: this.settings.keyMappings, nativeListCandidates: true });
+  const fields = new Map<string, TableFilePropertyField>();
+  for (const [name, type] of Object.entries(nativeEditorPropertyTypes(this.nativePropertyTypes, this.settings.keyMappings, this.settings.inlinePropertyDefinitions))) {
+   const mapping = this.settings.keyMappings.find(item => [item.canonicalKey, item.visiblePropertyName].some(alias => alias.toLowerCase() === name.toLowerCase()));
+   const aliases = [name, ...(mapping ? [mapping.canonicalKey, mapping.visiblePropertyName] : [])].map(alias => alias.toLowerCase());
+   const sourceName = [...this.fileProperties.keys()].find(key => aliases.includes(key.toLowerCase())) ?? name;
+   fields.set((mapping?.canonicalKey ?? sourceName).toLowerCase(), this.nativePropertyField(sourceName, type));
+  }
+  const index = getNativePropertyIndex(this.app);
+  if (index.typesAvailable()) for (const field of snapshot.fields) {
+   const name = field.propertyName, identity = name.toLowerCase();
+   if (fields.has(identity) || snapshot.fields.filter(candidate => candidate.propertyName.toLowerCase() === identity).length !== 1) continue;
+   if (nativePropertyReadOnlyReason(name, undefined, index.getTypes(), this.settings.keyMappings, this.nativePropertyTypes) !== 'automatic') continue;
+   fields.set(identity, { ...field, readonly: true, readOnlyReason: 'automatic', icon: 'shield-alert' });
+  }
+  return { ...snapshot, fields: [...fields.values()] };
+ }
+
+ private addFileProperty(name: string): boolean {
+  if (this.disposed || this.filePropertyUnavailable || !this.filePropertyRoot || this.fileProperties.has(name)) return false;
+  const field = this.getVaultFilePropertySnapshot().fields.find(candidate => candidate.propertyName === name);
+  if (!field) return false;
+  const value = field.readOnlyReason === 'automatic' ? null : field.type === 'checkbox' ? false : field.type === 'list' ? [] : field.type === 'text' ? '' : null;
+  this.closeFilePropertyAddPicker?.();
+  this.fileProperties.set(name, { field, baseline: { present: false, value: undefined }, value, pending: true, readonly: field.readonly, readOnlyReason: field.readOnlyReason, headerSelected: field.readOnlyReason === 'automatic',
+   ...(this.fileBodyContext?.format === 'inline' ? { inline: { sourceName: name, type: field.type as InlinePropertyType, present: false, state: 'missing' as const } } : {}) });
+  this.renderDesktopFileProperties(this.filePropertyRoot);
+  return true;
+ }
+
+ private openFilePropertyAddPicker(anchor: HTMLButtonElement): void {
+  if (this.disposed || this.closeFilePropertyAddPicker) return;
+  this.closeActiveWorkflowActionPicker();
+  this.closeFilePropertyPicker?.();
+  const epoch = ++this.propertyInteractionEpoch;
+  const fields = this.additionalPropertyKeys.filter(key => !this.hasWorkflowPickerValue(key))
+   .map(key => ({ field: key, label: this.getWorkflowPickerLabel(key), icon: this.resolveWorkflowPickerIcon(key), source: 'workflow' as const }));
+  const fileFields = this.filePropertyRoot && !this.filePropertyUnavailable
+   ? this.getVaultFilePropertySnapshot().fields
+    .filter(field => !Array.from(this.fileProperties).some(([name, entry]) => name.toLowerCase() === field.propertyName.toLowerCase() && !isEmptyFilePropertyValue(entry.value)))
+    .map(field => ({ field: field.propertyName, label: field.propertyName, icon: field.icon, iconColor: field.readOnlyReason === 'automatic' ? 'var(--text-error)' : undefined, source: 'file' as const })) : [];
+  // Include empty task-local properties even if the vault pool has no candidate for them.
+  if (this.filePropertyRoot && !this.filePropertyUnavailable) for (const [name, entry] of this.fileProperties) {
+   if (isEmptyFilePropertyValue(entry.value) && this.canEditFileProperty(entry) && !fileFields.some(field => field.field === name)) {
+    fileFields.push({ field: name, label: name, icon: entry.field.icon, iconColor: undefined, source: 'file' });
+   }
+  }
+  let selected: { field: string; source: 'workflow' | 'file' } | null = null;
+  anchor.addClass('is-picker-open');
+  this.closeFilePropertyAddPicker = showSearchableFieldPicker(anchor, {
+   ...resolveSurfaceFloatingHostOptions(anchor), value: null, fields: [...fields, ...fileFields],
+   placeholder: t('taskEditor', 'searchFileProperties'), ariaLabel: t('taskEditor', 'addFileProperty'),
+   noMatchesText: t('taskEditor', 'noAvailableFileProperties'),
+   onSelect: option => { selected = option; },
+   onClose: () => {
+    this.closeFilePropertyAddPicker = null; anchor.removeClass('is-picker-open');
+    getOwnerWindow(anchor).requestAnimationFrame(() => {
+     if (this.disposed || !anchor.isConnected || this.propertyInteractionEpoch !== epoch) return;
+     if (selected?.source === 'workflow') this.openWorkflowPickerFromAction(selected.field, anchor);
+     else if (selected?.source === 'file') {
+      if (this.fileProperties.has(selected.field) || this.addFileProperty(selected.field)) this.openFilePropertyPicker(selected.field, undefined, 'picker', anchor);
+     } else { anchor.focus({ preventScroll: true }); void this.refreshDesktopFileProperties(); }
+    });
+   },
+  });
+ }
+
+ private openFilePropertyPicker(name: string, value?: string, textEditRoute: 'picker' | 'popover' = 'picker', anchor?: HTMLElement, editListIndex?: number): void {
+  const entry = this.fileProperties.get(name), surface = this.filePropertyRows.get(name);
+  if (!entry || !surface || !this.canEditFileProperty(entry)) return;
+  const epoch = ++this.propertyInteractionEpoch;
+  for (const prior of this.filePropertyRows.values()) {
+   prior.action.removeClass('is-picker-open');
+   for (const element of Array.from(prior.row.querySelectorAll('.is-picker-open'))) element.removeClass('is-picker-open');
+  }
+  this.closeFilePropertyPicker?.();
+  const pickerAnchor = anchor ?? (surface.action.hidden ? this.additionalPropertyAdd : surface.action);
+  if (!pickerAnchor) return;
+  this.filePropertyPickerName = name; this.filePropertyPickerValue = value ?? null; pickerAnchor.addClass('is-picker-open'); surface.action.addClass('is-picker-open');
+  let closePicker: (() => void) | null = null;
+  const close = () => {
+   if (this.closeFilePropertyPicker !== closePicker) return;
+   this.closeFilePropertyPicker = null; this.filePropertyPickerName = null; this.filePropertyPickerValue = null;
+   surface.action.removeClass('is-picker-open'); pickerAnchor.removeClass('is-picker-open'); this.refreshFilePropertyValue(name);
+   if (this.fileProperties.get(name)?.pending) this.fileProperties.delete(name);
+   if (!this.disposed) void this.refreshDesktopFileProperties();
+   if (!this.disposed && this.propertyInteractionEpoch === epoch) (surface.row.hidden ? this.additionalPropertyAdd : pickerAnchor.isConnected ? pickerAnchor : surface.value)?.focus({ preventScroll: true });
+  };
+  closePicker = openTableFilePropertyPicker({
+   app: this.app, anchor: pickerAnchor, field: entry.field, label: name, textEditRoute,
+   cellValue: { present: entry.baseline?.present ?? true, rawValue: entry.value, normalizedValue: isEmptyFilePropertyValue(entry.value) ? '' : String(entry.value) },
+   candidates: this.getVaultFilePropertySnapshot().getCandidates(entry.field.key), settings: this.settings, sourcePath: this.fileBodyContext?.filePath ?? '', lifecycleOwner: surface.action, preserveListValues: true, nativeList: true, editListIndex,
+   onMutation: mutation => { this.setFilePropertyValue(name, mutation.kind === 'delete' ? entry.field.type === 'text' ? '' : entry.field.type === 'list' ? [] : null : mutation.value); },
+   onClose: close,
+  });
+  this.closeFilePropertyPicker = closePicker;
+ }
+
+	private renderDesktopPropertyGroup(root: HTMLElement, key: TaskEditorSectionId, keys: readonly string[]): HTMLElement {
+		const group = root.createDiv('operon-editor-group operon-task-editor-workflow-surface operon-editor-desktop-property-group');
+		group.dataset.propertyGroup = key;
+		const header = group.createDiv('operon-editor-desktop-group-header');
+		header.createDiv({ text: this.desktopSectionLabel(key), cls: 'operon-editor-core-title-badge operon-editor-desktop-group-title' });
+		const actions = header.createDiv('operon-task-editor-workflow-actions');
+		this.renderWorkflowPickerActions(actions, keys.map(field => ({ key: field, visible: true })), false);
+		if (key === 'additional') {
+			this.filePropertyActions = actions;
+			const add = actions.createEl('button', { cls: 'operon-task-editor-workflow-action-button operon-editor-file-property-add', attr: { type: 'button' } });
+			setIcon(add, 'plus');
+			setAccessibleLabelWithoutTooltip(add, t('taskEditor', 'addFileProperty'));
+			this.bindTaskEditorTooltip(add, t('taskEditor', 'addFileProperty'));
+			this.additionalPropertyAdd = add;
+			add.addEventListener('click', () => this.openFilePropertyAddPicker(add));
 		}
 
-		if (hasAnyEstimate) {
-			appendRow(t('taskEditor', 'timeEstimation'), 'is-estimation', [
-				{ label: t('taskEditor', 'timeOwn'), value: state.ownEstimate > 0 ? formatDurationHuman(state.ownEstimate) : null },
-				{ label: t('taskEditor', 'subtasks'), value: state.hasSubtasks && state.subtaskEstimate > 0 ? formatDurationHuman(state.subtaskEstimate) : null },
-				{ label: t('taskEditor', 'timeTotal'), value: state.totalEstimate > 0 ? formatDurationHuman(state.totalEstimate) : null },
-			]);
+		for (const field of keys) {
+			const row = group.createDiv('operon-editor-desktop-property-row');
+			row.dataset.propertyKey = field;
+			const listField = ['contexts', 'tags', 'links', 'assignees', 'subtasks', 'blocking', 'blockedBy', 'related', 'reminderDatetimes', 'reminderRules'].includes(field)
+				|| getCustomFieldMapping(this.settings.keyMappings, field)?.type === 'list'
+				|| getManagedTaskDataFieldPicker(field, this.settings.keyMappings)?.type === 'list';
+			row.toggleClass('is-list-property', listField);
+			const label = row.createEl('button', { cls: 'operon-editor-desktop-property-label', attr: { type: 'button' } });
+			setIcon(label.createSpan('operon-editor-desktop-property-icon'), this.resolveWorkflowPickerIcon(field));
+			label.createSpan({ text: this.getWorkflowPickerLabel(field), cls: 'operon-editor-desktop-property-name' });
+			const value = row.createDiv('operon-editor-desktop-property-value');
+			const core = DESKTOP_CORE_FIELDS.has(field);
+			this.desktopPropertyRows.set(field, { row, value, core, signature: '' });
+			this.bindDesktopPropertyInteraction(row, label, value, () => this.openWorkflowPickerFromAction(field, label), () => this.openDesktopPropertyValue(field, value, label), () => field !== 'datetimeEnd' || !!this.fieldValues['datetimeStart']);
+			if (core) {
+				row.addClass('operon-editor-desktop-core-property');
+				this.renderDesktopCoreProperty(value, field);
+				this.addDesktopCoreClear(value, field);
+				for (const input of Array.from(value.querySelectorAll('input'))) setAccessibleLabelWithoutTooltip(input, this.getWorkflowPickerLabel(field));
+				row.addEventListener('focusout', () => {
+					getOwnerWindow(row).requestAnimationFrame(() => {
+						if (row.isConnected && !this.disposed) this.refreshDesktopPropertyRows();
+					});
+				});
+			}
+		}
+		return group;
+	}
+
+	private bindDesktopPropertyInteraction(
+		row: HTMLElement, label: HTMLButtonElement, value: HTMLElement,
+		openLabel: () => void, openValue: () => void, canEdit: () => boolean,
+	): void {
+		setAccessibleLabelWithoutTooltip(label, label.textContent ?? '');
+		this.bindTruncatedTextTooltip(label.querySelector<HTMLElement>('.operon-editor-desktop-property-name'));
+		label.addEventListener('click', () => { if (!this.disposed && canEdit()) openLabel(); });
+		value.addEventListener('click', () => { if (canEdit()) this.propertyInteractionEpoch += 1; }, true);
+		value.tabIndex = 0;
+		value.setAttribute('role', 'group');
+		setAccessibleLabelWithoutTooltip(value, label.textContent ?? '');
+		value.addEventListener('click', event => {
+			if (this.disposed || !canEdit() || event.defaultPrevented) return;
+			const target = event.target as HTMLElement;
+			if (target.closest('button, input, select, textarea, a, [contenteditable="true"], [role="button"]')) return;
+			openValue();
+		});
+		value.addEventListener('keydown', event => {
+			if (event.target !== value || (event.key !== 'Enter' && event.key !== ' ')) return;
+			event.preventDefault();
+			if (!this.disposed && canEdit()) openValue();
+		});
+		row.addClass('operon-editor-interactive-property-row');
+	}
+
+	private openDesktopPropertyValue(key: string, value: HTMLElement, label: HTMLButtonElement): void {
+		const custom = getCustomFieldMapping(this.settings.keyMappings, key);
+		if (custom?.type === 'text') {
+			this.closeActiveWorkflowActionPicker();
+			const epoch = ++this.propertyInteractionEpoch;
+			value.addClass('is-picker-open');
+			let closePicker: (() => void) | null = null;
+			closePicker = showTextFieldPopover({
+				app: this.app, anchor: value, title: this.getWorkflowPickerLabel(key),
+				initialValue: this.fieldValues[key] ?? '', allowEmptyCommit: true,
+				lifecycleOwner: value, editor: { kind: 'compact-markdown', sourcePath: this.existingTask?.filePath ?? '' },
+				onCommit: text => this.commitWorkflowActionPayload({ [key]: text }),
+				onClose: () => {
+					if (this.workflowActionPickerClose !== closePicker) return;
+					this.workflowActionPickerClose = null; value.removeClass('is-picker-open');
+					if (!this.disposed && this.propertyInteractionEpoch === epoch) {
+						const target = value.closest<HTMLElement>('.operon-editor-desktop-property-row')?.hidden ? this.getWorkflowActionFocusTarget(key) : value.isConnected ? value : label;
+						target?.focus({ preventScroll: true });
+					}
+				},
+			});
+			this.workflowActionPickerClose = closePicker;
+			return;
+		}
+		const control = value.querySelector<HTMLButtonElement>('.operon-icon-trigger, .operon-color-swatch, .operon-editor-repeat-trigger, .operon-editor-picker-button');
+		if (DESKTOP_CORE_FIELDS.has(key) && control && !control.disabled) control.click();
+		else this.openWorkflowPickerFromAction(key, label);
+	}
+
+	private addDesktopCoreClear(value: HTMLElement, key: string): void {
+		const control = value.querySelector<HTMLElement>('.operon-icon-trigger, .operon-color-swatch, .operon-editor-repeat-trigger, .operon-editor-estimate-input-shell, .operon-editor-picker-button');
+		if (!control?.parentElement) return;
+		const token = control.ownerDocument.win.createDiv('operon-editor-value-token');
+		control.parentElement.insertBefore(token, control); token.appendChild(control);
+		const clear = token.createEl('button', { cls: 'operon-editor-value-clear', attr: { type: 'button' } });
+		setIcon(clear, 'x'); setAccessibleLabelWithoutTooltip(clear, t('taskEditor', 'removeValue', { value: this.getWorkflowPickerLabel(key) }));
+		clear.addEventListener('click', event => {
+			event.preventDefault(); event.stopPropagation();
+			if (!this.hasWorkflowPickerValue(key)) return;
+			const patch: Record<string, string> = { [key]: '' };
+			if (key === 'repeat') {
+				Object.assign(patch, { datetimeRepeatEnd: '', repeatSeriesId: '', repeatOccurrenceDate: '' });
+				this.inlineCompletionMode = DEFAULT_INLINE_REPEAT_COMPLETION_MODE;
+			}
+			this.commitWorkflowActionPayload(patch);
+			this.workflowActionButtons.get(key)?.focus({ preventScroll: true });
+		});
+	}
+
+	private renderDesktopCoreProperty(value: HTMLElement, key: string): void {
+		switch (key) {
+			case 'taskIcon': this.renderIconControl(value); break;
+			case 'taskColor': this.renderColorControl(value); break;
+			case 'status': this.renderStatusControl(value); break;
+			case 'priority': this.renderPriorityControl(value); break;
+			case 'repeat': this.renderRepeatControl(value); break;
+			case 'estimate': this.renderEstimateControl(value); break;
+			case 'datetimeStart':
+			case 'datetimeEnd': this.renderDatetimeControl(value, key, this.getWorkflowPickerLabel(key)); break;
+			default: this.renderDateControl(value, key, this.getWorkflowPickerLabel(key));
 		}
 	}
 
-	private renderProgressSection(container: HTMLElement, state: EditorProgressSectionState | null): void {
-		if (!state?.hasSubtasks && !state?.hasPlainCheckboxes) return;
-
-		const section = container.createDiv('operon-editor-progress');
-		const renderProgressRow = (done: number, total: number, label: string, percent: number, cls: string) => {
-			const row = section.createDiv(`operon-editor-progress-row ${cls}`);
-			const barTrack = row.createDiv('operon-editor-progress-bar-track');
-			const barFill = barTrack.createDiv('operon-editor-progress-bar-fill');
-			barFill.style.width = `${percent}%`;
-
-			const statsRow = row.createDiv('operon-editor-progress-stats');
-			const statsLeft = statsRow.createDiv('operon-editor-progress-stats-left');
-			statsLeft.createSpan({
-				text: t('taskEditor', 'progressDoneCount', { count: String(done) }),
-				cls: 'operon-editor-progress-counts',
-			});
-			statsLeft.createSpan({
-				text: ` / ${t('taskEditor', label, { count: String(total) })}`,
-				cls: 'operon-editor-progress-total',
-			});
-			statsRow.createSpan({ text: `${percent}%`, cls: 'operon-editor-progress-pct' });
-		};
-
-		if (state.hasSubtasks) {
-			renderProgressRow(state.done, state.total, 'progressSubtasksCount', state.progressPct, 'is-subtasks');
+	private refreshDesktopPropertyRows(): void {
+		for (const [key, entry] of this.desktopPropertyRows) {
+			const hasValue = this.hasWorkflowPickerValue(key);
+			this.refreshDesktopPropertyIcon(key, entry.row, hasValue);
+			entry.row.hidden = !hasValue && !(entry.core && entry.row.contains(entry.row.ownerDocument.activeElement));
+			const label = entry.row.querySelector<HTMLButtonElement>('.operon-editor-desktop-property-label');
+			if (label) label.disabled = (key === 'datetimeEnd' && !this.fieldValues['datetimeStart']) || (key === 'subtasks' && !this.getCurrentOperonId());
+			entry.value.toggleClass('is-readonly', label?.disabled ?? false);
+			const clear = entry.value.querySelector<HTMLButtonElement>('.operon-editor-value-clear');
+			if (clear) clear.hidden = !hasValue;
+			if (entry.core) continue;
+			const signature = JSON.stringify([
+				key === 'subtasks' ? this.getWorkflowSubtaskIds() : key === 'tags' ? this.tags : this.fieldValues[key],
+				this.isSystemReminderWorkflowKey(key) ? REMINDER_RULE_ANCHORS.map(anchor => this.fieldValues[anchor]) : null,
+			]);
+			if (entry.signature === signature) continue;
+			entry.signature = signature;
+			if (key === 'subtasks') {
+				this.desktopSubtaskToggleNeedsFocus = entry.value.querySelector('.operon-editor-subtasks-more') === entry.value.ownerDocument.activeElement;
+				this.clearDesktopSubtaskLayout();
+			}
+			cleanupOperonHoverTooltips(entry.value);
+			entry.value.empty();
+			if (!hasValue) {
+				if (key === 'subtasks' && this.desktopSubtaskToggleNeedsFocus) {
+					this.desktopSubtaskToggleNeedsFocus = false;
+					this.workflowActionButtons.get(key)?.focus();
+				}
+				continue;
+			}
+			const managed = getManagedTaskDataFieldPicker(key, this.settings.keyMappings);
+			const custom = getCustomFieldMapping(this.settings.keyMappings, key);
+			if (managed) this.renderManagedTaskDataWorkflowPicker(entry.value, managed);
+			else if (custom && isProjectedCustomFieldType(custom)) this.renderCustomWorkflowPicker(entry.value, custom);
+			else this.renderWorkflowPicker(entry.value, key);
 		}
-		if (state.hasPlainCheckboxes) {
-			renderProgressRow(state.checkboxDone, state.checkboxTotal, 'progressCheckboxesCount', state.checkboxProgressPct, 'is-checkboxes');
-		}
+		this.refreshWorkflowActionButtonStates();
 	}
 
-	private renderCoreSection(container: HTMLElement): void {
-		const group = container.createDiv('operon-editor-group operon-editor-core');
-		const header = group.createDiv('operon-editor-core-header');
-		const headerLeft = header.createDiv('operon-editor-core-header-left');
-		headerLeft.createDiv({ text: t('taskEditor', 'core'), cls: 'operon-editor-core-title-badge' });
-		this.renderCoreActionButtons(header.createDiv('operon-editor-core-actions'));
+	private refreshDesktopPropertyIcon(key: string, row: HTMLElement, hasValue: boolean): void {
+		const icon = row.querySelector<HTMLElement>('.operon-editor-desktop-property-icon');
+		if (!icon) return;
+		const selected = key === 'taskIcon' ? this.fieldValues['taskIcon']?.trim() : '';
+		const iconId = selected && getIcon(selected) ? selected : this.resolveWorkflowPickerIcon(key);
+		if (icon.dataset.iconId !== iconId) {
+			setIcon(icon, iconId);
+			icon.dataset.iconId = iconId;
+		}
+		icon.toggleClass('has-value', hasValue);
+		const color = key === 'taskColor' ? this.fieldValues['taskColor']?.trim().replace(/^#/, '') : '';
+		if (color && /^[0-9a-f]{6}$/i.test(color)) icon.style.color = `#${color}`;
+		else icon.style.removeProperty('color');
+	}
 
-		const topRow = group.createDiv('operon-editor-core-row is-top');
-		const cluster = topRow.createDiv('operon-editor-quick-cluster operon-editor-core-icon-cluster');
-		this.renderIconControl(cluster);
-		this.renderColorControl(cluster);
+	private clearDesktopSubtaskLayout(): void {
+		this.desktopSubtaskLayoutCleanup?.();
+		this.desktopSubtaskLayoutCleanup = null;
+	}
 
-		const topGrid = topRow.createDiv('operon-editor-grid-2 operon-editor-core-main');
-		this.renderPriorityControl(topGrid);
-		this.renderStatusControl(topGrid);
-
-		const dateRow = group.createDiv('operon-editor-core-row is-dates operon-editor-core-grid-3');
-		this.renderDateControl(dateRow, 'dateStarted', t('taskEditor', 'started'), t('taskEditor', 'startDatePlaceholder'));
-		this.renderDateControl(dateRow, 'dateScheduled', t('taskEditor', 'scheduled'), t('taskEditor', 'scheduledDatePlaceholder'));
-		this.renderDateControl(dateRow, 'dateDue', t('taskEditor', 'dueDate'), t('taskEditor', 'dueDatePlaceholder'));
-
-		const datetimeRow = group.createDiv('operon-editor-core-row operon-editor-core-grid-3 operon-editor-time-row');
-		this.renderDatetimeControl(datetimeRow, 'datetimeStart', t('taskEditor', 'datetimeStart'));
-		this.renderEstimateControl(datetimeRow);
-		this.renderDatetimeControl(datetimeRow, 'datetimeEnd', t('taskEditor', 'datetimeEnd'));
-
-		const repeatRow = group.createDiv('operon-editor-core-row');
-		this.renderRepeatControl(repeatRow);
-
-		const terminalRow = group.createDiv('operon-editor-core-row operon-editor-grid-2');
-		terminalRow.addClass('operon-editor-grid-3');
-		this.renderDateControl(terminalRow, 'dateCompleted', t('taskEditor', 'finished'), t('taskEditor', 'finishedDatePlaceholder'));
-		this.renderDateControl(terminalRow, 'dateCancelled', t('taskEditor', 'cancelled'), t('taskEditor', 'cancelledDatePlaceholder'));
-		this.renderRemoveControl(terminalRow);
+	private setupDesktopSubtaskLayout(selectedWrap: HTMLElement): void {
+		this.clearDesktopSubtaskLayout();
+		const owner = getOwnerWindow(selectedWrap);
+		const button = selectedWrap.parentElement!.createEl('button', {
+			cls: 'operon-editor-subtasks-more',
+			attr: { type: 'button', 'aria-expanded': String(this.desktopSubtasksExpanded) },
+		});
+		const buttonLabel = button.createSpan();
+		const buttonIcon = button.createSpan('operon-editor-subtasks-more-icon');
+		button.hidden = true;
+		let frame: number | null = null;
+		let stopped = false;
+		const layout = () => {
+			frame = null;
+			if (stopped || !selectedWrap.isConnected || this.disposed) return;
+			const chips = Array.from(selectedWrap.children) as HTMLElement[];
+			const focusedChip = chips.findIndex(chip => chip.contains(selectedWrap.ownerDocument.activeElement));
+			for (const chip of chips) chip.hidden = false;
+			const tops: number[] = [];
+			let visibleCount = chips.length;
+			for (let index = 0; index < chips.length; index += 1) {
+				const top = chips[index].getBoundingClientRect().top;
+				if (!tops.some(rowTop => Math.abs(rowTop - top) < 1)) tops.push(top);
+				if (tops.length > 3) { visibleCount = index; break; }
+			}
+			const hiddenCount = chips.length - visibleCount;
+			for (let index = visibleCount; index < chips.length; index += 1) chips[index].hidden = !this.desktopSubtasksExpanded;
+			button.hidden = hiddenCount === 0;
+			buttonLabel.setText(this.desktopSubtasksExpanded ? t('taskEditor', 'showLess') : t('taskEditor', 'moreValues', { count: String(hiddenCount) }));
+			setIcon(buttonIcon, this.desktopSubtasksExpanded ? 'chevron-up' : 'chevron-down');
+			button.setAttr('aria-expanded', String(this.desktopSubtasksExpanded));
+			setAccessibleLabelWithoutTooltip(button, this.desktopSubtasksExpanded ? t('taskEditor', 'showLess') : t('taskEditor', hiddenCount === 1 ? 'showMoreSubtasksOne' : 'showMoreSubtasksMany', { count: String(hiddenCount) }));
+			if (this.desktopSubtaskToggleNeedsFocus || (button.hidden && button.ownerDocument.activeElement === button) || (!this.desktopSubtasksExpanded && focusedChip >= visibleCount)) {
+				this.desktopSubtaskToggleNeedsFocus = false;
+				if (button.hidden) this.workflowActionButtons.get('subtasks')?.focus();
+				else button.focus();
+			}
+		};
+		const schedule = () => {
+			if (!stopped && frame === null) frame = owner.requestAnimationFrame(layout);
+		};
+		button.addEventListener('click', () => {
+			this.desktopSubtasksExpanded = !this.desktopSubtasksExpanded;
+			schedule();
+		});
+		const Observer = (owner as Window & { ResizeObserver?: typeof ResizeObserver }).ResizeObserver;
+		const observer = Observer ? new Observer(schedule) : null;
+		observer?.observe(selectedWrap);
+		for (const chip of Array.from(selectedWrap.children)) observer?.observe(chip);
+		owner.addEventListener('resize', schedule);
+		selectedWrap.ownerDocument.fonts?.addEventListener('loadingdone', schedule);
+		void selectedWrap.ownerDocument.fonts?.ready.then(schedule);
+		this.desktopSubtaskLayoutCleanup = () => {
+			stopped = true;
+			if (frame !== null) owner.cancelAnimationFrame(frame);
+			observer?.disconnect();
+			owner.removeEventListener('resize', schedule);
+			selectedWrap.ownerDocument.fonts?.removeEventListener('loadingdone', schedule);
+			button.remove();
+		};
+		schedule();
 	}
 
 	private renderCopyOperonIdButton(container: HTMLElement): void {
@@ -3509,7 +3915,7 @@ export class TaskEditorContent {
 		if (!currentOperonId) return;
 
 		const copyLinkButton = container.createEl('button', {
-			cls: 'operon-task-editor-title-copy-id',
+			cls: 'operon-task-editor-title-copy-id operon-task-editor-workflow-action-button',
 			attr: { type: 'button' },
 		});
 		setIcon(copyLinkButton, 'file-box');
@@ -3519,7 +3925,7 @@ export class TaskEditorContent {
 		copyLinkButton.addEventListener('click', () => { void this.copyCurrentTaskWikilink(copyLinkButton); });
 
 		const copyCardButton = container.createEl('button', {
-			cls: 'operon-task-editor-title-copy-id operon-task-editor-copy-card',
+			cls: 'operon-task-editor-title-copy-id operon-task-editor-workflow-action-button operon-task-editor-copy-card',
 			attr: { type: 'button' },
 		});
 		setIcon(copyCardButton, 'id-card');
@@ -3529,7 +3935,7 @@ export class TaskEditorContent {
 		copyCardButton.addEventListener('click', () => { void this.copyCurrentTaskCardEmbed(copyCardButton); });
 
 		const copyOperonIdButton = container.createEl('button', {
-			cls: 'operon-task-editor-title-copy-id',
+			cls: 'operon-task-editor-title-copy-id operon-task-editor-workflow-action-button',
 			attr: {
 				type: 'button',
 			},
@@ -3542,7 +3948,7 @@ export class TaskEditorContent {
 		copyOperonIdButton.addEventListener('click', () => {
 			void this.copyCurrentOperonId();
 		});
-		this.bindTaskEditorTooltip(copyOperonIdButton, t('contextMenu', 'copyOperonId'));
+		this.bindTaskEditorTooltip(copyOperonIdButton, `${t('contextMenu', 'copyOperonId')}\n${currentOperonId}`);
 	}
 
 	private renderFileBodyToggle(container: HTMLElement, extraClass = ''): void {
@@ -3563,7 +3969,7 @@ export class TaskEditorContent {
 			? t('taskEditor', 'hideFileBodyPanel')
 			: t('taskEditor', 'showFileBodyPanel'));
 		button.addEventListener('click', () => {
-			this.setFileBodyVisible(!this.isFileBodyVisible);
+			this.setFileBodyVisible(!this.isFileBodyVisible, !this.isFileBodyVisible && this.fileBodyContext?.format === 'inline');
 		});
 		this.fileBodyToggleButtonEl = button;
 	}
@@ -3574,6 +3980,90 @@ export class TaskEditorContent {
 			: false;
 
 		this.renderCoreTrackerActionButton(container);
+		if (!Platform.isPhone && this.onSetShowLineNumbers) {
+			const button = container.createEl('button', {
+				cls: 'operon-editor-core-action-btn operon-editor-core-line-numbers-action',
+				attr: { type: 'button' },
+			});
+			setIcon(button, 'list-ordered');
+			const label = t('settings', 'taskEditorShowLineNumbers');
+			setAccessibleLabelWithoutTooltip(button, label);
+			this.bindTaskEditorTooltip(button, label);
+			this.refreshLineNumbersControl = () => {
+				const visible = this.settings.taskEditorShowLineNumbers;
+				button.classList.toggle('is-active', visible);
+				button.setAttr('aria-pressed', String(visible));
+				button.setAttr('aria-disabled', String(this.lineNumbersSavePending));
+				this.embeddedBodyEditor?.setFilePanelLineNumbers(visible);
+			};
+			button.addEventListener('focus', () => this.refreshLineNumbersControl?.());
+			button.addEventListener('click', () => {
+				runAsyncAction('task editor line numbers setting save failed', async () => {
+					if (this.disposed || this.lineNumbersSavePending || !this.onSetShowLineNumbers) return;
+					this.lineNumbersSavePending = true;
+					this.refreshLineNumbersControl?.();
+					try {
+						await this.onSetShowLineNumbers(!this.settings.taskEditorShowLineNumbers);
+					} catch (error) {
+						new Notice(t('settings', 'settingsWriteProtected'));
+						throw error;
+					} finally {
+						this.lineNumbersSavePending = false;
+						if (!this.disposed) this.refreshLineNumbersControl?.();
+					}
+				});
+			});
+			this.refreshLineNumbersControl();
+		}
+
+
+		if (!Platform.isPhone && this.onSetHideScrollbars) {
+			const button = container.createEl('button', {
+				cls: 'operon-editor-core-action-btn operon-editor-core-scrollbars-action',
+				attr: { type: 'button' },
+			});
+			setIcon(button, 'mouse');
+			let tooltip = '';
+			const refresh = () => {
+				if (this.disposed) return;
+				const hidden = this.settings.workspaceTweaksHideScrollbars;
+				button.classList.toggle('is-active', hidden);
+				button.setAttr('aria-pressed', String(hidden));
+				button.setAttr('aria-disabled', String(this.scrollbarsSavePending));
+				const label = hidden ? t('settings', 'workspaceTweaksShowScrollbars') : t('settings', 'workspaceTweaksHideScrollbars');
+				setAccessibleLabelWithoutTooltip(button, label);
+				if (tooltip !== label) {
+					tooltip = label;
+					this.bindTaskEditorTooltip(button, label);
+				}
+			};
+			button.addEventListener('focus', refresh);
+			button.addEventListener('mouseenter', refresh);
+			button.addEventListener('click', () => {
+				runAsyncAction('task editor scrollbars setting save failed', async () => {
+					if (this.disposed || this.scrollbarsSavePending || !this.onSetHideScrollbars) return;
+					this.scrollbarsSavePending = true;
+					refresh();
+					try {
+						await this.onSetHideScrollbars(!this.settings.workspaceTweaksHideScrollbars);
+					} catch (error) {
+						new Notice(t('settings', 'settingsWriteProtected'));
+						throw error;
+					} finally {
+						this.scrollbarsSavePending = false;
+						refresh();
+					}
+				});
+			});
+			// Tweaks applies its shared setting to the document body, including external changes.
+			const Observer = button.ownerDocument.defaultView?.MutationObserver;
+			this.scrollbarsObserver?.disconnect();
+			if (Observer) {
+				this.scrollbarsObserver = new Observer(refresh);
+				this.scrollbarsObserver.observe(button.ownerDocument.body, { attributes: true, attributeFilter: ['class'] });
+			}
+			refresh();
+		}
 
 		const pinBtn = container.createEl('button', {
 			cls: 'operon-editor-core-action-btn',
@@ -3587,7 +4077,9 @@ export class TaskEditorContent {
 			else pinBtn.setText('📌');
 			const isPinned = getIsPinned();
 			const isAvailable = !!this.pinnedCache && !!this.taskOperonId;
-			pinBtn.createSpan({ text: isPinned ? t('buttons', 'unpin') : t('buttons', 'pin') });
+			const label = isPinned ? t('buttons', 'unpin') : t('buttons', 'pin');
+			setAccessibleLabelWithoutTooltip(pinBtn, label);
+			this.bindTaskEditorTooltip(pinBtn, label);
 			pinBtn.classList.toggle('is-active', isPinned);
 			pinBtn.disabled = !isAvailable;
 			pinBtn.setAttr('aria-pressed', String(isPinned));
@@ -3629,6 +4121,18 @@ export class TaskEditorContent {
 		subtaskBtn.addEventListener('click', () => {
 			void this.requestSubtask();
 		});
+
+		if (!Platform.isPhone && !this.isNewTask && this.fileBodyContext?.format === 'yaml') {
+			const inlineLabel = t('buttons', 'addInlineSubtask');
+			const inlineButton = container.createEl('button', {
+				cls: 'operon-editor-core-action-btn operon-editor-core-inline-subtask-action',
+				attr: { type: 'button' },
+			});
+			setIcon(inlineButton, resolveSubtaskActionIconForKind('inline'));
+			setAccessibleLabelWithoutTooltip(inlineButton, inlineLabel);
+			this.bindTaskEditorTooltip(inlineButton, inlineLabel);
+			inlineButton.addEventListener('click', () => { void this.requestSubtask('inline'); });
+		}
 	}
 
 	private readonly handleCheckboxSourceSaved = (filePath: string, content: string): void => {
@@ -3711,7 +4215,10 @@ export class TaskEditorContent {
 	}
 
 	private getRenderableWorkflowPickerItems(): TaskEditorWorkflowPickerItem[] {
-		return this.settings.taskEditorWorkflowPickers
+		const items = Platform.isPhone
+			? this.settings.taskEditorWorkflowPickers
+			: normalizeTaskEditorWorkflowPickers(undefined, undefined, this.settings.keyMappings);
+		return items
 			.filter(item => item.visible)
 			.filter(item => this.canRenderWorkflowPickerKey(item.key));
 	}
@@ -3734,10 +4241,10 @@ export class TaskEditorContent {
 			|| key === 'related';
 	}
 
-	private renderWorkflowPickerActions(container: HTMLElement, items = this.getRenderableWorkflowPickerItems()): void {
+	private renderWorkflowPickerActions(container: HTMLElement, items = this.getRenderableWorkflowPickerItems(), reset = true): void {
 		cleanupOperonHoverTooltips(container);
 		container.empty();
-		this.workflowActionButtons.clear();
+		if (reset) this.workflowActionButtons.clear();
 		for (const item of items) {
 			const label = this.getWorkflowPickerLabel(item.key);
 			const button = container.createEl('button', {
@@ -3782,6 +4289,10 @@ export class TaskEditorContent {
 
 	private refreshWorkflowPickerSurfaceValues(): void {
 		this.refreshWorkflowActionButtonStates();
+		if (this.workflowRowsEl?.hasClass('operon-task-editor-section-layout')) {
+			this.refreshDesktopPropertyRows();
+			return;
+		}
 		if (!this.workflowRowsEl) return;
 		this.renderFilledWorkflowPickers(this.workflowRowsEl);
 	}
@@ -3803,8 +4314,17 @@ export class TaskEditorContent {
 		iconWrap.addClass('operon-task-editor-workflow-action-icon-placeholder');
 	}
 
+	private getWorkflowActionFocusTarget(key: string): HTMLButtonElement | null | undefined {
+		const button = this.workflowActionButtons.get(key);
+		return button?.hidden
+			? button.closest('.operon-editor-desktop-property-group')?.querySelector<HTMLButtonElement>('.operon-editor-file-property-add')
+			: button;
+	}
+
 	private syncWorkflowActionButtonState(key: string, button: HTMLButtonElement): void {
 		const active = this.hasWorkflowPickerValue(key);
+		const additionalGroup = button.closest<HTMLElement>('.operon-editor-desktop-property-group')?.dataset.propertyGroup === 'additional';
+		button.hidden = additionalGroup && !active;
 		button.toggleClass('is-active', active);
 		button.setAttr('aria-pressed', String(active));
 		const locked = key === 'subtasks' && !this.getCurrentOperonId();
@@ -3812,11 +4332,19 @@ export class TaskEditorContent {
 			&& this.isSystemReminderWorkflowKey(key)
 			&& getAvailableReminderRuleAnchors(this.fieldValues).length === 0;
 		button.toggleClass('is-locked', locked);
-		button.disabled = ruleAddDisabled;
-		button.setAttr('aria-disabled', String(locked || ruleAddDisabled));
+		button.disabled = ruleAddDisabled || (key === 'datetimeEnd' && !(this.fieldValues['datetimeStart'] ?? '').trim());
+		button.setAttr('aria-disabled', String(locked || button.disabled));
 	}
 
 	private getWorkflowPickerLabel(key: string): string {
+		if (key === 'estimate') return t('settings', 'chipEstimate');
+		const coreLabels: Record<string, string> = {
+			taskIcon: 'taskIcon', taskColor: 'taskColor', status: 'status', priority: 'priority',
+			dateStarted: 'started', dateDue: 'dueDate', dateScheduled: 'scheduled',
+			datetimeStart: 'datetimeStart', datetimeEnd: 'datetimeEnd',
+			repeat: 'repeat', dateCompleted: 'finished', dateCancelled: 'cancelled',
+		};
+		if (coreLabels[key]) return t('taskEditor', coreLabels[key]);
 		const managedTaskDataField = getManagedTaskDataFieldPicker(key, this.settings.keyMappings);
 		if (managedTaskDataField) return managedTaskDataField.label;
 		const customMapping = getCustomFieldMapping(this.settings.keyMappings, key);
@@ -3878,6 +4406,7 @@ export class TaskEditorContent {
 	}
 
 	private openWorkflowPickerFromAction(key: string, button: HTMLButtonElement): void {
+		this.propertyInteractionEpoch += 1;
 		if (button.hasClass('is-locked')) {
 			new Notice(t('taskEditor', 'subtasksSaveFirst'));
 			return;
@@ -3905,6 +4434,7 @@ export class TaskEditorContent {
 			if (this.workflowActionPickerClose === closePicker) {
 				this.workflowActionPickerClose = null;
 			}
+			if (!this.disposed && button.hidden) this.getWorkflowActionFocusTarget(key)?.focus({ preventScroll: true });
 			restoreReminderActionFocus();
 		};
 
@@ -3920,6 +4450,7 @@ export class TaskEditorContent {
 				settings: this.settings,
 				allTasks: this.indexer.getAllTasks(),
 				canonicalKey: key,
+				manualDatePicker: (this.desktopPropertyRows?.size ?? 0) > 0 ? this.getManualDatePickerOptions(key) : undefined,
 				anchor: button,
 				currentFieldValues: { ...this.fieldValues },
 				getCurrentFieldValues: () => this.fieldValues,
@@ -3952,6 +4483,10 @@ export class TaskEditorContent {
 	private closeActiveWorkflowActionPicker(): void {
 		const current = this.workflowActionPickerClose;
 		this.workflowActionPickerClose = null;
+		for (const entry of this.desktopPropertyRows.values()) {
+			entry.value.removeClass('is-picker-open');
+			entry.row.querySelector('.operon-editor-desktop-property-label')?.removeClass('is-picker-open');
+		}
 		for (const button of this.workflowActionButtons.values()) {
 			button.removeClass('is-picker-open');
 		}
@@ -3959,6 +4494,25 @@ export class TaskEditorContent {
 	}
 
 	private commitWorkflowActionPayload(payload: Record<string, string | string[]>): void {
+		if ((this.desktopPropertyRows?.size ?? 0) > 0) {
+			const remaining = { ...payload };
+			if (typeof remaining.status === 'string') {
+				if (remaining.status) {
+					if (!this.applyStatusDraftChange(remaining.status)) return;
+				} else delete this.fieldValues['status'];
+				delete remaining.status;
+			}
+			for (const key of ['dateCompleted', 'dateCancelled']) {
+				const value = remaining[key];
+				if (typeof value !== 'string') continue;
+				if (!this.applyDateDraftChange(key, value)) return;
+				delete remaining[key];
+			}
+			if (typeof remaining.repeat === 'string' && parseRepeatRule(remaining.repeat) && !this.fieldValues['repeatSeriesId']) {
+				remaining.repeatSeriesId = generateRepeatSeriesId();
+			}
+			payload = remaining;
+		}
 		const fieldPayload: Record<string, string | string[]> = {};
 		for (const [key, value] of Object.entries(payload)) {
 			if (key === 'tags') {
@@ -3971,6 +4525,8 @@ export class TaskEditorContent {
 		if (Object.keys(fieldPayload).length > 0) {
 			this.applyTaskFieldPickerPayload(fieldPayload);
 		}
+		this.refreshSchedulingDraftControls();
+		this.applyThemeColor();
 		this.markEdited();
 		this.refreshWorkflowPickerSurfaceValues();
 	}
@@ -4116,6 +4672,7 @@ export class TaskEditorContent {
 					app: this.app,
 					settings: {
 						timeFormat: this.settings.timeFormat,
+						dateDisplayFormat: this.settings.dateDisplayFormat,
 						keyMappings: this.settings.keyMappings,
 					},
 					fieldKey,
@@ -4127,30 +4684,49 @@ export class TaskEditorContent {
 					label: display.text,
 					icon: this.resolveWorkflowPickerIcon(fieldKey),
 					iconOnly: false,
-					interactive: true,
+					interactive: !group.hasClass('operon-editor-desktop-property-value'),
 					colorRole: 'default',
 					linkTarget: null,
 				}, `operon-editor-compact-selection-chip operon-editor-reminder-chip is-${display.state}`, {
 					forceFull: true,
 				});
+				if (fieldKey === 'reminderDatetimes' && display.state !== 'invalid') this.appendWeekdayHint(chip, rawValue);
 				setAccessibleLabelWithoutTooltip(chip, display.ariaLabel);
 				chip.dataset.fieldKey = fieldKey;
 				chip.dataset.reminderIndex = String(index);
-				bindOperonHoverTooltip(chip, {
+				if (fieldKey === 'reminderRules') bindOperonHoverTooltip(chip, {
 					title: display.tooltipTitle,
 					content: display.tooltipContent,
-					taskColor: this.getThemeColor(),
+					taskColor: () => this.getThemeColor(),
 				});
 				chip.addEventListener('click', event => {
 					event.preventDefault();
 					openEditPicker(chip, index, rawValue);
 				});
+				if (group.hasClass('operon-editor-desktop-property-value')) {
+					chip.setAttr('role', 'button'); chip.tabIndex = 0;
+					chip.addEventListener('keydown', event => {
+						if (event.target !== chip || (event.key !== 'Enter' && event.key !== ' ')) return;
+						event.preventDefault(); openEditPicker(chip, index, rawValue);
+					});
+					const remove = chip.createEl('button', { cls: 'operon-editor-compact-selection-chip-remove', attr: { type: 'button' } });
+					setIcon(remove, 'x'); setAccessibleLabelWithoutTooltip(remove, t('taskEditor', 'removeValue', { value: display.text }));
+					remove.addEventListener('click', event => {
+						event.preventDefault(); event.stopPropagation();
+						closePicker?.();
+						const result = applyReminderListMutation({ fieldKey, currentValue: this.fieldValues[fieldKey], mutation: { action: 'remove', current: { index, rawValue } } });
+						if (!result.ok) { new Notice(t('reminders', 'staleItem')); return; }
+						if (result.changed) this.commitWorkflowActionPayload({ [fieldKey]: result.fieldValue });
+						this.workflowActionButtons.get(fieldKey)?.focus({ preventScroll: true });
+					});
+				}
 				selectedWrap.appendChild(chip);
 			}
 		};
 
 		const openEditPicker = (anchor: HTMLElement, index: number, rawValue: string) => {
 			if (closePicker) return;
+			if (group.hasClass('operon-editor-desktop-property-value')) anchor.addClass('is-picker-open');
 			const ownerWindow = anchor.ownerDocument.defaultView ?? getActiveWindow();
 			let committed = false;
 			let closeHandled = false;
@@ -4159,6 +4735,7 @@ export class TaskEditorContent {
 				if (closeHandled) return;
 				closeHandled = true;
 				closePicker = null;
+				anchor.removeClass('is-picker-open');
 				if (committed) this.refreshWorkflowPickerSurfaceValues();
 				scheduleTaskEditorReminderFocus({
 					ownerWindow,
@@ -4234,6 +4811,7 @@ export class TaskEditorContent {
 					colorRole: 'default',
 					linkTarget: null,
 				}, 'operon-editor-compact-selection-chip operon-editor-managed-task-data-chip', { forceFull: true });
+				this.bindTruncatedTextTooltip(chip.querySelector<HTMLElement>('.operon-inline-compact-chip-label'));
 				const removeButton = chip.ownerDocument.win.createEl('button');
 				removeButton.type = 'button';
 				removeButton.className = 'operon-editor-compact-selection-chip-remove';
@@ -4483,6 +5061,7 @@ export class TaskEditorContent {
 			});
 		});
 
+		this.registerSchedulingDraftRefresher(refreshButton);
 		refreshButton();
 	}
 
@@ -4540,6 +5119,7 @@ export class TaskEditorContent {
 			openPicker();
 		});
 
+		this.registerSchedulingDraftRefresher(refresh);
 		refresh();
 	}
 
@@ -4558,6 +5138,7 @@ export class TaskEditorContent {
 				showIcon: true,
 				text: value ? formatUiDate(value, this.settings) : placeholderText,
 			});
+			this.appendWeekdayHint(button, value);
 		};
 		this.registerSchedulingDraftRefresher(refresh);
 		refresh();
@@ -4617,7 +5198,7 @@ export class TaskEditorContent {
 				content: key === 'datetimeEnd' && !hasStart
 					? t('taskEditor', 'datetimeEndRequiresStart')
 					: '',
-				taskColor: this.getThemeColor(),
+				taskColor: () => this.getThemeColor(),
 			});
 			this.setPickerButtonContent(button, {
 				canonicalKey: key,
@@ -4627,6 +5208,7 @@ export class TaskEditorContent {
 					? formatUiTime(this.app, this.settings, value)
 					: label,
 			});
+			this.appendWeekdayHint(button, value);
 		};
 		this.registerSchedulingDraftRefresher(refresh);
 
@@ -4680,11 +5262,15 @@ export class TaskEditorContent {
 		const input = shell.createEl('input', {
 			attr: { type: 'number', placeholder: '' },
 		});
+		const sizeInput = () => {
+			if (container.hasClass('operon-editor-desktop-property-value')) input.style.width = `calc(${Math.max(2, input.value.length + 1)}ch + 20px)`;
+		};
 		let refreshButtonState = (): void => {};
 		const refresh = (): void => {
 			const seconds = parseInt(this.fieldValues['estimate'] ?? '0', 10);
 			input.value = seconds > 0 ? String(Math.round(seconds / 60)) : '';
 			shell.classList.toggle('has-value', input.value.length > 0);
+			sizeInput();
 		};
 		this.registerSchedulingDraftRefresher(refresh);
 		const applyInputValue = (refreshEstimateReallocation = false): void => {
@@ -4702,6 +5288,7 @@ export class TaskEditorContent {
 		input.addEventListener('input', () => {
 			applyInputValue();
 			shell.classList.toggle('has-value', input.value.length > 0);
+			sizeInput();
 			this.markEdited();
 		});
 		input.addEventListener('change', commitInputValue);
@@ -4733,8 +5320,8 @@ export class TaskEditorContent {
 			const proposal = this.getEstimateReallocationProposal();
 			const tooltip = this.getEstimateReallocationTooltip();
 			button.disabled = !proposal;
-			bindOperonHoverTooltip(button, { content: tooltip, taskColor: this.getThemeColor() });
-			bindOperonHoverTooltip(actions, { content: tooltip, taskColor: this.getThemeColor() });
+			bindOperonHoverTooltip(button, { content: tooltip, taskColor: () => this.getThemeColor() });
+			bindOperonHoverTooltip(actions, { content: tooltip, taskColor: () => this.getThemeColor() });
 		};
 		button.addEventListener('click', () => {
 			void this.handleEstimateReallocationClick();
@@ -4848,7 +5435,6 @@ export class TaskEditorContent {
 			}
 
 			this.syncTrackingFieldsFromIndex();
-			this.refreshParentContextSection?.();
 			this.refreshEstimateReallocationControl?.();
 			if (!applyResult.complete) {
 				new Notice(t('taskEditor', 'estimateReallocationUnavailable'));
@@ -4936,7 +5522,7 @@ export class TaskEditorContent {
 			skipButton.disabled = true;
 			bindOperonHoverTooltip(skipButton, {
 				content: t('taskEditor', 'repeatSkipUnavailable'),
-				taskColor: this.getThemeColor(),
+				taskColor: () => this.getThemeColor(),
 			});
 			if (!raw) {
 				trigger.empty();
@@ -4977,14 +5563,16 @@ export class TaskEditorContent {
 					: canManageFutureSkips
 						? ''
 						: t('taskEditor', 'repeatSkipUnavailable'),
-				taskColor: this.getThemeColor(),
+				taskColor: () => this.getThemeColor(),
 			});
 		};
 
 		const openPicker = (event?: Event) => {
 			event?.preventDefault();
 			event?.stopPropagation();
+			if (container.hasClass('operon-editor-desktop-property-value')) trigger.addClass('is-picker-open');
 			showRepeatPicker(trigger, {
+				onClose: () => trigger.removeClass('is-picker-open'),
 				value: this.fieldValues['repeat'],
 				repeatEnd: this.fieldValues['datetimeRepeatEnd'],
 				repeatSeriesId: this.fieldValues['repeatSeriesId'],
@@ -5032,7 +5620,9 @@ export class TaskEditorContent {
 			const repeatSeriesId = (this.fieldValues['repeatSeriesId'] ?? '').trim();
 			if (!parsed || !repeatSeriesId || !this.taskOperonId || !this.getRepeatSkipDates || !this.onUpdateRepeatSkips) return;
 			if (parsed.mode !== 'schedule' && parsed.mode !== 'count') return;
+			if (container.hasClass('operon-editor-desktop-property-value')) skipButton.addClass('is-picker-open');
 			showRepeatSkipPicker(skipButton, {
+				onClose: () => skipButton.removeClass('is-picker-open'),
 				taskId: this.taskOperonId,
 				repeat: rawRepeat,
 				repeatSeriesId,
@@ -5080,6 +5670,7 @@ export class TaskEditorContent {
 			if (skipButton.contains(event.target as Node)) return;
 			openPicker(event);
 		});
+		this.registerSchedulingDraftRefresher(refresh);
 		refresh();
 	}
 
@@ -5098,7 +5689,8 @@ export class TaskEditorContent {
 			button.empty();
 			const icon = getIcon(isRunning ? 'square' : 'play');
 			if (icon) button.appendChild(icon);
-			button.createSpan({ text: label });
+			setAccessibleLabelWithoutTooltip(button, label);
+			this.bindTaskEditorTooltip(button, label);
 			button.classList.toggle('is-running', isRunning);
 		};
 
@@ -5129,8 +5721,8 @@ export class TaskEditorContent {
 		const section = container.createDiv('operon-editor-tracking-sessions');
 		const header = section.createDiv('operon-editor-tracking-sessions-header');
 		const title = header.createEl('h6', { cls: 'operon-editor-core-title-badge operon-editor-tracking-sessions-title' });
-		this.appendCanonicalIcon(title, 'trackers', 'operon-editor-tracking-sessions-title-icon');
-		title.createSpan({ text: t('taskEditor', 'trackingSessions') });
+		if (Platform.isPhone) this.appendCanonicalIcon(title, 'trackers', 'operon-editor-tracking-sessions-title-icon');
+		title.createSpan({ text: Platform.isPhone ? t('taskEditor', 'trackingSessions') : this.desktopSectionLabel('sessions') });
 		const addButton = header.createEl('button', {
 			cls: 'operon-editor-core-action-btn operon-editor-tracking-sessions-add',
 			attr: { type: 'button' },
@@ -5139,6 +5731,12 @@ export class TaskEditorContent {
 		addButton.createSpan({ text: t('taskEditor', 'addSession') });
 
 		const list = section.createDiv('operon-editor-tracking-sessions-list');
+		const more = Platform.isPhone ? null : section.createEl('button', {
+			cls: 'operon-editor-tracking-sessions-more',
+			attr: { type: 'button', 'aria-expanded': 'false' },
+		});
+		const moreLabel = more?.createSpan();
+		const moreIcon = more?.createSpan();
 
 		const openAddModal = async () => {
 			const operonId = await this.ensureTaskReadyForTracking();
@@ -5169,7 +5767,23 @@ export class TaskEditorContent {
 			list.empty();
 
 			const sessions = this.getCurrentTaskSessions();
+			if (sessions.length <= 3) this.desktopSessionsExpanded = false;
+			if (more) {
+				const hadFocus = more.ownerDocument.activeElement === more;
+				more.hidden = sessions.length <= 3;
+				const label = this.desktopSessionsExpanded ? t('taskEditor', 'showLess') : t('taskEditor', 'moreValues', { count: String(Math.max(0, sessions.length - 3)) });
+				moreLabel?.setText(label);
+				if (moreIcon) setIcon(moreIcon, this.desktopSessionsExpanded ? 'chevron-up' : 'chevron-down');
+				more.setAttr('aria-expanded', String(this.desktopSessionsExpanded));
+				setAccessibleLabelWithoutTooltip(more, `${t('taskEditor', 'trackingSessions')}: ${label}`);
+				if (hadFocus && more.hidden) {
+					if (addButton.disabled) this.focusDescriptionField(false);
+					else addButton.focus({ preventScroll: true });
+				}
+			}
+			list.hidden = !Platform.isPhone && sessions.length === 0;
 			if (sessions.length === 0) {
+				if (!Platform.isPhone) return;
 				list.createDiv({
 					cls: 'operon-editor-tracking-sessions-empty',
 					text: t('taskEditor', 'noTrackingSessions'),
@@ -5177,28 +5791,41 @@ export class TaskEditorContent {
 				return;
 			}
 
-			for (const session of sessions) {
+			for (const session of !more || this.desktopSessionsExpanded ? sessions : sessions.slice(0, 3)) {
 				this.renderTrackingSessionRow(list, session);
 			}
 		};
 
+		more?.addEventListener('click', () => {
+			if (this.disposed) return;
+			this.desktopSessionsExpanded = !this.desktopSessionsExpanded;
+			refresh();
+		});
 		this.refreshTrackingSessionsSection = refresh;
 		refresh();
 	}
 
 	private renderTrackingSessionRow(container: HTMLElement, session: TrackerSession): void {
+		const desktop = !Platform.isPhone;
 		const row = container.createDiv('operon-editor-tracking-session-row');
+		if (desktop) row.addClass('operon-editor-desktop-property-row');
+		const duration = desktop ? row.createDiv('operon-editor-desktop-property-label operon-editor-session-duration') : null;
+		if (duration) {
+			this.appendCanonicalIcon(duration, 'duration', 'operon-editor-desktop-property-icon has-value');
+			duration.createSpan({ text: formatDurationHuman(session.durationSeconds) });
+		}
 		const body = row.createDiv('operon-editor-tracking-session-body');
-		body.createDiv({
+		const range = body.createDiv({
 			cls: 'operon-editor-tracking-session-range',
 			text: `${this.formatSessionTimestamp(session.start)} - ${this.formatSessionEnd(session.start, session.end)}`,
 		});
-		body.createDiv({
+		this.appendWeekdayHint(range, session.start);
+		if (!desktop) body.createDiv({
 			cls: 'operon-editor-tracking-session-duration',
 			text: formatDurationHuman(session.durationSeconds),
 		});
 
-		const actions = row.createDiv('operon-editor-tracking-session-actions');
+		const actions = (desktop ? body : row).createDiv('operon-editor-tracking-session-actions');
 		const edit = this.createSessionActionButton(actions, 'pencil', t('taskEditor', 'editSession'));
 		edit.addEventListener('click', () => {
 			new TrackerSessionEditModal(this.app, {
@@ -5250,6 +5877,8 @@ export class TaskEditorContent {
 				},
 			}).open();
 		});
+
+		if (desktop) return;
 
 		const del = this.createSessionActionButton(actions, 'trash-2', t('taskEditor', 'removeSession'));
 		del.addClass('is-danger');
@@ -5325,8 +5954,8 @@ export class TaskEditorContent {
 		});
 		const icon = getIcon('trash-2') ?? getIcon('trash');
 		if (icon) button.appendChild(icon);
-		button.createSpan({ text: t('buttons', 'remove') });
 		setAccessibleLabelWithoutTooltip(button, t('buttons', 'remove'));
+		this.bindTaskEditorTooltip(button, t('buttons', 'remove'));
 
 		button.addEventListener('click', () => {
 			void this.handleRemoveTaskClick();
@@ -5404,6 +6033,12 @@ export class TaskEditorContent {
 		const refreshIconPreview = () => {
 			iconButton.empty();
 			const name = this.fieldValues['taskIcon'] ?? '';
+			if (container.hasClass('operon-editor-desktop-property-value')) {
+				iconButton.setText(name);
+				iconButton.toggleClass('has-icon', !!name);
+				setAccessibleLabelWithoutTooltip(iconButton, this.getWorkflowPickerLabel('taskIcon'));
+				return;
+			}
 			const fallbackIds = name
 				? [name]
 				: ['obsidian-new', 'obsidian-logo', 'gem', 'hexagon'];
@@ -5418,6 +6053,7 @@ export class TaskEditorContent {
 			setAccessibleLabelWithoutTooltip(iconButton, t('taskEditor', 'taskIcon'));
 			iconButton.classList.remove('has-icon');
 		};
+		this.registerSchedulingDraftRefresher(refreshIconPreview);
 		refreshIconPreview();
 
 		const selectItem = (iconId: string) => {
@@ -5428,21 +6064,25 @@ export class TaskEditorContent {
 
 		const openSharedIconPicker = (query: string) => {
 			closeIconPicker?.();
+			if (container.hasClass('operon-editor-desktop-property-value')) iconButton.addClass('is-picker-open');
 			closeIconPicker = showIconPicker(iconButton, {
 				value: this.fieldValues['taskIcon'],
 				query,
 				onSelect: iconId => {
 					closeIconPicker = null;
+					iconButton.removeClass('is-picker-open');
 					selectItem(iconId);
 				},
 				onClear: () => {
 					closeIconPicker = null;
+					iconButton.removeClass('is-picker-open');
 					delete this.fieldValues['taskIcon'];
 					refreshIconPreview();
 					this.markEdited();
 				},
 				onClose: () => {
 					closeIconPicker = null;
+					iconButton.removeClass('is-picker-open');
 				},
 			});
 		};
@@ -5474,6 +6114,11 @@ export class TaskEditorContent {
 
 		const refreshSwatch = (hex: string) => {
 			swatch.empty();
+			if (container.hasClass('operon-editor-desktop-property-value')) {
+				swatch.setText(hex.toUpperCase());
+				swatch.toggleClass('has-color', !!hex);
+				return;
+			}
 			if (hex) {
 				const swatchDot = swatch.createSpan('operon-color-swatch-dot');
 				swatchDot.style.background = hex;
@@ -5482,6 +6127,10 @@ export class TaskEditorContent {
 			}
 			swatch.classList.toggle('has-color', !!hex);
 		};
+		this.registerSchedulingDraftRefresher(() => {
+			const color = this.fieldValues['taskColor'] ?? '';
+			refreshSwatch(color ? `#${color.replace(/^#/, '')}` : '');
+		});
 		refreshSwatch(currentColorHex);
 
 		swatch.addEventListener('click', () => {
@@ -5647,6 +6296,7 @@ export class TaskEditorContent {
 				locationMarkerIcon: match?.taskIcon ?? null,
 				locationMarkerColor: match?.taskColor ?? null,
 			}, 'operon-editor-compact-selection-chip', { forceFull: true });
+			this.bindTruncatedTextTooltip(chip.querySelector<HTMLElement>('.operon-inline-compact-chip-label'));
 			chip.style.setProperty('--operon-inline-chip-icon-color', match?.taskColor ?? this.getThemeColor());
 			const removeButton = chip.ownerDocument.win.createEl('button');
 			removeButton.type = 'button';
@@ -5809,6 +6459,7 @@ export class TaskEditorContent {
 					colorRole: 'default',
 					linkTarget: null,
 				}, 'operon-editor-compact-selection-chip', { forceFull: true });
+				this.bindTruncatedTextTooltip(chip.querySelector<HTMLElement>('.operon-inline-compact-chip-label'));
 				const removeButton = chip.ownerDocument.win.createEl('button');
 				removeButton.type = 'button';
 				removeButton.className = 'operon-editor-compact-selection-chip-remove';
@@ -6066,7 +6717,7 @@ export class TaskEditorContent {
 			anchor.addClass('is-locked');
 			bindOperonHoverTooltip(anchor, {
 				content: t('taskEditor', 'subtasksSaveFirst'),
-				taskColor: this.getThemeColor(),
+				taskColor: () => this.getThemeColor(),
 			});
 			anchor.addEventListener('click', event => {
 				event.preventDefault();
@@ -6092,6 +6743,7 @@ export class TaskEditorContent {
 				this.updateExistingSubtaskParent(operonId, null);
 				this.refreshWorkflowPickerSurfaceValues();
 			});
+			if (group.hasClass('operon-editor-desktop-property-value')) this.setupDesktopSubtaskLayout(selectedWrap);
 		};
 
 		const syncParentLinks = (nextIds: string[]) => {
@@ -6175,7 +6827,7 @@ export class TaskEditorContent {
 			parentAnchor.classList.toggle('is-locked', !!selectedParentId);
 			bindOperonHoverTooltip(parentAnchor, {
 				content: selectedParentId ? t('taskEditor', 'parentTaskClearFirst') : '',
-				taskColor: this.getThemeColor(),
+				taskColor: () => this.getThemeColor(),
 			});
 			if (!selectedParentId) return;
 			const task = this.indexer.getTask(selectedParentId);
@@ -6242,7 +6894,7 @@ export class TaskEditorContent {
 		return;
 	}
 
-	private async requestSubtask(): Promise<void> {
+	private async requestSubtask(requestedKind?: 'inline'): Promise<void> {
 		if (!this.description.trim()) {
 			new Notice(t('notifications', 'taskSaveFailed'));
 			return;
@@ -6260,6 +6912,7 @@ export class TaskEditorContent {
 
 		try {
 			await this.onRequestSubtask({
+				requestedKind,
 				parentOperonId: this.fieldValues['operonId'],
 				parentDescription: this.description,
 				parentFieldValues: { ...this.fieldValues },
@@ -6347,13 +7000,17 @@ export class TaskEditorContent {
 		this.existingTask.description = state.description;
 		this.existingTask.checkbox = state.checkbox;
 		this.existingTask.tags = [...state.tags];
+		if (state.sourceFields) this.existingTask.fields = state.sourceFields.map(field => ({ ...field }));
 		const existingKeys = new Set(this.existingTask.fields.map(field => field.key));
 		for (const key of existingKeys) {
-			if (!Object.prototype.hasOwnProperty.call(state.fieldValues, key)) {
+			if (isManagedTaskFieldCanonicalKey(key, this.settings.keyMappings)
+				&& !state.sourceFields?.some(field => field.key === key)
+				&& !Object.prototype.hasOwnProperty.call(state.fieldValues, key)) {
 				this.syncExistingTaskFieldSnapshot(key, '');
 			}
 		}
 		for (const [key, value] of Object.entries(state.fieldValues)) {
+            if (state.sourceFields?.some(field => field.key === key) && !CANONICAL_KEY_MAP.has(key)) continue;
 			this.syncExistingTaskFieldSnapshot(key, value);
 		}
 		this.existingTask.operonId = state.fieldValues['operonId'] ?? this.existingTask.operonId;
@@ -6380,13 +7037,13 @@ export class TaskEditorContent {
 		this.fieldValues = mergeCanonicalFieldValuesIntoDraft(
 			this.fieldValues,
 			submitted.fieldValues,
-			state.fieldValues,
+			{ ...Object.fromEntries((state.sourceFields ?? []).map(field => [field.key, field.value])), ...state.fieldValues },
 		);
 
 		this.persistedDescription = state.description;
 		this.persistedCheckbox = state.checkbox;
 		this.persistedTags = [...state.tags];
-		this.persistedFieldValues = { ...state.fieldValues };
+		this.persistedFieldValues = { ...Object.fromEntries((state.sourceFields ?? []).map(field => [field.key, field.value])), ...state.fieldValues };
 		this.syncExistingTaskCanonicalState(state);
 	}
 
@@ -6456,7 +7113,8 @@ export class TaskEditorContent {
 		const date = parseLocalDatetime(value);
 		if (!date) return value;
 		const dateKey = value.substring(0, 10);
-		return `${formatTrackerDayHeader(this.app, dateKey)}, ${formatUiTime(this.app, this.settings, value)}`;
+		const dateLabel = Platform.isPhone ? formatTrackerDayHeader(this.app, dateKey) : formatUiDate(dateKey, this.settings);
+		return `${dateLabel}, ${formatUiTime(this.app, this.settings, value)}`;
 	}
 
 	private formatSessionEnd(start: string, end: string): string {
@@ -6488,6 +7146,7 @@ export class TaskEditorContent {
 		if (this.disposed) return;
 		this.hasBeenEdited = true;
 		this.editVersion += 1;
+		if ((this.desktopPropertyRows?.size ?? 0) > 0) this.refreshDesktopPropertyRows();
 		this.refreshFileBodySaveButtonState();
 		this.scheduleSave();
 	}
@@ -6557,7 +7216,7 @@ export class TaskEditorContent {
 	}
 
 	private hasSemanticDraftChanges(): boolean {
-		if (this.isNewTask) return true;
+		if (this.isNewTask || this.getFilePropertyChanges().length > 0 || this.getInlinePropertyChanges().length > 0) return true;
 		const draft = this.getSemanticDraftSnapshot();
 		const persisted = this.getSemanticPersistedSnapshot();
 		if (draft.description !== persisted.description) return true;
@@ -6734,7 +7393,7 @@ export class TaskEditorContent {
 			this.fieldValues['datetimeModified'] = now;
 
 			const fields = Object.entries(this.fieldValues)
-				.filter(([key, value]) => !!value && key !== 'pinned')
+				.filter(([key, value]) => key !== 'pinned' && (!!value || !isManagedTaskFieldCanonicalKey(key, this.settings.keyMappings) || this.existingTask?.fields.some(field => field.key === key && field.value === value)))
 				.map(([key, value]) => buildTaskEditorOperonField(
 					key,
 					value,
@@ -6772,6 +7431,10 @@ export class TaskEditorContent {
 				if (before === after) return 'unchanged';
 				return after ? 'explicitly-set' : 'explicitly-cleared';
 			};
+			const savedFileProperties = this.getFilePropertyChanges();
+   const savedInlineProperties = this.getInlinePropertyChanges();
+   if (savedInlineProperties.some(change => !this.canEditFileProperty(this.fileProperties.get(change.sourceName)!))) return { ok: false, reason: 'write-rejected' };
+   if (savedFileProperties.length && (this.filePropertyUnavailable || savedFileProperties.some(change => !this.canEditFileProperty(this.fileProperties.get(change.propertyName)!)))) return { ok: false, reason: 'write-rejected' };
 			const savedDescription = this.description;
 			const savedCheckbox = this.checkbox;
 			const savedTags = [...this.tags];
@@ -6789,10 +7452,14 @@ export class TaskEditorContent {
 			const noteSurfaceShouldCommit =
 				noteSurface?.getCommit().shouldCommit ?? false;
 			let saveResult: TaskEditorSaveCallbackResult;
+   this.submittedFileProperties = new Set([...savedFileProperties.map(change => change.propertyName), ...savedInlineProperties.map(change => change.sourceName)]);
 			try {
 				saveResult = await this.onSave({
 					taskLine,
+                    inlineSourceFields: this.existingTask?.fields.map(field => ({ ...field })),
 					isNew: this.isNewTask,
+     ...(savedFileProperties.length ? { fileProperties: savedFileProperties } : {}),
+     ...(savedInlineProperties.length ? { inlineProperties: savedInlineProperties } : {}),
 					parentTaskIntent: resolveIntent(existingParentTaskId, nextParentTaskId),
 					dateScheduledIntent: resolveIntent(existingScheduledDate, nextScheduledDate),
 					inlineCompletionMode: savedInlineCompletionMode,
@@ -6811,10 +7478,41 @@ export class TaskEditorContent {
 				console.error('Operon: task editor save failed', error);
 				new Notice(t('notifications', 'taskSaveFailed'));
 				return { ok: false, reason: 'write-threw' };
-			}
+			} finally { this.submittedFileProperties.clear(); }
 			if (saveResult === false || saveResult === null) {
 				return { ok: false, reason: 'write-rejected' };
 			}
+   for (const change of savedFileProperties) {
+    const entry = this.fileProperties.get(change.propertyName);
+    const result = isTaskEditorSaveCommit(saveResult) ? saveResult.fileProperties?.find(item => item.propertyName === change.propertyName) : undefined;
+    const snapshot = isTaskEditorSaveCommit(saveResult) ? saveResult.filePropertySnapshots?.find(item => item.propertyName === change.propertyName)?.expectation : undefined;
+    const committed = snapshot ?? { present: true, value: result ? result.value : change.value };
+    if (entry) {
+     if (rawYamlPropertyExpectationsEqual({ present: true, value: entry.value as RawYamlPropertyValue }, { present: true, value: change.value })) {
+      if (!committed.present) this.fileProperties.delete(change.propertyName);
+      else entry.value = Array.isArray(committed.value) ? [...committed.value] : committed.value;
+     }
+     entry.baseline = committed;
+    }
+   }
+   for (const change of savedInlineProperties) {
+    const entry = this.fileProperties.get(change.sourceName);
+    const committed = isTaskEditorSaveCommit(saveResult) ? saveResult.inlineProperties?.find(item => item.sourceName.toLowerCase() === change.sourceName.toLowerCase()) : undefined;
+    if (!entry || !committed) continue;
+    const acknowledged = committed.state === 'valid' ? committed.value : committed.rawValue ?? null;
+    if (change.mutation.kind === 'set' && rawYamlPropertyExpectationsEqual({ present: true, value: entry.value as RawYamlPropertyValue }, { present: true, value: change.mutation.value })) {
+     if (!committed.present) this.fileProperties.delete(change.sourceName);
+     else entry.value = Array.isArray(acknowledged) ? [...acknowledged] : acknowledged;
+    }
+    entry.inline = committed; entry.baseline = { present: committed.present, value: acknowledged };
+    entry.readonly = committed.state !== 'valid' && committed.state !== 'missing';
+   }
+   if (savedFileProperties.length || savedInlineProperties.length) {
+    // A source read captured before this commit cannot replace its acknowledged baseline.
+    this.filePropertyGeneration++;
+    void this.refreshDesktopFileProperties();
+   }
+
 			const descriptionUnchangedSinceSubmit = this.description === savedDescription;
 			const noteUnchangedSinceSubmit =
 				(this.fieldValues['note'] ?? '') === (savedFieldValues['note'] ?? '');

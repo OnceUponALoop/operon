@@ -1,3 +1,4 @@
+import { encodeVaultPropertyValue } from '../../core/vault-property-codec';
 import { sha256HexV1 } from '../contracts/v1/canonical';
 import type {
 	CatalogProjectionV1,
@@ -259,7 +260,9 @@ export interface RuntimeExactTaskMutationSnapshotV1 {
 	readonly activeTimerStart?: string;
 }
 
+// Native property values remain plugin-internal; V1 DTOs retain their existing value types.
 export interface RuntimeTaskFieldMutationPreparationV1 {
+    readonly inlinePropertyDraft?: readonly import('../../core/inline-property-source').InlinePropertyChange[];
 	readonly kind: 'task-fields';
 	readonly operation: 'update' | 'reminder-item' | 'transition';
 	readonly task: RuntimeExactTaskMutationSnapshotV1;
@@ -637,6 +640,10 @@ export type RuntimeTaskFieldMutationPreparationResultV1 =
 	};
 
 export interface RuntimeTaskMutationAdapterPortsV1 {
+    prepareInlineProperties?(task: RuntimeExactTaskMutationSnapshotV1, changes: UpdateTaskSpecV1['changes']): {
+        changes: readonly import('../../core/inline-property-source').InlinePropertyChange[];
+        fieldValues: Record<string, string>;
+    };
 	readonly catalog: CatalogProjectionV1;
 	getTask(operonId: string): RuntimeExactTaskMutationSnapshotV1 | null;
 	getDependencyTask?(operonId: string): RuntimeTaskDependencySnapshotV1 | null;
@@ -682,7 +689,16 @@ export function prepareRuntimeTaskFieldMutationV1(
 		return failure('mutation-kind-mismatch', 'This adapter handles task field mutations only.');
 	}
 	if (!prepared.ok) return prepared;
-	const noChange = !hasTaskFieldChange(task, prepared.fieldValues);
+    let inlineProperties: ReturnType<NonNullable<RuntimeTaskMutationAdapterPortsV1['prepareInlineProperties']>> | undefined;
+    if (spec.operation === 'update' && task.locator.representation === 'inline' && ports.prepareInlineProperties) {
+        try { inlineProperties = ports.prepareInlineProperties(task, spec.changes); }
+        catch { return failure('stale-source', 'The mapped inline property source cannot be updated safely.'); }
+        Object.assign(prepared.fieldValues, inlineProperties.fieldValues);
+    }
+    const nativeChanged = inlineProperties?.changes.some(change => change.mutation.kind === 'remove'
+        ? change.expected.present
+        : !change.expected.present || encodeVaultPropertyValue(change.mutation.value, change.type) !== change.expected.rawValue);
+	const noChange = !nativeChanged && !hasTaskFieldChange(task, prepared.fieldValues);
 	const fieldValues = noChange
 		? {}
 		: {
@@ -701,6 +717,7 @@ export function prepareRuntimeTaskFieldMutationV1(
 		ok: true,
 		value: {
 			kind: 'task-fields',
+            ...(inlineProperties?.changes.length ? { inlinePropertyDraft: inlineProperties.changes } : {}),
 			operation: prepared.operation,
 			task,
 			fieldValues,

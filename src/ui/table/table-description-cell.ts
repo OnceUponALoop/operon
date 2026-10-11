@@ -13,6 +13,7 @@ import { renderTableIconOnlyCell } from './table-icon-only-cell';
 export interface TableTextValueDisplayOptions {
 	value: string;
 	textClassName?: string;
+ suppressValueTooltip?: boolean;
 	wikilinks?: {
 		app: App;
 		sourcePath: string;
@@ -75,6 +76,7 @@ export function renderTableTextValueDisplay(
 	} else {
 		text.setText(displayText ? options.value : '');
 	}
+	if (options.suppressValueTooltip) return;
 	if (displayText) {
 		bindOperonHoverTooltip(cell, {
 			contentElFactory: () => createCompactTaskMarkdownTooltipContent(cell, options.value),

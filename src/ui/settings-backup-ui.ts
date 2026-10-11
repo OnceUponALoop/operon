@@ -106,6 +106,7 @@ const SETTINGS_BACKUP_VAULT_REFERENCE_LABELS = {
 	projectSerialScopes: { namespace: 'settings', key: 'projectSerials' },
 	workspaceTweaksPropertiesExcludedFolders: { namespace: 'settings', key: 'workspaceTweaksPropertiesExcludedFolders' },
 	taskCreatorDefaultFileTemplateId: { namespace: 'settings', key: 'taskCreatorDefaultFileTemplate' },
+	defaultInlineTaskTemplateId: { namespace: 'settings', key: 'defaultInlineTaskTemplate' },
 	fileTaskTemplateFolder: { namespace: 'settings', key: 'fileTaskTemplateFolder' },
 	dailyNoteTemplate: { namespace: 'settings', key: 'dailyNoteTemplate' },
 	dailyNoteFolder: { namespace: 'settings', key: 'dailyNoteFolder' },

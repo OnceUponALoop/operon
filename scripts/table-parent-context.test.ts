@@ -266,6 +266,20 @@ async function run(): Promise<void> {
 	equal(projection.getCandidates('file.property:scalar', true), parentCandidates, 'context candidates must be memoized per key');
 	deepEqual(projection.getCandidates('file.property:scalar', false), ['Season 1']);
 
+ let candidateReads = 0;
+ let currentCandidates = ['Before'];
+ const sharedSnapshot: TableFilePropertySnapshot = {
+  ...primarySnapshot,
+  getCandidates: () => { candidateReads += 1; return currentCandidates; },
+ };
+ const sharedProjection = createTableFilePropertyRenderProjection(sharedSnapshot, sharedSnapshot, projectionColumns);
+ deepEqual(sharedProjection.getCandidates('file.property:scalar', true), ['Before']);
+ equal(candidateReads, 1, 'shared parent context must read the vault candidate pool once');
+ currentCandidates = ['After'];
+ deepEqual(sharedProjection.getCandidates('file.property:scalar', true), ['After'], 'reopening must observe fresh vault cache candidates');
+ equal(candidateReads, 2);
+
+
 	deepEqual(
 		kinds(buildTableRenderItems([child1, child2], [parentGroup], [], false)),
 		['group', 'task', 'task'],

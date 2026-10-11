@@ -1,4 +1,8 @@
-import { App, KeymapEventHandler, Modal, Notice, Platform, getIcon, setIcon } from 'obsidian';
+import { PreparedTaskCreatorDraft, type PreparedTaskCreatorAdapter } from './task-creator-prepared-draft';
+import { openTableFilePropertyPicker } from './table/table-file-property-editor';
+import { bindPropertyReadOnlyWarning } from './property-readonly-warning';
+import { encodeVaultPropertyValue, type VaultPropertyValue } from '../core/vault-property-codec';
+import { App, KeymapEventHandler, Menu, Modal, Notice, Platform, getIcon, setIcon } from 'obsidian';
 import { getConfiguredKeyMappingIcon } from '../core/key-mapping-icons';
 import { getSubtaskInheritedFieldKeys, resolveSubtaskInitialFieldsFromParentValues } from '../core/subtask-inheritance';
 import { getAvailableReminderRuleAnchors } from './field-pickers/reminder-picker-model';
@@ -92,6 +96,8 @@ export interface TaskCreatorSubmitFieldSeed {
 
 export interface TaskCreatorModalOptions {
 	getInlineParentPreview?: (draft: TaskCreatorDraft) => string | null;
+ /** Internal shared draft and submission adapter. */
+ preparedAdapter?: PreparedTaskCreatorAdapter;
 	settings: OperonSettings;
 	allTasks: IndexedTask[];
 	getAllTasks?: () => IndexedTask[];
@@ -100,6 +106,7 @@ export interface TaskCreatorModalOptions {
 	submitMode?: TaskCreatorSubmitMode;
 	initialCreateType?: TaskCreatorCreateType;
 	defaultFileTemplateId?: string | null;
+	defaultInlineTemplateId?: string | null;
 	fileTaskTemplateOptions?: FileTaskTemplateOption[];
 	onFileTemplateSelected?: (template: FileTaskTemplateOption) => void | Promise<void>;
 	getAllRepeatSeriesIds?: () => Set<string>;
@@ -111,8 +118,10 @@ export interface TaskCreatorModalOptions {
 	preventFocusScroll?: boolean;
 }
 
+type TaskCreatorSuggestion = TaskFieldSuggestionItem | { action: 'template'; visibleName: string };
+
 interface SuggestionState {
-	items: TaskFieldSuggestionItem[];
+	items: TaskCreatorSuggestion[];
 	activeIndex: number;
 	range: { start: number; end: number };
 }
@@ -499,6 +508,9 @@ export function purgeTaskCreatorModalArtifacts(root: ParentNode = getActiveDocum
 
 export class TaskCreatorModal extends Modal {
 	private readonly options: TaskCreatorModalOptions;
+ private readonly prepared: PreparedTaskCreatorDraft | null;
+ private preparedClosed = false;
+ private templateErrorEl: HTMLElement | null = null;
 	private readonly submitMode: TaskCreatorSubmitMode;
 	private draft: TaskCreatorDraft;
 	private activeCreateType: TaskCreatorCreateType;
@@ -520,12 +532,18 @@ export class TaskCreatorModal extends Modal {
 	private fieldButtonMap = new Map<TaskCreatorFieldKey, HTMLButtonElement>();
 	private nativeCloseButtonCleanup: (() => void) | null = null;
 	private suggestionState: SuggestionState | null = null;
-	private activePickerClose: (() => void) | null = null;
+	private creatorPickerClose: (() => void) | null = null;
+	private get activePickerClose(): (() => void) | null { return this.creatorPickerClose; }
+	private set activePickerClose(close: (() => void) | null) {
+		this.creatorPickerClose = close;
+		this.contentEl.toggleClass('has-open-creator-picker', close !== null && !this.templateButtonEl?.hasClass('is-picker-open'));
+	}
 	private escapeScopeHandler: KeymapEventHandler | null = null;
 	private seededParentFieldValuesById = new Map<string, Record<string, string> | null>();
 	private seededParentTagsById = new Map<string, string[] | null>();
 	private allowDirectClose = false;
 	private isSubmitting = false;
+ private preparedUncertain = false;
 	private resolved = false;
 	private isOutsideConfirmOpen = false;
 	private initialDescriptionFocusTimers: WindowTimeoutHandle[] = [];
@@ -556,13 +574,17 @@ export class TaskCreatorModal extends Modal {
 		super(app);
 		this.options = options;
 		this.draft = cloneTaskCreatorDraft(options.initialDraft);
+  this.prepared = options.preparedAdapter ? new PreparedTaskCreatorDraft(options.preparedAdapter, options.settings) : null;
+  this.prepared?.syncLegacy(this.draft);
 		this.submitMode = normalizeTaskCreatorSubmitMode(options.submitMode);
 		this.activeCreateType = getInitialTaskCreatorCreateType(
 			this.submitMode,
 			options.initialCreateType,
 			!!this.draft.fileTemplateId,
 		);
-		this.applyDefaultFileTemplateForActiveMode();
+		if (this.prepared) {
+   this.draft.fileTemplateId ||= this.getModeDefaultTemplateId();
+  } else this.applyDefaultFileTemplateForActiveMode();
   this.refreshInlineParentPreview();
 	}
 
@@ -584,10 +606,12 @@ export class TaskCreatorModal extends Modal {
 		this.updateMobileViewportHeight();
 		this.registerMobilePickerListeners();
 		this.render();
+  if (this.prepared) void this.selectPreparedTemplateId(this.draft.fileTemplateId);
 		this.indexUpdatesUnsubscribe?.();
 		this.indexUpdatesUnsubscribe = this.options.subscribeIndexUpdates?.(() => {
 			this.refreshBlockedByDependencyControl();
-   if (this.options.getInlineParentPreview) { this.refreshInlineParentPreview(); this.renderFieldButtons(); this.applyThemeColor(); }
+   if (this.prepared) { this.prepared.refreshParent(); this.refreshPreparedDraft(); }
+   else if (this.options.getInlineParentPreview) { this.refreshInlineParentPreview(); this.renderFieldButtons(); this.applyThemeColor(); }
 		}) ?? null;
 		this.applyThemeColor();
 		this.allowDirectClose = false;
@@ -607,6 +631,8 @@ export class TaskCreatorModal extends Modal {
 	}
 
 	onClose(): void {
+  this.preparedClosed = true;
+  this.prepared?.close();
 		this.nativeCloseButtonCleanup?.();
 		this.nativeCloseButtonCleanup = null;
 		this.indexUpdatesUnsubscribe?.();
@@ -659,7 +685,9 @@ export class TaskCreatorModal extends Modal {
 			placeholder: t('taskEditor', 'creatorDescriptionPlaceholder'),
 			ariaLabel: t('taskEditor', 'description'),
 			onUserChange: draft => {
+     if (this.prepared && this.isSubmitting) return;
 				this.draft.description = draft.persistableValue;
+    this.refreshPreparedDraft();
 				this.syncSuggestions();
 			},
 			onSelectionChange: () => this.syncSuggestions(),
@@ -684,7 +712,10 @@ export class TaskCreatorModal extends Modal {
 			ariaLabel: t('taskEditor', 'notes'),
 			textPolicy: 'task-note',
 			onUserChange: draft => {
+     if (this.prepared && this.isSubmitting) return;
 				this.draft.note = draft.persistableValue;
+    this.prepared?.draft.setValue('note', this.draft.note);
+    this.refreshPreparedDraft();
 				this.draft.noteOpen = this.draft.noteOpen || !!this.draft.note.trim();
 				this.syncFieldButtonActiveState('note');
 			},
@@ -710,6 +741,7 @@ export class TaskCreatorModal extends Modal {
 			setAccessibleLabelWithoutTooltip(button, this.getFieldLabel(key));
 			button.addEventListener('click', () => this.handleFieldButtonClick(key));
 			this.fieldButtonMap.set(key, button);
+   if (this.prepared) this.bindPreparedRemoval(button, key);
 		}
 
 		this.actionRowEl = body.createDiv('operon-task-creator-action-row');
@@ -721,13 +753,16 @@ export class TaskCreatorModal extends Modal {
 		this.cancelButtonEl.addEventListener('click', () => this.forceClose());
 
 		const actions = this.actionRowEl.createDiv('operon-task-creator-actions');
-		this.templateButtonEl = actions.createEl('button', {
+		const templateHost = this.prepared ? actions.createDiv('operon-task-creator-template-control') : actions;
+		this.templateButtonEl = templateHost.createEl('button', {
 			cls: 'operon-task-creator-action operon-task-creator-template-action is-secondary',
 			attr: {
 				type: 'button',
 			},
 		});
 		this.templateButtonEl.addEventListener('click', () => this.openFileTemplatePicker());
+
+		if (this.prepared) this.templateErrorEl = templateHost.createDiv({ cls: 'operon-task-creator-template-error', attr: { role: 'status' } });
 
 		this.fileButtonEl = actions.createEl('button', {
 			cls: 'operon-task-creator-action is-secondary',
@@ -892,6 +927,10 @@ export class TaskCreatorModal extends Modal {
 
 	applyBackgroundParentSeed(parentTaskId: string, parentFieldValues: Record<string, string> | null, parentTags?: readonly string[] | null): void {
 		const normalizedParentTaskId = parentTaskId.trim();
+  if (this.prepared) {
+   if (normalizedParentTaskId) this.prepared.backgroundParent(normalizedParentTaskId, parentFieldValues, parentTags ?? null);
+   this.refreshPreparedDraft(); return;
+  }
 		if (!normalizedParentTaskId) return;
 		this.seededParentFieldValuesById.set(
 			normalizedParentTaskId,
@@ -962,6 +1001,26 @@ export class TaskCreatorModal extends Modal {
 		return !!this.getSelectedFileTemplate();
 	}
 
+ private getModeDefaultTemplateId(): string {
+  return (this.activeCreateType === 'inline' ? this.options.defaultInlineTemplateId : this.options.defaultFileTemplateId)?.trim() ?? '';
+ }
+
+ private async selectPreparedTemplateId(id: string): Promise<void> {
+  if (!this.prepared || this.preparedClosed) return;
+  const selected = this.prepared.session.selectedOption();
+  const state = this.prepared.session.snapshot();
+  if (id && selected?.id === id && (state.status === 'ready' || state.status === 'loading')) return;
+  const option = id ? this.getFileTemplateOptions().find(item => item.id === id) : null;
+  if (id && !option) {
+   this.draft.fileTemplateId = id;
+   this.prepared.session.selectUnavailable(id);
+   this.prepared.refreshParent();
+   this.refreshPreparedDraft();
+   return;
+  }
+  await this.selectPreparedTemplate(option ?? null);
+ }
+
 	private applyDefaultFileTemplateForActiveMode(): void {
 		const nextTemplateId = resolveTaskCreatorFileTemplateIdForMode(
 			this.activeCreateType,
@@ -977,30 +1036,37 @@ export class TaskCreatorModal extends Modal {
 		if (this.activeCreateType === nextType) return;
 		this.activeCreateType = nextType;
   if (this.options.getInlineParentPreview) { this.refreshInlineParentPreview(); this.renderFieldButtons(); this.applyThemeColor(); }
-		if (nextType === 'file') {
+		if (this.prepared) {
+   this.closeActivePicker();
+   void this.selectPreparedTemplateId(this.getModeDefaultTemplateId());
+  }
+		if (nextType === 'file' && !this.prepared) {
 			this.applyDefaultFileTemplateForActiveMode();
 		}
 		if (nextType === 'inline') {
 			this.closeActivePicker();
 		}
 		this.renderSubmitControls();
+  if (this.prepared) this.renderFieldButtons();
 		window.setTimeout(() => this.focusDescription(this.getDescriptionCaret()), 0);
 	}
 
 	private openFileTemplatePicker(): void {
-		if (!isTaskCreatorTemplateControlEnabled(this.submitMode, this.activeCreateType)) return;
+		if (!this.prepared && !isTaskCreatorTemplateControlEnabled(this.submitMode, this.activeCreateType)) return;
 		const templateOptions = this.getFileTemplateOptions();
-		if (templateOptions.length === 0) return;
+		if (templateOptions.length === 0 && !this.prepared) return;
 		this.closeSuggestions();
 		this.closeActivePicker();
 		this.templateButtonEl.addClass('is-picker-open');
 		const close = showFileTaskTemplatePicker(this.templateButtonEl, {
 			value: this.draft.fileTemplateId,
 			options: templateOptions,
+   onClear: this.prepared ? () => { this.closeActivePicker(); void this.selectPreparedTemplate(null); } : undefined,
 			onSelect: template => {
 				this.suppressOutsidePointerBriefly();
 				this.draft.fileTemplateId = template.id;
-				void this.options.onFileTemplateSelected?.(template);
+				if (this.prepared) void this.selectPreparedTemplate(template);
+    else void this.options.onFileTemplateSelected?.(template);
 				this.closeActivePicker();
 				this.renderSubmitControls();
 				window.setTimeout(() => this.focusDescription(this.getDescriptionCaret()), 0);
@@ -1137,7 +1203,13 @@ export class TaskCreatorModal extends Modal {
 			this.draft.fieldValues,
 			'creator',
 		);
-		if (!resolution.trigger || resolution.items.length === 0) {
+		const items: TaskCreatorSuggestion[] = [...resolution.items];
+		if (resolution.trigger && 'template'.startsWith(resolution.token.toLowerCase())
+			&& this.templateButtonEl && !this.templateButtonEl.disabled) {
+			const visibleName = this.templateButtonEl.querySelector('.operon-task-creator-template-label')?.textContent;
+			if (visibleName) items.unshift({ action: 'template', visibleName });
+		}
+		if (!resolution.trigger || items.length === 0) {
 			if (resolution.suppressionReason) {
 				debugTaskFieldSuggestion('task-creator', resolution.suppressionReason, {
 					token: resolution.token,
@@ -1148,8 +1220,8 @@ export class TaskCreatorModal extends Modal {
 		}
 
 		this.suggestionState = {
-			items: resolution.items,
-			activeIndex: Math.min(this.suggestionState?.activeIndex ?? 0, resolution.items.length - 1),
+			items,
+			activeIndex: Math.min(this.suggestionState?.activeIndex ?? 0, items.length - 1),
 			range: {
 				start: resolution.trigger.start,
 				end: resolution.trigger.end,
@@ -1218,7 +1290,7 @@ export class TaskCreatorModal extends Modal {
 		this.renderSuggestions();
 	}
 
-	private chooseSuggestion(item: TaskFieldSuggestionItem | null): void {
+	private chooseSuggestion(item: TaskCreatorSuggestion | null): void {
 		if (!item || !this.suggestionState) return;
 		const nextCaret = this.suggestionState.range.start;
 		this.descriptionCompactEditor?.replaceRange?.(
@@ -1228,7 +1300,8 @@ export class TaskCreatorModal extends Modal {
 		);
 		this.closeSuggestions();
 		this.focusDescription(nextCaret);
-		this.openFieldPicker(item.canonicalKey);
+		if ('action' in item) this.openFileTemplatePicker();
+		else this.openFieldPicker(item.canonicalKey);
 	}
 
 	private openFieldPicker(
@@ -1236,7 +1309,11 @@ export class TaskCreatorModal extends Modal {
 		reminderOperation?: ReminderPickerOperation,
 		anchorOverride?: HTMLElement,
 	): void {
+		if (this.prepared && this.isSubmitting) return;
 		this.closeSuggestions();
+  const preparedField = this.prepared?.field(canonicalKey);
+  if (preparedField?.readOnlyReason) return;
+  if (preparedField?.property.interpretation === 'native') { this.openPreparedPropertyPicker(canonicalKey); return; }
 		if (canonicalKey === 'note') {
 			this.openNote();
 			return;
@@ -1285,6 +1362,7 @@ export class TaskCreatorModal extends Modal {
 		};
 		this.closeActivePicker();
 
+		let pickerBaseline = preparedField;
 		const close = openTaskFieldPicker({
 			app: this.app,
 			settings: this.options.settings,
@@ -1294,6 +1372,16 @@ export class TaskCreatorModal extends Modal {
 			currentFieldValues: { ...this.draft.fieldValues },
 			getCurrentFieldValues: () => this.draft.fieldValues,
 			currentTags: [...this.draft.tags],
+   ...(preparedField && (preparedField.property.merge === 'set' || preparedField.property.merge === 'sequence') ? {
+    currentListValues: preparedField.members.map(member => String(member.value)),
+    onCommitListValues: (key: string, values: string[]) => {
+     if (this.isSubmitting || !this.prepared) return;
+     this.prepared.applyPayload({ [key]: values }, pickerBaseline);
+     const current = this.prepared.field(key);
+     pickerBaseline = { ...current, members: current.members.filter(member => values.includes(String(member.value))) };
+     this.refreshPreparedDraft();
+    },
+   } : {}),
 			reminderOperation: resolvedReminderOperation,
 			closeListPickerOnSelect: canonicalKey === 'assignees' || canonicalKey === 'tags' || canonicalKey === 'contexts' || canonicalKey === 'taskGallery',
 			manualDatePicker: this.getManualDatePickerOptions(canonicalKey),
@@ -1360,6 +1448,7 @@ export class TaskCreatorModal extends Modal {
 			closeOnSelect: true,
 			onChange: operonIds => {
 				this.draft.subtaskIds = [...operonIds];
+    this.prepared?.draft.setValue('subtasks', operonIds);
 				this.renderFieldButtons();
 			},
 			onClose: () => {
@@ -1507,8 +1596,20 @@ export class TaskCreatorModal extends Modal {
 		payload: Record<string, string | string[]>,
 		source: 'user' | 'inheritance' = 'user',
 	): void {
+		if (this.prepared && this.isSubmitting) return;
 		const normalizedPayload = this.normalizeTerminalDatePayload(payload);
 		if (!normalizedPayload) return;
+  if (this.prepared) {
+   const patched = applyTaskFieldPatchToState({ currentFields: this.draft.fieldValues, currentTags: this.draft.tags, payload: normalizedPayload, getAllRepeatSeriesIds: this.options.getAllRepeatSeriesIds, deferRepeatIdentity: true });
+   const finalPayload: Record<string,string | string[]> = { ...normalizedPayload };
+   for (const key of new Set([...Object.keys(this.draft.fieldValues), ...Object.keys(patched.fieldValues)])) {
+    if (this.draft.fieldValues[key] !== patched.fieldValues[key]) finalPayload[key] = patched.fieldValues[key] ?? '';
+   }
+   this.prepared.applyPayload(finalPayload);
+   this.refreshPreparedDraft();
+   if ('parentTask' in normalizedPayload) { this.pruneDraftSubtasksForParent(); this.prepared.draft.setValue('subtasks', this.draft.subtaskIds); }
+   return;
+  }
 		this.removeInlineParentPreview(this.draft);
 		const next = applyTaskFieldPatchToState({
 			currentFields: this.draft.fieldValues,
@@ -1563,6 +1664,15 @@ export class TaskCreatorModal extends Modal {
   if (draft === this.draft) this.inlineParentPreviewBase = null;
  }
  private refreshInlineParentPreview(): void {
+  if (this.prepared) {
+   const context = cloneTaskCreatorDraft(this.draft);
+   this.prepared.syncLegacy(context, this.prepared.routingSnapshot());
+   const id = this.activeCreateType === 'inline'
+    ? this.options.getInlineParentPreview?.(context) ?? null : null;
+   this.prepared.setPreviewParent(id);
+   this.prepared.syncLegacy(this.draft);
+   return;
+  }
   this.removeInlineParentPreview(this.draft);
   if (this.activeCreateType !== 'inline' || !this.options.getInlineParentPreview
    || this.draft.fieldValues.parentTask?.trim() || this.draft.explicitFieldKeys.includes('parentTask')) return;
@@ -1629,12 +1739,33 @@ export class TaskCreatorModal extends Modal {
 	}
 
 	private renderFieldButtons(): void {
+  if (this.prepared) {
+   const keys = this.getVisibleToolbarFieldOrder();
+   for (const [key, button] of this.fieldButtonMap) if (!keys.includes(key)) {
+    // Keep the floating picker's anchor connected until its own lifecycle closes it.
+    if (button.hasClass('is-picker-open')) continue;
+    cleanupOperonHoverTooltips(button); button.remove(); this.fieldButtonMap.delete(key);
+   }
+   for (const key of keys) {
+    if (!this.fieldButtonMap.has(key)) {
+     const button = this.toolsEl.createEl('button', { cls: 'operon-task-creator-tool', attr: { type: 'button', 'data-field-key': key } });
+     button.addEventListener('click', () => this.handleFieldButtonClick(key)); this.fieldButtonMap.set(key, button);
+   if (this.prepared) this.bindPreparedRemoval(button, key);
+    }
+   }
+   // insertBefore only when order actually changes: focused controls retain their DOM identity.
+   keys.forEach((key,index) => { const button = this.fieldButtonMap.get(key)!; if (this.toolsEl.children[index] !== button) this.toolsEl.insertBefore(button, this.toolsEl.children[index] ?? null); });
+   this.scheduleToolbarOverflowState();
+  }
 		this.renderReminderDraftStrip();
 		for (const key of this.getVisibleToolbarFieldOrder()) {
 			const button = this.fieldButtonMap.get(key);
 			if (!button) continue;
 			button.empty();
 			this.syncFieldButtonActiveState(key);
+   const warning = this.prepared?.field(key).readOnlyReason;
+   button.toggleClass('is-property-warning', warning === 'automatic');
+   button.setAttribute('aria-readonly', String(!!warning));
 			const ruleAddDisabled = key === 'reminderRules'
 				&& !getCustomFieldMapping(this.options.settings.keyMappings, key)
 				&& getAvailableReminderRuleAnchors(this.draft.fieldValues).length === 0;
@@ -1653,9 +1784,117 @@ export class TaskCreatorModal extends Modal {
 				setIcon(iconWrap, this.resolveFieldIcon(key));
 			}
 			if (key === 'blockedBy') this.applyBlockedByAggregateState(button);
-			this.bindFieldButtonTooltip(button, key);
+			if (warning) bindPropertyReadOnlyWarning(button, this.getFieldLabel(key), warning);
+   else this.bindFieldButtonTooltip(button, key);
 		}
 	}
+
+ private clearPreparedField(key: string, clear: boolean): void {
+  if (!this.prepared) return;
+  // Preserve companion-field rules before recording the explicit removal tombstone.
+  if (this.prepared.field(key).property.interpretation !== 'native') this.applyPayloadToDraft({ [key]: '' });
+  this.prepared.remove(key, clear);
+  this.refreshPreparedDraft();
+ }
+
+ private bindPreparedRemoval(button: HTMLButtonElement, key: string): void {
+  const open = (event: MouseEvent | KeyboardEvent): void => {
+   const prepared = this.prepared;
+   if (!prepared || prepared.field(key).readOnlyReason || this.isSubmitting) return;
+   event.preventDefault();
+   const menu = new Menu();
+   menu.addItem(item => item.setTitle(t('buttons', 'clear')).onClick(() => { this.clearPreparedField(key, true); }));
+   menu.addItem(item => item.setTitle(t('table', 'filePropertyRemove')).onClick(() => { this.clearPreparedField(key, false); }));
+   if (event.type === 'contextmenu') menu.showAtMouseEvent(event as MouseEvent);
+   else menu.showAtPosition({ x: button.getBoundingClientRect().left, y: button.getBoundingClientRect().bottom });
+  };
+  button.addEventListener('contextmenu', open);
+  button.addEventListener('keydown', event => { if (event.key === 'ContextMenu' || event.shiftKey && event.key === 'F10') open(event); });
+ }
+
+ refreshPreparedSources(): void {
+  if (!this.preparedClosed) { this.prepared?.refreshParent(); this.refreshPreparedDraft(); }
+ }
+ private refreshPreparedDraft(refreshPreview = true): void {
+  if (!this.prepared || this.preparedClosed) return;
+  if (refreshPreview) this.refreshInlineParentPreview();
+  this.prepared.updateInputs(this.draft.description);
+  this.prepared.syncLegacy(this.draft);
+  if (!this.toolsEl) return;
+  this.renderFieldButtons(); this.renderSubmitControls(); this.applyThemeColor();
+  this.noteCompactEditor?.setSourceValue(this.draft.note);
+ }
+
+ private async selectPreparedTemplate(template: FileTaskTemplateOption | null): Promise<void> {
+  if (!this.prepared || this.preparedClosed) return;
+  this.draft.fileTemplateId = template?.id ?? '';
+  const pending = this.prepared.select(template, this.draft.description);
+  this.refreshPreparedDraft();
+  await pending;
+  this.refreshPreparedDraft();
+ }
+
+ private openPreparedPropertyPicker(key: string): void {
+  const prepared = this.prepared;
+  if (!prepared) return;
+  const field = prepared.field(key);
+  if (field.readOnlyReason || !field.property.type) return;
+  const anchor = this.fieldButtonMap.get(key);
+  if (!anchor) return;
+  this.closeActivePicker();
+  let members = field.members;
+  this.activePickerClose = openTableFilePropertyPicker({
+   app: this.app, anchor, label: this.getFieldLabel(key), settings: this.options.settings, sourcePath: '', lifecycleOwner: this.contentEl,
+   field: { key, label: key, type: field.property.type, group: 'fileProperty', icon: this.resolveFieldIcon(key), readonly: false, aliases: [], propertyName: key, sourceType: field.property.type === 'list' ? 'multitext' : field.property.type, sourceFileCount: 0 },
+   cellValue: { present: field.state !== 'missing' && field.state !== 'removed', rawValue: field.value ?? null, normalizedValue: field.value == null ? '' : encodeVaultPropertyValue(field.value, field.property.type) },
+   candidates: prepared.adapter.candidates(field.property.sourceName), nativeList: true,
+   onNativeOperation: operation => {
+    if (this.preparedClosed || this.isSubmitting) throw new Error('Creator is not editable');
+    if (operation.kind === 'append') for (const value of operation.values) prepared.draft.appendMember(key, value);
+    else if (operation.kind === 'clear') prepared.draft.clearValue(key);
+    else {
+     const member = members[operation.index];
+     if (!member) throw new Error('Creator member no longer exists');
+     if (operation.kind === 'edit') prepared.draft.editMember(key, member.id, operation.value);
+     else prepared.draft.removeMember(key, member.id);
+    }
+    this.refreshPreparedDraft(); members = prepared.field(key).members;
+    return members.map(member => member.value);
+   },
+   onMutation: mutation => {
+    if (this.preparedClosed || this.isSubmitting) return;
+    if (mutation.kind === 'delete') prepared.draft.removeField(key);
+    else if (mutation.kind === 'set') prepared.draft.setValue(key, mutation.value as VaultPropertyValue);
+    this.refreshPreparedDraft();
+   },
+   onClose: () => { this.closeActivePicker(); if (!this.preparedClosed) this.renderFieldButtons(); },
+  });
+  anchor.addClass('is-picker-open');
+ }
+
+ /** Apply destination inheritance through the shared draft before the first write. */
+ acceptPreparedTargetParent(id: string, fields: Record<string,string> | null, tags: readonly string[] | null) {
+  if (!this.prepared || this.preparedClosed) throw new Error('Creator is closed');
+  this.prepared.backgroundParent(id, fields, tags);
+  this.refreshPreparedDraft(false);
+  return this.prepared.submission('inline', this.draft.description, this.draft.inlineCompletionMode);
+ }
+ private async submitPrepared(mode: TaskCreatorCreateType): Promise<void> {
+  const prepared = this.prepared;
+  if (!prepared || this.isSubmitting || this.preparedUncertain || !prepared.canSubmit(mode) || !isTaskCreatorCreateTypeAllowed(this.submitMode, mode) || !this.ensureDescription()) return;
+  this.closeActivePicker(); this.closeSuggestions();
+  const request = prepared.submission(mode, this.draft.description, this.draft.inlineCompletionMode);
+  this.isSubmitting = true; this.contentEl.inert = true; this.renderSubmitControls();
+  try {
+   const result = await prepared.adapter.onSubmit(request);
+   if (result === true || typeof result === 'object' && result.outcome === 'committed') { this.resolved = true; this.forceClose(); }
+   else if (typeof result === 'object') {
+    if (result.message) new Notice(result.message);
+    this.preparedUncertain = result.outcome === 'uncertain';
+   }
+  } catch (error) { console.error('Operon: prepared Creator submit failed', error); }
+  finally { this.isSubmitting = false; this.contentEl.inert = false; if (!this.preparedClosed) this.renderSubmitControls(); }
+ }
 
 	private getAllTasks(): IndexedTask[] {
 		return this.options.getAllTasks?.() ?? this.options.allTasks;
@@ -1726,13 +1965,13 @@ export class TaskCreatorModal extends Modal {
 	}
 
 	private renderSubmitControls(): void {
-		const selectedTemplate = this.activeCreateType === 'file' ? this.getSelectedFileTemplate() : null;
-		const templateLabel = selectedTemplate?.name || (Platform.isPhone ? t('taskEditor', 'pickFileTaskTemplateShort') : t('taskEditor', 'pickFileTaskTemplate'));
+		const selectedTemplate = this.prepared || this.activeCreateType === 'file' ? this.getSelectedFileTemplate() : null;
+		const templateLabel = selectedTemplate?.name || (this.prepared && this.draft.fileTemplateId ? `${t('settings', 'defaultFileTaskTemplateUnavailable')} (${this.draft.fileTemplateId})` : '') || (Platform.isPhone ? t('taskEditor', 'pickFileTaskTemplateShort') : t('taskEditor', 'pickFileTaskTemplate'));
 		const templateAccessibleLabel = selectedTemplate?.name || t('taskEditor', 'pickFileTaskTemplate');
-		const templateControlEnabled = isTaskCreatorTemplateControlEnabled(this.submitMode, this.activeCreateType);
+		const templateControlEnabled = !!this.prepared || isTaskCreatorTemplateControlEnabled(this.submitMode, this.activeCreateType);
 		this.templateButtonEl.toggleClass('is-active', !!selectedTemplate);
 		this.templateButtonEl.toggleClass('is-picker-open', !!this.activePickerClose && this.templateButtonEl.hasClass('is-picker-open'));
-		this.templateButtonEl.disabled = this.isSubmitting || !templateControlEnabled || this.getFileTemplateOptions().length === 0;
+		this.templateButtonEl.disabled = this.isSubmitting || !templateControlEnabled || (!this.prepared && this.getFileTemplateOptions().length === 0);
 		this.templateButtonEl.empty();
 		this.templateButtonEl.removeClass('is-overflowing-label');
 		const labelEl = this.templateButtonEl.createSpan({
@@ -1751,20 +1990,31 @@ export class TaskCreatorModal extends Modal {
 			});
 		}
 
+  const templateState = this.prepared?.session.snapshot();
+  const blocked = this.preparedUncertain || !!this.prepared && !this.prepared.canSubmit(this.activeCreateType);
+  if (this.templateErrorEl) {
+   this.templateErrorEl.setText(templateState?.status === 'error' ? t('taskEditor', 'creatorTemplatePreparationFailed') : '');
+   this.templateErrorEl.toggleClass('is-hidden', templateState?.status !== 'error');
+  }
+  if (this.prepared) {
+   cleanupOperonHoverTooltips(this.templateButtonEl);
+   if (this.activeCreateType === 'inline') bindOperonHoverTooltip(this.templateButtonEl, { content: t('taskEditor', 'creatorInlineTemplateProperties'), taskColor: null });
+  }
 		const inlineActive = this.activeCreateType === 'inline';
 		this.inlineButtonEl.toggleClass('is-primary', inlineActive);
 		this.inlineButtonEl.toggleClass('is-secondary', !inlineActive);
-		this.inlineButtonEl.disabled = this.isSubmitting || this.submitMode === 'file-only';
+		this.inlineButtonEl.disabled = this.isSubmitting || (inlineActive && blocked) || this.submitMode === 'file-only';
 
 		const fileActive = this.activeCreateType === 'file';
 		this.fileButtonEl.toggleClass('is-primary', fileActive);
 		this.fileButtonEl.toggleClass('is-secondary', !fileActive);
-		this.fileButtonEl.disabled = this.isSubmitting
+		this.fileButtonEl.disabled = this.isSubmitting || (fileActive && blocked)
 			|| this.submitMode === 'inline-only'
 			|| (fileActive && !this.hasSelectedFileTemplate());
 	}
 
 	private hasValueForField(key: TaskCreatorFieldKey): boolean {
+  if (this.prepared) return this.prepared.fields(this.activeCreateType).some(field => this.prepared!.key(field) === key && field.state === 'value' && !field.readOnlyReason);
 		if (key === 'tags') return this.draft.tags.length > 0;
 		if (key === 'subtasks') return this.draft.subtaskIds.length > 0;
 		if (key === 'blocking' || key === 'blockedBy') return splitTaskListValue(this.draft.fieldValues[key]).length > 0;
@@ -1782,6 +2032,9 @@ export class TaskCreatorModal extends Modal {
 	}
 
 	private resolveFieldIcon(key: TaskCreatorFieldKey): string {
+  const field = this.prepared?.field(key);
+  if (field?.readOnlyReason === 'automatic') return 'shield-alert';
+  if (field?.property.interpretation === 'native') return ({ text: 'text', list: 'list', number: 'hash', checkbox: 'square-check', date: 'calendar', datetime: 'calendar-clock' } as const)[field.property.type ?? 'text'];
 		const customMapping = getCustomFieldMapping(this.options.settings.keyMappings, key);
 		if (customMapping) return getCustomFieldIcon(customMapping);
 		return getConfiguredKeyMappingIcon(key, this.options.settings.keyMappings)
@@ -1790,6 +2043,7 @@ export class TaskCreatorModal extends Modal {
 	}
 
 	private getVisibleToolbarFieldOrder(): TaskCreatorFieldKey[] {
+  if (this.prepared) return this.prepared.visibleKeys(this.activeCreateType).filter(key => this.canRenderToolbarField(key) || this.prepared!.field(key).property.interpretation === 'native');
 		return (this.options.settings.taskCreatorToolbar ?? [])
 			.filter(item => item.visible)
 			.map(item => item.key)
@@ -1817,6 +2071,13 @@ export class TaskCreatorModal extends Modal {
 	}
 
 	private bindFieldButtonTooltip(button: HTMLButtonElement, key: TaskCreatorFieldKey): void {
+  if (this.prepared) {
+   const field = this.prepared.field(key); const value = field.value;
+   const content = value === undefined || value === null ? '' : field.property.type ? encodeVaultPropertyValue(value, field.property.type) : String(value);
+   setAccessibleLabelWithoutTooltip(button, `${this.getFieldLabel(key)}${content ? ': ' + content : ''}`);
+   bindOperonHoverTooltip(button, { title: this.getFieldLabel(key), content, taskColor: null }); return;
+  }
+
 		const copy = getTaskCreatorToolbarTooltipCopy(key, this.options.settings.keyMappings);
 		if (!copy) return;
 		const displayValue = this.getFieldButtonDisplayValue(key);
@@ -1892,6 +2153,7 @@ export class TaskCreatorModal extends Modal {
 	}
 
 	private async handleInlineSubmit(): Promise<void> {
+  if (this.prepared) { await this.submitPrepared('inline'); return; }
 		if (this.isSubmitting) return;
 		if (this.submitMode === 'file-only') return;
 		if (!this.ensureDescription()) return;
@@ -1907,6 +2169,7 @@ export class TaskCreatorModal extends Modal {
 	}
 
 	private async handleFileSubmit(): Promise<void> {
+  if (this.prepared) { await this.submitPrepared('file'); return; }
 		if (this.isSubmitting) return;
 		if (!canSubmitTaskCreatorFileTask(this.submitMode, this.activeCreateType, this.hasSelectedFileTemplate())) {
 			new Notice(t('notifications', 'chooseFileTaskTemplateFirst'));

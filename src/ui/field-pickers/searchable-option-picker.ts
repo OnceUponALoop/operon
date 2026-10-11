@@ -13,6 +13,7 @@ export interface SearchableOptionPickerItem {
 	label: string;
 	description?: string;
 	icon?: string | null;
+	iconColor?: string;
 	title?: string;
 	group?: string | null;
 	groupLabel?: string | null;
@@ -166,6 +167,7 @@ export function showSearchableOptionPicker<TOption extends SearchableOptionPicke
 		if (match.icon) {
 			item.addClass('has-icon');
 			const iconEl = item.createSpan('operon-searchable-option-picker-item-icon');
+			if (match.iconColor) iconEl.style.setProperty('color', match.iconColor);
 			setIcon(iconEl, match.icon);
 		}
 		if (match.description) {

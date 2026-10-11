@@ -26,9 +26,11 @@ class Element {
  querySelector(s){return this.querySelectorAll(s)[0]??null;}closest(){return null;}
  getBoundingClientRect(){return {left:20,right:40,top:20,bottom:40,width:20,height:20};}
  addEventListener(k,fn){const a=this.events.get(k)??[];a.push(fn);this.events.set(k,a);}removeEventListener(k,fn){this.events.set(k,(this.events.get(k)??[]).filter(x=>x!==fn));}
- emit(type){for(const fn of [...(this.events.get(type)??[])])fn({type});}
+ keyboardFocus=false;matches(selector){return selector===':focus-visible'&&this.keyboardFocus;}
+ emit(type){if(type==='focusin')this.keyboardFocus=true;if(type==='focusout')this.keyboardFocus=false;for(const fn of [...(this.events.get(type)??[])])fn({type});}
 }
-const doc={body:null,defaultView:null,win:null,getElementById:()=>null};
+const documentEvents=new EventTarget();
+const doc={body:null,defaultView:null,win:null,getElementById:()=>null,addEventListener:documentEvents.addEventListener.bind(documentEvents),removeEventListener:documentEvents.removeEventListener.bind(documentEvents)};
 const win={innerWidth:900,innerHeight:800,createEl:tag=>new Element(tag),createSpan:()=>new Element(),addEventListener(){},removeEventListener(){},requestAnimationFrame:fn=>fn()};
 doc.defaultView=win;doc.win=win;doc.body=new Element('body');Object.assign(globalThis,{activeDocument:doc,activeWindow:win});
 const options={owner:doc.body,icon:'notebook-pen',label:'Edit note',tooltipTitle:'Note',onActivate(){}};

@@ -216,6 +216,14 @@ export class KeyMappingStore {
 			system: split.system,
 			custom: split.custom,
 		});
+		if (this.packagePersist) {
+			await this.packagePersist([...split.system, ...split.custom]);
+			this.system = split.system;
+			this.custom = split.custom;
+			this.serializedStore = nextSerializedStore;
+			this.recoveredFromMalformed = false;
+			return;
+		}
 		const adapter = this.app.vault.adapter;
 		if (shouldSkipStoreWrite(
 			nextSerializedStore === this.serializedStore,
@@ -230,11 +238,6 @@ export class KeyMappingStore {
 		this.system = split.system;
 		this.custom = split.custom;
 		this.serializedStore = nextSerializedStore;
-		if (this.packagePersist) {
-			await this.packagePersist(this.getAll());
-			this.recoveredFromMalformed = false;
-			return;
-		}
 		await this.persist();
 	}
 

@@ -26,6 +26,7 @@ import assert from 'node:assert/strict';
 import {TFile} from 'obsidian';
 import {TaskWriter} from './src/core/task-writer';
 import {withExcalidrawMarkdownSources,rebaseExcalidrawTaskSource,readExcalidrawMarkdownSections} from './src/ui/excalidraw-markdown-source';
+import {findInlinePropertyTask, mergeInlineEditorSource} from './src/core/inline-property-source';
 import {formatTaskNotice, formatTaskNoticeCount, buildTaskCreationNotices} from './src/core/task-notice';
 const RAW_TASK_CREATION_BULK_NOTICE_THRESHOLD=4,RAW_TASK_CREATION_NOTICE_SUPPRESSION_TTL_MS=30_000;
 import {isPluginUiMutationCommitted} from './src/systems/plugin-ui-mutation-feedback';

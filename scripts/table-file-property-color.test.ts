@@ -196,10 +196,10 @@ class FakeElement {
 	}
 }
 
-const fakeDocument = {
+const fakeDocument = Object.assign(new EventTarget(), {
 	getElementById: (_id: string): FakeElement | null => null,
 	win: { createSpan: (): FakeElement => new FakeElement('SPAN') },
-};
+});
 
 function asHtmlElement(element: FakeElement): HTMLElement {
 	return element as unknown as HTMLElement;

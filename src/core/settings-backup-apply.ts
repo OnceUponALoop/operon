@@ -1,3 +1,4 @@
+import { reconcileInlinePropertyDefinitions, retainInlinePropertyDefinition } from './inline-property-definitions';
 import { resolveContextualMenuActionOrder } from './contextual-menu-engine';
 import { sha256HexV1 } from '../agent-runtime/contracts/v1/canonical';
 import {
@@ -242,6 +243,10 @@ export function projectOperonSettingsBackupApplyDataPackageV1(
 	candidateSettings: OperonSettings,
 ): OperonDataPackageV1 {
 	const candidate = cloneJson(candidateSettings);
+	let definitions = current.taxonomy.inlinePropertyDefinitions;
+	for (const entry of candidate.inlinePropertyDefinitions?.entries ?? []) definitions = retainInlinePropertyDefinition(definitions, entry);
+	candidate.inlinePropertyDefinitions = reconcileInlinePropertyDefinitions(
+		[...current.taxonomy.keyMappings.system, ...current.taxonomy.keyMappings.custom], candidate.keyMappings, definitions);
 	const projected = buildOperonDataPackageFromSettings(candidate, {
 		filterSets: candidate.filterSets,
 		kanbanOrderBoards: current.views.kanbanOrder.boards,

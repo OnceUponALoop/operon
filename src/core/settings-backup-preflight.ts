@@ -1,3 +1,4 @@
+import { mergeImportedInlinePropertyDefinitions } from './inline-property-definitions';
 import { sha256HexV1 } from '../agent-runtime/contracts/v1/canonical';
 import type { JsonValue } from '../agent-runtime/contracts/v1/primitives';
 import {
@@ -567,7 +568,7 @@ function currentCompatibilitySupport(
 	migrations: readonly OperonSettingsBackupGroupMigrationV1[],
 ): OperonSettingsBackupCompatibilitySupport {
 	return {
-		dataPackageSchemaVersions: [dataPackageSchemaVersion],
+		dataPackageSchemaVersions: dataPackageSchemaVersion === 2 || dataPackageSchemaVersion === 3 ? [2, 3] : [dataPackageSchemaVersion],
 		currentSettingsVersion: CURRENT_SETTINGS_VERSION,
 		minimumSettingsVersion: CURRENT_SETTINGS_VERSION,
 		groupCodecVersions: Object.fromEntries(
@@ -681,6 +682,8 @@ function composeSelectedGroups(
 			...candidate.keyMappings.filter(mapping => mapping.isSystem !== false),
 			...cloneJson(payloads['custom-keys'].customKeys),
 		];
+		candidate.inlinePropertyDefinitions = mergeImportedInlinePropertyDefinitions(target.keyMappings, candidate.keyMappings,
+			target.inlinePropertyDefinitions, payloads['custom-keys'].inlinePropertyDefinitions, payloads['custom-keys'].customKeys);
 	}
 	if (selected.has('filters') && payloads.filters) {
 		const normalFilterSets = cloneJson(payloads.filters.filterSets);

@@ -54,7 +54,7 @@ function hasRawTaskLinePlaceholder(text: string): boolean {
 	return found;
 }
 
-function replaceTemplatePlaceholders(
+export function resolveOperonTemplateValue(
 	text: string,
 	context: OperonTemplatePlaceholderContext,
 ): string {
@@ -100,7 +100,7 @@ function replaceYamlPlaceholders(
 		return operonId;
 	});
 
-	if (context) return replaceTemplatePlaceholders(resolvedIds, context);
+	if (context) return resolveOperonTemplateValue(resolvedIds, context);
 	return resolvedIds;
 }
 
@@ -137,7 +137,7 @@ function replaceCheckboxLinePlaceholders(
 				});
 		}
 		if (context && resolveBodyText && nextLine.includes('{{')) {
-			nextLine = replaceTemplatePlaceholders(nextLine, context);
+			nextLine = resolveOperonTemplateValue(nextLine, context);
 		} else if (!context && isTaskLineCandidate(nextLine) && nextLine.includes('{{')) {
 			nextLine = replaceRawTaskLinePlaceholders(nextLine, options);
 		}

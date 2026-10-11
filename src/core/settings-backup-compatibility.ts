@@ -66,6 +66,7 @@ export const ALL_OPERON_SETTINGS_BACKUP_KEYS = [
 	'priorities',
 	'defaultPriority',
 	'keyMappings',
+	'inlinePropertyDefinitions',
 	'filterSets',
 	'filterShowSubtasks',
 	'filterSubtaskAutoExpandLimit',
@@ -121,7 +122,9 @@ export const ALL_OPERON_SETTINGS_BACKUP_KEYS = [
 	'projectSerialScopes',
 	'estimateAutoReallocation',
 	'taskCreatorToolbar',
+	'taskEditorSections',
 	'taskEditorShowLineNumbers',
+	'taskEditorHighlightActiveLine',
 	'taskEditorWorkflowPickers',
 	'taskEditorMobileCoreTools',
 	'inlineTaskCompactChips',
@@ -338,6 +341,7 @@ export const ALL_OPERON_SETTINGS_BACKUP_KEYS = [
 	'taskStatsBackfillVersion',
 	'taskCreatorDefaultToFileTask',
 	'taskCreatorDefaultFileTemplateId',
+	'defaultInlineTaskTemplateId',
 	'fileTaskTemplateFolder',
 	'excludedFolders',
 	'manageDailyNotesWithOperon',
@@ -418,6 +422,7 @@ const NON_PORTABLE_SUPPORT_BY_KEY = {
 	projectSerialScopes: 'vault-reference',
 	workspaceTweaksPropertiesExcludedFolders: 'vault-reference',
 	taskCreatorDefaultFileTemplateId: 'vault-reference',
+	defaultInlineTaskTemplateId: 'vault-reference',
 	fileTaskTemplateFolder: 'vault-reference',
 	dailyNoteTemplate: 'vault-reference',
 	dailyNoteFolder: 'vault-reference',
@@ -441,7 +446,7 @@ export const SETTINGS_BACKUP_VAULT_REFERENCE_KEYS = Object.freeze(
 
 const PIPELINE_KEYS = ['pipelines', 'defaultPipelineName'] as const satisfies readonly (keyof OperonSettings)[];
 const PRIORITY_KEYS = ['priorities', 'defaultPriority'] as const satisfies readonly (keyof OperonSettings)[];
-const KEY_MAPPING_KEYS = ['keyMappings'] as const satisfies readonly (keyof OperonSettings)[];
+const KEY_MAPPING_KEYS = ['keyMappings', 'inlinePropertyDefinitions'] as const satisfies readonly (keyof OperonSettings)[];
 const FILTER_KEYS = ['filterSets'] as const satisfies readonly (keyof OperonSettings)[];
 const FAVORITE_KEYS = ['presetFavorites'] as const satisfies readonly (keyof OperonSettings)[];
 const TABLE_GLOBAL_KEYS = [
@@ -528,7 +533,7 @@ export const SETTINGS_BACKUP_GROUPS = [
 	defineGroup('general', GENERAL_KEYS, ['pipelines', 'priorities', 'system-key-mappings', 'custom-keys', 'filters'], 'replace'),
 	defineGroup('pipelines', PIPELINE_KEYS, [], 'replace'),
 	defineGroup('priorities', PRIORITY_KEYS, [], 'replace'),
-	defineGroup('system-key-mappings', KEY_MAPPING_KEYS, [], 'merge-system-overrides'),
+	defineGroup('system-key-mappings', ['keyMappings'], [], 'merge-system-overrides'),
 	defineGroup('custom-keys', KEY_MAPPING_KEYS, ['system-key-mappings'], 'replace'),
 	defineGroup('filters', FILTER_KEYS, ['system-key-mappings', 'custom-keys'], 'replace'),
 	defineGroup('calendar', CALENDAR_KEYS, ['filters'], 'replace'),
@@ -590,7 +595,7 @@ export function assertSettingsBackupCompatibilityRegistryExhaustive(settings: Op
 		if (declared.has(key)) throw new Error(`Duplicate settings backup compatibility key: ${key}`);
 		declared.add(key);
 		// Optional UI preferences are deliberately absent until the first explicit edit.
-		if (key !== 'propertyValuePool' && key !== 'contextualMenuActionOrder' && !(key in settings)) throw new Error(`Runtime settings are missing compatibility key: ${key}`);
+		if (key !== 'inlinePropertyDefinitions' && key !== 'propertyValuePool' && key !== 'contextualMenuActionOrder' && !(key in settings)) throw new Error(`Runtime settings are missing compatibility key: ${key}`);
 		const compatibility = SETTINGS_BACKUP_COMPATIBILITY_BY_KEY[key];
 		if (!compatibility || compatibility.groups.length === 0) {
 			throw new Error(`Unclassified settings backup compatibility key: ${key}`);

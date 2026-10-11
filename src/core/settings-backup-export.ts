@@ -175,7 +175,8 @@ function buildGroups(settings: Readonly<OperonSettings>): OperonSettingsBackupGr
 		pipelines: versioned({ pipelines: settings.pipelines, defaultPipelineName: settings.defaultPipelineName }),
 		priorities: versioned({ priorities: settings.priorities, defaultPriority: settings.defaultPriority }),
 		'system-key-mappings': versioned({ overrides: systemMappings }),
-		'custom-keys': versioned({ customKeys: settings.keyMappings.filter(mapping => mapping.isSystem === false) }),
+		'custom-keys': versioned({ customKeys: settings.keyMappings.filter(mapping => mapping.isSystem === false),
+			...(settings.inlinePropertyDefinitions ? { inlinePropertyDefinitions: settings.inlinePropertyDefinitions } : {}), }),
 		filters: versioned({
 			filterSets: getNormalFilterSets(settings.filterSets),
 			dynamicTemplates: projectDynamicFilterTemplatePreferences(settings.filterSets),

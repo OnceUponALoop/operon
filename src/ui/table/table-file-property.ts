@@ -1,3 +1,5 @@
+import type { NativePropertyReadOnlyReason } from '../../core/task-editor-native-properties';
+import { encodeVaultPropertyValue } from '../../core/vault-property-codec';
 import { App, TFile } from 'obsidian';
 import { CANONICAL_KEYS, LEGACY_CANONICAL_KEY_ALIASES } from '../../types/keys';
 import type { IndexedTask } from '../../types/fields';
@@ -29,16 +31,8 @@ const DEFAULT_EXCLUDED_PROPERTY_NAMES = new Set([
 	'pinned',
 ]);
 
-export type ObsidianPropertyTypeId =
-	| 'text'
-	| 'multitext'
-	| 'number'
-	| 'checkbox'
-	| 'date'
-	| 'datetime'
-	| 'aliases'
-	| 'tags'
-	| 'unknown';
+export type { ObsidianPropertyTypeId } from '../../core/property-type-registry';
+import type { ObsidianPropertyTypeId } from '../../core/property-type-registry';
 
 export interface TableFilePropertyField {
 	key: string;
@@ -53,9 +47,15 @@ export interface TableFilePropertyField {
 	sourceFileCount: number;
 	/** The key is preserved but its current File Property type is not available. */
 	unavailable?: boolean;
+ readOnlyReason?: NativePropertyReadOnlyReason;
 }
 
-export type TableFilePropertyCellValue = FilePropertyCellValue;
+export interface TableFilePropertyCellValue extends FilePropertyCellValue {
+ nativeState?: 'ready' | 'unsupported';
+ readOnlyReason?: NativePropertyReadOnlyReason;
+ sourceName?: string;
+ inlineExpected?: { present: boolean; rawValue?: string };
+}
 
 export type TableFilePropertyQueryContext = FilePropertyQueryContext<
 	TableFilePropertyField,
@@ -63,12 +63,14 @@ export type TableFilePropertyQueryContext = FilePropertyQueryContext<
 >;
 
 export interface TableFilePropertySnapshot extends TableFilePropertyQueryContext {
+ loading?: boolean;
 	revision: number;
 }
 
 export type TableFilePropertyValueState = FilePropertyValueState;
 
 export interface TableFilePropertySnapshotOptions {
+ nativeListCandidates?: boolean;
 	keyMappings?: readonly KeyMapping[];
 	excludePropertyNames?: readonly string[];
 }
@@ -89,6 +91,7 @@ export interface CachedTableFilePropertyTypeResolver extends TableFilePropertyTy
 }
 
 export interface TableFilePropertyIndex {
+ getSourceRevision(path: string): string;
 	getSnapshot(
 		tasks: readonly IndexedTask[],
 		indexGeneration: number,
@@ -157,21 +160,7 @@ export function mapObsidianPropertyTypeToTableType(type: ObsidianPropertyTypeId)
 	}
 }
 
-export async function loadTableFilePropertyTypesFromConfig(
-	app: App,
-): Promise<Record<string, ObsidianPropertyTypeId>> {
-	const raw = await app.vault.adapter.read(`${app.vault.configDir}/types.json`);
-	const parsed: unknown = JSON.parse(raw);
-	if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) return {};
-	const types = (parsed as { types?: unknown }).types;
-	if (!types || typeof types !== 'object' || Array.isArray(types)) return {};
-	const resolved: Record<string, ObsidianPropertyTypeId> = {};
-	for (const [propertyName, type] of Object.entries(types)) {
-		const normalizedType = normalizeObsidianPropertyTypeId(type);
-		if (normalizedType) resolved[propertyName] = normalizedType;
-	}
-	return resolved;
-}
+export { loadPropertyTypeRegistry as loadTableFilePropertyTypesFromConfig } from '../../core/property-type-registry';
 
 export function createCachedTableFilePropertyTypeResolver(
 	initialTypes: Readonly<Record<string, ObsidianPropertyTypeId>> = {},
@@ -222,6 +211,20 @@ export function isEmptyTableFilePropertyValue(value: unknown): boolean {
 	return isEmptyFilePropertyValue(value);
 }
 
+/** Read all cached Markdown properties, including notes that are not Operon tasks. */
+export function createVaultFilePropertySnapshot(
+	app: App,
+	typeResolver: TableFilePropertyTypeResolver,
+	options: TableFilePropertySnapshotOptions = {},
+): TableFilePropertySnapshot {
+	const entries = app.vault.getMarkdownFiles().map(file => ({
+		path: file.path,
+		file,
+		frontmatter: new Map(Object.entries(app.metadataCache.getFileCache(file)?.frontmatter ?? {})),
+	}));
+	return buildTableFilePropertySnapshot(entries, 0, 0, typeResolver.getRevision?.() ?? 0, typeResolver, options);
+}
+
 export function createTableFilePropertyIndex(
 	app: App,
 	options: CreateTableFilePropertyIndexOptions = {},
@@ -236,12 +239,14 @@ export function createTableFilePropertyIndex(
 	};
 	const typeResolver = options.typeResolver ?? createInferredTableFilePropertyTypeResolver();
 	const snapshotLimit = normalizeSnapshotLimit(options.derivedSnapshotLimit);
+ let sourceEpoch = 0;
 
 	const invalidateDerivedSnapshots = (): void => {
 		state.derivedSnapshots.clear();
 	};
 
 	const index: TableFilePropertyIndex = {
+ getSourceRevision: path => `${sourceEpoch}:${state.pathRevisions.get(path) ?? 0}`,
 		getSnapshot(tasks, indexGeneration, snapshotOptions = {}) {
 			const filePaths = collectYamlTaskFilePaths(tasks);
 			const rawMetadataRevisions = filePaths.map(path => [path, state.pathRevisions.get(path) ?? 0] as const);
@@ -279,7 +284,7 @@ export function createTableFilePropertyIndex(
 		},
 		invalidateFile(path) {
 			const normalizedPath = path.trim();
-			if (!normalizedPath || !state.byPath.has(normalizedPath)) return;
+			if (!normalizedPath) return;
 			state.revision += 1;
 			state.pathRevisions.set(normalizedPath, (state.pathRevisions.get(normalizedPath) ?? 0) + 1);
 			state.dirtyPaths.add(normalizedPath);
@@ -289,7 +294,7 @@ export function createTableFilePropertyIndex(
 			if (!normalizedPath) return;
 			state.revision += 1;
 			state.dirtyPaths.delete(normalizedPath);
-			state.pathRevisions.delete(normalizedPath);
+			state.pathRevisions.set(normalizedPath, (state.pathRevisions.get(normalizedPath) ?? 0) + 1);
 			state.byPath.delete(normalizedPath);
 			invalidateDerivedSnapshots();
 		},
@@ -301,10 +306,13 @@ export function createTableFilePropertyIndex(
 			const hadOldEntry = normalizedOldPath ? state.byPath.has(normalizedOldPath) : false;
 			if (normalizedOldPath) {
 				state.dirtyPaths.delete(normalizedOldPath);
-				state.pathRevisions.delete(normalizedOldPath);
+				state.pathRevisions.set(normalizedOldPath, (state.pathRevisions.get(normalizedOldPath) ?? 0) + 1);
 				state.byPath.delete(normalizedOldPath);
 			}
-			if (normalizedNewPath && hadOldEntry) state.dirtyPaths.add(normalizedNewPath);
+			if (normalizedNewPath) {
+    state.pathRevisions.set(normalizedNewPath, (state.pathRevisions.get(normalizedNewPath) ?? 0) + 1);
+    if (hadOldEntry) state.dirtyPaths.add(normalizedNewPath);
+   }
 			invalidateDerivedSnapshots();
 		},
 		invalidateTypes() {
@@ -329,6 +337,7 @@ export function createTableFilePropertyIndex(
 			invalidateDerivedSnapshots();
 		},
 		clear() {
+   sourceEpoch += 1;
 			state.revision += 1;
 			state.typeRevision += 1;
 			state.dirtyPaths.clear();
@@ -438,7 +447,7 @@ function buildTableFilePropertySnapshot(
 		}));
 	const candidatesByProperty = new Map(Array.from(samplesByProperty, ([propertyName, samples]) => [
 		propertyName,
-		buildTableFilePropertyCandidates(samples),
+		buildTableFilePropertyCandidates(samples, options.nativeListCandidates === true && fields.some(field => field.propertyName === propertyName && field.type === 'list')),
 	] as const));
 
 	const entriesByPath = new Map(entries.map(entry => [entry.path, entry] as const));
@@ -475,7 +484,7 @@ function buildTableFilePropertySnapshot(
 	});
 }
 
-function buildTableFilePropertyCandidates(samples: readonly unknown[]): readonly string[] {
+function buildTableFilePropertyCandidates(samples: readonly unknown[], nativeList = false): readonly string[] {
 	const frequencies = new Map<string, number>();
 	const add = (value: RawYamlPropertyValue): void => {
 		if (Array.isArray(value)) {
@@ -483,7 +492,8 @@ function buildTableFilePropertyCandidates(samples: readonly unknown[]): readonly
 			return;
 		}
 		if (value === null) return;
-		const normalized = String(value).trim();
+		if (nativeList && (typeof value !== 'string' && typeof value !== 'number' || typeof value === 'number' && !Number.isFinite(value))) return;
+		const normalized = nativeList ? encodeVaultPropertyValue([value as string | number], 'list') : String(value).trim();
 		if (!normalized) return;
 		frequencies.set(normalized, (frequencies.get(normalized) ?? 0) + 1);
 	};
@@ -543,40 +553,6 @@ function inferObsidianPropertyType(samples: readonly unknown[]): ObsidianPropert
 	return 'text';
 }
 
-function normalizeObsidianPropertyTypeId(value: unknown): ObsidianPropertyTypeId | null {
-	if (
-		value === 'text'
-		|| value === 'multitext'
-		|| value === 'number'
-		|| value === 'checkbox'
-		|| value === 'date'
-		|| value === 'datetime'
-		|| value === 'aliases'
-		|| value === 'tags'
-	) return value;
-	return null;
-}
-
-const isSupportedTableFilePropertyValue = isSupportedRawYamlPropertyValue;
-
-function getTableFilePropertyTypeIcon(type: FilterFieldType): string {
-	switch (type) {
-		case 'list':
-		case 'tags':
-			return 'list';
-		case 'number':
-			return 'hash';
-		case 'checkbox':
-			return 'square-check';
-		case 'date':
-			return 'calendar';
-		case 'datetime':
-			return 'clock-3';
-		case 'text':
-		default:
-			return 'text';
-	}
-}
 
 function compareTableFilePropertyFields(left: TableFilePropertyField, right: TableFilePropertyField): number {
 	const labelResult = left.label.localeCompare(right.label, undefined, { sensitivity: 'base' });
@@ -590,6 +566,7 @@ function buildSnapshotOptionsSignature(options: TableFilePropertySnapshotOptions
 			mapping.visiblePropertyName ?? '',
 		]),
 		excludePropertyNames: [...(options.excludePropertyNames ?? [])],
+  ...(options.nativeListCandidates ? { nativeListCandidates: true } : {}),
 	});
 }
 
@@ -638,5 +615,38 @@ function trimSnapshotCache(cache: Map<string, TableFilePropertySnapshot>, limit:
 		const oldestEntry = cache.keys().next();
 		if (oldestEntry.done) return;
 		cache.delete(oldestEntry.value);
+	}
+}
+
+// Reuse the existing registry monitor; open editors subscribe without another poller.
+const propertyTypeListeners = new WeakMap<App, Set<() => void>>();
+export function subscribePropertyTypeChanges(app: App, listener: () => void): () => void {
+ let listeners = propertyTypeListeners.get(app);
+ if (!listeners) { listeners = new Set(); propertyTypeListeners.set(app, listeners); }
+ listeners.add(listener);
+ return () => { listeners.delete(listener); };
+}
+export function notifyPropertyTypeChanges(app: App): void {
+ for (const listener of propertyTypeListeners.get(app) ?? []) listener();
+}
+
+const isSupportedTableFilePropertyValue = isSupportedRawYamlPropertyValue;
+
+export function getTableFilePropertyTypeIcon(type: FilterFieldType): string {
+	switch (type) {
+		case 'list':
+		case 'tags':
+			return 'list';
+		case 'number':
+			return 'hash';
+		case 'checkbox':
+			return 'square-check';
+		case 'date':
+			return 'calendar';
+		case 'datetime':
+			return 'clock-3';
+		case 'text':
+		default:
+			return 'text';
 	}
 }

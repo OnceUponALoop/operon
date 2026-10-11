@@ -9,17 +9,42 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### New
 
+- Added **Vault Properties** to the desktop Task Editor and main and embedded Tables for both File and Inline Tasks, with editors for Text, List, Number, Checkbox, Date, and Date & time values.
+- Added **Inline Task templates** in Task Creator using the same template picker as File Tasks. Inline Tasks use supported template properties without copying the template body.
+- Added **Default Inline Task Template** in Inline Tasks settings, including None and minimal pipeline templates, for Task Creator, quick creation, and supported checkbox and selection conversions.
+- Added desktop **Task Editor section customization** to rename, reorder, and hide sections while keeping Description available and mobile preferences separate.
+- Added **active-line highlighting** for the Task Editor File Body, with editor commands for line numbers and workspace scrollbar visibility.
+
 - Added **Tasks bulk conversion** in Settings → Tasks → Inline tasks: select files or folders, scan, and convert eligible Tasks emoji tasks with an inline confirmation. Progress, cancellation, results, and interrupted-conversion recovery stay in Settings. Template and excluded folders are skipped before reading their contents, and information preserved in task notes is distinguished from warnings and errors.
+
 
 ### Improved
 
-- Expanded **Tasks emoji conversion** with dependency linking within the conversion set and support for more recurrence patterns, preserving unsupported metadata in task notes. Bulk-converted tasks remain independent without inheriting parent fields.
+- Reorganized the desktop **Task Editor** into compact property groups with consistent task colors, expandable description and notes, clearer identity actions, and stable split-panel sizing.
+- Unified custom and vault properties in **Additional**. Existing empty properties appear as header shortcuts, and Automatic properties can be selected with a warning icon and an explanation of why editing is unavailable.
+- Made **Automatic and incompatible property warnings** clearer in Task Editor and Tables, including empty cells. Automatic fields use a red shield icon, and read-only explanations take precedence over truncated-value tooltips.
+- Improved **Vault Property loading and updates** with a shared in-memory index, reducing repeated source reads and unnecessary table sorting when opening presets or changing task values.
+- Made **Task Creator** show the combined user, parent, surface, and template values before creation. Relevant hidden properties appear temporarily, empty template fields remain available to fill, and user edits and removals survive template changes. Previewed template dates remain fixed when saved.
+- Reduced **Task Creator** visual clutter with compact spacing and one line per property icon when the controls are inactive. Icons expand during property interaction, and typing Template in the description offers a shortcut to the template picker.
+- Made **Stats and Sessions** more compact and easier to scan, with time summaries, subtask counters, collapsible session lists, and clearer duration and weekday hints. Empty Stats sections stay hidden.
+- Improved **File Body** source focus, cursor placement, active-line feedback, and line-number background, alongside more consistent hover controls, date pickers, truncated-text hints, and theme compatibility.
+- Made **template-based creation and conversion** preserve native value types, repeated list members, source priorities, and user changes. Bulk selection conversions within notes reuse template content and keep existing Operon tasks unchanged. Destination inheritance is applied in the same submission without an extra review step.
+
+- Expanded **Tasks emoji conversion** with dependency linking within the conversion set and support for more recurrence patterns, preserving unsupported metadata in task notes. Tasks converted through Settings remain independent without applying default inline templates or inheriting parent fields.
 
 - Improved **Live Preview and Reading Mode** responsiveness in notes with many inline tasks by reusing shared preparation, retaining unchanged rows and filters, and preparing note tooltips when opened. Hidden metadata and the top task filter now participate in editor height calculations for more stable scrolling.
 
 - **Date/time and time-only pickers** now accept any minute while keeping quarter-hour suggestions initially. Typing a minute prefix offers matching minute choices, with keyboard navigation and highlighting following the visible suggestions.
 
 - Opening an empty **Starts at** picker in Task Editor now fills in the task’s scheduled date and focuses the time field; the date remains editable.
+
+
+### Changed
+
+- Switching between **File and Inline** in Task Creator now loads the destination mode's default template while preserving user edits. Manual template selection or clearing remains in effect until the mode changes.
+- **Inline template creation** omits empty property values and empty lists while preserving `0`, `false`, and lists containing an empty string. File Task template fields keep their existing behavior.
+- Inline template creation skips **Automatic, Templater, nested unsupported, and file-only fields**, then reports skipped fields together after successful creation. Invalid template YAML stops creation without changing the task source.
+
 
 ### Fixed
 
@@ -33,9 +58,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Fixed **Calendar week → 1 Day** preset changes retaining the previous weekly range until the view was reopened.
 
+
+### Security
+
+- Updated development dependencies to address known security vulnerabilities.
+
 ### Validation
 
-- Local Plugin checks, strict lint, production build, release guard, and focused code review passed, along with **4,598/4,598** local regression tests.
+- Passed combined local validation, including strict lint, production build, Runtime and Developer API regressions, Index V8 checks, locale checks, and the Plugin release guard.
+- Passed 66 creation-draft, 31 prepared-Creator, and 164 native-property and index tests on the combined source.
 
 ## [3.12.0] - 2026-10-06
 

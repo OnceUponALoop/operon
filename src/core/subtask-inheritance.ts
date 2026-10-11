@@ -171,7 +171,7 @@ export function resolveSubtaskInitialFields(
 }
 
 /** Serialize the existing list grammar without changing literal backslashes. */
-function serializeParentLinkList(items: string[]): string {
+export function serializeTaskListValue(items: string[]): string {
 	// parseListValue only recognizes backslash-semicolon, not doubled backslashes.
 	// Encode semicolons explicitly, then verify every item boundary before a write.
 	const encoded = items.map(item => Array.from(item, character => character === ';' ? '\\;' : character).join('')).join('; ');
@@ -210,7 +210,7 @@ export function resolveParentLinkInheritance(
 				return true;
 			});
 			if (missing.length) {
-				additions[payloadKey] = serializeParentLinkList([...existing, ...missing]);
+				additions[payloadKey] = serializeTaskListValue([...existing, ...missing]);
 			}
 		} else if (!current.trim() && typeof value === 'string' && value.trim()) {
 			additions[key] = value;
@@ -247,5 +247,5 @@ export async function loadParentLinkListSource(
   if (listItems[key].some(item => item.includes(';'))) throw new Error('Parent YAML list item contains an ambiguous semicolon.');
  }
  // Use the same fresh source projection so absent/deleted lists cannot fall back to stale index values.
- return { ...parent, fieldValues: { ...parent.fieldValues, ...Object.fromEntries(keys.map(key => [key, serializeParentLinkList(listItems[key])])) } };
+ return { ...parent, fieldValues: { ...parent.fieldValues, ...Object.fromEntries(keys.map(key => [key, serializeTaskListValue(listItems[key])])) } };
 }

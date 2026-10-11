@@ -1,3 +1,4 @@
+import type { NativePropertyReadOnlyReason } from '../../core/task-editor-native-properties';
 import { getConfiguredKeyMappingIcon } from '../../core/key-mapping-icons';
 import { t } from '../../core/i18n';
 import { getManagedCustomFieldMappings, getManagedCustomKeyMapping } from '../../core/managed-task-fields';
@@ -34,6 +35,7 @@ export interface TableTaskField {
 	sourceLabel?: string;
 	/** The key is structurally supported but not present in the current File Task scope. */
 	unavailable?: boolean;
+ readOnlyReason?: NativePropertyReadOnlyReason;
 }
 
 export const PROJECT_SERIAL_TABLE_FIELD_KEY = 'projectSerial';

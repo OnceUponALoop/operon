@@ -98,7 +98,7 @@ function renderYamlRepair(content: string, task: SourceTask, mappings: KeyMappin
 		if (aliases.length !== 1) throw new Error('Ambiguous YAML reference output');
 		mutable[aliases[0]] = value;
 	}
-	return normalizeYamlFrontmatterFormatting(`${match[1]}${stringifyYaml(mutable).trimEnd()}${match[3]}${content.slice(match[0].length)}`, formatting);
+	return normalizeYamlFrontmatterFormatting(`${match[1]}${stringifyYaml(mutable).replace(/\r?\n$/, '')}${match[3]}${content.slice(match[0].length)}`, formatting);
 }
 
 /**
@@ -127,7 +127,7 @@ export function planTaskIdRepairSources(
 			if (bodyStart > 0) {
 				const header = lines.slice(1, bodyStart - 1).join('\n');
 				let yaml: unknown;
-				try { yaml = parseYaml(header); }
+				try { yaml = parseYaml(header + '\n'); }
 				catch {
 					const identities = [target.operonId?.trim(), nextId].filter((id): id is string => !!id);
 					if (source.filePath === target.filePath || header.includes('\\') || header.includes("''") || /\s/u.test(target.operonId?.trim() ?? '') || identities.some(id => header.toLowerCase().includes(id.toLowerCase()))) {

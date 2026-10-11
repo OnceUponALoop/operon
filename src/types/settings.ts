@@ -1,3 +1,5 @@
+import { cloneInlinePropertyDefinitions, validateInlinePropertyDefinitions } from '../core/inline-property-definitions';
+import { normalizeTaskEditorSections, type TaskEditorSection } from './task-editor-sections';
 import { DEFAULT_TASK_CARD_SETTINGS, normalizeTaskCardSettings, type TaskCardSettings } from './task-card';
 /**
  * Operon plugin settings with versioned schema and migration.
@@ -1542,6 +1544,8 @@ function buildDefaultKeyMappings(): KeyMapping[] {
 
 /** Complete Operon settings interface (v1) */
 export interface OperonSettings extends TaskCardSettings {
+	/** Internal source interpretation metadata; not a user-facing preference. */
+	inlinePropertyDefinitions?: import('../core/inline-property-definitions').InlinePropertyDefinitions;
 	/** Raw optional UI preferences; preserve unknown/future content without repair. */
 	propertyValuePool?: unknown;
 	settingsVersion: number;
@@ -1660,8 +1664,12 @@ export interface OperonSettings extends TaskCardSettings {
 	estimateAutoReallocation: boolean;
 	/** Ordered, user-customizable visual controls for the New Operon Task toolbar. */
 	taskCreatorToolbar: TaskCreatorToolbarItem[];
+	/** Desktop Task Editor section order and optional custom titles. */
+	taskEditorSections: TaskEditorSection[];
 	/** If true, the Task Editor file body source panel shows source line numbers. */
 	taskEditorShowLineNumbers: boolean;
+	/** If true, highlight the current source line in the Task Editor file body. */
+	taskEditorHighlightActiveLine: boolean;
 	/** Ordered, user-customizable picker rows shown in the Task Editor workflow area. */
 	taskEditorWorkflowPickers: TaskEditorWorkflowPickerItem[];
 	/** Ordered, phone-only core action icons shown in the Task Editor compact toolbar. */
@@ -1930,6 +1938,7 @@ export interface OperonSettings extends TaskCardSettings {
 	taskCreatorDefaultToFileTask: boolean;
 	/** Optional default template applied when Task Creator enters File Task mode. */
 	taskCreatorDefaultFileTemplateId: string | null;
+	defaultInlineTaskTemplateId: string | null;
 	/** Folder whose top-level markdown files are offered in the file-task template picker. */
 	fileTaskTemplateFolder: string;
 	/** Additional vault folders excluded from Operon's global task index. */
@@ -2229,7 +2238,9 @@ export const DEFAULT_SETTINGS: OperonSettings = {
 	projectSerialScopes: [],
 	estimateAutoReallocation: false,
 	taskCreatorToolbar: buildDefaultTaskCreatorToolbarItems(),
+	taskEditorSections: normalizeTaskEditorSections(undefined),
 	taskEditorShowLineNumbers: false,
+	taskEditorHighlightActiveLine: true,
 	taskEditorWorkflowPickers: buildDefaultTaskEditorWorkflowPickerItems(),
 	taskEditorMobileCoreTools: buildDefaultTaskEditorMobileCoreToolItems(),
 	inlineTaskCompactChips: buildDefaultInlineTaskCompactChipItems(),
@@ -2443,6 +2454,7 @@ export const DEFAULT_SETTINGS: OperonSettings = {
 
 	taskCreatorDefaultToFileTask: false,
 	taskCreatorDefaultFileTemplateId: null,
+	defaultInlineTaskTemplateId: null,
 	fileTaskTemplateFolder: '',
 	excludedFolders: [],
 	manageDailyNotesWithOperon: false,
@@ -3975,6 +3987,10 @@ export function migrateSettings(raw: unknown): OperonSettings {
 		? Math.floor(src.settingsVersion)
 		: 0;
 	const out = { ...DEFAULT_SETTINGS };
+	if (src.inlinePropertyDefinitions !== undefined) {
+		validateInlinePropertyDefinitions(src.inlinePropertyDefinitions);
+		out.inlinePropertyDefinitions = cloneInlinePropertyDefinitions(src.inlinePropertyDefinitions);
+	}
 	if (src.propertyValuePool !== undefined) out.propertyValuePool = JSON.parse(JSON.stringify(src.propertyValuePool)) as unknown;
 	const tablePresetsSource = sourceSettingsVersion < TASK_DATA_TYPE_SETTINGS_VERSION
 		? migrateLegacyTablePresetDataTypeReferences(src.tablePresets)
@@ -4309,11 +4325,15 @@ export function migrateSettings(raw: unknown): OperonSettings {
 		? src.inlineTaskDailyNoteAddScheduledDate
 		: DEFAULT_SETTINGS.inlineTaskDailyNoteAddScheduledDate;
 	out.taskCreatorToolbar = normalizeTaskCreatorToolbar(src.taskCreatorToolbar);
+	out.taskEditorSections = normalizeTaskEditorSections(src.taskEditorSections);
 	out.taskEditorShowLineNumbers = typeof src.taskEditorShowLineNumbers === 'boolean'
 		? src.taskEditorShowLineNumbers
 		: Object.keys(src).length === 0
 			? DEFAULT_SETTINGS.taskEditorShowLineNumbers
 			: true;
+	out.taskEditorHighlightActiveLine = typeof src.taskEditorHighlightActiveLine === 'boolean'
+		? src.taskEditorHighlightActiveLine
+		: DEFAULT_SETTINGS.taskEditorHighlightActiveLine;
 	out.taskEditorWorkflowPickers = normalizeTaskEditorWorkflowPickers(
 		src.taskEditorWorkflowPickers,
 		'taskEditorWorkflowPickers' in src || Object.keys(src).length === 0
@@ -4873,6 +4893,7 @@ export function migrateSettings(raw: unknown): OperonSettings {
 	out.fileTaskAutoArchiveEnabled = hasEffectiveFileTaskArchiveTarget(out);
 	out.fileTaskArchiveDelaySeconds = FILE_TASK_ARCHIVE_DELAY_SECONDS;
 	out.fileTaskArchiveOnlyFromFileTasksFolder = false;
+	out.defaultInlineTaskTemplateId = normalizeOptionalString(src.defaultInlineTaskTemplateId) ?? null;
 	out.taskCreatorDefaultFileTemplateId = normalizeStoredFileTaskTemplateId(
 		src.taskCreatorDefaultFileTemplateId,
 		out.pipelines,

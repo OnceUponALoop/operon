@@ -10,6 +10,7 @@ export interface SearchableFieldPickerOption {
 	secondaryLabel?: string;
 	type?: string;
 	icon?: string | null;
+	iconColor?: string;
 	group?: string | null;
 	groupLabel?: string | null;
 	groupOrder?: number;
@@ -54,6 +55,7 @@ export function showSearchableFieldPicker<TField extends SearchableFieldPickerOp
 		label: fieldOption.label || fieldOption.field,
 		description: fieldOption.secondaryLabel,
 		icon: fieldOption.icon,
+		iconColor: fieldOption.iconColor,
 		group: fieldOption.group,
 		groupLabel: fieldOption.groupLabel,
 		groupOrder: fieldOption.groupOrder,

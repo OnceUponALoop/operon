@@ -181,10 +181,14 @@ function stripTaskCardDefaults(data: OperonDataPackageV1, verify = false): void 
  const excalidraw = data.ui.contextualMenu.contextualMenuSurfaceActionMatrix?.excalidrawTask;
  if (verify && excalidraw !== undefined) assert.deepEqual(excalidraw, DEFAULT_SETTINGS.contextualMenuSurfaceActionMatrix.excalidrawTask);
  delete data.ui.contextualMenu.contextualMenuSurfaceActionMatrix?.excalidrawTask;
+ if (verify) assert.deepEqual(data.ui.taskUiPreferences.taskEditorSections, DEFAULT_SETTINGS.taskEditorSections);
+ delete (data.ui.taskUiPreferences as Partial<typeof data.ui.taskUiPreferences>).taskEditorSections;
  if (verify) assert.equal(data.automation.taskAutomationPolicy.keepInlineTasksWithParent, false);
  delete (data.automation.taskAutomationPolicy as Partial<typeof data.automation.taskAutomationPolicy>).keepInlineTasksWithParent;
  if (verify) assert.equal(data.ui.taskUiPreferences.assigneeImageProperty, '');
  delete (data.ui.taskUiPreferences as Partial<typeof data.ui.taskUiPreferences>).assigneeImageProperty;
+ if (verify) assert.equal(data.ui.taskUiPreferences.taskEditorHighlightActiveLine, true);
+ delete (data.ui.taskUiPreferences as Partial<typeof data.ui.taskUiPreferences>).taskEditorHighlightActiveLine;
  // Keep sealed legacy fixtures unchanged while verifying the new opt-in default.
  if (verify) assert.equal(data.ui.taskCreationProfile.inheritPropertiesOnParentLink, false);
  delete (data.ui.taskCreationProfile as Partial<typeof data.ui.taskCreationProfile>).inheritPropertiesOnParentLink;

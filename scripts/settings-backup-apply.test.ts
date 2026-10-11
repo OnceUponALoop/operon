@@ -1307,3 +1307,22 @@ test('JSON projection preserves Table authority while applying Table-global pref
 	assert.deepEqual(jsonOnly.state, current.state);
 	assert.deepEqual(jsonOnly.integrations.developerApi, current.integrations.developerApi);
 });
+
+test('inline default template export/import preserves selection and reset removes it', async () => {
+ const harness = await createHarness(canonicalPackage(clone(DEFAULT_SETTINGS)));
+ const source = clone((await harness.storage.captureCommittedSettingsBackupSnapshot()).settings);
+ source.defaultInlineTaskTemplateId = 'folder-file-task-template:Templates/Inline.md';
+ const sourceJson = exportJson(source);
+ const preflight = preflightOperonSettingsBackupRestoreV1({
+  sourceJson, targetSnapshot: await harness.storage.captureCommittedSettingsBackupSnapshot(), selectedGroups: ['general'],
+  vaultReferenceChecks: { defaultInlineTaskTemplateId: { status: 'unchecked' } },
+  vaultReferenceDecisions: { defaultInlineTaskTemplateId: 'apply-source' },
+ });
+ assert.ok(preflight.ok && preflight.restorePlan);
+ const result = await harness.storage.applySettingsBackupRestorePlanV1(applyInput(sourceJson, preflight.restorePlan));
+ assert.ok(result.status === 'success' || result.status === 'success-with-migrations');
+ assert.equal(harness.storage.getSettings().defaultInlineTaskTemplateId, source.defaultInlineTaskTemplateId);
+ await harness.storage.updateSettings({ defaultInlineTaskTemplateId: null });
+ const saved = await harness.storage.captureCommittedSettingsBackupSnapshot();
+ assert.equal(saved.settings.defaultInlineTaskTemplateId, null);
+});

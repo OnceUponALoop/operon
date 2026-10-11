@@ -1,3 +1,4 @@
+import { decodeVaultPropertyList, encodeVaultPropertyValue } from '../../../core/vault-property-codec';
 import type { App } from 'obsidian';
 import { t } from '../../../core/i18n';
 import { bindPickerListItemActivation, createButton, requestFloatingInputFocus, scrollChildIntoView } from '../common';
@@ -8,7 +9,14 @@ import { getOwnerWindow } from '../../../core/dom-compat';
 const CUSTOM_LIST_PAGE_SIZE = 20;
 const CUSTOM_LIST_LOAD_MORE_SCROLL_THRESHOLD_PX = 48;
 
+export type NativeListPickerOperation = { kind: 'append'; values: (string | number)[] } | { kind: 'edit'; index: number; value: string | number } | { kind: 'remove'; index: number } | { kind: 'clear' };
+
 export interface CustomListFieldPickerOptions extends CustomFieldPickerBaseOptions<'list'> {
+ preserveValues?: boolean;
+ nativeValues?: readonly (string | number)[];
+ editIndex?: number;
+ onNativeOperation?: (operation: NativeListPickerOperation) => readonly (string | number)[];
+ onCommitNativeValues?: (values: (string | number)[]) => void;
  rankEmptyCandidates?: (candidates: readonly string[]) => string[];
 	app: App;
 	sourcePath?: string;
@@ -50,7 +58,9 @@ export function showCustomListFieldPicker(
 			close();
 			return;
 		}
+		if (operate({ kind: 'clear' })) { editingIndex = null; input.value = ''; renderSelected(); updateMatches(input.value); return; }
 		selectedValues = [];
+  if (native) { editingIndex = null; input.value = ''; }
 		persist();
 		renderSelected();
 		updateMatches(input.value);
@@ -58,14 +68,26 @@ export function showCustomListFieldPicker(
 	});
 	actions.appendChild(clearButton);
 
-	let selectedValues = Array.from(new Set(options.value.map(normalizeCustomListValue).filter(Boolean)));
+	const native = options.nativeValues !== undefined;
+ let selectedValues = native ? options.nativeValues!.map(value => encodeVaultPropertyValue([value], 'list')) : Array.from(new Set(options.preserveValues ? options.value : options.value.map(normalizeCustomListValue).filter(Boolean)));
+ let editingIndex: number | null = native && options.editIndex !== undefined ? options.editIndex : null;
+ if (editingIndex !== null) input.value = selectedValues[editingIndex] ?? '';
 	let matches: string[] = [];
 	let activeIndex = 0;
 	let loadedCount = 0;
 
-	const persist = (): void => {
+	const operate = (operation: NativeListPickerOperation): boolean => {
+  if (!options.onNativeOperation) return false;
+  try {
+   selectedValues = options.onNativeOperation(operation).map(value => encodeVaultPropertyValue([value], 'list'));
+   completed = true; input.removeAttribute('aria-invalid');
+  } catch { input.setAttribute('aria-invalid', 'true'); }
+  return true;
+ };
+ const persist = (): void => {
 		completed = true;
-		if (options.onCommitValues) options.onCommitValues(options.canonicalKey, [...selectedValues]);
+		if (native) options.onCommitNativeValues?.(decodeVaultPropertyList(selectedValues.join('; ')));
+  else if (options.onCommitValues) options.onCommitValues(options.canonicalKey, [...selectedValues]);
 		else options.onCommit(options.canonicalKey, selectedValues.join('; '));
 	};
 
@@ -154,7 +176,7 @@ export function showCustomListFieldPicker(
 	const renderSelected = (): void => {
 		selectedWrap.replaceChildren();
 		selectedWrap.classList.toggle('is-visible', selectedValues.length > 0);
-		for (const value of selectedValues) {
+		for (const [index, value] of selectedValues.entries()) {
 			const labelText = formatCustomListDisplayValue(value);
 			const chip = selectedWrap.createDiv('operon-custom-list-picker-chip');
 			chip.createSpan({
@@ -162,6 +184,12 @@ export function showCustomListFieldPicker(
 				cls: 'operon-custom-list-picker-chip-label',
 			});
 			bindCustomListWikilinkPreview(options, chip, value);
+   if (native) {
+    chip.tabIndex = 0;
+    const edit = (): void => { editingIndex = index; input.value = value; requestFloatingInputFocus(input); };
+    chip.addEventListener('click', event => { if (!(event.target as HTMLElement).closest('button')) edit(); });
+    chip.addEventListener('keydown', event => { if (event.target === chip && event.key === 'Enter') { event.preventDefault(); edit(); } });
+   }
 
 			const remove = chip.createEl('button', {
 				cls: 'operon-custom-list-picker-chip-remove',
@@ -172,7 +200,9 @@ export function showCustomListFieldPicker(
 			});
 			setAccessibleLabelWithoutTooltip(remove, t('taskEditor', 'removeValue', { value: labelText }));
 			remove.addEventListener('click', () => {
-				selectedValues = selectedValues.filter(existing => existing !== value);
+				if (operate({ kind: 'remove', index })) { editingIndex = null; input.value = ''; renderSelected(); updateMatches(input.value); return; }
+				selectedValues = native ? selectedValues.filter((_existing, position) => position !== index) : selectedValues.filter(existing => existing !== value);
+    if (native) { editingIndex = null; input.value = ''; }
 				renderSelected();
 				updateMatches(input.value);
 				persist();
@@ -181,6 +211,24 @@ export function showCustomListFieldPicker(
 	};
 
 	function addValue(rawValue: string): void {
+  if (native) {
+   try {
+    const values = decodeVaultPropertyList(rawValue).map(value => encodeVaultPropertyValue([value], 'list'));
+    if (!values.length) return;
+    if (options.onNativeOperation) {
+     const decoded = decodeVaultPropertyList(rawValue);
+     if (editingIndex !== null && decoded.length !== 1) throw new Error('Edit one member at a time');
+     operate(editingIndex === null ? { kind: 'append', values: decoded } : { kind: 'edit', index: editingIndex, value: decoded[0] });
+     if (input.getAttribute('aria-invalid') !== 'true') { editingIndex = null; input.value = ''; }
+     renderSelected(); updateMatches(input.value); return;
+    }
+    if (editingIndex === null) selectedValues.push(...values);
+    else selectedValues.splice(editingIndex, 1, ...values);
+    editingIndex = null; input.value = ''; input.removeAttribute('aria-invalid');
+    renderSelected(); updateMatches(''); persist();
+   } catch { input.setAttribute('aria-invalid', 'true'); }
+   return;
+  }
 		const normalized = normalizeCustomListValue(rawValue);
 		if (!normalized || selectedValues.includes(normalized)) return;
 		selectedValues.push(normalized);
@@ -208,7 +256,9 @@ export function showCustomListFieldPicker(
 	input.addEventListener('keydown', event => {
 		if (event.key === 'Backspace' && !input.value.trim() && selectedValues.length > 0) {
 			event.preventDefault();
-			selectedValues = selectedValues.slice(0, -1);
+			if (operate({ kind: 'remove', index: editingIndex ?? selectedValues.length - 1 })) { editingIndex = null; renderSelected(); updateMatches(''); return; }
+			selectedValues = native && editingIndex !== null ? selectedValues.filter((_value, index) => index !== editingIndex) : selectedValues.slice(0, -1);
+   editingIndex = null;
 			persist();
 			renderSelected();
 			updateMatches('');
@@ -228,9 +278,9 @@ export function showCustomListFieldPicker(
 			renderSuggestions();
 			return;
 		}
-		if (event.key === 'Enter' || event.key === 'Tab' || event.key === ',' || (!options.mediaReference && event.key === ';')) {
+		if (event.key === 'Enter' || event.key === 'Tab' || (!native && (event.key === ',' || (!options.mediaReference && event.key === ';')))) {
 			const typed = input.value.trim();
-			if (event.key === 'Enter' && matches[activeIndex]) {
+			if (event.key === 'Enter' && matches[activeIndex] && !native) {
 				event.preventDefault();
 				addValue(matches[activeIndex]);
 				return;

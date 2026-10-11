@@ -1,3 +1,8 @@
+import type { NativeListPickerOperation } from '../field-pickers/custom/custom-list-field-picker';
+import { formatUiDate } from '../../core/ui-date-format';
+import { formatUiTaskDatetime } from '../../core/ui-time-format';
+import { encodeVaultPropertyValue } from '../../core/vault-property-codec';
+import type { InlinePropertyType } from '../../core/inline-property-definitions';
 import { App, Menu, Notice, setIcon } from 'obsidian';
 import type { IndexedTask } from '../../types/fields';
 import type { OperonSettings } from '../../types/settings';
@@ -28,11 +33,17 @@ import {
 import { resolveTableColumnCellAccent } from './table-column-color';
 import { renderTableTextValueDisplay } from './table-description-cell';
 import { formatTableIconOnlyTooltipContent, renderTableIconOnlyCell } from './table-icon-only-cell';
+import { bindPropertyReadOnlyWarning } from '../property-readonly-warning';
 import { createCompactTaskMarkdownTooltipContent } from '../operon-hover-tooltip';
+import { showSearchableOptionPicker } from '../field-pickers/searchable-option-picker';
+import { resolveSurfaceFloatingHostOptions } from '../field-pickers/common';
 import { showTextFieldPopover } from '../text-field-popover';
 import { buildTableFilePropertyTextMutation, resolveTableTextEditRoute } from './table-text-edit-route';
 
 export interface TableFilePropertyUpdateRequest {
+ sourceFormat?: 'yaml' | 'inline';
+ nativeType?: InlinePropertyType;
+ inlineExpected?: { present: boolean; rawValue?: string };
 	propertyName: string;
 	expected: RawYamlPropertyExpectation;
 	mutation: RawYamlPropertyMutation;
@@ -53,7 +64,9 @@ export function canEditTableFilePropertyCell(
 	cellValue: TableFilePropertyCellValue,
 	canWrite: boolean,
 ): boolean {
-	if (!canWrite || task.primary.format !== 'yaml' || !field || field.readonly) return false;
+	if (!canWrite || !field || field.readonly || cellValue.nativeState === 'unsupported') return false;
+ if (cellValue.nativeState === 'ready') return true;
+ if (task.primary.format !== 'yaml') return false;
 	if (!cellValue.present || cellValue.rawValue === null || cellValue.rawValue === '') return true;
 	if (field.type === 'list' && Array.isArray(cellValue.rawValue)) {
 		if (!cellValue.rawValue.every(value => typeof value === 'string')) return false;
@@ -74,10 +87,15 @@ export function openTableFilePropertyPicker(options: {
 	label: string;
 	cellValue: TableFilePropertyCellValue;
 	candidates: readonly string[];
-	settings: Pick<OperonSettings, 'timeFormat' | 'calendarWeekStart' | 'calendarSidebarShowWeekNumbers'>;
+	settings: Pick<OperonSettings, 'timeFormat' | 'calendarWeekStart' | 'calendarSidebarShowWeekNumbers'> & Partial<Pick<OperonSettings, 'dateDisplayFormat'>>;
 	sourcePath: string;
 	lifecycleOwner?: Node;
 	sessionKey?: string;
+ preserveListValues?: boolean;
+ nativeList?: boolean;
+ editListIndex?: number;
+ onNativeOperation?: (operation: NativeListPickerOperation) => readonly (string | number)[];
+ textEditRoute?: 'picker' | 'popover';
 	onFocusReturn?: () => void;
 	onMutation: (mutation: RawYamlPropertyMutation) => void;
 	onClose?: () => void;
@@ -94,17 +112,31 @@ export function openTableFilePropertyPicker(options: {
 	};
 	const normalizedValue = options.cellValue.normalizedValue;
 	switch (options.field.type) {
+		case 'checkbox':
+			return showSearchableOptionPicker(options.anchor, {
+				...('ownerDocument' in options.anchor ? resolveSurfaceFloatingHostOptions(options.anchor) : {}),
+				value: normalizedValue, options: [{value: 'true', label: 'true'}, {value: 'false', label: 'false'}],
+				placeholder: options.label, ariaLabel: options.label, noMatchesText: t('taskEditor', 'noAvailableFileProperties'),
+				onSelect: option => options.onMutation({kind: 'set', value: option.value === 'true'}), onClose: options.onClose,
+			});
 		case 'list': {
 			const current = Array.isArray(options.cellValue.rawValue)
 				&& options.cellValue.rawValue.every(value => typeof value === 'string')
 				? options.cellValue.rawValue
 				: [];
 			return showCustomListFieldPicker(options.anchor, {
+    onNativeOperation: options.onNativeOperation,
 				...common,
 				app: options.app,
 				type: 'list',
 				sourcePath: options.sourcePath,
 				value: current,
+    ...(options.nativeList ? {
+     nativeValues: Array.isArray(options.cellValue.rawValue) ? options.cellValue.rawValue as (string | number)[] : [],
+     editIndex: options.editListIndex,
+     onCommitNativeValues: (values: (string | number)[]) => options.onMutation({ kind: 'set', value: values }),
+    } : {}),
+                preserveValues: options.preserveListValues,
 				candidates: [...options.candidates],
 				onCommit: () => undefined,
 				onCommitValues: (_key, values) => options.onMutation({ kind: 'set', value: values }),
@@ -125,6 +157,7 @@ export function openTableFilePropertyPicker(options: {
 				...common,
 				app: options.app,
 				type: 'date',
+				dateDisplayFormat: options.settings.dateDisplayFormat,
 				value: normalizedValue,
 				onCommit: (_key, value) => options.onMutation({ kind: 'set', value }),
 			});
@@ -134,12 +167,13 @@ export function openTableFilePropertyPicker(options: {
 				app: options.app,
 				settings: options.settings,
 				type: 'datetime',
+				dateDisplayFormat: options.settings.dateDisplayFormat,
 				value: normalizedValue,
 				onCommit: (_key, value) => options.onMutation({ kind: 'set', value }),
 			});
 		case 'text':
 		default:
-			if (resolveTableTextEditRoute(normalizedValue, true) === 'popover') {
+			if (options.textEditRoute === 'popover' || (options.textEditRoute !== 'picker' && resolveTableTextEditRoute(normalizedValue, true) === 'popover')) {
 				return showTextFieldPopover({
 					app: options.app,
 					anchor: options.anchor,
@@ -222,13 +256,19 @@ export function renderTableFilePropertyValue(options: {
 	cellValue: TableFilePropertyCellValue;
 	column: TableColumn;
 	task: IndexedTask;
-	settings: Pick<OperonSettings, 'colorPalette' | 'pipelines' | 'priorities'>;
+	settings: Pick<OperonSettings, 'colorPalette' | 'pipelines' | 'priorities'> & Partial<Pick<OperonSettings, 'dateDisplayFormat' | 'timeFormat'>>;
 	workflowStatusIdentityIndex?: WorkflowStatusIdentityIndex;
 	app?: App;
 	sourcePath?: string;
 	editable: boolean;
 	onToggle: (mutation: RawYamlPropertyMutation) => void;
+ onEditListMember?: (index: number) => void;
 }): boolean {
+ const warning = !options.editable ? options.cellValue.readOnlyReason ?? options.field?.readOnlyReason : undefined;
+ if (warning) {
+  options.cell.tabIndex = 0; options.cell.setAttribute('aria-readonly', 'true');
+  bindPropertyReadOnlyWarning(options.cell, options.field?.propertyName ?? options.label, warning);
+ }
 	const isTextField = options.field?.type === 'text' && options.field.unavailable !== true;
 	const accentOptions = {
 		task: options.task,
@@ -252,9 +292,16 @@ export function renderTableFilePropertyValue(options: {
 		? options.cellValue.rawValue.filter(value => value !== null).map(String)
 		: (options.cellValue.normalizedValue.trim() ? [options.cellValue.normalizedValue] : []);
 	const listValue = options.field?.type === 'list' || Array.isArray(options.cellValue.rawValue);
+ if (warning && options.column.displayMode === 'icon') {
+  const icon = options.cell.createSpan('operon-table-file-property-icon');
+  setIcon(icon, options.field?.icon ?? 'text');
+  applyTableColumnCellAccent(icon, options.column, options.cellValue.normalizedValue, { ...accentOptions, decorateAsChip: false });
+  return false;
+ }
 	if (isTextField && options.column.displayMode !== 'icon') {
 		renderTableTextValueDisplay(options.cell, {
 			value: options.cellValue.normalizedValue,
+   suppressValueTooltip: !!warning,
 			...(options.app && options.sourcePath
 				? { wikilinks: { app: options.app, sourcePath: options.sourcePath } }
 				: {}),
@@ -303,8 +350,12 @@ export function renderTableFilePropertyValue(options: {
 		const chipParent = listValue
 			? options.cell.createSpan('operon-table-cell-chip-list')
 			: options.cell;
-		for (const value of renderValues) {
-			const displayValue = listValue ? formatTableCellListChipDisplayValue(value) : value;
+		for (const [index, value] of renderValues.entries()) {
+			const nativeMember: unknown = Array.isArray(options.cellValue.rawValue) ? options.cellValue.rawValue[index] : undefined;
+   const displayValue = !listValue && options.field?.type === 'date' ? formatUiDate(value, { dateDisplayFormat: options.settings.dateDisplayFormat ?? 'YYYY-MM-DD' })
+    : !listValue && options.field?.type === 'datetime' && options.app ? formatUiTaskDatetime(options.app, { dateDisplayFormat: options.settings.dateDisplayFormat ?? 'YYYY-MM-DD', timeFormat: options.settings.timeFormat ?? '24h' }, value)
+    : listValue && options.cellValue.nativeState === 'ready' && (typeof nativeMember === 'string' || typeof nativeMember === 'number')
+    ? encodeVaultPropertyValue([nativeMember], 'list') : listValue ? formatTableCellListChipDisplayValue(value) : value;
 			const chip = chipParent.createSpan({
 				cls: `operon-table-cell-chip operon-chip operon-live-preview-chip operon-inline-compact-chip operon-task-chip${options.editable ? ' operon-table-editable-chip' : ' operon-chip-readonly'}`,
 			});
@@ -315,7 +366,12 @@ export function renderTableFilePropertyValue(options: {
 				chip.setText(displayValue);
 			}
 			applyTableColumnCellAccent(chip, options.column, value, accentOptions);
-			if (listValue) decorateTableListValueChip(chip, displayValue);
+			if (listValue) decorateTableListValueChip(chip, displayValue, { tooltipMode: warning ? 'none' : 'overflow' });
+   if (listValue && options.editable && options.onEditListMember) {
+    chip.tabIndex = 0; chip.setAttribute('role', 'button');
+    chip.addEventListener('click', event => { event.stopPropagation(); options.onEditListMember?.(index); });
+    chip.addEventListener('keydown', event => { if (event.key === 'Enter' || event.key === ' ') { event.preventDefault(); event.stopPropagation(); options.onEditListMember?.(index); } });
+   }
 		}
 	}
 	return false;
@@ -344,4 +400,23 @@ export function bindTableFilePropertyRemovalMenu(options: {
 	options.cell.addEventListener('keydown', event => {
 		if (event.key === 'ContextMenu' || (event.shiftKey && event.key === 'F10')) open(event);
 	});
+}
+
+const failedDrafts = new WeakMap<object, Map<string, RawYamlPropertyMutation>>();
+export function retainTablePropertyDraft(owner: object, key: string, mutation?: RawYamlPropertyMutation): void {
+ let drafts = failedDrafts.get(owner);
+ if (!drafts) { drafts = new Map(); failedDrafts.set(owner, drafts); }
+ if (mutation) drafts.set(key, mutation); else drafts.delete(key);
+}
+export function tablePropertyPickerDraft(owner: object, key: string, cell: TableFilePropertyCellValue): TableFilePropertyCellValue {
+ const draft = failedDrafts.get(owner)?.get(key);
+ if (!draft || draft.kind === 'delete') return cell;
+ const value = draft.kind === 'set' ? draft.value : undefined;
+ return { ...cell, rawValue: value, normalizedValue: value === undefined || value === null ? '' : String(value) };
+}
+export function tablePropertyUpdateRequest(task: IndexedTask, field: TableFilePropertyField, cell: TableFilePropertyCellValue, mutation: RawYamlPropertyMutation): TableFilePropertyUpdateRequest | null {
+ const expected = toRawYamlPropertyExpectation(cell);
+ if (!expected) return null;
+ return { propertyName: cell.sourceName ?? field.propertyName, expected, mutation,
+  ...(cell.nativeState === 'ready' ? { sourceFormat: task.primary.format, nativeType: field.type as InlinePropertyType, inlineExpected: cell.inlineExpected } : {}) };
 }

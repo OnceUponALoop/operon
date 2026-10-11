@@ -1,3 +1,5 @@
+import { retainTablePropertyDraft, tablePropertyPickerDraft, tablePropertyUpdateRequest } from './table/table-file-property-editor';
+import { getTableNativePropertySnapshot } from './table/table-native-property';
 import { formatTableCompactDuration } from './table/table-display';
 import { registerFilterDayRefresh } from '../core/filter-day-refresh';
 import { getScopedTrackerSessions } from '../core/time-scope-values';
@@ -947,11 +949,27 @@ function renderEmbedTableContents(instance: EmbedTableInstance, deps: EmbedTable
 	const searchContext = resolveEmbedTableSearchContext(instance, deps, filterSet, allTasks, settings, filterFilePropertyContext);
 	const searchContextResolvedAt = enginePerfNow();
 	renderTrace?.mark('scope');
-	const filePropertySnapshot = getTableFilePropertyIndex(deps.app).getSnapshot(
-		searchContext.scopeFilteredTasks,
+	const baseFilePropertySnapshot = getTableFilePropertyIndex(deps.app).getSnapshot(
+		allTasks,
 		deps.indexer.getGeneration(),
 		{ keyMappings: settings.keyMappings },
 	);
+	const usesNativeProperties = [
+		...preset.columns.map(column => column.key), ...preset.sortRules.map(rule => rule.key),
+		...preset.summaries.map(rule => rule.key), preset.groupBy, preset.subgroupBy,
+	].some(key => !!key && isTableFilePropertyColumnKey(key));
+	const filePropertySnapshot = getTableNativePropertySnapshot(
+		instance, deps.app, baseFilePropertySnapshot, searchContext.scopeFilteredTasks, deps.indexer.getGeneration(), settings,
+		() => { if (instance.el.isConnected) renderEmbedTable(instance, deps); }, usesNativeProperties,
+	);
+ if (filePropertySnapshot.loading) {
+  cleanupOperonHoverTooltips(instance.el);
+  instance.el.empty();
+  instance.el.createDiv({ text: t('table', 'fileLoading'), attr: { role: 'status', 'aria-live': 'polite' } });
+  renderTrace?.finish('loaded', () => instance.el.isConnected);
+  return;
+ }
+
 	const querySignature = buildEmbedTableQuerySignature(
 		instance,
 		deps,
@@ -1038,6 +1056,7 @@ function renderEmbedTableContents(instance: EmbedTableInstance, deps: EmbedTable
 		instance.deferSummariesForSearch = false;
 	}
 	const result = cachedNoSearchResult?.result ?? queryTableRows({
+		sortCacheOwner: instance,
 		preset,
 		filterSet,
 		tasks: allTasks,
@@ -1104,15 +1123,7 @@ function renderEmbedTableContents(instance: EmbedTableInstance, deps: EmbedTable
 			settings,
 		), taskOrdinals)
 		: baseItems;
-	const contextParentTasks = collectTableParentContextTasks(ordinalItems);
-	for (const item of items) {
-		if (item.kind === 'task' && item.tree?.context) contextParentTasks.push(item.task);
-	}
-	const contextFilePropertySnapshot = getTableFilePropertyIndex(deps.app).getSnapshot(
-		contextParentTasks,
-		deps.indexer.getGeneration(),
-		{ keyMappings: settings.keyMappings },
-	);
+	const contextFilePropertySnapshot = filePropertySnapshot;
 	const filePropertyRenderProjection = createTableFilePropertyRenderProjection(
 		filePropertySnapshot,
 		contextFilePropertySnapshot,
@@ -3268,6 +3279,7 @@ function resolveEmbedTableSortedSearchBaseRows(
 		summaries: [],
 	};
 	const result = queryTableRows({
+		sortCacheOwner: instance,
 		preset: sortedPreset,
 		filterSet: input.filterSet,
 		tasks: input.tasks,
@@ -4054,10 +4066,11 @@ function renderEmbedTableFilePropertyCell(
 		sourcePath: task.primary.filePath,
 		editable,
 		onToggle: commit,
+ onEditListMember: index => openPicker(index),
 	})) return;
 	if (!editable || !field || !instance) return;
 	setAccessibleLabelWithoutTooltip(cell, `${label}: ${cellValue.normalizedValue || t('table', 'filePropertyNotSet')}. ${t('table', 'editCellAria')}`);
-	const openPicker = (): void => {
+	const openPicker = (editListIndex?: number): void => {
 		if (instance.pendingCellKey !== null) return;
 		closeEmbedTableActivePicker(instance);
 		let closePicker: (() => void) | null = null;
@@ -4066,7 +4079,8 @@ function renderEmbedTableFilePropertyCell(
 			anchor: snapshotFloatingRectAnchor(cell),
 			field,
 			label,
-			cellValue,
+			cellValue: tablePropertyPickerDraft(instance, cellKey, cellValue),
+ nativeList: cellValue.nativeState === 'ready', preserveListValues: true, editListIndex,
 			candidates: isParentContext
 				? renderState.getContextFilePropertyCandidates(column.key)
 				: renderState.getFilePropertyCandidates(column.key),
@@ -4121,10 +4135,10 @@ async function commitEmbedTableFilePropertyUpdate(
 	closeEmbedTableActivePicker(instance);
 	let success = false;
 	try {
-		const outcome = await deps.updateFileProperty(task.operonId, {
-			propertyName: field.propertyName, expected, mutation,
-		});
+		retainTablePropertyDraft(instance, cellKey, mutation);
+		const outcome = await deps.updateFileProperty(task.operonId, tablePropertyUpdateRequest(task, field, cellValue, mutation)!);
 		success = outcome === 'updated' || outcome === 'already-updated';
+ if (success) retainTablePropertyDraft(instance, cellKey);
 		if (outcome === 'conflict') new Notice(t('table', 'filePropertyConflict'));
 		else if (!success) new Notice(t('notifications', 'taskSaveFailed'));
 	} catch (error: unknown) {

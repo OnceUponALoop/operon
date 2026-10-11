@@ -409,7 +409,7 @@ export function createTableFilePropertyRenderProjection(
 		signature: `${primarySnapshot.signature}|context=${contextSnapshot.signature}`,
 		getCell: (task, columnKey, isParentContext) => (isParentContext ? contextSnapshot : primarySnapshot).getCell(task, columnKey),
 		getCandidates: (columnKey, isParentContext) => {
-			if (!isParentContext) return primarySnapshot.getCandidates(columnKey);
+			if (!isParentContext || primarySnapshot === contextSnapshot) return primarySnapshot.getCandidates(columnKey);
 			const cached = contextCandidates.get(columnKey);
 			if (cached) return cached;
 			const merged = mergeTableFilePropertyCandidates(
