@@ -1348,7 +1348,7 @@
       "defaultFileTaskTemplateNone": "Keine Standardvorlage",
       "defaultFileTaskTemplateUnavailable": "Nicht verfügbare Vorlage",
       "defaultInlineTaskTemplate": "Standardvorlage für Inline-Aufgaben",
-      "defaultInlineTaskTemplateDesc": "Wähle die im Inline-Modus von Task Creator vorausgewählte Vorlage. Es werden nur Vorlageneigenschaften verwendet. Wähle Keine, um ohne Vorlage zu beginnen.",
+      "defaultInlineTaskTemplateDesc": "Standardvorlage für neue Inline-Aufgaben und die Umwandlung von Checkboxen oder Auswahlen. Nur Vorlageneigenschaften werden verwendet. Wähle Keine, um keine Vorlage zu verwenden.",
       "defaultPipelineAria": "Standard-Arbeitsablauf: {{name}}",
       "defaultPriority": "Standardpriorität für neue Aufgaben",
       "defaultPriorityDesc": "Wird beim Erstellen einer neuen Aufgabe automatisch zugewiesen. Leer lassen für keinen Standard.",
@@ -3615,5 +3615,5 @@
       "toggleDescendantPreview": "Vorschau untergeordneter Aufgaben umschalten"
     }
   },
-  "sourceVersion": "d1b07878066d5cb5673db51d979368fd21063e70b402879a5cba1a5a42eee454"
+  "sourceVersion": "aafd82843ba3344c5dcb29707f581234efcbe0847453ebd55edd4b023d942eca"
 }

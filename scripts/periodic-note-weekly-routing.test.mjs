@@ -236,7 +236,7 @@ test('standard indexed inline editor saves use the shared mutation path while re
 	const editorSave = method(
 		mainSource,
 		'openInlineTaskEditorForLine(',
-		'upgradePlainCheckboxLineToOperonInlineTask(',
+		'async upgradePlainCheckboxLineToOperonInlineTask(',
 	);
 	const initiallyIndexed = editorSave.indexOf('const initiallyIndexedTask = task.operonId');
 	const sourceView = editorSave.indexOf('const sourceView = this.getMarkdownViewsForPath(filePath)', initiallyIndexed);

@@ -1815,7 +1815,7 @@
 		"taskCreatorDefaultToFileTask": "任务创建器 默认选择文件任务",
 		"taskCreatorDefaultToFileTaskDesc": "启用后，通用 任务创建器 会以文件任务而不是行内任务打开。",
 		"defaultInlineTaskTemplate": "默认行内任务模板",
-		"defaultInlineTaskTemplateDesc": "选择 Task Creator 的 Inline 模式预选的模板。仅使用模板属性。选择“无”以不使用模板。",
+		"defaultInlineTaskTemplateDesc": "新建 Inline 任务及转换复选框或选区时使用的默认模板。仅使用模板属性。不使用模板时请选择“无”。",
 		"taskCreatorDefaultFileTemplate": "默认文件任务模板",
 		"taskCreatorDefaultFileTemplateDesc": "选择 任务创建器 进入文件任务模式时预先选中的模板。留空则继续显示“选择模板”。",
 		"defaultFileTaskTemplateNone": "无默认模板",

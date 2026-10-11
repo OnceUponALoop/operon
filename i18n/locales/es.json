@@ -1815,7 +1815,7 @@
 		"taskCreatorDefaultToFileTask": "Usar Tarea de archivo por defecto en Creador de tareas",
 		"taskCreatorDefaultToFileTaskDesc": "Cuando está activado, el Creador de tareas general se abre con Tarea de archivo seleccionada en lugar de Tarea en línea.",
 		"defaultInlineTaskTemplate": "Plantilla predeterminada de tareas inline",
-		"defaultInlineTaskTemplateDesc": "Elige la plantilla preseleccionada en el modo Inline de Task Creator. Solo se usan las propiedades de la plantilla. Elige Ninguna para empezar sin plantilla.",
+		"defaultInlineTaskTemplateDesc": "Plantilla predeterminada para nuevas tareas Inline y conversiones de casillas o selecciones. Solo se usan las propiedades de la plantilla. Elige Ninguna para no usar plantilla.",
 		"taskCreatorDefaultFileTemplate": "Plantilla predeterminada de tarea de archivo",
 		"taskCreatorDefaultFileTemplateDesc": "Elige la plantilla preseleccionada cuando Creador de tareas entra en modo Tarea de archivo. Dejar vacío para seguir mostrando Elegir una plantilla.",
 		"defaultFileTaskTemplateNone": "Sin plantilla predeterminada",

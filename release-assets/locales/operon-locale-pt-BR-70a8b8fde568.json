@@ -1348,7 +1348,7 @@
       "defaultFileTaskTemplateNone": "Nenhum template padrão",
       "defaultFileTaskTemplateUnavailable": "Template indisponível",
       "defaultInlineTaskTemplate": "Modelo padrão de tarefas inline",
-      "defaultInlineTaskTemplateDesc": "Escolha o modelo pré-selecionado no modo Inline do Task Creator. Apenas as propriedades do modelo são usadas. Escolha Nenhum para começar sem modelo.",
+      "defaultInlineTaskTemplateDesc": "Modelo padrão para novas tarefas Inline e conversões de caixas de seleção ou seleções. Apenas as propriedades do modelo são usadas. Escolha Nenhum para não usar modelo.",
       "defaultPipelineAria": "Pipeline padrão: {{name}}",
       "defaultPriority": "Prioridade padrão para novas tarefas",
       "defaultPriorityDesc": "Atribuído automaticamente ao criar uma nova tarefa. Deixe vazio se não houver padrão.",
@@ -3615,5 +3615,5 @@
       "toggleDescendantPreview": "Alternar visualização descendente"
     }
   },
-  "sourceVersion": "f60629f29818e2c87cb03a5d3afb6f6cefb19c9183a00eb7db0477677a5d2015"
+  "sourceVersion": "18398492f83bb5acdd0e726f41818b15bbcb7932cb817c7e2bd11f2611896dd5"
 }

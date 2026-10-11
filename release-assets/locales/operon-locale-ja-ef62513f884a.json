@@ -1348,7 +1348,7 @@
       "defaultFileTaskTemplateNone": "デフォルトテンプレートなし",
       "defaultFileTaskTemplateUnavailable": "利用できないテンプレート",
       "defaultInlineTaskTemplate": "インラインタスクの既定テンプレート",
-      "defaultInlineTaskTemplateDesc": "Task Creator の Inline モードで事前選択するテンプレートを選びます。テンプレートのプロパティのみが使われます。テンプレートなしで始めるには「なし」を選んでください。",
+      "defaultInlineTaskTemplateDesc": "新しい Inline タスクやチェックボックス・選択範囲の変換に使う既定のテンプレートです。テンプレートのプロパティのみを使用します。使用しない場合は「なし」を選んでください。",
       "defaultPipelineAria": "デフォルトのワークフロー: {{name}}",
       "defaultPriority": "新しいタスクのデフォルト優先度",
       "defaultPriorityDesc": "新しいタスクの作成時に自動的に割り当てられます。デフォルトなしにする場合は空のままにします。",
@@ -3615,5 +3615,5 @@
       "toggleDescendantPreview": "子孫プレビューを切り替え"
     }
   },
-  "sourceVersion": "6a85fd9d559e096ef5c093b17d25c7202a502d43a3d767434f6401d0941cd60a"
+  "sourceVersion": "823dce88e31d26f98a1bc0e7c951e4be5dafc3e2fef8e2aab65aa49473dd12c4"
 }

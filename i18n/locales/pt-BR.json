@@ -1815,7 +1815,7 @@
 		"taskCreatorDefaultToFileTask": "Padrão para tarefa em arquivo no Criador de Tarefas",
 		"taskCreatorDefaultToFileTaskDesc": "Ao ser ativado, o Criador de Tarefas genérico abrirá com a tarefa em arquivo selecionada, e não com a tarefa inline.",
 		"defaultInlineTaskTemplate": "Modelo padrão de tarefas inline",
-		"defaultInlineTaskTemplateDesc": "Escolha o modelo pré-selecionado no modo Inline do Task Creator. Apenas as propriedades do modelo são usadas. Escolha Nenhum para começar sem modelo.",
+		"defaultInlineTaskTemplateDesc": "Modelo padrão para novas tarefas Inline e conversões de caixas de seleção ou seleções. Apenas as propriedades do modelo são usadas. Escolha Nenhum para não usar modelo.",
 		"taskCreatorDefaultFileTemplate": "Modelo padrão de tarefa em arquivo",
 		"taskCreatorDefaultFileTemplateDesc": "Escolha o modelo pré-selecionado quando o Criador de Tarefas entrar no modo Tarefa em Arquivo. Deixe vazio para continuar mostrando “Escolher um modelo”.",
 		"defaultFileTaskTemplateNone": "Nenhum template padrão",

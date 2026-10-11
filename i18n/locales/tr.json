@@ -1815,7 +1815,7 @@
 		"taskCreatorDefaultToFileTask": "Görev Oluşturucu içinde varsayılan olarak Dosya Görevi seç",
 		"taskCreatorDefaultToFileTaskDesc": "Açık olduğunda genel Görev Oluşturucu, Satır İçi Görev yerine Dosya Görevi seçili açılır.",
 		"defaultInlineTaskTemplate": "Varsayılan inline görev şablonu",
-		"defaultInlineTaskTemplateDesc": "Task Creator’da Inline modunda seçilecek şablonu belirleyin. Yalnızca şablon özellikleri kullanılır. Şablonsuz başlamak için Yok seçin.",
+		"defaultInlineTaskTemplateDesc": "Yeni inline görevler ile checkbox veya seçim dönüşümleri için varsayılan şablon. Yalnızca şablon özellikleri kullanılır. Şablon kullanmamak için Yok seçin.",
 		"taskCreatorDefaultFileTemplate": "Varsayılan dosya görevi şablonu",
 		"taskCreatorDefaultFileTemplateDesc": "Görev Oluşturucu Dosya Görevi moduna geçtiğinde önceden seçilecek şablonu seç. Pick a template göstermeye devam etmek için boş bırak.",
 		"defaultFileTaskTemplateNone": "Varsayılan şablon yok",

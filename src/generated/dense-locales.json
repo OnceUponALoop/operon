@@ -4929,7 +4929,7 @@
       "No default template",
       "Unavailable template",
       "Default inline task template",
-      "Choose the template preselected in Inline mode in Task Creator. Only template properties are used. Choose None to start without a template.",
+      "Default template for new inline tasks and checkbox or selection conversions. Only template properties are used. Choose None to use no template.",
       "Default pipeline: {{name}}",
       "Default priority for new tasks",
       "Automatically assigned when creating a new task. Leave empty for no default.",

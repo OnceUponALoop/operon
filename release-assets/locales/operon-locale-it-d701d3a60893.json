@@ -1348,7 +1348,7 @@
       "defaultFileTaskTemplateNone": "Nessun modello predefinito",
       "defaultFileTaskTemplateUnavailable": "Modello non disponibile",
       "defaultInlineTaskTemplate": "Modello predefinito per attività inline",
-      "defaultInlineTaskTemplateDesc": "Scegli il modello preselezionato nella modalità Inline di Task Creator. Vengono usate solo le proprietà del modello. Scegli Nessuno per iniziare senza modello.",
+      "defaultInlineTaskTemplateDesc": "Modello predefinito per nuove attività Inline e conversioni di caselle o selezioni. Vengono usate solo le proprietà del modello. Scegli Nessuno per non usare un modello.",
       "defaultPipelineAria": "Pipeline predefinita: {{name}}",
       "defaultPriority": "Priorità predefinita per le nuove attività",
       "defaultPriorityDesc": "Assegnata automaticamente alla creazione di una nuova attività. Lascia vuoto per nessuna predefinita.",
@@ -3615,5 +3615,5 @@
       "toggleDescendantPreview": "Alterna anteprima discendenti"
     }
   },
-  "sourceVersion": "101968b8d4635d0f818855390a9a5f988355ccba8f5c8c342038ceb46bb9becb"
+  "sourceVersion": "649858513fb176e268ff90dbeaa1c819914739c78652a850575f01487e8cb109"
 }

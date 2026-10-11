@@ -137,3 +137,35 @@ for (const reverse of [false,true]) test(`final review: Calendar date wins with 
  assert.equal(ui.field('dateScheduled').value,'2026-10-10');assert.equal(ui.field('datetimeStart').value,'2026-10-10T09:00:00');assert.equal(ui.field('datetimeEnd').value,'2026-10-10T10:00:00');
  for(const mode of ['file','inline'] as const){const output=prepareCreationCommit(ui.submission(mode,'Task','keep-completed'),context,{operonId:'root029',now:'2026-10-11T09:00:00'});assert.equal(output.fieldValues.dateScheduled,'2026-10-10');assert.equal(output.fieldValues.datetimeStart,'2026-10-10T09:00:00');}
 });
+
+// Default-template authoring shares the Creator draft and serializer, without changing Runtime defaults.
+import { prepareDefaultInlineTemplateTask } from '../src/core/default-inline-template';
+import { parseTaskLine } from '../src/core/parser';
+async function defaultInline(sourceLine:string, yaml:string, parent: {sourceName:string;value:unknown}[]=[]) {
+ const ui=await fixture(yaml),template=ui.session.snapshot();assert.equal(template.status,'ready');if(template.status!=='ready')throw Error('template');
+ const source=parseTaskLine(sourceLine,0,'Host.md',[...context.keyMappings])!;
+ const task=parseTaskLine(sourceLine+' {{operonId:: abc1234}} {{priority:: Low}} {{datetimeCreated:: 2026-10-11T09:00:00}}',0,'Host.md',[...context.keyMappings])!;
+ return prepareDefaultInlineTemplateTask({template,properties:context,task,source,parent,now:'2026-10-11T09:00:00'});
+}
+test('default inline authoring preserves source scalar, unions lists and retains typed repeated native members',async()=>{
+ const result=await defaultInline('- [ ] Source #user {{priority:: High}} {{contexts:: a}} {{Values:: 3; "3"; Ali}}','priority: Medium\ncontexts: [a,d,e]\ntags: [template]\nValues: [3,"3",Ali,Ali]',[{sourceName:'contexts',value:'a; b'},{sourceName:'tags',value:['parent']}]);
+ assert.equal(result.fieldValues.priority,'High');assert.equal(result.fieldValues.contexts,'a; b; d; e');assert.deepEqual(result.tags,['user','parent','template']);
+ assert.deepEqual(readInlinePropertyProjection(result.inlineLine,'Host.md',{Values:'list'},[...context.keyMappings],{version:1,entries:result.definitions})?.properties[0].value,[3,'3','Ali','Ali',3,'3','Ali']);
+});
+test('default inline authoring lets template override fallback and omits blanks without losing falsy values',async()=>{
+ const result=await defaultInline('- [ ] Source','priority: High\nClient:\nCount: 0\nChecked: false\nValues: [""]');
+ assert.equal(result.fieldValues.priority,'High');assert.ok(!result.inlineLine.includes('{{Client::'));
+ const row=readInlinePropertyProjection(result.inlineLine,'Host.md',{Count:'number',Checked:'checkbox',Values:'list'},[...context.keyMappings],{version:1,entries:result.definitions});
+ assert.deepEqual(row?.properties.map(field=>field.value),[0,false,['']]);
+});
+test('default inline authoring shares frozen time but resolves each task description independently',async()=>{
+ for(const description of ['First','Second: "quoted"']) {
+  const result=await defaultInline('- [ ] '+description,'Client: "{{taskDescription}}"\nDay: "{{date}}"');
+  assert.deepEqual(readInlinePropertyProjection(result.inlineLine,'Host.md',{Client:'text',Day:'date'},[...context.keyMappings],{version:1,entries:result.definitions})?.properties.map(field=>field.value),[description,'2026-10-10']);
+ }
+});
+test('default inline authoring preserves source Automatic tokens and excludes unsupported template contributions',async()=>{
+ const result=await defaultInline('- [ ] Source {{Unknown:: literal}}','Unknown: replacement\nNested: {a: 1}\nClient: "<% expression %>"\naliases: [hidden]\nCount: 0');
+ assert.ok(result.inlineLine.includes('{{Unknown:: literal}}'));assert.ok(!result.inlineLine.includes('{{Nested::'));assert.ok(!result.inlineLine.includes('{{aliases::'));assert.ok(!result.inlineLine.includes('{{Client::'));
+ assert.ok(result.skipped.some(field=>field.sourceName==='Client'));
+});

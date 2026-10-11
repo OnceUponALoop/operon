@@ -1348,7 +1348,7 @@
       "defaultFileTaskTemplateNone": "無預設模板",
       "defaultFileTaskTemplateUnavailable": "不可用模板",
       "defaultInlineTaskTemplate": "預設行內任務範本",
-      "defaultInlineTaskTemplateDesc": "選擇 Task Creator 的 Inline 模式預選的範本。僅使用範本屬性。選擇「無」以不使用範本。",
+      "defaultInlineTaskTemplateDesc": "新增 Inline 任務及轉換核取方塊或選取範圍時使用的預設範本。僅使用範本屬性。不使用範本時請選擇「無」。",
       "defaultPipelineAria": "預設工作流：{{name}}",
       "defaultPriority": "新任務的預設優先順序",
       "defaultPriorityDesc": "建立新任務時自動分配。留空則無預設值。",
@@ -3615,5 +3615,5 @@
       "toggleDescendantPreview": "切換子任務預覽"
     }
   },
-  "sourceVersion": "5acf3abbbf776bcafef42e7393ba7451f04231e5c00d5d8553685fb121d18941"
+  "sourceVersion": "6c08bc8518bbb09033f659a79df4c25ba62c0095fdf5fdb2643d072ad3ca004a"
 }

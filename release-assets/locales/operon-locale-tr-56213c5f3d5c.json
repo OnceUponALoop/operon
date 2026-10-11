@@ -1348,7 +1348,7 @@
       "defaultFileTaskTemplateNone": "Varsayılan şablon yok",
       "defaultFileTaskTemplateUnavailable": "Kullanılamayan şablon",
       "defaultInlineTaskTemplate": "Varsayılan inline görev şablonu",
-      "defaultInlineTaskTemplateDesc": "Task Creator’da Inline modunda seçilecek şablonu belirleyin. Yalnızca şablon özellikleri kullanılır. Şablonsuz başlamak için Yok seçin.",
+      "defaultInlineTaskTemplateDesc": "Yeni inline görevler ile checkbox veya seçim dönüşümleri için varsayılan şablon. Yalnızca şablon özellikleri kullanılır. Şablon kullanmamak için Yok seçin.",
       "defaultPipelineAria": "Varsayılan akış: {{name}}",
       "defaultPriority": "Yeni görevler için varsayılan öncelik",
       "defaultPriorityDesc": "Yeni görev oluştururken otomatik atanır. Varsayılan olmasın istiyorsan boş bırak.",
@@ -3615,5 +3615,5 @@
       "toggleDescendantPreview": "Alt görev önizlemesini aç/kapat"
     }
   },
-  "sourceVersion": "72d9f72b511dbb80cd53a499df262fdcf99f632eb0bdd4e474faf88a25b19433"
+  "sourceVersion": "7fae4fc43c462f6429cc202992913a24b1e9ed6136c8c00d4d0de05d48b280ea"
 }

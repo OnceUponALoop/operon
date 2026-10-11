@@ -1348,7 +1348,7 @@
       "defaultFileTaskTemplateNone": "Sin plantilla predeterminada",
       "defaultFileTaskTemplateUnavailable": "Plantilla no disponible",
       "defaultInlineTaskTemplate": "Plantilla predeterminada de tareas inline",
-      "defaultInlineTaskTemplateDesc": "Elige la plantilla preseleccionada en el modo Inline de Task Creator. Solo se usan las propiedades de la plantilla. Elige Ninguna para empezar sin plantilla.",
+      "defaultInlineTaskTemplateDesc": "Plantilla predeterminada para nuevas tareas Inline y conversiones de casillas o selecciones. Solo se usan las propiedades de la plantilla. Elige Ninguna para no usar plantilla.",
       "defaultPipelineAria": "Flujo de trabajo predeterminado: {{name}}",
       "defaultPriority": "Prioridad predeterminada para nuevas tareas",
       "defaultPriorityDesc": "Se asigna automáticamente al crear una nueva tarea. Dejar vacío para no tener predeterminada.",
@@ -3615,5 +3615,5 @@
       "toggleDescendantPreview": "Alternar vista previa de descendientes"
     }
   },
-  "sourceVersion": "65e8c8eae21517422d44aae2c707c5acbe8b4ce68e99e3c528d7ebb4e40d16a1"
+  "sourceVersion": "5ae3bf0a3509aac4eaf2c99f48f8df37b302054a39840d427a27a811366559ae"
 }

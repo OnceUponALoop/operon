@@ -371,8 +371,8 @@ test('native parent override is used only for configured inherited fields', () =
 	assert.ok(!result.some(item => item.sourceName === 'Client'));
 });
 
-test('Stage 1 is not wired to the live UI, writer, Runtime or template processing', () => {
-	for (const path of ['main.ts', 'src/ui/task-creator-modal.ts', 'src/core/task-writer.ts', 'src/agent-runtime/runtime/task-creation-adapter.ts']) {
+test('Creation draft remains pure and excluded from low-level writer and Runtime defaults', () => {
+	for (const path of ['src/core/task-writer.ts', 'src/agent-runtime/runtime/task-creation-adapter.ts']) {
 		assert.doesNotMatch(readFileSync(path, 'utf8'), /from ['"][^'"]*task-creation-draft['"]/);
 	}
 	const source = readFileSync('src/core/task-creation-draft.ts', 'utf8');

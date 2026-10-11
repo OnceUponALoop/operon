@@ -1348,7 +1348,7 @@
       "defaultFileTaskTemplateNone": "无默认模板",
       "defaultFileTaskTemplateUnavailable": "不可用模板",
       "defaultInlineTaskTemplate": "默认行内任务模板",
-      "defaultInlineTaskTemplateDesc": "选择 Task Creator 的 Inline 模式预选的模板。仅使用模板属性。选择“无”以不使用模板。",
+      "defaultInlineTaskTemplateDesc": "新建 Inline 任务及转换复选框或选区时使用的默认模板。仅使用模板属性。不使用模板时请选择“无”。",
       "defaultPipelineAria": "默认工作流：{{name}}",
       "defaultPriority": "新任务的默认优先级",
       "defaultPriorityDesc": "创建新任务时自动分配。留空则无默认值。",
@@ -3615,5 +3615,5 @@
       "toggleDescendantPreview": "切换子任务预览"
     }
   },
-  "sourceVersion": "db2e51bddbd2ed9b8bbe89a2941cfd835a821a51a799718e8876e46acdbbb6cd"
+  "sourceVersion": "335afd7e03fb4fa10d592e98587db59f409259bcdcbe65cf55a8c7f6817378ab"
 }

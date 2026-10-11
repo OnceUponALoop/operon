@@ -1348,7 +1348,7 @@
       "defaultFileTaskTemplateNone": "Нет шаблона по умолчанию",
       "defaultFileTaskTemplateUnavailable": "Недоступный шаблон",
       "defaultInlineTaskTemplate": "Шаблон по умолчанию для inline-задач",
-      "defaultInlineTaskTemplateDesc": "Выберите шаблон для режима Inline в Task Creator. Используются только свойства шаблона. Выберите «Нет», чтобы начать без шаблона.",
+      "defaultInlineTaskTemplateDesc": "Шаблон по умолчанию для новых задач Inline и преобразования флажков или выделенного текста. Используются только свойства шаблона. Выберите «Нет», чтобы не использовать шаблон.",
       "defaultPipelineAria": "Конвейер по умолчанию: {{name}}",
       "defaultPriority": "Приоритет по умолчанию для новых задач",
       "defaultPriorityDesc": "Назначается автоматически при создании новой задачи. Оставьте пустым, чтобы не задавать значение по умолчанию.",
@@ -3615,5 +3615,5 @@
       "toggleDescendantPreview": "Переключить предпросмотр потомков"
     }
   },
-  "sourceVersion": "01d22824f66effdd9a5b91d6dff2f24c9aa424e7fa2ad16b551a33daa3ba9a8c"
+  "sourceVersion": "007089ebeeb1e5db58fa2099fc353a54b5033f67247d7219aaaf6e2b6369f417"
 }

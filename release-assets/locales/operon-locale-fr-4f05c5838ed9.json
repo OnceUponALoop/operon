@@ -1348,7 +1348,7 @@
       "defaultFileTaskTemplateNone": "Aucun modèle par défaut",
       "defaultFileTaskTemplateUnavailable": "Modèle indisponible",
       "defaultInlineTaskTemplate": "Modèle par défaut des tâches inline",
-      "defaultInlineTaskTemplateDesc": "Choisissez le modèle présélectionné en mode Inline dans Task Creator. Seules les propriétés du modèle sont utilisées. Choisissez Aucun pour commencer sans modèle.",
+      "defaultInlineTaskTemplateDesc": "Modèle par défaut pour les nouvelles tâches Inline et la conversion de cases à cocher ou de sélections. Seules les propriétés du modèle sont utilisées. Choisissez Aucun pour ne pas utiliser de modèle.",
       "defaultPipelineAria": "Pipeline par défaut : {{name}}",
       "defaultPriority": "Priorité par défaut des nouvelles tâches",
       "defaultPriorityDesc": "Automatiquement assignée lors de la création d'une nouvelle tâche. Laissez vide pour aucune valeur par défaut.",
@@ -3615,5 +3615,5 @@
       "toggleDescendantPreview": "Basculer l'aperçu des descendants"
     }
   },
-  "sourceVersion": "88dafd61f5adaac4d27699d42b134fb97e6bcc361aa439e40a42144fdf27fe87"
+  "sourceVersion": "8faf35d1cd2c332474bb58d8278e16a996462107066c8c5e9ccd4a605c0ab507"
 }

@@ -30,7 +30,7 @@ const entriesFor = tabId => [...registry.matchAll(/(?:e|section)\('([^']+)', '([
  .filter(m => m[2] === tabId)
  .map(m => ({ id: `${m[1]}.${m[3]}`, name: { key: m[5] }, desc: { key: m[6] }, aliases: [...m[7].matchAll(/'([^']+)'/g)].map(a => a[1]) }));
 
-for (const [tabId, count] of [['tasksFileTasks',7],['tasksInlineTasks',2],['tasksTaskRouter',5]]) {
+for (const [tabId, count] of [['tasksFileTasks',7],['tasksInlineTasks',3],['tasksTaskRouter',5]]) {
  test(`${tabId}: actual page tree indexes every existing entry once without rendering or saving`, () => {
   const harness = new Harness();
   const entries = entriesFor(tabId);
