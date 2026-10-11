@@ -36566,7 +36566,7 @@ body:not(.is-mobile) .operon-task-creator-tool::after {
 	pointer-events: none;
 }
 body:not(.is-mobile) .operon-task-creator-tool.is-active::after {
-	background: var(--interactive-accent);
+	background: var(--operon-task-creator-accent, var(--interactive-accent));
 }
 body:not(.is-mobile) .operon-task-creator-tool.is-property-warning::after {
 	background: var(--text-error);

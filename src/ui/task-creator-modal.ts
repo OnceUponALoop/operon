@@ -1791,7 +1791,7 @@ export class TaskCreatorModal extends Modal {
 				setIcon(iconWrap, this.resolveFieldIcon(key));
 			}
 			if (key === 'blockedBy') this.applyBlockedByAggregateState(button);
-			if (warning) bindPropertyReadOnlyWarning(button, this.getFieldLabel(key), warning);
+			if (warning) bindPropertyReadOnlyWarning(button, this.getFieldLabel(key), warning, () => this.getThemeColor());
    else this.bindFieldButtonTooltip(button, key);
 		}
 	}
@@ -1958,7 +1958,7 @@ export class TaskCreatorModal extends Modal {
 				bindOperonHoverTooltip(chip, {
 					title: display.tooltipTitle,
 					content: display.tooltipContent,
-					taskColor: this.getThemeColor(),
+					taskColor: () => this.getThemeColor(),
 				});
 				chip.addEventListener('click', () => {
 					this.openFieldPicker(fieldKey, {
@@ -2005,7 +2005,7 @@ export class TaskCreatorModal extends Modal {
   }
   if (this.prepared) {
    cleanupOperonHoverTooltips(this.templateButtonEl);
-   if (this.activeCreateType === 'inline') bindOperonHoverTooltip(this.templateButtonEl, { content: t('taskEditor', 'creatorInlineTemplateProperties'), taskColor: null });
+   if (this.activeCreateType === 'inline') bindOperonHoverTooltip(this.templateButtonEl, { content: t('taskEditor', 'creatorInlineTemplateProperties'), taskColor: () => this.getThemeColor() });
   }
 		const inlineActive = this.activeCreateType === 'inline';
 		this.inlineButtonEl.toggleClass('is-primary', inlineActive);
@@ -2082,7 +2082,7 @@ export class TaskCreatorModal extends Modal {
    const field = this.prepared.field(key); const value = field.value;
    const content = value === undefined || value === null ? '' : field.property.type ? encodeVaultPropertyValue(value, field.property.type) : String(value);
    setAccessibleLabelWithoutTooltip(button, `${this.getFieldLabel(key)}${content ? ': ' + content : ''}`);
-   bindOperonHoverTooltip(button, { title: this.getFieldLabel(key), content, taskColor: null }); return;
+   bindOperonHoverTooltip(button, { title: this.getFieldLabel(key), content, taskColor: () => this.getThemeColor() }); return;
   }
 
 		const copy = getTaskCreatorToolbarTooltipCopy(key, this.options.settings.keyMappings);
@@ -2092,7 +2092,7 @@ export class TaskCreatorModal extends Modal {
 		bindOperonHoverTooltip(button, {
 			title: copy.title,
 			content: [copy.content, displayValue].filter(Boolean).join('\n') || undefined,
-			taskColor: this.getThemeColor(),
+			taskColor: () => this.getThemeColor(),
 		});
 	}
 
