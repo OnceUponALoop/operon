@@ -2032,8 +2032,15 @@ export class CalendarView extends ItemView {
 		} = this.resolveCalendarRenderContext(container);
 		// Per-view models keep retained event handlers current without mutating stored settings.
 		const settings = Object.assign(this.retainedCalendarRenderContext?.settings ?? {}, sourceSettings);
+		const retainedPreset = this.retainedCalendarRenderContext?.preset;
+		if (sourceRenderPreset && retainedPreset) {
+			// Missing optional fields must not leak from the previously selected preset.
+			for (const key of Object.keys(retainedPreset)) {
+				if (!Object.prototype.hasOwnProperty.call(sourceRenderPreset, key)) Reflect.deleteProperty(retainedPreset, key);
+			}
+		}
 		const preset = sourceRenderPreset
-			? Object.assign(this.retainedCalendarRenderContext?.preset ?? {}, sourceRenderPreset)
+			? Object.assign(retainedPreset ?? {}, sourceRenderPreset)
 			: undefined;
 		this.syncLeafTitle(useMobileCalendar && preset
 			? `${this.getMobileCalendarViewLabel(mobileViewMode)} · ${preset.name}`
