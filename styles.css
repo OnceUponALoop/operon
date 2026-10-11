@@ -36388,11 +36388,6 @@ body .operon-task-editor:not(.operon-task-editor-mobile) button.operon-editor-de
 .operon-task-creator-template-error.is-hidden { display: none; }
 
 /* Creator focus mode: preserve hit targets and wrapping so picker anchors never move. */
-/* Cover the existing 14px body gap without moving controls or picker anchors. */
-body:not(.is-mobile) .operon-task-creator-toolbar {
-	padding-bottom: 14px;
-	margin-bottom: -14px;
-}
 body:not(.is-mobile) .operon-task-creator-tool {
 	position: relative;
 }
@@ -36413,14 +36408,14 @@ body:not(.is-mobile) .operon-task-creator-tool.is-active::after {
 body:not(.is-mobile) .operon-task-creator-tool.is-property-warning::after {
 	background: var(--text-error);
 }
-body:not(.is-mobile) .operon-task-creator:has(.is-description:focus-within, .is-notes:focus-within):not(:has(.operon-task-creator-toolbar:hover, .operon-task-creator-action-row:hover, .operon-task-creator-tool:focus-within, .is-picker-open)):not(.has-open-creator-picker):not(.has-open-creator-picker *) .operon-task-creator-tool {
+body:not(.is-mobile) .operon-task-creator:not(:has(.operon-task-creator-toolbar:hover, .operon-task-creator-tool:focus-within)):not(.has-open-creator-picker):not(.has-open-creator-picker *) .operon-task-creator-tool {
 	border-color: transparent;
 	background: transparent;
 	box-shadow: none;
 }
-body:not(.is-mobile) .operon-task-creator:has(.is-description:focus-within, .is-notes:focus-within):not(:has(.operon-task-creator-toolbar:hover, .operon-task-creator-action-row:hover, .operon-task-creator-tool:focus-within, .is-picker-open)):not(.has-open-creator-picker):not(.has-open-creator-picker *) .operon-task-creator-tool .operon-task-creator-tool-icon {
+body:not(.is-mobile) .operon-task-creator:not(:has(.operon-task-creator-toolbar:hover, .operon-task-creator-tool:focus-within)):not(.has-open-creator-picker):not(.has-open-creator-picker *) .operon-task-creator-tool .operon-task-creator-tool-icon {
 	opacity: 0;
 }
-body:not(.is-mobile) .operon-task-creator:has(.is-description:focus-within, .is-notes:focus-within):not(:has(.operon-task-creator-toolbar:hover, .operon-task-creator-action-row:hover, .operon-task-creator-tool:focus-within, .is-picker-open)):not(.has-open-creator-picker):not(.has-open-creator-picker *) .operon-task-creator-tool::after {
+body:not(.is-mobile) .operon-task-creator:not(:has(.operon-task-creator-toolbar:hover, .operon-task-creator-tool:focus-within)):not(.has-open-creator-picker):not(.has-open-creator-picker *) .operon-task-creator-tool::after {
 	opacity: 1;
 }
