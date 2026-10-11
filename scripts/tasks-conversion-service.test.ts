@@ -104,6 +104,33 @@ test('scope dedupes mixed files/folders and respects direct/subfolder selection'
 	assert.deepEqual(resolveTasksConversionPaths({ files: [], folders: ['Work'], includeSubfolders: true }, inventory), ['Work/A.md', 'Work/Sub/B.md']);
 	assert.deepEqual(resolveTasksConversionPaths({ files: [], folders: ['/'], includeSubfolders: false }, inventory), ['A.md']);
 });
+
+test('combined conversion and native index: 10 files / 100 Tasks remain independent and undo retires records', async () => {
+ const { OperonIndexer: Indexer } = await import('../src/indexer/indexer');
+ const { getNativePropertyIndex } = await import('../src/indexer/native-property-index');
+ const notes = Object.fromEntries(Array.from({length:10},(_,file)=>[`Batch${file}.md`,Array.from({length:10},(_,row)=>`- [ ] Task ${file}-${row} #etiket/çalışma 📅 2026-10-11`).join('\n')]));
+ const f=fixture(notes);
+ f.settings.defaultInlineTaskTemplateId='missing-template-must-not-be-read';
+ Object.assign(f.app,{metadataCache:{getFileCache:()=>({listItems:[{task:' '}]})}});
+ const native=getNativePropertyIndex(f.app);native.configure(f.settings);native.setTypes({});
+ const indexer=new Indexer(f.app,{getSettings:()=>f.settings} as never);
+ try {
+  const preview=await f.preview();assert.equal(preview.selectedKeys.length,100);assert.equal(preview.changes.length,10);
+  assert.equal((await f.service.apply(preview)).status,'committed');
+  assert.equal(f.adapter.writes.filter(path=>path.endsWith('.md')).length,10);
+  for(const file of f.app.vault.getMarkdownFiles())file.stat={mtime:1,ctime:1,size:f.adapter.files.get(file.path)!.length};
+  await indexer.fullReindex();const tasks=indexer.getAllTasks();assert.equal(tasks.length,100);
+  for(const task of tasks){assert.ok(!task.fieldValues.parentTask);assert.ok(native.getTask(task).available);assert.ok(task.tags.includes('etiket/çalışma'));}
+  const repeated=await f.preview();assert.equal(repeated.selectedKeys.length,0);
+  const inspection=await f.service.inspect();assert.equal(inspection.state.kind,'active');
+  if(inspection.state.kind!=='active')assert.fail('Missing recovery record');
+  assert.equal((await f.service.resolve('undo',inspection.state.record.id)).status,'restored');
+  await indexer.fullReindex();assert.equal(indexer.getAllTasks().length,0);
+  for(const task of tasks)assert.equal(native.getTask(task).available,false);
+  for(const [path,content] of Object.entries(notes))assert.equal(f.adapter.files.get(path),content);
+  console.log('SETTINGS_CONVERSION_CHAIN',JSON.stringify({files:10,tasks:100,applyWrites:10,undoWrites:f.adapter.writes.filter(path=>path.endsWith('.md')).length-10}));
+ }finally{indexer.destroy();}
+});
 for (const invalid of ['../A.md', '/A.md', 'A/../B.md', 'A\\B.md', '.obsidian/A.md', ' A.md', 'A.md\n', 'A//B.md', 'C:A.md', 'A\u007f.md']) {
 	test(`rejects unsafe source/recovery path ${JSON.stringify(invalid)}`, () => {
 		assert.equal(isTasksConversionPath(invalid), false);

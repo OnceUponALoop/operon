@@ -11,7 +11,7 @@ try {
 	const outfile = path.join(temporary, 'tests.mjs');
 	await build({
 		entryPoints: [path.join(root, 'scripts/task-creator-commit.test.ts')], outfile,
-		banner: { js: 'import { createRequire } from "node:module"; const require = createRequire(import.meta.url);' },
+		banner: { js: `import { createRequire as bundleRequire } from "node:module"; const require = bundleRequire(${JSON.stringify(path.join(root, 'package.json'))});` },
 		bundle: true, format: 'esm', platform: 'node', target: ['node18'], logLevel: 'silent',
 		alias: { obsidian: path.join(root, 'scripts/test-support/obsidian-native-yaml.ts') },
 	});

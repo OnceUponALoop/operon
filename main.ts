@@ -29948,7 +29948,13 @@ export default class OperonPlugin extends Plugin {
      created=candidate;
      try { if (!needsTemplater && await this.app.vault.read(candidate)===preparedContent) commit.outcome='committed'; else commit.outcome='uncertain'; }
      catch {commit.outcome='uncertain';}
-    } else commit.outcome='uncertain';
+    } else {
+     commit.outcome='uncertain';
+     try {
+      // A cache miss alone cannot establish that a failed create wrote nothing.
+      if (!await this.app.vault.adapter.exists(path)) { commit.outcome='pending'; return null; }
+     } catch { /* Keep the retry blocked when source existence cannot be verified. */ }
+    }
     if (commit.outcome!=='committed') return null;
    }
    if (!created) {commit.outcome='uncertain';return null;}
