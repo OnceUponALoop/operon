@@ -1,6 +1,6 @@
 import { isOperonExcludedPath } from '../core/operon-path-exclusions';
 import type { KeyMapping } from '../types/settings';
-import type { TasksConversionSettings, TasksConversionScope, TasksConversionFactories, TasksConversionScan, TasksConversionPreview, TasksConversionSource } from '../core/tasks-conversion-plan';
+import type { TasksConversionSettings, TasksConversionScope, TasksConversionFactories, TasksConversionScan, TasksConversionPreview, TasksConversionSource, TasksConversionInlineTemplate } from '../core/tasks-conversion-plan';
 import { previewTasksConversion, resolveTasksConversionPaths, scanTasksConversionSources, tasksConversionSettingsSnapshot, serializeTasksConversionSettings } from '../core/tasks-conversion-plan';
 import { TasksConversionRecoveryStore, type TasksConversionRecord, type TasksConversionRecoveryState } from '../storage/tasks-conversion-recovery';
 
@@ -28,6 +28,7 @@ export interface TasksConversionWritePort {
 }
 export interface TasksConversionHost {
 	settings(): TasksConversionSettings;
+	loadInlineTemplate?(): Promise<TasksConversionInlineTemplate>;
 	paths(): string[];
 	read(path: string): Promise<string>;
 	identities(mappings: KeyMapping[], signal?: AbortSignal, scope?: TasksConversionIdentityScope): Promise<TasksConversionIdentityInventory>;
@@ -91,6 +92,7 @@ function restoreIdentityConflict(inventory: TasksConversionIdentityInventory, re
 
 /** Prepared objects are session-owned; only the exact immutable preview can be applied. */
 export class TasksConversionService {
+	private readonly templates = new WeakMap<TasksConversionScan, TasksConversionInlineTemplate>();
 	private readonly scans = new WeakSet<TasksConversionScan>();
 	private readonly previews = new WeakSet<TasksConversionPreview>();
 	constructor(private readonly host: TasksConversionHost, private readonly recovery: TasksConversionRecoveryStore,
@@ -100,6 +102,9 @@ export class TasksConversionService {
 		const check = () => { if (options.signal?.aborted) throw new DOMException('Scan cancelled', 'AbortError'); };
 		check();
 		const settings = tasksConversionSettingsSnapshot(this.host.settings());
+		const template = settings.defaultInlineTaskTemplateId ? await this.host.loadInlineTemplate?.() : undefined;
+		if (settings.defaultInlineTaskTemplateId && !template) throw new Error('Default inline template unavailable');
+		if (template && (!template.current() || !await template.verify())) throw new Error('Default inline template changed; scan again');
 		const sources: TasksConversionSource[] = [];
 		const paths = resolveTasksConversionPaths(scope, this.host.paths()).filter(path => {
 			if (!isOperonExcludedPath(path, settings)) return true;
@@ -117,12 +122,17 @@ export class TasksConversionService {
 		sources.sort((a, b) => a.path < b.path ? -1 : a.path > b.path ? 1 : 0);
 		const scan = freeze(scanTasksConversionSources(scope, sources, settings, reserved(inventory),
 			new Set([...inventory.reservedSeriesIds, ...inventory.sources.flatMap(source => source.repeatSeriesIds)]), this.factories));
+		if (serializeTasksConversionSettings(this.host.settings()) !== serializeTasksConversionSettings(settings)
+			|| template && (!template.current() || !await template.verify())) throw new Error('Conversion settings or template changed; scan again');
+		if (template) this.templates.set(scan, template);
 		this.scans.add(scan); return scan;
 	}
 
 	preview(scan: TasksConversionScan, selectedKeys?: readonly string[]): TasksConversionPreview {
 		if (!this.scans.has(scan)) throw new Error('Tasks conversion scan belongs to another session');
-		const preview = freeze(previewTasksConversion(scan, selectedKeys));
+		const template = this.templates.get(scan);
+		if (template && !template.current()) throw new Error('Default inline template changed; scan again');
+		const preview = freeze(previewTasksConversion(scan, selectedKeys, template));
 		this.previews.add(preview); return preview;
 	}
 
@@ -135,14 +145,15 @@ export class TasksConversionService {
 				changes: structuredClone(preview.changes), operonIds: [...preview.operonIds], repeatSeriesIds: [...preview.repeatSeriesIds],
 				keyMappings: structuredClone(preview.scan.settings.keyMappings), taskCount: preview.operonIds.length };
 			return this.host.exclusive(record.changes.map(change => change.path), async port => {
+				const template = this.templates.get(preview.scan);
 				const attempted = new Set<string>();
 				const scope = { paths: record.changes.map(change => change.path), operonIds: record.operonIds, repeatSeriesIds: record.repeatSeriesIds };
 				try {
 					const expectedSettings = serializeTasksConversionSettings(preview.scan.settings);
 					const settingsMatch = () => serializeTasksConversionSettings(this.host.settings()) === expectedSettings;
-					const allowed = () => options.canCommit?.() !== false && settingsMatch();
+					const allowed = () => options.canCommit?.() !== false && settingsMatch() && (!template || template.current());
 					if (options.canCommit?.() === false) return this.result('cancelled', record);
-					if (!settingsMatch()) {
+					if (!settingsMatch() || template && (!template.current() || !await template.verify())) {
 						return this.result('not-applied', record, 'Conversion settings changed; scan again');
 					}
 					const conflicts: string[] = [], details: string[] = [];
@@ -162,11 +173,15 @@ export class TasksConversionService {
 						return this.result('not-applied', record, 'Allocated identity is no longer available');
 					}
 					if (options.canCommit?.() === false) return this.result('cancelled', record);
+					if (template) {
+						await template.prepareDefinitions(preview.inlineDefinitions, allowed);
+						if (!allowed() || !await template.verify()) return this.result('not-applied', record, 'Default inline template changed; scan again');
+					}
 					await this.recovery.create(record);
 					const active = await this.recovery.load();
 					if (active.kind !== 'active' || active.record.id !== record.id) return this.result('recovery-required', record, 'Backup could not be verified');
 					for (const [index, change] of record.changes.entries()) {
-						if (!allowed()) return await this.restore(active, port, options, false, attempted);
+						if (!allowed() || template && !await template.verify()) return await this.restore(active, port, options, false, attempted);
 						const fresh = await port.identities(record.keyMappings, undefined, scope);
 						if (!fresh.isCurrent() || fresh.unavailablePaths.length || restoreIdentityConflict(fresh, record, false)
 							|| fresh.sources.some(source => !attempted.has(source.path) && source.operonIds.some(id => record.operonIds.includes(id)))) {
@@ -182,7 +197,7 @@ export class TasksConversionService {
 						if (await port.read(change.path) !== change.after) return await this.restore(active, port, options, false, attempted);
 						this.progress(options, 'apply', index + 1, record, change.path);
 					}
-					if (!allowed()) return await this.restore(active, port, options, false, attempted);
+					if (!allowed() || template && !await template.verify()) return await this.restore(active, port, options, false, attempted);
 					for (const change of record.changes) if (await port.read(change.path) !== change.after) return await this.restore(active, port, options, false, attempted);
 					const finalInventory = await port.identities(record.keyMappings, undefined, scope);
 					if (!finalInventory.isCurrent() || finalInventory.unavailablePaths.length || restoreIdentityConflict(finalInventory, record, false)) {

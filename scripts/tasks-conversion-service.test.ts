@@ -1,3 +1,5 @@
+import { prepareCreationTemplate } from '../src/core/task-creation-template';
+import { prepareDefaultInlineTemplateTask } from '../src/core/default-inline-template';
 import { createTasksConversionReferenceInventory, tasksConversionCardReferences } from '../src/systems/tasks-conversion-references';
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
@@ -110,7 +112,6 @@ test('combined conversion and native index: 10 files / 100 Tasks remain independ
  const { getNativePropertyIndex } = await import('../src/indexer/native-property-index');
  const notes = Object.fromEntries(Array.from({length:10},(_,file)=>[`Batch${file}.md`,Array.from({length:10},(_,row)=>`- [ ] Task ${file}-${row} #etiket/çalışma 📅 2026-10-11`).join('\n')]));
  const f=fixture(notes);
- f.settings.defaultInlineTaskTemplateId='missing-template-must-not-be-read';
  Object.assign(f.app,{metadataCache:{getFileCache:()=>({listItems:[{task:' '}]})}});
  const native=getNativePropertyIndex(f.app);native.configure(f.settings);native.setTypes({});
  const indexer=new Indexer(f.app,{getSettings:()=>f.settings} as never);
@@ -694,7 +695,7 @@ test('settings serialization preserves snapshot semantics independent of top-lev
  settings.defaultPriority = 'Changed';
  assert.notEqual(serializeTasksConversionSettings(settings), serializeTasksConversionSettings(reversed));
 });
-for (const key of ['priorities', 'pipelines', 'defaultPipelineName', 'defaultPriority', 'keyMappings', 'excludedFolders', 'fileTaskTemplateFolder'] as const) {
+for (const key of ['priorities', 'pipelines', 'defaultPipelineName', 'defaultPriority', 'keyMappings', 'excludedFolders', 'fileTaskTemplateFolder', 'defaultInlineTaskTemplateId'] as const) {
  test(`fresh settings serialization rejects changed ${key} without persistent writes`, async () => {
   const f = fixture(), preview = await f.preview();
   const value = f.settings[key];
@@ -834,3 +835,96 @@ test('explicit excluded scope with no eligible paths performs no file reads', as
  assert.equal(reads, 0); assert.equal(scan.files.length, 1); assert.equal(scan.files[0].error, 'excluded');
  assert.equal(f.service.preview(scan).selectedKeys.length, 0); assert.deepEqual(f.adapter.writes, []);
 });
+
+function inlineTemplateFixture(line: string, frontmatter: string) {
+ const f = fixture({ 'A.md': line });
+ f.settings.defaultInlineTaskTemplateId = 'test-template';
+ let content = `---\n${frontmatter}\n---\nBody must never be copied`;
+ let metadataCurrent = true;
+ const properties = { keyMappings: f.settings.keyMappings, propertyTypes: { Client: 'text' as const }, inlineDefinitions: { version: 1 as const, entries: [] } };
+ const inputs = { title: '', taskDescription: '', note: '', status: '', priority: '', dateStarted: '', dateScheduled: '', dateDue: '' };
+ const definitions: string[] = [];
+ f.host.loadInlineTemplate = async () => {
+  const before = content;
+  const template = prepareCreationTemplate({ content, sourceId: 'test-template', revision: 1, clock: { now: '2026-10-08T17:00:00' }, inputs, properties });
+  if (template.status !== 'ready') throw new Error('Template invalid');
+  return {
+   current: () => metadataCurrent,
+   verify: async () => metadataCurrent && content === before,
+   prepare: (task, explicit, now) => {
+    const output = prepareDefaultInlineTemplateTask({ template, properties, task, source: { ...task, fields: [], tags: [...task.tags] }, parent: [], explicit, now });
+    const parsed = parseTaskLine(output.inlineLine, task.lineNumber, task.filePath, f.settings.keyMappings);
+    assert.ok(parsed); Object.assign(task, parsed);
+    return { definitions: output.definitions, warnings: output.skipped.map(item => item.sourceName) };
+   },
+   prepareDefinitions: async (items, allowed) => { assert.ok(allowed()); definitions.push(...items.map(item => item.sourceName)); },
+  };
+ };
+ return { ...f, definitions, changeTemplate: () => { content += '\nChanged'; }, changeMetadata: () => { metadataCurrent = false; } };
+}
+test('bulk template matches command precedence: emoji values win, template fills properties, body and parent excluded', async () => {
+ const f = inlineTemplateFixture('- [ ] Task ⏫ 📅 2026-11-01 #source', 'priority: Low\ndateDue: 2026-12-01\nClient: Acme\nparentTask: zzzzzzz');
+ const preview = await f.preview();
+ const line = preview.rows.find(row => row.selected)!.after!;
+ const task = parseTaskLine(line, 0, 'A.md', f.settings.keyMappings)!;
+ assert.equal(task.fields.find(field => field.key === 'priority')?.value, 'A');
+ assert.equal(task.fields.find(field => field.key === 'dateDue')?.value, '2026-11-01');
+ assert.match(line, /Client:: Acme/);
+ assert.ok(task.tags.includes('source'));
+ assert.ok(!line.includes('parentTask')); assert.ok(!line.includes('Body must never'));
+ assert.deepEqual(f.adapter.writes, []); assert.deepEqual([...f.definitions], []);
+ assert.equal((await f.service.apply(preview)).status, 'committed');
+ assert.ok(f.definitions.includes('Client'));
+ const active = await f.service.inspect(); assert.ok(active.canUndo);
+ assert.equal(active.state.kind, 'active');
+ if (active.state.kind !== 'active') throw new Error('Missing recovery record');
+ assert.equal((await f.service.resolve('undo', active.state.record.id)).status, 'restored');
+ assert.equal(await f.adapter.read('A.md'), '- [ ] Task ⏫ 📅 2026-11-01 #source');
+});
+test('template recurrence reserves stable unique series across previews and records only actual recurrence', async () => {
+ const f = inlineTemplateFixture('- [ ] One 🆔 a\n- [ ] Two 🆔 b', 'repeat: mode=schedule|freq=day|interval=1');
+ const scan = await f.service.scan(f.scope), a = f.service.preview(scan), b = f.service.preview(scan);
+ assert.equal(a.repeatSeriesIds.length, 2); assert.equal(new Set(a.repeatSeriesIds).size, 2);
+ assert.deepEqual(a.repeatSeriesIds, b.repeatSeriesIds);
+ assert.equal((await f.service.apply(b)).status, 'committed');
+ assert.ok((await f.service.inspect()).canUndo);
+ const plain = inlineTemplateFixture('- [ ] Plain 🆔 a', 'priority: Low');
+ assert.deepEqual((await plain.preview()).repeatSeriesIds, []);
+ const invalid = inlineTemplateFixture('- [ ] Invalid 🆔 a', 'repeat: nonsense');
+ const invalidPreview = await invalid.preview();
+ assert.deepEqual(invalidPreview.repeatSeriesIds, []);
+ assert.ok(!invalidPreview.rows[0].after!.includes('repeatSeriesId'));
+});
+for (const change of ['template', 'metadata', 'selection'] as const) test(`changed ${change} rejects stale template preview before any writes`, async () => {
+ const f = inlineTemplateFixture('- [ ] Task 🆔 a', 'priority: Low'), preview = await f.preview();
+ if (change === 'template') f.changeTemplate();
+ else if (change === 'metadata') f.changeMetadata();
+ else f.settings.defaultInlineTaskTemplateId = null;
+ assert.equal((await f.service.apply(preview)).status, 'not-applied');
+ assert.deepEqual(f.adapter.writes, []); assert.deepEqual([...f.definitions], []);
+});
+test('template change during a source write restores conversion sources', async () => {
+ const f = inlineTemplateFixture('- [ ] Task 🆔 a', 'priority: Low'), preview = await f.preview();
+ f.adapter.afterWrite = name => { if (name === 'A.md') f.changeTemplate(); };
+ assert.equal((await f.service.apply(preview)).status, 'rolled-back');
+ assert.equal(await f.adapter.read('A.md'), '- [ ] Task 🆔 a');
+});
+test('selected unavailable template fails scan with no writes', async () => {
+ const f = fixture(); f.settings.defaultInlineTaskTemplateId = 'missing';
+ await assert.rejects(f.preview(), /template unavailable/); assert.deepEqual(f.adapter.writes, []);
+});
+
+for (const line of ['- [ ] Task 🔁 every week 📅 2026-11-01', '- [x] Task ✅ 2026-10-09', '- [-] Task ❌ 2026-10-09', '- [ ] Task ⏳ 2026-11-01']) {
+ test(`template preserves explicit emoji recurrence and workflow: ${line}`, async () => {
+  const original = await fixture({ 'A.md': line }).preview();
+  const f = inlineTemplateFixture(line, 'repeat: mode=schedule|freq=day|interval=1\ndateDue: 2026-12-01');
+  const preview = await f.preview();
+  const before = parseTaskLine(original.rows[0].after!, 0, 'A.md', f.settings.keyMappings)!;
+  const after = parseTaskLine(preview.rows[0].after!, 0, 'A.md', f.settings.keyMappings)!;
+  assert.equal(after.checkbox, before.checkbox);
+  for (const key of ['repeat', 'dateDue', 'dateScheduled', 'dateCompleted', 'dateCancelled', 'status']) {
+   const value = before.fields.find(field => field.key === key)?.value;
+   if (value) assert.equal(after.fields.find(field => field.key === key)?.value, value, key);
+  }
+ });
+}

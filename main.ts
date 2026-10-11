@@ -22299,7 +22299,7 @@ export default class OperonPlugin extends Plugin {
   const parentGuards:Array<()=>boolean>=[];
   return {template,properties,current:()=>signature()===baseline && parentGuards.every(guard=>guard()),outputs:[],parents:new Map(),parentGuards};
  }
- private applyDefaultInlineTemplateToTask(task:ParsedTask,inherited:SubtaskInitialFields,source:ParsedTask|null,batch:InlineTemplateAuthoring|null,explicit:readonly string[]=[]):void {
+ private applyDefaultInlineTemplateToTask(task:ParsedTask,inherited:SubtaskInitialFields,source:ParsedTask|null,batch:InlineTemplateAuthoring|null,explicit:readonly string[]=[],now=localNow()):void {
   if (!batch) return;
   if (!batch.current()) throw new Error('Inline creation metadata changed');
   const parentField=(explicit.includes('parentTask')?task:source)?.fields.find(field=>field.key==='parentTask');
@@ -22334,7 +22334,7 @@ export default class OperonPlugin extends Plugin {
    batch.parentGuards.push(()=>{const current=this.indexer.getTask(parentId);return !!current&&!this.indexer.hasDuplicateOperonIdConflict(parentId)&&JSON.stringify([current.primary,current.fieldValues,current.tags,native.getTask(current).revision])===version;});
   }
   const parentFields=creationDraftParentFields(parentId,values??null,parent?.tags??indexed?.tags??null,this.settings,nativeValues);
-  const output=prepareDefaultInlineTemplateTask({template:batch.template,properties:batch.properties,task:{...task,tags:task.tags.filter(tag=>explicit.includes('tags')||!inherited.tags?.includes(tag)||source?.tags.includes(tag)),fields:task.fields.filter(field=>!inherited.parentTask||field.key==='parentTask'||!Object.keys(inherited).includes(field.key)||source?.fields.some(original=>original.key===field.key)||explicit.includes(field.key))},source,parent:parentFields,defaults:[{sourceName:'priority',value:this.settings.defaultPriority},{sourceName:'status',value:resolveDefaultFileTaskStatus(this.settings.pipelines,this.settings.defaultPipelineName)??''}],explicit,now:localNow(),repeat:{getAllRepeatSeriesIds:()=>this.storage.repeatSeries.getAllSeriesIds(),getRepeatSkipDates:id=>this.storage.repeatSeries.getSkipDates(id)}});
+  const output=prepareDefaultInlineTemplateTask({template:batch.template,properties:batch.properties,task:{...task,tags:task.tags.filter(tag=>explicit.includes('tags')||!inherited.tags?.includes(tag)||source?.tags.includes(tag)),fields:task.fields.filter(field=>!inherited.parentTask||field.key==='parentTask'||!Object.keys(inherited).includes(field.key)||source?.fields.some(original=>original.key===field.key)||explicit.includes(field.key))},source,parent:parentFields,defaults:[{sourceName:'priority',value:this.settings.defaultPriority},{sourceName:'status',value:resolveDefaultFileTaskStatus(this.settings.pipelines,this.settings.defaultPipelineName)??''}],explicit,now,repeat:{getAllRepeatSeriesIds:()=>this.storage.repeatSeries.getAllSeriesIds(),getRepeatSkipDates:id=>this.storage.repeatSeries.getSkipDates(id)}});
   const parsed=this.parseInlineTaskLine(output.inlineLine,task.lineNumber,task.filePath);
   if (!parsed || !this.validateDependencyDraftOrShow(output.operonId,output.fieldValues)) throw new Error('Invalid template task');
   for (const key of ['dateCompleted','dateCancelled'] as const) {
@@ -26860,6 +26860,38 @@ export default class OperonPlugin extends Plugin {
      operonIds: [task.operonId], repeatSeriesIds: parseDependencyIdList(task.fieldValues.repeatSeriesId ?? ''),
      references: ['parentTask', 'blocking', 'blockedBy', 'related'].flatMap(key => parseDependencyIdList(task.fieldValues[key] ?? '')) })) };
   }, async () => { await this.indexer.flushPendingRamReindexNow(); await this.indexer.awaitRamSettlement(); });
+  host.loadInlineTemplate = async () => {
+   const batch = await this.loadDefaultInlineTemplate();
+   if (!batch) throw new Error('Default inline template unavailable');
+   const option = this.getFileTaskTemplateOptions().find(item => item.id === this.settings.defaultInlineTaskTemplateId);
+   if (!option) throw new Error('Default inline template unavailable');
+   let current = batch.current;
+   let verify = async () => current();
+   if (option.kind === 'folder') {
+    const templatePath = option.path;
+    const file = this.app.vault.getAbstractFileByPath(templatePath);
+    if (!(file instanceof TFile)) throw new Error('Default inline template unavailable');
+    const content = await host.read(templatePath);
+    if (content !== batch.template.rawContent) throw new Error('Default inline template changed; scan again');
+    const version = JSON.stringify(file.stat);
+    current = () => batch.current() && file.path === templatePath && this.app.vault.getAbstractFileByPath(templatePath) === file && JSON.stringify(file.stat) === version;
+    verify = async () => current() && await host.read(templatePath) === content && current();
+   }
+   return {
+    current,
+    verify,
+    prepare: (task, explicit, now) => {
+     batch.outputs.length = 0; batch.parents.clear();
+     this.applyDefaultInlineTemplateToTask(task, {}, { ...task, fields: [], tags: [...task.tags] }, batch, explicit, now);
+     const output = batch.outputs[0];
+     const warning = this.inlineTemplateSkippedMessage(batch);
+     return { definitions: output.definitions, warnings: warning ? [warning] : [] };
+    },
+    prepareDefinitions: async (definitions, allowed) => {
+     if (definitions.length) await this.storage.ensureInlinePropertyDefinitions([...definitions], () => allowed() && current());
+    },
+   };
+  };
   const service = new TasksConversionService(host, new TasksConversionRecoveryStore(this.app.vault.adapter, this.app.vault.configDir));
   const controller = new TasksConversionController({ service, available,
    coordinate: async (paths, ids, operation, changes = []) => {

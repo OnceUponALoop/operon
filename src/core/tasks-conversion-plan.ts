@@ -1,6 +1,8 @@
 import type { OperonSettings } from '../types/settings';
 import type { OperonField, ParsedTask } from '../types/fields';
 import { CANONICAL_KEY_MAP } from '../types/keys';
+import type { InlinePropertyDefinition } from './inline-property-definitions';
+import { parseRepeatRule } from './repeat-rule';
 import { localNow } from './local-time';
 import { generateUniqueOperonId, generateRepeatSeriesId } from './id-generator';
 import { isOperonExcludedPath } from './operon-path-exclusions';
@@ -14,7 +16,14 @@ import { applyTasksEmojiConversionToParsedTask } from './tasks-emoji-application
 import { isTasksConversionPath, tasksConversionProtectedLines } from './tasks-conversion-scope';
 
 export type TasksConversionSettings = Pick<OperonSettings, 'priorities' | 'pipelines' | 'defaultPipelineName'
-	| 'defaultPriority' | 'keyMappings' | 'excludedFolders' | 'fileTaskTemplateFolder'>;
+	| 'defaultPriority' | 'keyMappings' | 'excludedFolders' | 'fileTaskTemplateFolder'> & { defaultInlineTaskTemplateId?: string | null };
+
+export interface TasksConversionInlineTemplate {
+	prepare(task: ParsedTask, explicit: readonly string[], now: string): { definitions: InlinePropertyDefinition[]; warnings: string[] };
+	current(): boolean;
+	verify(): Promise<boolean>;
+	prepareDefinitions(definitions: readonly InlinePropertyDefinition[], allowed: () => boolean): Promise<void>;
+}
 export interface TasksConversionScope { files: string[]; folders: string[]; includeSubfolders: boolean }
 export interface TasksConversionSource { path: string; content?: string; error?: string }
 export interface TasksConversionRow {
@@ -31,7 +40,7 @@ export interface TasksConversionPreview {
 	scan: TasksConversionScan; selectedKeys: string[];
 	rows: Array<TasksConversionRow & { selected: boolean; after?: string; warnings: string[]; error?: string }>;
 	changes: TasksConversionFileChange[]; operonIds: string[]; repeatSeriesIds: string[];
-	errors: string[];
+	errors: string[]; inlineDefinitions: InlinePropertyDefinition[];
 }
 export interface TasksConversionFactories {
 	now?: () => string; operonId?: (used: Set<string>) => string; repeatSeriesId?: (used: Set<string>) => string;
@@ -41,7 +50,7 @@ export function serializeTasksConversionSettings(settings: TasksConversionSettin
 	return JSON.stringify({ priorities: settings.priorities, pipelines: settings.pipelines,
 		defaultPipelineName: settings.defaultPipelineName, defaultPriority: settings.defaultPriority,
 		keyMappings: settings.keyMappings, excludedFolders: settings.excludedFolders,
-		fileTaskTemplateFolder: settings.fileTaskTemplateFolder });
+		fileTaskTemplateFolder: settings.fileTaskTemplateFolder, defaultInlineTaskTemplateId: settings.defaultInlineTaskTemplateId ?? null });
 }
 
 export function tasksConversionSettingsSnapshot(settings: TasksConversionSettings): TasksConversionSettings {
@@ -89,7 +98,7 @@ export function scanTasksConversionSources(
 				const id = (factories.operonId ?? generateUniqueOperonId)(used);
 				if (used.has(id) || !/^[a-z0-9]{7}$/u.test(id)) throw new Error('Invalid or duplicate allocated Operon ID');
 				used.add(id); row.operonId = id;
-				if (converted.kind === 'converted' && converted.mappedFields.repeat) {
+				if (converted.kind === 'converted' && (converted.mappedFields.repeat || settings.defaultInlineTaskTemplateId)) {
 					const repeatId = (factories.repeatSeriesId ?? generateRepeatSeriesId)(series);
 					if (series.has(repeatId) || !/^rs[a-z0-9]{5}$/u.test(repeatId)) throw new Error('Invalid or duplicate repeat series ID');
 					series.add(repeatId); row.repeatSeriesId = repeatId;
@@ -111,7 +120,7 @@ function setField(task: ParsedTask, key: string, value: string): void {
 	if (key === 'operonId') task.operonId = value;
 }
 
-export function previewTasksConversion(scan: TasksConversionScan, selection?: readonly string[]): TasksConversionPreview {
+export function previewTasksConversion(scan: TasksConversionScan, selection?: readonly string[], template?: TasksConversionInlineTemplate): TasksConversionPreview {
 	const eligible = scan.rows.filter(row => row.status === 'eligible');
 	const eligibleKeys = new Set(eligible.map(row => row.key));
 	const selected = new Set(selection ?? eligible.map(row => row.key));
@@ -122,6 +131,7 @@ export function previewTasksConversion(scan: TasksConversionScan, selection?: re
 	const byKey = new Map(batch.items.map(item => [item.sourceKey, item]));
 	const patches = new Map<string, Map<number, string>>();
 	const errors: string[] = [], operonIds: string[] = [], repeatSeriesIds: string[] = [];
+	const inlineDefinitions: InlinePropertyDefinition[] = [];
 	const defaults = Object.entries(resolveSubtaskInitialFieldsFromParentValues(null, null, scan.settings as OperonSettings));
 	const rows: TasksConversionPreview['rows'] = scan.rows.map(row => {
 		const result: TasksConversionPreview['rows'][number] = { ...row, selected: selected.has(row.key), warnings: [] };
@@ -142,13 +152,24 @@ export function previewTasksConversion(scan: TasksConversionScan, selection?: re
 			pipelines: scan.settings.pipelines, defaultPipelineName: scan.settings.defaultPipelineName,
 			defaultPriority: scan.settings.defaultPriority, repeatSeriesIdFactory: row.repeatSeriesId ? () => row.repeatSeriesId! : undefined });
 		if (!applied.ok) { result.error = applied.errorMessage ?? 'Workflow resolution failed'; errors.push(row.key); return result; }
+		if (template) {
+			const prepared = template.prepare(task, [...Object.keys(conversion.mappedFields),
+				...(conversion.leftovers.length ? ['note'] : []),
+				...(conversion.mappedFields.dateScheduled || conversion.checkbox !== 'open' ? ['status', 'dateCompleted', 'dateCancelled'] : []),
+				'parentTask'], scan.timestamp);
+			inlineDefinitions.push(...prepared.definitions); result.warnings.push(...prepared.warnings);
+			// Template recurrence uses the identity reserved at scan, including repeated previews.
+			task.fields = task.fields.filter(field => field.key !== 'repeatSeriesId');
+			if (task.fields.some(field => field.key === 'repeat' && parseRepeatRule(field.value))) setField(task, 'repeatSeriesId', row.repeatSeriesId!);
+		}
+		if (task.fields.some(field => field.key === 'parentTask')) throw new Error('Bulk conversion must remain independent');
 		setField(task, 'datetimeModified', scan.timestamp);
 		result.after = serializeTask(task, scan.settings.keyMappings);
 		const roundTrip = parseTaskLine(result.after, row.lineNumber, row.path, scan.settings.keyMappings);
 		if (roundTrip?.operonId !== row.operonId || result.after.includes('\n')) throw new Error('Invalid Tasks conversion serialization');
 		const filePatches = patches.get(row.path) ?? new Map<number, string>();
 		filePatches.set(row.lineNumber, result.after); patches.set(row.path, filePatches);
-		operonIds.push(row.operonId!); if (row.repeatSeriesId) repeatSeriesIds.push(row.repeatSeriesId);
+		operonIds.push(row.operonId!); if (task.fields.some(field => field.key === 'repeatSeriesId')) repeatSeriesIds.push(row.repeatSeriesId!);
 		return result;
 	});
 	const changes = scan.files.flatMap(file => {
@@ -158,7 +179,7 @@ export function previewTasksConversion(scan: TasksConversionScan, selection?: re
 		for (const [number, after] of replacements) lines[number] = after + (lines[number].endsWith('\r') ? '\r' : '');
 		return [{ path: file.path, before: file.content, after: lines.join('\n') }];
 	});
-	return { scan, selectedKeys: [...selected].sort(), rows, changes, operonIds, repeatSeriesIds, errors };
+	return { scan, selectedKeys: [...selected].sort(), rows, changes, operonIds, repeatSeriesIds, errors, inlineDefinitions };
 }
 
 /** A checksum proves intact bytes; this also proves the record describes only admitted task edits. */
