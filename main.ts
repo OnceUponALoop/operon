@@ -1137,7 +1137,7 @@ interface PreparedCreatorCommit {
  request: PreparedTaskCreatorSubmission;
  properties: CreationDraftPropertyContext;
  current: () => boolean;
- previewParent: (id: string, fields: Record<string,string> | null, tags: readonly string[] | null) => boolean;
+ applyTargetParent: (id: string) => void;
  session: { target?: InlineTargetDestination };
  content?: PreparedCreationContent;
  outcome: 'pending' | 'preview' | 'committed' | 'uncertain';
@@ -29330,14 +29330,21 @@ export default class OperonPlugin extends Plugin {
     onSubmit: async request => {
      if (metadataKey() !== initialMetadataKey) return { outcome:'failed',message:t('taskEditor','creatorMetadataChanged') };
      const draft=this.preparedCreatorLegacyDraft(request);
-     const parentId=draft.fieldValues.parentTask;
+     let parentId=draft.fieldValues.parentTask;
      const parent=parentId ? this.indexer.getTask(parentId) : null;
-     const parentSignature=parent ? parentVersion(parent) : '';
+     let parentSignature=parent ? parentVersion(parent) : '';
      if (parent && parentVersions.get(parentId)!==parentSignature) { modal.refreshPreparedSources(); return {outcome:'preview',message:t('taskEditor','creatorParentPreviewChanged')}; }
      const commit: PreparedCreatorCommit = { request,properties,session,outcome:'pending',
       current:()=>!closed && metadataKey()===initialMetadataKey && (!parentId || !!this.indexer.getTask(parentId) && !this.indexer.hasDuplicateOperonIdConflict(parentId)
        && parentVersion(this.indexer.getTask(parentId)!)===parentSignature),
-      previewParent:(id,fields,tags)=>modal.acceptPreparedTargetParent(id,fields,tags) };
+      applyTargetParent:id=>{
+       const targetParent=this.indexer.getTask(id);
+       if (!targetParent || this.indexer.hasDuplicateOperonIdConflict(id) || !native.getTask(targetParent).available) throw new Error('Creator destination parent unavailable');
+       commit.request=modal.acceptPreparedTargetParent(id,null,null);
+       parentId=id;
+       parentSignature=parentVersion(targetParent);
+       commit.content=undefined;
+      } };
      this.preparedCreatorCommits.set(draft,commit);
      this.inlineCreatorActiveFiles.set(draft,activeFilePath);
      try {
@@ -30127,7 +30134,7 @@ export default class OperonPlugin extends Plugin {
   if (prepared) {
    const parentId=typeof inherited.parentTask==='string' ? inherited.parentTask : '';
    const parentField=prepared.request.snapshot.fields.find(field=>field.property.canonicalKey==='parentTask');
-   if (parentId && (!parentField || parentField.state==='missing') && prepared.previewParent(parentId,null,null)) { prepared.outcome='preview';return null; }
+   if (parentId && (!parentField || parentField.state==='missing')) prepared.applyTargetParent(parentId);
    const content=this.compilePreparedCreator(prepared);
    return {taskLine:content.inlineLine,operonId:content.operonId,fieldValues:content.fieldValues};
   }

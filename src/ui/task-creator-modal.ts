@@ -1801,13 +1801,12 @@ export class TaskCreatorModal extends Modal {
   anchor.addClass('is-picker-open');
  }
 
- /** Late destination inheritance returns to the same draft instead of writing unseen values. */
- acceptPreparedTargetParent(id: string, fields: Record<string,string> | null, tags: readonly string[] | null): boolean {
-  if (!this.prepared || this.preparedClosed) return false;
-  const before = JSON.stringify(this.prepared.draft.snapshot().fields.map(field => [field.property.id,field.state,field.value]));
+ /** Apply destination inheritance through the shared draft before the first write. */
+ acceptPreparedTargetParent(id: string, fields: Record<string,string> | null, tags: readonly string[] | null) {
+  if (!this.prepared || this.preparedClosed) throw new Error('Creator is closed');
   this.prepared.backgroundParent(id, fields, tags);
   this.refreshPreparedDraft();
-  return before !== JSON.stringify(this.prepared.draft.snapshot().fields.map(field => [field.property.id,field.state,field.value]));
+  return this.prepared.submission('inline', this.draft.description, this.draft.inlineCompletionMode);
  }
  private async submitPrepared(mode: TaskCreatorCreateType): Promise<void> {
   const prepared = this.prepared;
