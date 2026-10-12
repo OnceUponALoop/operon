@@ -1,4 +1,5 @@
 import { App } from 'obsidian';
+import { bindTimeInput } from './time-input';
 import { t } from '../../core/i18n';
 import { localToday } from '../../core/local-time';
 import { getAppLocale } from '../../core/obsidian-app';
@@ -21,7 +22,6 @@ import {
 	getSlotIndexForCanonicalTime,
 	getTimeDigitsFromCanonicalTime,
 	moveTimeSuggestion,
-	isValidTimePrefix,
 	resolveTimeInput,
 	matchQuarterHourSlots,
 	parseStoredDatetimeValue,
@@ -100,8 +100,6 @@ export interface DatetimePickerContentController {
 	requestFocus: () => void;
 	destroy: () => void;
 }
-
-const EDITABLE_CARET_POSITIONS = [0, 1, 3, 4];
 
 export function showDatetimePicker(anchor: HTMLElement | DOMRect, options: DatetimePickerOptions): () => void {
 	let completed = false;
@@ -341,17 +339,8 @@ export function renderDatetimePickerContent(
 	};
 
 	const setTimeCaret = (requested: number) => {
-		const position = EDITABLE_CARET_POSITIONS.includes(requested)
-			? requested
-			: EDITABLE_CARET_POSITIONS.find(pos => pos >= requested) ?? EDITABLE_CARET_POSITIONS[EDITABLE_CARET_POSITIONS.length - 1];
-		window.setTimeout(() => timeInput.setSelectionRange(position, position), 0);
-	};
-
-	const getEditableIndexFromCaret = (caret: number): number => {
-		if (caret <= 0) return 0;
-		if (caret === 1) return 1;
-		if (caret <= 3) return 2;
-		return 3;
+		const position = Math.max(0, Math.min(5, requested));
+		timeInput.setSelectionRange(position, position);
 	};
 
 	const renderTimeResults = () => {
@@ -541,28 +530,11 @@ export function renderDatetimePickerContent(
 		setTimeCaret(caretPosition);
 	};
 
-	const acceptTimeDigit = (digit: string, editableIndex: number): void => {
-		const digits = timeBuffer.split('');
-		const start = timeInput.selectionStart ?? 0;
-		const end = timeInput.selectionEnd ?? start;
-		for (let index = 0; index < 4; index++) {
-			if (EDITABLE_CARET_POSITIONS[index] >= start && EDITABLE_CARET_POSITIONS[index] < end) digits[index] = '_';
-		}
-		if (digits.slice(0, editableIndex).some(char => !/\d/.test(char))) return;
-		digits[editableIndex] = digit;
-		if (!isValidTimePrefix(digits.slice(0, editableIndex + 1).join(''), timeFormat, options.fieldKey === 'datetimeEnd' && timeFormat === '24h')) return;
-		// Clear an invalid suffix when changing the hour, but never round the minute.
-		const full = digits.join('');
-		if (!full.includes('_') && !isValidTimePrefix(full, timeFormat, options.fieldKey === 'datetimeEnd' && timeFormat === '24h')) {
-			for (let index = editableIndex + 1; index < 4; index++) digits[index] = '_';
-		}
-		updateTimeFromDigitInput(digits.join(''), EDITABLE_CARET_POSITIONS[Math.min(3, editableIndex + 1)]);
-	};
-
-	// Native input events cover paste and keyboards that do not emit digit keydowns.
-	timeInput.addEventListener('input', () => {
-		const digits = timeInput.value.trim().replace(':', '');
-		updateTimeFromDigitInput(/^[\d_]{0,4}$/.test(digits) ? digits : '____', timeInput.selectionStart ?? 0);
+	bindTimeInput(timeInput, {
+		getBuffer: () => timeBuffer,
+		onChange: updateTimeFromDigitInput,
+		timeFormat,
+		allowEndOfDay: options.fieldKey === 'datetimeEnd' && timeFormat === '24h',
 	});
 
 	input.addEventListener('input', () => {
@@ -631,35 +603,6 @@ export function renderDatetimePickerContent(
 		if (event.key === 'ArrowUp') {
 			event.preventDefault();
 			moveActiveTime(-1);
-			return;
-		}
-		if (event.key === 'ArrowLeft' || event.key === 'ArrowRight') {
-			event.preventDefault();
-			const current = timeInput.selectionStart ?? 0;
-			const editableIndex = getEditableIndexFromCaret(current);
-			const nextEditable = event.key === 'ArrowLeft'
-				? Math.max(0, editableIndex - 1)
-				: Math.min(3, editableIndex + 1);
-			setTimeCaret(EDITABLE_CARET_POSITIONS[nextEditable]);
-			return;
-		}
-		if (event.key === 'Backspace' || event.key === 'Delete') {
-			event.preventDefault();
-			const current = timeInput.selectionStart ?? 0;
-			const editableIndex = getEditableIndexFromCaret(current);
-			const removeIndex = event.key === 'Backspace'
-				? Math.max(0, editableIndex - (current === 0 ? 0 : 1))
-				: editableIndex;
-			const digits = timeBuffer.split('');
-			digits[removeIndex] = '_';
-			updateTimeFromDigitInput(digits.join(''), EDITABLE_CARET_POSITIONS[Math.max(0, removeIndex)]);
-			return;
-		}
-		if (/^\d$/.test(event.key)) {
-			event.preventDefault();
-			const current = timeInput.selectionStart ?? 0;
-			const editableIndex = getEditableIndexFromCaret(current);
-			acceptTimeDigit(event.key, editableIndex);
 			return;
 		}
 		if (event.key === 'Enter') {
