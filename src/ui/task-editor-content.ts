@@ -3391,6 +3391,7 @@ export class TaskEditorContent {
    this.filePropertyTypeResolver.replaceTypes(index.getTypes());
    const snapshot = index.getTask(task);
    if (!snapshot.available) throw new Error('unverified-task-properties');
+   root.querySelector('.operon-editor-desktop-file-loading')?.remove();
    const next = new Map<string, EditorFileProperty>();
    for (const property of snapshot.properties.values()) {
     const name = property.sourceName;
