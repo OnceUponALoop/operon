@@ -613,6 +613,9 @@ export class TaskCreatorModal extends Modal {
 		this.updateMobileViewportHeight();
 		this.registerMobilePickerListeners();
 		this.render();
+		// Seed the caret once; later focus recovery keeps the user’s current position.
+		const descriptionEnd = this.getDescriptionDisplayValue().length;
+		this.descriptionCompactEditor?.setSelection?.({ anchor: descriptionEnd, head: descriptionEnd });
   if (this.prepared) void this.selectPreparedTemplateId(this.draft.fileTemplateId);
 		this.indexUpdatesUnsubscribe?.();
 		this.indexUpdatesUnsubscribe = this.options.subscribeIndexUpdates?.(() => {
