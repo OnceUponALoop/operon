@@ -429,7 +429,7 @@ function getFallbackFieldIcon(key: string, type: ValueType): string {
 		case 'datetime':
 			return 'calendar';
 		case 'checkbox':
-			return 'square-check-big';
+			return 'square-dashed';
 		case 'list':
 		case 'text':
 		default:

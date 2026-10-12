@@ -1,4 +1,5 @@
 import { Platform, type App } from 'obsidian';
+import { getManagedYamlAliases } from '../core/yaml-fields';
 import { parseListValue } from '../core/parser';
 import { isRetiredKeyMapping, KeyMapping, OperonSettings } from '../types/settings';
 import { IndexedTask } from '../types/fields';
@@ -18,7 +19,7 @@ const CUSTOM_FIELD_TYPE_FALLBACK_ICONS: Record<KeyMapping['type'], string> = {
 	date: 'calendar',
 	datetime: 'clock-3',
 	list: 'list',
-	checkbox: 'square-check',
+	checkbox: 'square-dashed',
 };
 
 interface VaultFrontmatterCandidateCache {
@@ -269,4 +270,15 @@ function rememberVaultFrontmatterCandidateValue(bucket: Set<string>, rawValue: u
 
 function isKeyMappingArray(value: readonly KeyMapping[] | null | undefined): value is readonly KeyMapping[] {
 	return Array.isArray(value);
+}
+
+/** Checkbox type icons are configurable; concrete boolean states are always explicit. */
+export function getCheckboxPropertyIcon(value: unknown, fallback = 'square-dashed'): string {
+	return value === true ? 'square-check-big' : value === false ? 'square' : fallback;
+}
+
+export function getCheckboxPropertyTypeIcon(keyMappings: readonly KeyMapping[], name: string): string {
+	const mapping = keyMappings.find(item => item.type === 'checkbox'
+		&& getManagedYamlAliases(item.canonicalKey, [item]).some(alias => alias.toLowerCase() === name.toLowerCase()));
+	return mapping?.icon?.trim() || 'square-dashed';
 }

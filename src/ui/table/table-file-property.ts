@@ -640,7 +640,7 @@ export function getTableFilePropertyTypeIcon(type: FilterFieldType): string {
 		case 'number':
 			return 'hash';
 		case 'checkbox':
-			return 'square-check';
+			return 'square-dashed';
 		case 'date':
 			return 'calendar';
 		case 'datetime':

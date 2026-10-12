@@ -139,6 +139,8 @@ import { formatReminderDisplayItem } from './reminder-display';
 import type { ReminderPickerFieldKey } from '../core/reminder-list-mutation';
 import { showPlainCheckboxPopover } from './plain-checkbox-popover';
 import {
+	getCheckboxPropertyIcon,
+	getCheckboxPropertyTypeIcon,
 	getCustomFieldIcon,
 	getCustomFieldLabel,
 	getCustomFieldMapping,
@@ -3444,7 +3446,7 @@ export class TaskEditorContent {
 
  private nativePropertyField(name: string, type: InlinePropertyType): TableFilePropertyField {
   return { key: encodeFilePropertyColumnKey(name)!, label: name, propertyName: name, type, sourceType: type === 'list' ? 'multitext' : type,
-   group: 'fileProperty', icon: getTableFilePropertyTypeIcon(type), readonly: false, aliases: [], sourceFileCount: 1 };
+   group: 'fileProperty', icon: type === 'checkbox' ? getCheckboxPropertyTypeIcon(this.settings.keyMappings, name) : getTableFilePropertyTypeIcon(type), readonly: false, aliases: [], sourceFileCount: 1 };
  }
 
  private canEditFileProperty(entry: EditorFileProperty): boolean {
@@ -3512,9 +3514,10 @@ export class TaskEditorContent {
   surface.row.toggleClass('is-automatic-property', automatic);
   surface.action.toggleClass('is-automatic-property', automatic);
   surface.action.empty();
-  setIcon(surface.action, automatic ? 'shield-alert' : entry.field.icon);
+  const valueIcon = entry.field.type === 'checkbox' ? getCheckboxPropertyIcon(entry.value, entry.field.icon) : entry.field.icon;
+  setIcon(surface.action, automatic ? 'shield-alert' : valueIcon);
   const icon = surface.row.querySelector<HTMLElement>('.operon-editor-desktop-property-icon');
-  if (icon) { icon.empty(); setIcon(icon, automatic ? 'shield-alert' : entry.field.icon); }
+  if (icon) { icon.empty(); setIcon(icon, automatic ? 'shield-alert' : valueIcon); }
   if (reason) bindPropertyReadOnlyWarning(surface.action, name, reason, () => this.getThemeColor());
   else bindOperonHoverTooltip(surface.action, { content: name, taskColor: () => this.getThemeColor() });
   const labelName = label?.querySelector<HTMLElement>('.operon-editor-desktop-property-name') ?? null;

@@ -105,7 +105,7 @@ export function propertyPoolFields(settings: Pick<OperonSettings, 'keyMappings'>
 	});
 	for (const mapping of settings.keyMappings) {
 		if (!isManagedCustomFieldMapping(mapping) || !mapping.enabled || !['text', 'list', 'number', 'checkbox', 'date'].includes(mapping.type) || fields.some(field => field.key === mapping.canonicalKey)) continue;
-		fields.push({ key: mapping.canonicalKey, label: mapping.visiblePropertyName || mapping.canonicalKey, icon: mapping.icon || (mapping.type === 'date' ? 'calendar' : mapping.type === 'number' ? 'hash' : mapping.type === 'checkbox' ? 'square-check' : mapping.type === 'list' ? 'list' : 'text'), type: mapping.type as PropertyPoolFieldType, operation: mapping.type === 'list' ? 'add' : 'replace' });
+		fields.push({ key: mapping.canonicalKey, label: mapping.visiblePropertyName || mapping.canonicalKey, icon: mapping.icon || (mapping.type === 'date' ? 'calendar' : mapping.type === 'number' ? 'hash' : mapping.type === 'checkbox' ? 'square-dashed' : mapping.type === 'list' ? 'list' : 'text'), type: mapping.type as PropertyPoolFieldType, operation: mapping.type === 'list' ? 'add' : 'replace' });
 	}
 	return fields;
 }

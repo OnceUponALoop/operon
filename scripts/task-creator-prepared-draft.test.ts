@@ -289,3 +289,29 @@ test('empty opening note and tags become clean when user content is fully remove
  f.ui.draft.removeMember('tags',f.ui.field('tags').members[0].id);assert.equal(f.ui.hasUserChanges(),false);
  f.ui.draft.setValue('Client',null);assert.equal(f.ui.hasUserChanges(),true,'native explicit empty remains meaningful');
 });
+
+test('checkbox property icons distinguish booleans, missing values and configured type icons', async () => {
+ const { getCheckboxPropertyIcon, getCheckboxPropertyTypeIcon, getCustomFieldTypeFallbackIcon, isProjectedCustomFieldType } = await import('../src/ui/custom-field-surfaces');
+ const { getTableFilePropertyTypeIcon } = await import('../src/ui/table/table-file-property');
+ const mapping = { canonicalKey: 'watched', visiblePropertyName: 'Watched', type: 'checkbox', icon: 'star', isSystem: false, enabled: true } as any;
+ assert.equal(getCustomFieldTypeFallbackIcon('checkbox'), 'square-dashed');
+ assert.equal(getTableFilePropertyTypeIcon('checkbox'), 'square-dashed');
+ assert.equal(getCheckboxPropertyTypeIcon([mapping], 'Watched'), 'star');
+ assert.equal(getCheckboxPropertyTypeIcon([], 'Watched'), 'square-dashed');
+ for (const value of [undefined, null, '', 'false', 0]) assert.equal(getCheckboxPropertyIcon(value, 'star'), 'star');
+ assert.equal(getCheckboxPropertyIcon(true, 'star'), 'square-check-big');
+ assert.equal(getCheckboxPropertyIcon(false, 'star'), 'square');
+ assert.equal(getCheckboxPropertyIcon(null), 'square-dashed');
+ assert.equal(isProjectedCustomFieldType(mapping), false);
+});
+
+test('Creator checkbox state icons override configured icons but preserve automatic warnings', () => {
+ const field = { property: { interpretation: 'native', type: 'checkbox', sourceName: 'Watched' }, value: null as unknown, readOnlyReason: undefined as string | undefined };
+ const context = { prepared: { field: () => field }, options: { settings: { keyMappings: [{ canonicalKey: 'watched', visiblePropertyName: 'Watched', type: 'checkbox', icon: 'star', isSystem: false, enabled: true }] } } };
+ const resolve = () => (TaskCreatorModal.prototype as any).resolveFieldIcon.call(context, 'watched');
+ assert.equal(resolve(), 'star');
+ field.value = true; assert.equal(resolve(), 'square-check-big');
+ field.value = false; assert.equal(resolve(), 'square');
+ field.value = null; assert.equal(resolve(), 'star');
+ field.readOnlyReason = 'automatic'; assert.equal(resolve(), 'shield-alert');
+});

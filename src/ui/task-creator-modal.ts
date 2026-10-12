@@ -31,7 +31,7 @@ import {
 } from './compact-markdown-editor-surface';
 import { formatReminderDisplayItem } from './reminder-display';
 import { openTaskFieldPicker } from './task-field-picker-dispatch';
-import { getCustomFieldIcon, getCustomFieldLabel, getCustomFieldMapping, isProjectedCustomFieldType } from './custom-field-surfaces';
+import { getCheckboxPropertyIcon, getCheckboxPropertyTypeIcon, getCustomFieldIcon, getCustomFieldLabel, getCustomFieldMapping, isProjectedCustomFieldType } from './custom-field-surfaces';
 import {
 	debugTaskFieldSuggestion,
 	resolveTaskFieldSuggestions,
@@ -2044,7 +2044,8 @@ export class TaskCreatorModal extends Modal {
 	private resolveFieldIcon(key: TaskCreatorFieldKey): string {
   const field = this.prepared?.field(key);
   if (field?.readOnlyReason === 'automatic') return 'shield-alert';
-  if (field?.property.interpretation === 'native') return ({ text: 'text', list: 'list', number: 'hash', checkbox: 'square-check', date: 'calendar', datetime: 'calendar-clock' } as const)[field.property.type ?? 'text'];
+  if (field?.property.interpretation === 'native' && field.property.type === 'checkbox') return getCheckboxPropertyIcon(field.value, getCheckboxPropertyTypeIcon(this.options.settings.keyMappings, field.property.sourceName));
+  if (field?.property.interpretation === 'native') return ({ text: 'text', list: 'list', number: 'hash', checkbox: 'square-dashed', date: 'calendar', datetime: 'calendar-clock' } as const)[field.property.type ?? 'text'];
 		const customMapping = getCustomFieldMapping(this.options.settings.keyMappings, key);
 		if (customMapping) return getCustomFieldIcon(customMapping);
 		return getConfiguredKeyMappingIcon(key, this.options.settings.keyMappings)
