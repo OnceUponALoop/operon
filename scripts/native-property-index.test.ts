@@ -6,7 +6,7 @@ import { OperonIndexer } from '../src/indexer/indexer';
 import { scanFileWithMappings } from '../src/indexer/file-scanner';
 import { DEFAULT_SETTINGS } from '../src/types/settings';
 import type { IndexedTask } from '../src/types/fields';
-import { getTableNativePropertySnapshot } from '../src/ui/table/table-native-property';
+import { cancelTableNativePropertyRequest, clearTableNativePropertySnapshot, getTableNativePropertySnapshot } from '../src/ui/table/table-native-property';
 import { encodeTableFilePropertyColumnKey, type TableFilePropertySnapshot } from '../src/ui/table/table-file-property';
 
 function fixture(count = 4) {
@@ -187,4 +187,95 @@ test('real V8 hydration prepares only known task sources once and keeps its pers
   assert.ok(!persisted.manifestPayload.includes('nativeProperties'));
   assert.deepEqual(JSON.parse(persisted.manifest.indexSemanticsSignature).inlinePropertyDefinitions, f.settings.inlinePropertyDefinitions ?? null);
  } finally {indexer.destroy();}
+});
+
+test('table native return reuses one successful snapshot without source reads or row projections',async()=>{
+ const f=fixture();try {
+  await f.indexer.fullReindex();const owner={},other={},tasks=f.indexer.getAllTasks();
+  const get=(target:object,needed=true)=>getTableNativePropertySnapshot(target,f.app,base,tasks,1,f.settings,()=>assert.fail('ready data must be synchronous'),needed);
+  const first=get(owner),independent=get(other),reads=f.reads.length;
+  const original=f.native.getTask.bind(f.native);let projections=0;
+  f.native.getTask=task=>{projections++;return original(task);};
+  assert.equal(get(owner,false),base);
+  assert.equal(get(owner),first);assert.equal(get(other),independent);assert.equal(projections,0);assert.equal(f.reads.length,reads);
+  assert.equal(getTableNativePropertySnapshot(owner,f.app,{...base},tasks.map(task=>({...task,primary:{...task.primary}})),1,f.settings,()=>{}),first);
+  clearTableNativePropertySnapshot(owner);assert.notEqual(get(owner),first);assert.equal(get(other),independent);
+ } finally {f.indexer.destroy();}
+});
+
+for (const change of ['membership','order','line','format','path','id','generation','base-signature','base-revision'] as const) test(`table snapshot detects ${change} changes with unchanged task count`,async()=>{
+ const f=fixture(3);try {
+  await f.indexer.fullReindex();const owner={};let tasks=f.indexer.getAllTasks().slice(0,2).map(task=>({...task,primary:{...task.primary}})),generation=1,catalog=base;
+  const get=()=>getTableNativePropertySnapshot(owner,f.app,catalog,tasks,generation,f.settings,()=>{});
+  const first=get();
+  switch(change){
+   case 'membership':tasks=[tasks[0],f.indexer.getTask('n000002')!];break;
+   case 'order':tasks.reverse();break;
+   case 'line':tasks[0].primary.lineNumber++;break;
+   case 'format':tasks[0].primary.format='yaml';break;
+   case 'path':tasks[0].primary.filePath='N2.md';break;
+   case 'id':tasks[0].operonId='n000002';break;
+   case 'generation':generation++;break;
+   case 'base-signature':catalog={...base,signature:'changed'};break;
+   case 'base-revision':catalog={...base,revision:2};break;
+  }
+  assert.notEqual(get(),first);assert.ok(!get().loading);
+ } finally {f.indexer.destroy();}
+});
+
+test('hidden table snapshots invalidate on value, property removal, types and mappings',async()=>{
+ const f=fixture(1);try {
+  await f.indexer.fullReindex();const owner={},key=encodeTableFilePropertyColumnKey('Value')!;
+  const get=(needed=true)=>getTableNativePropertySnapshot(owner,f.app,base,f.indexer.getAllTasks(),f.indexer.getGeneration(),f.settings,()=>{},needed);
+  let previous=get();get(false);f.edit('N0.md','55');await f.indexer.reindexFilePath('N0.md');
+  let next=get();assert.notEqual(next,previous);assert.equal(next.getCell(f.indexer.getTask('n000000')!,key).rawValue,55);
+  previous=next;get(false);f.contents.set('N0.md',f.contents.get('N0.md')!.replace(' {{Value:: 55}}',''));f.files.get('N0.md')!.stat.mtime++;
+  await f.indexer.reindexFilePath('N0.md');next=get();assert.notEqual(next,previous);assert.equal(next.getCell(f.indexer.getTask('n000000')!,key).present,false);
+  previous=next;get(false);f.native.setTypes({Value:'checkbox'});next=get();assert.notEqual(next,previous);assert.equal(next.fields.find(field=>field.propertyName==='Value')?.type,'checkbox');
+  previous=next;get(false);f.settings.keyMappings.push({canonicalKey:'customValue',visiblePropertyName:'Value',type:'text',enabled:true,isSystem:false,sync:'no'});
+  next=get();assert.notEqual(next,previous);assert.equal(next.fields.some(field=>field.propertyName==='Value'),false);
+ } finally {f.indexer.destroy();}
+});
+
+test('warm cache still checks pending work and source stamps before serving values',async()=>{
+ const f=fixture(1);try {
+  await f.indexer.fullReindex();const owner={},tasks=f.indexer.getAllTasks();let ready=0;
+  const get=(needed=true)=>getTableNativePropertySnapshot(owner,f.app,base,tasks,1,f.settings,()=>{ready++;},needed);
+  const first=get(),revision=f.native.getRevision();f.native.markPending('N0.md');
+  assert.equal(f.native.getRevision(),revision);assert.equal(get().loading,true);
+  assert.equal(get().getCell(tasks[0],encodeTableFilePropertyColumnKey('Value')!).readOnlyReason,'unavailable');
+  get(false);f.native.finishPending('N0.md');await tick();assert.equal(ready,0);assert.equal(get(),first);
+  f.edit('N0.md','88');assert.equal(get().loading,true);await f.native.ensure(tasks);await tick();
+  assert.equal(ready,1);assert.equal(get().getCell(tasks[0],encodeTableFilePropertyColumnKey('Value')!).rawValue,88);
+ } finally {f.indexer.destroy();}
+});
+
+test('pending table requests follow latest scope, cancellation and independent surface lifetimes',async()=>{
+ const f=fixture(2);try {
+  await f.indexer.fullReindex();const owner={},other={},tasks=f.indexer.getAllTasks();let old=0,current=0,second=0;
+  f.native.markPending('N0.md');f.native.markPending('N1.md');
+  const get=(target:object,scope:IndexedTask[],callback:()=>void)=>getTableNativePropertySnapshot(target,f.app,base,scope,1,f.settings,callback);
+  get(owner,[tasks[0]],()=>{old++;});get(owner,[tasks[1]],()=>{old++;});get(owner,[tasks[0]],()=>{current++;});
+  get(other,[tasks[1]],()=>{second++;});f.native.finishPending('N1.md');await tick();assert.equal(old,0);assert.equal(current,0);assert.equal(second,1);
+  // Same pending scope refreshes its callback without registering another completion.
+  get(owner,[tasks[0]],()=>{current+=10;});f.native.finishPending('N0.md');await tick();assert.equal(current,10);assert.equal(old,0);
+  for(const cancel of [cancelTableNativePropertyRequest,clearTableNativePropertySnapshot]){
+   f.native.markPending('N0.md');get(owner,[tasks[0]],()=>{old++;});cancel(owner);
+   get(other,[tasks[0]],()=>{second++;});f.native.finishPending('N0.md');await tick();assert.equal(old,0);
+  }
+  assert.equal(second,3);
+ } finally {f.indexer.destroy();}
+});
+
+test('retained table snapshot does not revive deleted, moved, duplicate or empty identities',async()=>{
+ const f=fixture(2);try {
+  await f.indexer.fullReindex();const owner={};let tasks=f.indexer.getAllTasks();
+  const get=(needed=true)=>getTableNativePropertySnapshot(owner,f.app,base,tasks,1,f.settings,()=>{},needed),key=encodeTableFilePropertyColumnKey('Value')!;
+  const first=get();get(false);const file=f.files.get('N0.md')!;f.files.delete('N0.md');file.path='Moved.md';f.files.set(file.path,file);f.contents.set(file.path,f.contents.get('N0.md')!);
+  f.indexer.handleFileRename('N0.md',file.path);await tick();await f.indexer.flushPendingRamReindexNow();tasks=f.indexer.getAllTasks();
+  assert.notEqual(get(),first);assert.equal(get().getCell(f.indexer.getTask('n000000')!,key).rawValue,0);
+  get(false);f.files.delete('N1.md');await f.indexer.handleFileDelete('N1.md');assert.equal(get().getCell(tasks.find(task=>task.operonId==='n000001')!,key).readOnlyReason,'unavailable');
+  tasks=[tasks[0],tasks[0]];assert.equal(get().getCell(tasks[0],key).readOnlyReason,'unavailable');
+  tasks=[{...tasks[0],operonId:''}];assert.equal(get().getCell(tasks[0],key).readOnlyReason,'unavailable');
+ } finally {f.indexer.destroy();}
 });

@@ -1,5 +1,5 @@
 import { retainTablePropertyDraft, tablePropertyPickerDraft, tablePropertyUpdateRequest } from './table-file-property-editor';
-import { getTableNativePropertySnapshot } from './table-native-property';
+import { cancelTableNativePropertyRequest, clearTableNativePropertySnapshot, getTableNativePropertySnapshot } from './table-native-property';
 import { formatTableCompactDuration } from './table-display';
 import { registerFilterDayRefresh } from '../../core/filter-day-refresh';
 import { getScopedTrackerSessions } from '../../core/time-scope-values';
@@ -564,6 +564,7 @@ export class OperonTableView extends FileView {
 		const changed = !areTableLeafStatesEqual(this.state, nextState);
 		this.state = nextState;
 		if (previousPresetId !== nextState.presetId) {
+			cancelTableNativePropertyRequest(this);
 			this.lifecycleEpoch += 1;
 			this.syncTableSearchStateFromPreset(this.getCurrentPreset(), { force: true });
 		}
@@ -579,6 +580,7 @@ export class OperonTableView extends FileView {
 	}
 
 	async onUnloadFile(_file: TFile): Promise<void> {
+		clearTableNativePropertySnapshot(this);
 		if (!this.fileMode) return;
 		this.lifecycleEpoch += 1;
 		this.fileLoadGeneration += 1;
@@ -629,6 +631,7 @@ export class OperonTableView extends FileView {
 	}
 
 	async onClose(): Promise<void> {
+		clearTableNativePropertySnapshot(this);
 		this.presetSelectionGeneration += 1;
 		this.lifecycleEpoch += 1;
 		this.fileLoadGeneration += 1;
@@ -711,6 +714,7 @@ export class OperonTableView extends FileView {
 
 	applyRegistryPreset(preset: TablePreset): void {
 		if (!this.fileMode || this.filePreset?.id !== preset.id) return;
+		cancelTableNativePropertyRequest(this);
 		this.lifecycleEpoch += 1;
 		this.fileLoadGeneration += 1;
 		this.filePreset = cloneTablePreset(preset);
@@ -721,6 +725,7 @@ export class OperonTableView extends FileView {
 	}
 
 	private async loadTableFile(file: TFile): Promise<void> {
+		cancelTableNativePropertyRequest(this);
 		const performanceTrace = beginTableLoadPerformance('table.file.load', getOwnerWindow(this.contentEl));
 		this.scrollPerformance.flush();
 		this.lifecycleEpoch += 1;
@@ -773,6 +778,7 @@ export class OperonTableView extends FileView {
 	}
 
 	private renderLoadingTableFile(): void {
+		this.currentRenderState = null;
 		this.cleanupActiveResize();
 		this.cleanupTableResizeObserver();
 		this.cleanupToolbarLayout();
@@ -851,10 +857,12 @@ export class OperonTableView extends FileView {
 		this.syncLeafTitle();
 		this.pagePreviewSurface = this.fileMode && this.isPagePreviewSurface();
 		if (this.fileMode && this.fileLoadState === 'loading') {
+			cancelTableNativePropertyRequest(this);
 			this.renderLoadingTableFile();
 			return;
 		}
 		if (this.fileMode && this.fileLoadState === 'invalid') {
+			cancelTableNativePropertyRequest(this);
 			this.renderInvalidTableFile();
 			return;
 		}
@@ -888,11 +896,7 @@ export class OperonTableView extends FileView {
 			const searchContext = this.resolveTableSearchContext(filterSet, tasks, settings, filterFilePropertyContext);
 		const searchContextResolvedAt = enginePerfNow();
 		renderTrace?.mark('scope');
-		const baseFilePropertySnapshot = getTableFilePropertyIndex(this.app).getSnapshot(
-			tasks,
-			this.indexer.getGeneration(),
-			{ keyMappings: settings.keyMappings },
-		);
+		const baseFilePropertySnapshot = filterFilePropertyContext;
 		const usesNativeProperties = [
 			...preset.columns.map(column => column.key), ...preset.sortRules.map(rule => rule.key),
 			...preset.summaries.map(rule => rule.key), preset.groupBy, preset.subgroupBy,
@@ -1561,6 +1565,7 @@ export class OperonTableView extends FileView {
 	}
 
 	private selectTablePreset(presetId: string): void {
+		cancelTableNativePropertyRequest(this);
 		const trace = beginTableLoadPerformance('table.preset.switch', getOwnerWindow(this.contentEl));
 		trace?.setContext({ presetId });
 		const operation = this.fileMode && this.callbacks.onSelectPreset

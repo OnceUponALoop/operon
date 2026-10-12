@@ -91,24 +91,71 @@ export async function loadTableNativePropertySnapshot(
  await index.ensure(readValues ? tasks : []);
  return projectSnapshot(app, base, readValues ? tasks : [], settings);
 }
-interface SurfaceState { key: string; value?: TableFilePropertySnapshot; }
+interface SnapshotScope {
+ index: ReturnType<typeof getNativePropertyIndex>;
+ generation: number;
+ revision: number;
+ baseSignature: string;
+ baseRevision: number;
+ tasks: Array<readonly [string, string, number, IndexedTask['primary']['format']]>;
+}
+interface SurfaceState {
+ completed?: { scope: SnapshotScope; value: TableFilePropertySnapshot };
+ pending?: { scope: SnapshotScope; onReady: () => void };
+}
 const surfaces = new WeakMap<object, SurfaceState>();
+function sameScope(scope: SnapshotScope, index: SnapshotScope['index'], base: TableFilePropertySnapshot, tasks: readonly IndexedTask[], generation: number): boolean {
+ if (scope.index !== index || scope.generation !== generation || scope.revision !== index.getRevision()
+  || scope.baseSignature !== base.signature || scope.baseRevision !== base.revision || scope.tasks.length !== tasks.length) return false;
+ return tasks.every((task, i) => {
+  const previous = scope.tasks[i];
+  return previous[0] === task.operonId && previous[1] === task.primary.filePath
+   && previous[2] === task.primary.lineNumber && previous[3] === task.primary.format;
+ });
+}
+function captureScope(index: SnapshotScope['index'], base: TableFilePropertySnapshot, tasks: readonly IndexedTask[], generation: number): SnapshotScope {
+ return { index, generation, revision: index.getRevision(), baseSignature: base.signature, baseRevision: base.revision,
+  tasks: tasks.map(task => [task.operonId, task.primary.filePath, task.primary.lineNumber, task.primary.format] as const) };
+}
+/** Cancel view notifications without discarding its one reusable successful snapshot. */
+export function cancelTableNativePropertyRequest(owner: object): void {
+ const state = surfaces.get(owner);
+ if (state) state.pending = undefined;
+}
+/** A closed surface must neither retain its snapshot nor receive late completions. */
+export function clearTableNativePropertySnapshot(owner: object): void {
+ const state = surfaces.get(owner);
+ if (state) { state.pending = undefined; state.completed = undefined; }
+ surfaces.delete(owner);
+}
 export function getTableNativePropertySnapshot(
- owner: object, app: App, base: TableFilePropertySnapshot, tasks: readonly IndexedTask[], _generation: number,
+ owner: object, app: App, base: TableFilePropertySnapshot, tasks: readonly IndexedTask[], generation: number,
  settings: Settings, onReady: () => void, readValues = true,
 ): TableFilePropertySnapshot {
- if (!readValues) { surfaces.delete(owner); return base; }
+ if (!readValues) { cancelTableNativePropertyRequest(owner); return base; }
  const index = getNativePropertyIndex(app); index.configure(settings);
- const key = JSON.stringify([base.signature, index.getRevision(), tasks.map(task => [task.operonId, task.primary])]);
  let state = surfaces.get(owner);
+ if (!state) { state = {}; surfaces.set(owner, state); }
+ // Pending reindex and live source stamps can change before either revision does.
  if (index.isReady(tasks)) {
-  if (state?.key === key && state.value) return state.value;
-  const value = projectSnapshot(app, base, tasks, settings); surfaces.set(owner, { key, value }); return value;
+  state.pending = undefined;
+  if (state.completed && sameScope(state.completed.scope, index, base, tasks, generation)) return state.completed.value;
+  const value = projectSnapshot(app, base, tasks, settings);
+  state.completed = { scope: captureScope(index, base, tasks, generation), value };
+  return value;
  }
- if (state?.key !== key || state.value) {
-  state = { key }; surfaces.set(owner, state);
-  const pending = state;
-  void index.ensure(tasks).then(() => { if (index.isActive() && surfaces.get(owner) === pending) { surfaces.delete(owner); onReady(); } });
+ if (state.pending && sameScope(state.pending.scope, index, base, tasks, generation)) {
+  state.pending.onReady = onReady;
+ } else {
+  const pending = { scope: captureScope(index, base, tasks, generation), onReady };
+  state.pending = pending;
+  const surface = state;
+  void index.ensure(tasks).then(() => {
+   if (index.isActive() && surfaces.get(owner) === surface && surface.pending === pending) {
+    surface.pending = undefined;
+    pending.onReady();
+   }
+  });
  }
  return { ...base, signature: base.signature + '|native-loading', loading: true,
   getCell(task, column) { return { ...base.getCell(task, column), nativeState: 'unsupported', readOnlyReason: 'unavailable' }; } };

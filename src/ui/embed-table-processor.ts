@@ -1,5 +1,5 @@
 import { retainTablePropertyDraft, tablePropertyPickerDraft, tablePropertyUpdateRequest } from './table/table-file-property-editor';
-import { getTableNativePropertySnapshot } from './table/table-native-property';
+import { cancelTableNativePropertyRequest, clearTableNativePropertySnapshot, getTableNativePropertySnapshot } from './table/table-native-property';
 import { formatTableCompactDuration } from './table/table-display';
 import { registerFilterDayRefresh } from '../core/filter-day-refresh';
 import { getScopedTrackerSessions } from '../core/time-scope-values';
@@ -809,6 +809,7 @@ function createEmbedTableInstance(
 }
 
 function destroyEmbedTableInstance(instance: EmbedTableInstance): void {
+	clearTableNativePropertySnapshot(instance);
 	instance.pendingMobileTextInputRender = false;
 	instance.mobileScrollGestureUntil = 0;
 	closeEmbedTableTransientUi(instance.el);
@@ -914,6 +915,7 @@ function renderEmbedTableContents(instance: EmbedTableInstance, deps: EmbedTable
 	syncEmbedTableWidthBinding(instance, settings, deps);
 	const preset = resolveEmbedTablePreset(deps, instance.presetId);
 	if (!preset) {
+		cancelTableNativePropertyRequest(instance);
 		closeEmbedTableTransientUi(instance.el);
 		closeEmbedTableActivePicker(instance);
 		cleanupEmbedTableResizeObserver(instance);
@@ -949,11 +951,7 @@ function renderEmbedTableContents(instance: EmbedTableInstance, deps: EmbedTable
 	const searchContext = resolveEmbedTableSearchContext(instance, deps, filterSet, allTasks, settings, filterFilePropertyContext);
 	const searchContextResolvedAt = enginePerfNow();
 	renderTrace?.mark('scope');
-	const baseFilePropertySnapshot = getTableFilePropertyIndex(deps.app).getSnapshot(
-		allTasks,
-		deps.indexer.getGeneration(),
-		{ keyMappings: settings.keyMappings },
-	);
+	const baseFilePropertySnapshot = filterFilePropertyContext;
 	const usesNativeProperties = [
 		...preset.columns.map(column => column.key), ...preset.sortRules.map(rule => rule.key),
 		...preset.summaries.map(rule => rule.key), preset.groupBy, preset.subgroupBy,
@@ -963,6 +961,7 @@ function renderEmbedTableContents(instance: EmbedTableInstance, deps: EmbedTable
 		() => { if (instance.el.isConnected) renderEmbedTable(instance, deps); }, usesNativeProperties,
 	);
  if (filePropertySnapshot.loading) {
+  resetEmbedTableRenderState(instance);
   cleanupOperonHoverTooltips(instance.el);
   instance.el.empty();
   instance.el.createDiv({ text: t('table', 'fileLoading'), attr: { role: 'status', 'aria-live': 'polite' } });
@@ -2497,6 +2496,7 @@ function resolveCurrentEmbedTableSourceContext(instance: EmbedTableInstance): Ta
 }
 
 function applyEmbedTablePresetSwitch(instance: EmbedTableInstance, nextPreset: TablePreset): void {
+	cancelTableNativePropertyRequest(instance);
 	instance.presetId = nextPreset.id;
 	instance.searchQuery = '';
 	instance.pendingSearchQuery = null;
