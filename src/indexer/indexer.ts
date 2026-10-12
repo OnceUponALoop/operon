@@ -310,6 +310,7 @@ interface PendingIndexPersistenceSnapshot {
 
 interface IndexState {
  nativeSources: Map<string, NativePropertySource>;
+ nativeSettings?: Pick<OperonSettings, 'keyMappings' | 'inlinePropertyDefinitions'>;
 	tasks: Map<string, IndexedTask>;
 	taskInstances: Map<string, IndexedTaskInstance>;
 	operonIdInstances: Map<string, Set<string>>;
@@ -543,6 +544,7 @@ export class OperonIndexer {
 		const setupStartedAt = enginePerfNow();
 		const staged = this.createEmptyIndexState();
 		const settingsSnapshot = structuredClone(this.storage.getSettings({ committedMappings: true }));
+  staged.nativeSettings = settingsSnapshot;
 		const pipelineSnapshot = settingsSnapshot.pipelines.map(pipeline => clonePipeline(pipeline));
 		const workflowStatusSemanticsSignature = buildWorkflowStatusSemanticsSignature(pipelineSnapshot);
 		const indexV8SemanticsSignature = buildIndexV8SemanticsSignature(settingsSnapshot);
@@ -621,6 +623,14 @@ export class OperonIndexer {
 			}
 			if (decision.status === 'eligible') {
 				try {
+					const native = getNativePropertyIndex(this.app);
+					native.configure(this.storage.getSettings({ committedMappings: true }));
+					await native.ensure([]);
+					const currentSignature = buildIndexV8SemanticsSignature(this.storage.getSettings({ committedMappings: true }));
+					if (currentSignature !== expectedSignature) {
+						return { status: 'incompatible', reason: 'index-semantics',
+							expectedSignature: currentSignature, cachedSignature: decision.manifest.indexSemanticsSignature };
+					}
 					const stagingStartedAt = collectTimings ? enginePerfNow() : 0;
 					const staged = this.createEmptyIndexState();
 					for (const [operonId, task] of decision.tasks) {
@@ -665,6 +675,12 @@ export class OperonIndexer {
 					const startupSourceStats = new Map(decision.sourceStats);
 					this.rebuildSourcePersistenceIndexes(staged);
 					this.commitIndexState(staged);
+					if (loaded.status === 'loaded') {
+						const native = getNativePropertyIndex(this.app);
+						for (const shard of loaded.validatedSnapshot.shards) for (const source of shard.sources) {
+							native.restore(source.path, source.native, `${source.mtimeMs}:${source.sizeBytes}`);
+						}
+					}
 					this.lastSavedAt = committedAtMs;
 					this.lastDurableCommittedAt = decision.manifest.committedAt;
 					this.markDurableRevisionAvailable(
@@ -1502,6 +1518,7 @@ export class OperonIndexer {
 		exclusionSettings: OperonSettings = this.storage.getSettings({ committedMappings: true }),
 		knownContent?: string,
 	): Promise<Set<string>> {
+  state.nativeSettings ??= structuredClone({ keyMappings, inlinePropertyDefinitions: exclusionSettings.inlinePropertyDefinitions });
 		const scannedIds = new Set<string>();
 		if (isOperonExcludedPath(file.path, exclusionSettings)) {
 			state.fileMtimes.delete(file.path);
@@ -1719,8 +1736,8 @@ export class OperonIndexer {
 		this.fileMtimes = state.fileMtimes;
 		this.fileSizes = state.fileSizes;
   const native = getNativePropertyIndex(this.app);
-  native.configure(this.storage.getSettings({ committedMappings: true }));
-  for (const [path, source] of state.nativeSources) { native.accept(path, source, false); this.nativePublicationPaths.add(path); }
+  native.configure(state.nativeSettings ?? this.storage.getSettings({ committedMappings: true }));
+  for (const [path, source] of state.nativeSources) { native.accept(path, source, false, `${state.fileMtimes.get(path)}:${state.fileSizes.get(path)}`); this.nativePublicationPaths.add(path); }
   state.nativeSources.clear();
 		this.sourceInstanceKeys = state.sourceInstanceKeys;
 		this.sourcePathsByShard = state.sourcePathsByShard;
@@ -1729,8 +1746,8 @@ export class OperonIndexer {
 
 	private commitFileScanState(state: IndexState): void {
   const native = getNativePropertyIndex(this.app);
-  native.configure(this.storage.getSettings({ committedMappings: true }));
-  for (const [path, source] of state.nativeSources) { native.accept(path, source, false); this.nativePublicationPaths.add(path); }
+  native.configure(state.nativeSettings ?? this.storage.getSettings({ committedMappings: true }));
+  for (const [path, source] of state.nativeSources) { native.accept(path, source, false, `${state.fileMtimes.get(path)}:${state.fileSizes.get(path)}`); this.nativePublicationPaths.add(path); }
   state.nativeSources.clear();
 		for (const task of state.taskInstances.values()) {
 			this.insertTaskInstance(task);
@@ -1835,6 +1852,7 @@ export class OperonIndexer {
 				sequence,
 				indexData: data,
 				sourceStats,
+				nativeSources: getNativePropertyIndex(this.app).snapshot(sourceStats),
 				committedAt,
 				lastFullScanAt: this.lastFullScanAt || committedAt,
 				indexSemanticsSignature: this.coherentIndexV8SemanticsSignature
@@ -2359,12 +2377,15 @@ export class OperonIndexer {
 				committedAt,
 			);
 			const sourceStats = this.buildSourceStatsFromState(built.state);
+			const native = getNativePropertyIndex(this.app);
+			native.configure(built.state.nativeSettings ?? this.storage.getSettings({ committedMappings: true }));
+			const nativeSources = new Map([...built.state.nativeSources].map(([path, source]) => [path, native.persistSource(source)]));
 			const candidate = await buildIndexV8Snapshot({
 				committedAt,
 				lastFullScanAt: committedAt,
 				coherenceBasis: 'verified-full-scan',
 				indexSemanticsSignature: built.indexV8SemanticsSignature,
-				sources: projectIndexDataToV8Sources(indexData, sourceStats),
+				sources: projectIndexDataToV8Sources(indexData, sourceStats, nativeSources),
 				canonicalInstanceKeys: getIndexV8CanonicalInstanceKeys(indexData),
 			});
 			const resetPlan = await this.indexV8Store!.planCanonicalV8Reset!(candidate.shardPayloads);
@@ -2378,6 +2399,7 @@ export class OperonIndexer {
 					sequence: ++this.persistenceSequence,
 					indexData,
 					sourceStats,
+					nativeSources,
 					committedAt,
 					lastFullScanAt: committedAt,
 					indexSemanticsSignature: built.indexV8SemanticsSignature,
@@ -2939,7 +2961,7 @@ export class OperonIndexer {
   this.nativePublicationPaths.clear();
   native.prepare(tasks);
   native.publish();
-  // A restored V8 index has no native fragments. Hydrate only its known sources.
+  // Valid layout-2 fragments are already ready; only exceptional or changed sources need I/O.
   if (event.kind === 'full') void native.ensure(tasks, false);
 		for (const listener of this.reconciliationListeners) {
 			try {

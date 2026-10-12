@@ -712,9 +712,9 @@ async function run(): Promise<void> {
 
 	check(!adapter.operations.some(operation => operation.includes('/runtime/index.json')));
 	const custom = buildOperonStoragePaths('.config-dir', 'custom-operon').runtime.indexV8;
-	equal(custom.rootPath, '.config-dir/plugins/custom-operon/runtime/index-v8');
-	equal(custom.manifestPath, '.config-dir/plugins/custom-operon/runtime/index-v8/manifest.json');
-	equal(custom.shardsPath, '.config-dir/plugins/custom-operon/runtime/index-v8/shards');
+	equal(custom.rootPath, '.config-dir/plugins/custom-operon/runtime/index-v8-layout-2');
+	equal(custom.manifestPath, '.config-dir/plugins/custom-operon/runtime/index-v8-layout-2/manifest.json');
+	equal(custom.shardsPath, '.config-dir/plugins/custom-operon/runtime/index-v8-layout-2/shards');
 
 	console.log(JSON.stringify({ ok: true, assertions }, null, 2));
 }

@@ -8,6 +8,7 @@ import { serializeTask } from './serializer';
 import { isWritableRawYamlPropertyName } from './raw-yaml-property';
 import { decodeVaultPropertyValue, encodeVaultPropertyValue, type VaultPropertyValue } from './vault-property-codec';
 import { resolveInlinePropertyDefinition, type InlinePropertyDefinitions, type InlinePropertyType } from './inline-property-definitions';
+import type { NativePropertyInline } from '../indexer/native-property-persistence';
 
 export interface InlinePropertySnapshot {
  sourceName: string;
@@ -29,6 +30,20 @@ export interface InlinePropertyProjection {
  sourceRevision: string;
  properties: readonly InlinePropertySnapshot[];
 }
+export interface InlinePropertyReadPlan {
+ sourceName: string;
+ type: InlinePropertyType;
+ aliases: ReadonlySet<string>;
+ encoding?: 'legacy' | 'vault-v1';
+}
+/** Interpretation depends on settings, not on a task; shared-index hydration can reuse it. */
+export function createInlinePropertyReadPlan(sourceName: string, type: InlinePropertyType,
+ mappings: KeyMapping[], definitions?: InlinePropertyDefinitions): InlinePropertyReadPlan {
+ const mapping = mappings.find(item => item.canonicalKey === sourceName || item.visiblePropertyName === sourceName);
+ const aliases = new Set([sourceName, ...(mapping ? [mapping.canonicalKey, mapping.visiblePropertyName] : [])].map(name => name.toLowerCase()));
+ try { return { sourceName, type, aliases, encoding: resolveInlinePropertyDefinition(sourceName, type, mappings, definitions).encoding }; }
+ catch { return { sourceName, type, aliases }; }
+}
 export function readInlinePropertyProjection(
  line: string, filePath: string, types: Readonly<Record<string, InlinePropertyType>>,
  mappings: KeyMapping[], definitions?: InlinePropertyDefinitions,
@@ -39,27 +54,33 @@ export function readInlinePropertyProjection(
 }
 /** Reuse the indexer's parsed task without scanning its source again. */
 export function readParsedInlinePropertyProjection(
- parsed: ParsedTask, types: Readonly<Record<string, InlinePropertyType>>,
+ parsed: NativePropertyInline & Partial<Pick<ParsedTask, 'filePath' | 'rawLine'>>, types: Readonly<Record<string, InlinePropertyType>>,
  mappings: KeyMapping[], definitions?: InlinePropertyDefinitions,
+ readPlan?: (name: string, type: InlinePropertyType) => InlinePropertyReadPlan,
 ): InlinePropertyProjection {
+ const byName = new Map<string, typeof parsed.fields>();
+ for (const field of parsed.fields) {
+  const name = field.sourceKey.toLowerCase();
+  const group = byName.get(name);
+  if (group) group.push(field); else byName.set(name, [field]);
+ }
  const properties = Object.entries(types).map(([sourceName, type]): InlinePropertySnapshot => {
-  const mapping = mappings.find(item => item.canonicalKey === sourceName || item.visiblePropertyName === sourceName);
-  const matches = parsed.fields.filter(field => field.sourceKey.toLowerCase() === sourceName.toLowerCase()
-   || !!mapping && [mapping.canonicalKey, mapping.visiblePropertyName].some(alias => alias.toLowerCase() === field.sourceKey.toLowerCase()));
+  const plan = readPlan?.(sourceName, type) ?? createInlinePropertyReadPlan(sourceName, type, mappings, definitions);
+  const matches = [...plan.aliases].flatMap(alias => byName.get(alias) ?? []);
   if (matches.length > 1) return { sourceName, type, present: true, state: 'conflict' };
   const field = matches[0];
   if (!field) return { sourceName, type, present: false, state: 'missing' };
   try {
-   const definition = resolveInlinePropertyDefinition(sourceName, type, mappings, definitions);
-   const value = definition.encoding === 'legacy' && type === 'list'
-    ? parseListValue(field.value) : definition.encoding === 'legacy' && type === 'text'
+   if (!plan.encoding) throw new Error('Invalid property interpretation');
+   const value = plan.encoding === 'legacy' && type === 'list'
+    ? parseListValue(field.value) : plan.encoding === 'legacy' && type === 'text'
      ? field.value : decodeVaultPropertyValue(field.rawValue, type);
    return { sourceName, type, present: true, rawValue: field.rawValue, value, state: 'valid' };
   } catch {
    return { sourceName, type, present: true, rawValue: field.rawValue, state: 'unsupported' };
   }
  });
- return { operonId: parsed.operonId!, filePath: parsed.filePath, sourceRevision: parsed.rawLine, properties };
+ return { operonId: parsed.operonId!, filePath: parsed.filePath ?? '', sourceRevision: parsed.rawLine ?? '', properties };
 }
 /** Member mutations target a position so equal values remain independent. */
 export function mutateInlineListMember(

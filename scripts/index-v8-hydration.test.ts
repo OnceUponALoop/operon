@@ -28,6 +28,7 @@ import type { IndexV8FallbackReason } from '../src/indexer/persistence/index-v8-
 import { createSyntheticIndexData, createV8SourcesFromIndexData } from './index-v8-fixtures';
 import { IndexV8MemoryAdapter } from './index-v8-memory-adapter';
 import { buildOperonStoragePaths } from '../src/storage/operon-storage-paths';
+import { getNativePropertyIndex } from '../src/indexer/native-property-index';
 
 const COMMITTED_AT = '2026-01-02T03:04:05.000Z';
 const FULL_SCAN_AT = '2026-01-02T03:00:00.000Z';
@@ -361,7 +362,7 @@ async function testSemanticsMismatchRequiresFullReindex(): Promise<void> {
 	const currentSemantics = JSON.parse(
 		buildIndexV8SemanticsSignature(DEFAULT_SETTINGS),
 	) as Record<string, unknown>;
-	equal(currentSemantics.version, 3);
+	equal(currentSemantics.version, 4);
 	const loaded = await createLoadedV8(data, {
 		semantics: JSON.stringify({ ...currentSemantics, version: 2 }),
 	});
@@ -716,7 +717,8 @@ async function testCheckboxSemanticsRebuildAndSecondLoad(): Promise<void> {
 	deepEqual(indexer.getTaskSnapshot('parent1')?.legacyPlainCheckboxProgress, { total: 2, completed: 1 });
 	check(Object.isFrozen(indexer.getTaskSnapshot('parent1')?.legacyPlainCheckboxProgress));
 	const rebuiltData = { ...data, tasks: Object.fromEntries(mutable(indexer).tasks), taskInstances: Object.fromEntries(mutable(indexer).taskInstances) };
-	const rebuilt = await createLoadedV8(rebuiltData, { sources: [{ path, mtimeMs: 1, sizeBytes: content.length, instances: [...mutable(indexer).taskInstances.values()] }] });
+	const native = getNativePropertyIndex(app).snapshot(new Map([[path, { mtimeMs: 1, sizeBytes: content.length }]])).get(path);
+	const rebuilt = await createLoadedV8(rebuiltData, { sources: [{ path, mtimeMs: 1, sizeBytes: content.length, native, instances: [...mutable(indexer).taskInstances.values()] }] });
 	const warm = new OperonIndexer(app, createStorage() as never, null, new FakeReadStore(rebuilt));
 	const beforeReads = reads;
 	deepEqual(await warm.loadCachedIndex(), { status: 'loaded', source: 'v8', requiresFullReindex: false });

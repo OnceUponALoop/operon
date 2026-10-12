@@ -2,23 +2,21 @@ import { TFile, type App } from 'obsidian';
 import type { IndexedTask, ParsedTask } from '../types/fields';
 import type { OperonSettings } from '../types/settings';
 import { readFileTaskPropertyDocument, fileTaskPropertyIdentityMatches } from '../core/file-task-property-draft';
-import { readParsedInlinePropertyProjection, type InlinePropertySnapshot } from '../core/inline-property-source';
-import { nativeEditorPropertyTypes, nativePropertyReadOnlyReason, type NativePropertyReadOnlyReason } from '../core/task-editor-native-properties';
+import { readParsedInlinePropertyProjection, createInlinePropertyReadPlan, type InlinePropertyReadPlan, type InlinePropertySnapshot } from '../core/inline-property-source';
+import { nativeEditorPropertyTypes, nativePropertyReadOnlyReason, nativePropertyValueReadOnlyReason, type NativePropertyReadOnlyReason } from '../core/task-editor-native-properties';
 import { isWritableRawYamlPropertyName } from '../core/raw-yaml-property';
 import { resolveInlinePropertyDefinition, type InlinePropertyType } from '../core/inline-property-definitions';
 import { loadPropertyTypeRegistry, type ObsidianPropertyTypeId } from '../core/property-type-registry';
 import { scanFileWithMappings } from './file-scanner';
+import { getManagedYamlAliases } from '../core/yaml-fields';
+import { compactNativeInline, persistNativePropertySource, restoreNativePropertySource, NATIVE_SOURCE_RESCAN,
+ type NativePropertySource, type PersistedNativePropertySource } from './native-property-persistence';
+export type { NativePropertySource } from './native-property-persistence';
 
 type Settings = Pick<OperonSettings, 'keyMappings' | 'inlinePropertyDefinitions'>;
-/** Source fragments only: host file bodies are never retained. */
-export interface NativePropertySource {
- frontmatter: Record<string, unknown> | null;
- order: readonly string[];
- inline: readonly ParsedTask[];
-}
 export function captureNativePropertySource(content: string, inline: readonly ParsedTask[], fileTask = true): NativePropertySource {
  const document = fileTask ? readFileTaskPropertyDocument(content) : null;
- return { frontmatter: document?.frontmatter ?? null, order: document?.order ?? [], inline };
+ return { frontmatter: document?.frontmatter ?? null, order: document?.order ?? [], inline: inline.map(compactNativeInline) };
 }
 export interface NativePropertyRecord {
  sourceName: string;
@@ -45,6 +43,9 @@ function sameSourceValue(left: unknown, right: unknown, seen = new WeakMap<objec
 }
 interface SourceEntry {
  raw?: NativePropertySource;
+ persisted?: PersistedNativePropertySource;
+ hydrated?: boolean;
+ inlineById?: Map<string | null, NativePropertySource['inline'][number] | null>;
  revision: number;
  stamp: string;
  error: boolean;
@@ -57,7 +58,7 @@ export function getNativePropertyIndex(app: App): NativePropertyIndex {
  if (!index) { index = new NativePropertyIndex(app); indexes.set(app, index); }
  return index;
 }
-/** Plugin-lifetime sparse projection. It is intentionally absent from Index V8 and Runtime DTOs. */
+/** Shared source projection backed by the primary index snapshot; absent from public Runtime DTOs. */
 export class NativePropertyIndex {
  private sources = new Map<string, SourceEntry>();
  private epochs = new Map<string, number>();
@@ -73,6 +74,11 @@ export class NativePropertyIndex {
  private registryJob: Promise<void> | null = null;
  private registryEpoch = 0;
  private types: Record<string, InlinePropertyType> = {};
+ private typeCache = new Map<string, InlinePropertyType | undefined>();
+ private reasonCache = new Map<string, NativePropertyReadOnlyReason | undefined>();
+ private inclusionCache = new Map<string, boolean>();
+ private readPlans = new Map<string, InlinePropertyReadPlan>();
+ private aliasCache = new Map<string, string[]>();
  private listeners = new Set<() => void>();
  private revision = 0;
  private interpretationRevision = 0;
@@ -88,9 +94,15 @@ export class NativePropertyIndex {
  configure(settings: Settings): void {
   const key = JSON.stringify([settings.keyMappings, settings.inlinePropertyDefinitions]);
   if (this.settingsKey === key) return;
+  // Restored fragments omit fields owned by canonical/legacy mappings. A settings
+  // transition may change that ownership, so reacquire those sources before use.
+  for (const [path, source] of this.sources) if (source.hydrated) {
+   this.sources.delete(path); this.epochs.set(path, (this.epochs.get(path) ?? 0) + 1);
+  }
   this.settingsKey = key;
   this.settings = { keyMappings: settings.keyMappings.map(mapping => ({ ...mapping })), inlinePropertyDefinitions: settings.inlinePropertyDefinitions };
   this.reinterpret();
+  for (const source of this.sources.values()) if (source.raw) source.persisted = this.persistSource(source.raw);
  }
  setTypes(types: Record<string, ObsidianPropertyTypeId> | null): void {
   this.registryEpoch++;
@@ -107,6 +119,7 @@ export class NativePropertyIndex {
  typesAvailable(): boolean { return this.registryState === 'ready'; }
  private reinterpret(): void {
   this.interpretationRevision++;
+  this.typeCache.clear(); this.reasonCache.clear(); this.inclusionCache.clear(); this.readPlans.clear(); this.aliasCache.clear();
   this.types = nativeEditorPropertyTypes(this.declarations, this.settings.keyMappings, this.settings.inlinePropertyDefinitions);
   for (const source of this.sources.values()) source.rows.clear();
   this.prepare([...(this.known?.values() ?? [])]);
@@ -158,17 +171,41 @@ export class NativePropertyIndex {
   const file = this.app.vault.getAbstractFileByPath(path);
   return file instanceof TFile ? `${file.stat.mtime}:${file.stat.size}` : 'missing';
  }
- accept(path: string, raw: NativePropertySource, notify = true): void {
+ accept(path: string, raw: NativePropertySource, notify = true, stamp = this.stamp(path)): void {
   if (this.disposed) return;
   this.epochs.set(path, (this.epochs.get(path) ?? 0) + 1);
   const previous = this.sources.get(path);
   // Unrelated file-body changes do not invalidate decoded task values or trigger another sort.
   if (previous?.raw && !previous.error && sameSourceValue(previous.raw, raw)) {
-   previous.stamp = this.stamp(path); return;
+   previous.stamp = stamp; return;
   }
-  this.sources.set(path, { raw, stamp: this.stamp(path), error: false, revision: this.revision + 1, rows: new Map() });
+  const persisted = this.persistSource(raw);
+  this.sources.set(path, { raw, persisted, stamp, error: false, revision: this.revision + 1, rows: new Map() });
   this.prepare(this.tasksByPath.get(path) ?? []);
   this.changed(notify);
+ }
+ /** Cache hydration uses the saved stamp, never the current file's possibly newer stamp. */
+ restore(path: string, persisted: PersistedNativePropertySource, stamp: string): void {
+  this.epochs.set(path, (this.epochs.get(path) ?? 0) + 1);
+  const raw = restoreNativePropertySource(persisted);
+  if (!raw) { this.sources.delete(path); return; }
+  this.sources.set(path, { raw, persisted, hydrated: true, stamp, error: false, revision: this.revision + 1, rows: new Map() });
+  this.changed(false);
+ }
+ persistSource(raw: NativePropertySource): PersistedNativePropertySource {
+  // A hidden managed alias may still be the evidence for a visible field's
+  // ambiguity. Retain its group without changing which fields the UI exposes.
+  const retained = new Set<string>();
+  const names = new Set([...raw.order, ...raw.inline.flatMap(task => task.fields.map(field => field.sourceKey))]);
+  for (const name of names) if (this.includes(name)) for (const alias of this.aliasesFor(name)) retained.add(alias);
+  return persistNativePropertySource(raw, name => retained.has(name.toLowerCase()), new Set(getManagedYamlAliases('operonId', this.settings.keyMappings).map(name => name.toLowerCase())));
+ }
+ snapshot(stamps: ReadonlyMap<string, { mtimeMs: number; sizeBytes: number }>): ReadonlyMap<string, PersistedNativePropertySource> {
+  return new Map([...stamps].map(([path, stat]) => {
+   const entry = this.sources.get(path);
+   return [path, entry && !entry.error && entry.stamp === `${stat.mtimeMs}:${stat.sizeBytes}`
+    ? entry.persisted ?? NATIVE_SOURCE_RESCAN : NATIVE_SOURCE_RESCAN];
+  }));
  }
  fail(path: string): void {
   this.epochs.set(path, (this.epochs.get(path) ?? 0) + 1);
@@ -269,13 +306,21 @@ export class NativePropertyIndex {
   const raw = source?.raw;
   let identity = false;
   if (raw && task.primary.format === 'inline') {
-   const candidates = raw.inline.filter(candidate => candidate.operonId === task.operonId);
-   const parsed = candidates.length === 1 && candidates[0].fields.filter(field => field.key === 'operonId').length === 1 ? candidates[0] : null;
+   if (!source.inlineById) {
+    source.inlineById = new Map();
+    for (const candidate of raw.inline) source.inlineById.set(candidate.operonId, source.inlineById.has(candidate.operonId) ? null : candidate);
+   }
+   const candidate = source.inlineById.get(task.operonId);
+   const parsed = candidate && candidate.fields.filter(field => field.key === 'operonId').length === 1 ? candidate : null;
    if (parsed) {
     identity = true;
     const types: Record<string, InlinePropertyType> = {};
     for (const field of parsed.fields) if (this.includes(field.sourceKey)) types[field.sourceKey] = this.typeFor(field.sourceKey) ?? 'text';
-    const projection = readParsedInlinePropertyProjection(parsed, types, this.settings.keyMappings, this.settings.inlinePropertyDefinitions);
+    const projection = readParsedInlinePropertyProjection(parsed, types, this.settings.keyMappings, this.settings.inlinePropertyDefinitions, (name, type) => {
+     let plan = this.readPlans.get(name);
+     if (!plan) { plan = createInlinePropertyReadPlan(name, type, this.settings.keyMappings, this.settings.inlinePropertyDefinitions); this.readPlans.set(name, plan); }
+     return plan;
+    });
     for (const property of projection.properties) {
      const value = property.state === 'valid' ? property.value : property.rawValue;
      properties.set(property.sourceName.toLowerCase(), { sourceName: property.sourceName, present: property.present, value,
@@ -285,11 +330,11 @@ export class NativePropertyIndex {
    }
   } else if (raw?.frontmatter && fileTaskPropertyIdentityMatches(raw.frontmatter, task.operonId, this.settings.keyMappings)) {
    identity = true;
+   const names = new Map<string, number>();
+   for (const name of raw.order) names.set(name.toLowerCase(), (names.get(name.toLowerCase()) ?? 0) + 1);
    for (const name of raw.order) if (this.includes(name)) {
     const value = raw.frontmatter[name];
-    const mapping = this.settings.keyMappings.find(item => [item.canonicalKey, item.visiblePropertyName].some(alias => alias.toLowerCase() === name.toLowerCase()));
-    const aliases = [name, ...(mapping ? [mapping.canonicalKey, mapping.visiblePropertyName] : [])].map(alias => alias.toLowerCase());
-    const duplicate = raw.order.filter(alias => aliases.includes(alias.toLowerCase())).length > 1;
+    const duplicate = this.aliasesFor(name).reduce((count, alias) => count + (names.get(alias) ?? 0), 0) > 1;
     properties.set(name.toLowerCase(), { sourceName: name, present: true, value, type: this.typeFor(name), reason: duplicate ? 'type-conflict' : this.reason(name, value) });
    }
   }
@@ -299,15 +344,32 @@ export class NativePropertyIndex {
   return result;
  }
  typeFor(name: string): InlinePropertyType | undefined {
-  const mapping = this.settings.keyMappings.find(item => [item.canonicalKey, item.visiblePropertyName].some(alias => alias.toLowerCase() === name.toLowerCase()));
-  const aliases = [name, ...(mapping ? [mapping.canonicalKey, mapping.visiblePropertyName] : [])].map(alias => alias.toLowerCase());
+  if (this.typeCache.has(name)) return this.typeCache.get(name);
+  const aliases = this.aliasesFor(name);
   const key = Object.keys(this.types).find(key => aliases.includes(key.toLowerCase()));
-  return key ? this.types[key] : undefined;
+  const type = key ? this.types[key] : undefined;
+  this.typeCache.set(name, type);
+  return type;
+ }
+ private aliasesFor(name: string): string[] {
+  let aliases = this.aliasCache.get(name);
+  if (!aliases) {
+   const mapping = this.settings.keyMappings.find(item => [item.canonicalKey, item.visiblePropertyName].some(alias => alias.toLowerCase() === name.toLowerCase()));
+   aliases = [...new Set([name, ...(mapping ? [mapping.canonicalKey, mapping.visiblePropertyName] : [])].map(alias => alias.toLowerCase()))];
+   this.aliasCache.set(name, aliases);
+  }
+  return aliases;
  }
  reason(name: string, value?: unknown): NativePropertyReadOnlyReason | undefined {
-  return this.registryState === 'ready' ? nativePropertyReadOnlyReason(name, value, this.declarations, this.settings.keyMappings, this.types) : 'unavailable';
+  if (this.registryState !== 'ready') return 'unavailable';
+  if (!this.reasonCache.has(name)) this.reasonCache.set(name, nativePropertyReadOnlyReason(name, undefined, this.declarations, this.settings.keyMappings, this.types));
+  return nativePropertyValueReadOnlyReason(value, this.typeFor(name), this.reasonCache.get(name));
  }
  private includes(name: string): boolean {
+  if (!this.inclusionCache.has(name)) this.inclusionCache.set(name, this.includesUncached(name));
+  return this.inclusionCache.get(name)!;
+ }
+ private includesUncached(name: string): boolean {
   if (isWritableRawYamlPropertyName(name, this.settings.keyMappings)) return true;
   const mapping = this.settings.keyMappings.find(item => item.isSystem === false && [item.canonicalKey, item.visiblePropertyName].some(alias => alias.toLowerCase() === name.toLowerCase()));
   try { return !!mapping && resolveInlinePropertyDefinition(mapping.visiblePropertyName, mapping.type, this.settings.keyMappings, this.settings.inlinePropertyDefinitions).encoding === 'vault-v1'; }

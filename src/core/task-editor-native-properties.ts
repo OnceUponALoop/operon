@@ -26,13 +26,24 @@ export function nativeEditorPropertyTypes(types: Readonly<Record<string, string>
 /** Presentation only: this reason never grants a write permission. */
 export type NativePropertyReadOnlyReason = 'automatic' | 'type-conflict' | 'unsupported' | 'unavailable';
 
+export function nativePropertyValueReadOnlyReason(value: unknown, type?: InlinePropertyType,
+ baseReason?: NativePropertyReadOnlyReason): NativePropertyReadOnlyReason | undefined {
+ if (value !== undefined && (!isSupportedRawYamlPropertyValue(value)
+  || typeof value === 'number' && !Number.isFinite(value)
+  || Array.isArray(value) && value.some(item => typeof item !== 'string' && typeof item !== 'number' || typeof item === 'number' && !Number.isFinite(item)))) return 'unsupported';
+ if (baseReason) return baseReason;
+ if (type && value !== undefined && value !== null && value !== '') {
+  try { encodeVaultPropertyValue(value as VaultPropertyValue, type); }
+  catch { return 'type-conflict'; }
+ }
+ return undefined;
+}
+
 export function nativePropertyReadOnlyReason(
  name: string, value: unknown, declarations: Readonly<Record<string, string>>,
  mappings: readonly KeyMapping[], nativeTypes: Readonly<Record<string, InlinePropertyType>>,
 ): NativePropertyReadOnlyReason | undefined {
- if (value !== undefined && (!isSupportedRawYamlPropertyValue(value)
-  || typeof value === 'number' && !Number.isFinite(value)
-  || Array.isArray(value) && value.some(item => typeof item !== 'string' && typeof item !== 'number' || typeof item === 'number' && !Number.isFinite(item)))) return 'unsupported';
+ if (nativePropertyValueReadOnlyReason(value) === 'unsupported') return 'unsupported';
  const aliases = new Set([name.toLowerCase()]);
  const mapped = mappings.filter(mapping => [mapping.canonicalKey, mapping.visiblePropertyName].some(alias => aliases.has(alias.toLowerCase())));
  for (const mapping of mapped) for (const alias of [mapping.canonicalKey, mapping.visiblePropertyName]) aliases.add(alias.toLowerCase());
@@ -42,9 +53,5 @@ export function nativePropertyReadOnlyReason(
  if (assigned.some(([, type]) => !['text', 'multitext', 'list', 'number', 'checkbox', 'date', 'datetime'].includes(type))) return 'unsupported';
  const typeName = Object.keys(nativeTypes).find(alias => aliases.has(alias.toLowerCase()));
  if (!typeName) return 'type-conflict';
- if (value !== undefined && value !== null && value !== '') {
-  try { encodeVaultPropertyValue(value as VaultPropertyValue, nativeTypes[typeName]); }
-  catch { return 'type-conflict'; }
- }
- return undefined;
+ return nativePropertyValueReadOnlyReason(value, nativeTypes[typeName]);
 }

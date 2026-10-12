@@ -184,6 +184,7 @@ test('real V8 hydration prepares only known task sources once and keeps its pers
   await native.ensure(indexer.getAllTasks());assert.equal(f.reads.length,6);assert.equal(f.max(),2);
   assert.equal(native.getTask(indexer.getTask('n000005')!).properties.get('value')?.value,5);
   const readCount=f.reads.length;await native.ensure(indexer.getAllTasks());assert.equal(f.reads.length,readCount);
-  assert.ok(!persisted.manifestPayload.includes('nativeProperties'));assert.ok(!persisted.manifestPayload.includes('inlinePropertyDefinitions'));
+  assert.ok(!persisted.manifestPayload.includes('nativeProperties'));
+  assert.deepEqual(JSON.parse(persisted.manifest.indexSemanticsSignature).inlinePropertyDefinitions, f.settings.inlinePropertyDefinitions ?? null);
  } finally {indexer.destroy();}
 });
