@@ -11035,7 +11035,7 @@ body .operon-task-editor button.operon-editor-tracking-sessions-add:disabled {
 }
 
 .operon-editor-tracking-session-row:hover,
-.operon-editor-tracking-session-row:focus-within {
+.operon-editor-tracking-session-row:has(:focus-visible) {
 	border-color: var(--operon-task-editor-tracking-hover-border);
 	box-shadow: 0 0 0 2px var(--operon-task-editor-tracking-focus-ring);
 }
@@ -11053,7 +11053,7 @@ body .operon-task-editor button.operon-editor-tracking-sessions-add:disabled {
 	padding-inline: 8px 0;
 }
 
-.operon-task-editor:not(.operon-task-editor-mobile) .operon-editor-tracking-session-row:is(:hover, :focus-within) .operon-editor-session-duration {
+.operon-task-editor:not(.operon-task-editor-mobile) .operon-editor-tracking-session-row:is(:hover, :has(:focus-visible)) .operon-editor-session-duration {
 	font-weight: var(--font-bold, 700);
 	text-decoration: underline;
 	text-underline-offset: 3px;
@@ -11078,7 +11078,7 @@ body .operon-task-editor button.operon-editor-tracking-sessions-add:disabled {
 	overflow-wrap: anywhere;
 }
 
-.operon-task-editor:not(.operon-task-editor-mobile) .operon-editor-tracking-session-row:is(:hover, :focus-within) .operon-editor-tracking-session-body {
+.operon-task-editor:not(.operon-task-editor-mobile) .operon-editor-tracking-session-row:is(:hover, :has(:focus-visible)) .operon-editor-tracking-session-body {
 	border-color: var(--background-modifier-border);
 }
 
@@ -11093,7 +11093,7 @@ body .operon-task-editor:not(.operon-task-editor-mobile) .operon-editor-tracking
 	box-shadow: none;
 }
 
-body .operon-task-editor:not(.operon-task-editor-mobile) .operon-editor-tracking-session-row:is(:hover, :focus-within) .operon-editor-tracking-session-action {
+body .operon-task-editor:not(.operon-task-editor-mobile) .operon-editor-tracking-session-row:is(:hover, :has(:focus-visible)) .operon-editor-tracking-session-action {
 	opacity: 1;
 	pointer-events: auto;
 }
@@ -11159,7 +11159,7 @@ body .operon-task-editor button.operon-editor-tracking-session-action {
 }
 
 .operon-editor-tracking-session-row:hover .operon-editor-tracking-session-action,
-.operon-editor-tracking-session-row:focus-within .operon-editor-tracking-session-action {
+.operon-editor-tracking-session-row:has(:focus-visible) .operon-editor-tracking-session-action {
 	opacity: 1;
 }
 
