@@ -34,7 +34,8 @@ export function persistNativePropertySource(raw: NativePropertySource, retain: (
 		const file: [string, JsonValue][] | null = raw.frontmatter === null ? null : raw.order
 			.filter(name => name.toLowerCase() !== 'pinned' && (retain(name) || identityAliases.has(name.toLowerCase())))
 			.map(name => [name, cloneJson(raw.frontmatter![name], new Set())]);
-		const inline: InlineTuple[] = raw.inline.filter(task => task.operonId !== null).map(task => [task.lineNumber, task.operonId, task.fields.filter(field => field.key === 'operonId' || retain(field.sourceKey)).map(field => {
+		// Match canonical task admission: incomplete identity fields are not indexed tasks.
+		const inline: InlineTuple[] = raw.inline.filter(task => Boolean(task.operonId)).map(task => [task.lineNumber, task.operonId, task.fields.filter(field => field.key === 'operonId' || retain(field.sourceKey)).map(field => {
 			const tuple: FieldTuple = [field.sourceKey, field.value];
 			if (field.rawValue !== field.value || field.key !== field.sourceKey) tuple.push(field.rawValue);
 			if (field.key !== field.sourceKey) tuple.push(field.key);

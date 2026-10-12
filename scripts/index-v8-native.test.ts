@@ -127,6 +127,67 @@ async function fixture() {
 	return { root, paths, legacy, settings, start, async close() { for (const runtime of runtimes) runtime.indexer.destroy(); await fs.rm(root, { recursive: true, force: true }); } };
 }
 
+for (const mode of ['initial persistence', 'missing-cache recovery', 'sealed repair']) {
+	test(`empty inline identities cannot block ${mode} or cache reload`, async () => {
+		const f = await fixture(); try {
+			const first = await f.start();
+			if (mode === 'sealed repair') await first.indexer.fullReindex();
+			const note = (await first.adapter.read('I.md'))
+				+ '- [ ] Empty {{operonId:: }} {{Flag:: false}}\n'
+				+ '- [ ] Whitespace {{operonId::    }} {{Count:: 3}}\n'
+				+ '- [ ] Plain checkbox {{Flag:: true}}\n';
+			await first.edit('I.md', note);
+			const legacyMarker = f.legacy.replace('index-v8/manifest.json', 'index-v8-recovery-required.json');
+			await first.adapter.write(legacyMarker, 'legacy-recovery-sentinel');
+			if (mode !== 'initial persistence') {
+				await first.adapter.write(f.paths.indexV8RecoveryRequiredPath, '{"version":1,"required":true}');
+				assert.equal((await first.indexer.loadCachedIndex()).status, 'missing');
+			}
+			if (mode === 'sealed repair') assert.equal((await first.indexer.repairIndexV8FromMarkdown()).status, 'applied');
+			else await first.indexer.fullReindex();
+			assert.equal(await first.adapter.exists(f.paths.indexV8RecoveryRequiredPath), false);
+			assert.equal((await first.store.load()).status, 'loaded');
+			assert.equal(await first.adapter.read('I.md'), note);
+			first.indexer.destroy();
+
+			const next = await f.start();
+			next.adapter.write = async name => { assert.fail('Unexpected write: ' + name); };
+			next.adapter.process = async name => { assert.fail('Unexpected process: ' + name); };
+			assert.equal((await next.indexer.loadCachedIndex()).status, 'loaded');
+			await next.indexer.reconcileV8StartupSources();
+			await next.native.ensure(next.indexer.getAllTasks());
+			// Preserve existing canonical admission even for a nonempty whitespace identity.
+			assert.deepEqual(next.indexer.getAllTasks().map(task => task.operonId).sort(), ['   ', 'file001', 'line001']);
+			assert.equal(next.native.getTask(next.indexer.getTask('line001')!).properties.get('flag')?.value, true);
+			assert.equal(next.native.getTask(next.indexer.getTask('line001')!).properties.get('count')?.value, 0);
+			assert.equal(next.reads(), 0);
+			assert.equal(await next.adapter.read(f.legacy), 'legacy-sentinel');
+			assert.equal(await next.adapter.read(legacyMarker), 'legacy-recovery-sentinel');
+		} finally { await f.close(); }
+	});
+}
+
+test('clearing an inline identity updates both source projections and survives reload', async () => {
+	const f = await fixture(); try {
+		const first = await f.start();
+		const original = await first.adapter.read('I.md');
+		await first.edit('I.md', original + '- [ ] Second {{operonId:: line002}} {{Flag:: false}}\n');
+		await first.indexer.fullReindex();
+		const note = (await first.adapter.read('I.md')).replace('operonId:: line001', 'operonId:: ');
+		await first.edit('I.md', note);
+		await first.indexer.reindexFilePath('I.md'); await first.indexer.flushPendingPersist();
+		assert.equal(await first.adapter.exists(f.paths.indexV8RecoveryRequiredPath), false);
+		first.indexer.destroy();
+		const next = await f.start();
+		assert.equal((await next.indexer.loadCachedIndex()).status, 'loaded');
+		await next.native.ensure(next.indexer.getAllTasks());
+		assert.deepEqual(next.indexer.getAllTasks().map(task => task.operonId).sort(), ['file001', 'line002']);
+		assert.equal(next.native.getTask(next.indexer.getTask('line002')!).properties.get('flag')?.value, false);
+		assert.equal(next.reads(), 0);
+		assert.equal(await next.adapter.read('I.md'), note);
+	} finally { await f.close(); }
+});
+
 test('primary persistence reloads native values with zero source reads and preserves the legacy namespace', async () => {
 	const f = await fixture(); try {
 		const first = await f.start(); await first.indexer.fullReindex(); await first.native.ensure(first.indexer.getAllTasks());
