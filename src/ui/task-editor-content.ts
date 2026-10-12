@@ -3931,6 +3931,7 @@ export class TaskEditorContent {
 			const done = this.isTaskFinished();
 			const label = t('taskEditor', done ? 'finished' : 'clickToFinish');
 			const configuredIcon = status?.definition.pipelineStatusIcon?.trim();
+			button.empty();
 			setIcon(button, configuredIcon && getIcon(configuredIcon) ? configuredIcon : getFallbackStateIcon(this.settings, done ? 'done' : this.checkbox) || 'square');
 			button.setAttribute('aria-disabled', String(done || this.quickFinishInProgress));
 			setAccessibleLabelWithoutTooltip(button, label);
