@@ -2720,7 +2720,9 @@ export class TaskEditorContent {
 			const chip = createInlineTaskCompactChipElement({
 				key: mapping.canonicalKey,
 				label: this.formatCustomFieldDisplayValue(mapping, value),
-				icon: getCustomFieldIcon(mapping),
+				icon: mapping.type === 'checkbox'
+					? getCheckboxPropertyIcon(value === 'true' ? true : value === 'false' ? false : undefined, getCustomFieldIcon(mapping))
+					: getCustomFieldIcon(mapping),
 				iconOnly: false,
 				interactive: false,
 				colorRole: 'default',
