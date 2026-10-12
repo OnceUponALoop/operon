@@ -580,6 +580,7 @@ import {
 	type OperonDocsFolderMovePreview,
 	type OperonDocsSyncResult,
 } from './src/systems/operon-docs-sync';
+import { classifyClassicTaskConversionLine } from './src/core/classic-task-conversion';
 import { showPlainCheckboxPopover } from './src/ui/plain-checkbox-popover';
 import {
 	collectScopedPlainCheckboxMoveLines,
@@ -1162,6 +1163,7 @@ interface InlineTemplateAuthoring {
  parentGuards: Array<()=>boolean>;
 }
 interface PreparedCreatorCommit {
+ sourceCreatedAt?: string;
  inlineTemplate?: InlineTemplateAuthoring;
  request: PreparedTaskCreatorSubmission;
  properties: CreationDraftPropertyContext;
@@ -22537,6 +22539,74 @@ export default class OperonPlugin extends Plugin {
 		}));
 	}
 
+ private async openCheckboxConversionCreator(editor: Editor, view: MarkdownView, lineNumber: number): Promise<void> {
+  const file = view.file;
+  if (!file) return;
+  const filePath = file.path;
+  const before = editor.getValue();
+  const line = editor.getLine(lineNumber);
+  if (tasksConversionProtectedLines(before).has(lineNumber)
+   || classifyClassicTaskConversionLine(line, filePath, this.settings.keyMappings) === 'none') return;
+  const parsed = this.parseInlineTaskLine(line, lineNumber, filePath);
+  if (!parsed || parsed.operonId) return;
+  const conversion = convertTasksEmojiLineToOperon(line, { priorities: this.settings.priorities ?? DEFAULT_PRIORITIES });
+  if (conversion.kind === 'converted') {
+   parsed.checkbox = conversion.checkbox;
+   const applied = applyTasksEmojiConversionToParsedTask({
+    task: parsed, description: conversion.description, timePrefix: conversion.timePrefix,
+    tags: conversion.tags, mappedFields: conversion.mappedFields, leftovers: conversion.leftovers,
+    previousFieldValues: {}, pipelines: this.settings.pipelines,
+    defaultPipelineName: this.settings.defaultPipelineName, defaultPriority: '',
+   });
+   if (!applied.ok) { new Notice(applied.errorMessage ?? t('notifications', 'terminalDateWorkflowResolveFailed')); return; }
+  }
+  const fields = this.getParsedTaskFieldValues(parsed);
+  // A checked/cancelled source must remain terminal even when a template supplies an open status.
+  // Leave open sources to the existing template/default workflow unless emoji fields supplied a status.
+  if (!fields.status && parsed.checkbox !== 'open') {
+   const pipelines = [...this.settings.pipelines].sort((a,b) => Number(b.name === this.settings.defaultPipelineName) - Number(a.name === this.settings.defaultPipelineName));
+   for (const pipeline of pipelines) {
+    const status = pipeline.statuses.find(item => parsed.checkbox === 'done' ? item.isFinished
+     : parsed.checkbox === 'cancelled' ? item.isCancelled : !item.isFinished && !item.isCancelled);
+    if (status) { fields.status = composeStatusValue(pipeline.name, status.label); break; }
+   }
+   if (!fields.status) { new Notice(t('notifications', 'terminalDateWorkflowResolveFailed')); return; }
+  }
+  const inherited = this.resolveCheckboxConversionInheritedFields(editor, file, lineNumber);
+  const draft = createEmptyTaskCreatorDraft();
+  draft.description = [parsed.timePrefix?.raw, parsed.description].filter(Boolean).join(' ');
+  draft.fieldValues = { ...Object.fromEntries(Object.entries(inherited).filter((entry): entry is [string,string] => typeof entry[1] === 'string')), ...fields };
+  draft.tags = [...parsed.tags];
+  draft.note = fields.note ?? '';
+  delete draft.fieldValues.note;
+  draft.inheritedFieldKeys = Object.keys(inherited).filter(key => key !== 'parentTask' && !(key in fields));
+  draft.explicitFieldKeys = Object.keys(fields);
+  const current = () => view.file === file && file.path === filePath && view.editor === editor && editor.getValue() === before;
+  await this.prepareTaskCreator(draft, {
+   activeFilePath: filePath, initialCreateType: 'inline', submitMode: 'inline-only',
+   onSubmitInline: async submitted => {
+    if (!current()) { new Notice(t('notifications', 'conversionSourceChanged')); return false; }
+    const commit = this.preparedCreatorCommits.get(submitted);
+    if (!commit) return false;
+    commit.sourceCreatedAt = fields.datetimeCreated;
+    const created = this.buildTaskCreatorInlineTaskLine(submitted, filePath, lineNumber, {}, localNow());
+    if (!created || !this.validateDependencyDraftOrShow(created.operonId, created.fieldValues)) return false;
+    const lines = before.split('\n');
+    const taskLine = (/^[ \t]*/u.exec(line)?.[0] ?? '') + created.taskLine;
+    lines[lineNumber] = taskLine;
+    this.suppressRawTaskCreationNotice(created.operonId);
+    if (!await this.writePreparedCreatorInline(submitted, file, before, lines.join('\n'), current)) return false;
+    // The shared commit marks success before post-create work, preventing duplicate retries.
+    await this.indexer.reindexFilePath(filePath);
+    await this.finalizeTaskCreatorCreatedTask(created.operonId, submitted, created.fieldValues.parentTask);
+    this.refreshViews();
+    this.refreshMarkdownAfterInlineAuthoring(filePath);
+    this.showTaskNotice('inline-created', { description: submitted.description, operonId: created.operonId });
+    return true;
+   },
+  });
+ }
+
 	private async upgradePlainCheckboxLineToOperonInlineTask(
 		editor: Editor,
 		view: MarkdownView,
@@ -23167,12 +23237,16 @@ export default class OperonPlugin extends Plugin {
 				convertTasksEmojiLine: (lineNumber: number, editorView: EditorView) => {
 					const view = this.getMarkdownViewForEditorView(editorView);
 					if (!view) return;
-					runAsyncAction('convert tasks emoji line from live preview failed', () => this.handleConvertTasksEmojiLineToOperonInlineTaskCommand(view.editor, view, lineNumber));
+					runAsyncAction('convert tasks emoji line from live preview failed', () => this.settings.inlineTaskOpenCreatorBeforeConversion
+                        ? this.openCheckboxConversionCreator(view.editor, view, lineNumber)
+                        : this.handleConvertTasksEmojiLineToOperonInlineTaskCommand(view.editor, view, lineNumber));
 				},
 				upgradePlainCheckboxLine: (lineNumber: number, editorView: EditorView) => {
 					const view = this.getMarkdownViewForEditorView(editorView);
 					if (!view) return;
-					runAsyncAction('checkbox conversion failed',()=>this.upgradePlainCheckboxLineToOperonInlineTask(view.editor, view, lineNumber));
+					runAsyncAction('checkbox conversion failed',()=>this.settings.inlineTaskOpenCreatorBeforeConversion
+                        ? this.openCheckboxConversionCreator(view.editor, view, lineNumber)
+                        : this.upgradePlainCheckboxLineToOperonInlineTask(view.editor, view, lineNumber));
 			},
 		}));
 		this.registerEditorExtension(operonLivePreviewTaskWikilinkOverlayExtension({
@@ -29916,7 +29990,7 @@ export default class OperonPlugin extends Plugin {
     if (tries>=100) throw new Error('Could not allocate Creator identity');
     operonId=generateOperonId();
    }
-   commit.content=prepareCreationCommit(commit.request,commit.properties,{operonId,now:localNow(), checkbox: resolveWorkflowStatus(this.settings.pipelines,String(commit.request.snapshot.fields.find(field=>field.property.canonicalKey==='status')?.value ?? ''))?.checkbox ?? 'open'}, {
+   commit.content=prepareCreationCommit(commit.request,commit.properties,{operonId,now:localNow(), createdAt:commit.sourceCreatedAt, checkbox: resolveWorkflowStatus(this.settings.pipelines,String(commit.request.snapshot.fields.find(field=>field.property.canonicalKey==='status')?.value ?? ''))?.checkbox ?? 'open'}, {
     getAllRepeatSeriesIds:()=>this.storage.repeatSeries.getAllSeriesIds(),getRepeatSkipDates:id=>this.storage.repeatSeries.getSkipDates(id),
    });
 

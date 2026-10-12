@@ -814,6 +814,8 @@
 		"checkboxConversion": "Conversione caselle di controllo",
 		"showTasksEmojiConvertIcon": "Mostra icona Tasks-a-Operon sulle righe di attività classiche",
 		"showTasksEmojiConvertIconDesc": "Solo Anteprima in tempo reale. Mostra un'icona cerchio-più al passaggio del mouse per le righe emoji Tasks che possono essere convertite in Operon.",
+		"openCreatorBeforeConversion": "Apri Task Creator prima della conversione",
+		"openCreatorBeforeConversionDesc": "Apre Task Creator facendo clic su una delle icone di conversione per controllare l’attività originale e scegliere un modello prima di sostituire la riga. Comandi e conversione in blocco restano invariati.",
 		"showPlainCheckboxConvertIcon": "Mostra icona casella-a-Operon sulle righe di attività classiche",
 		"showPlainCheckboxConvertIconDesc": "Solo Anteprima in tempo reale. Mostra un'icona quadrato-più al passaggio del mouse per le righe con casella di controllo semplice che possono essere aggiornate a Operon.",
 		"defaultStateIconsSection": "Icone di stato predefinite",

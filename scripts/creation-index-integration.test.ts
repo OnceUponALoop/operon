@@ -11,7 +11,13 @@ import { decodeVaultPropertyValue } from '../src/core/vault-property-codec';
 import { parseFrontmatterDocument } from '../src/core/file-task-template-merge';
 import { readFileTaskPropertyDocument } from '../src/core/file-task-property-draft';
 import { resolveDefaultFileTaskStatus } from '../src/core/file-task-defaults';
-import { resolveWorkflowStatus } from '../src/types/pipeline';
+import { classifyClassicTaskConversionLine } from '../src/core/classic-task-conversion';
+import { convertTasksEmojiLineToOperon } from '../src/core/tasks-emoji-to-operon';
+import { applyTasksEmojiConversionToParsedTask } from '../src/core/tasks-emoji-application';
+import { tasksConversionProtectedLines } from '../src/core/tasks-conversion-scope';
+import { parseTaskLine } from '../src/core/parser';
+import { DEFAULT_PRIORITIES } from '../src/types/priority';
+import { composeStatusValue, resolveWorkflowStatus } from '../src/types/pipeline';
 import { TaskWriter } from '../src/core/task-writer';
 import { OperonIndexer } from '../src/indexer/indexer';
 import { getNativePropertyIndex } from '../src/indexer/native-property-index';
@@ -100,6 +106,22 @@ async function fixture() {
   acceptPreparedTargetParent(id:string){this.model.backgroundParent(id,null,null);return this.model.submission('inline','Task','keep-completed');}
  }
  const prepare=method('prepareTaskCreator','initialDraft=null,options={}',{getNativePropertyIndex,TaskCreatorModal:ModalBoundary,TFile,CreationDraftProperties,decodeVaultPropertyValue,createCachedTableFilePropertyTypeResolver,createVaultFilePropertySnapshot,resolveDefaultFileTaskStatus,localNow:()=> '2026-10-10T12:34:56',t,Notice:class {constructor(message:string){notices.push(message);}}});
+ host.prepareTaskCreator=prepare;
+ host.parseInlineTaskLine=(line:string,lineNumber:number,path:string)=>parseTaskLine(line,lineNumber,path,settings.keyMappings);
+ host.getParsedTaskFieldValues=(task:any)=>Object.fromEntries(task.fields.map((field:any)=>[field.key,field.value]));
+ host.resolveCheckboxConversionInheritedFields=()=>({});
+ host.finalizeTaskCreatorCreatedTask=async()=>{};
+ host.refreshViews=()=>{};host.refreshMarkdownAfterInlineAuthoring=()=>{};host.showTaskNotice=()=>{};
+ host.openCheckboxConversionCreator=method('openCheckboxConversionCreator','editor,view,lineNumber',{classifyClassicTaskConversionLine,convertTasksEmojiLineToOperon,applyTasksEmojiConversionToParsedTask,tasksConversionProtectedLines,DEFAULT_PRIORITIES,composeStatusValue,createEmptyTaskCreatorDraft:emptyDraft,localNow:()=> '2026-10-11T10:00:00',Notice,t});
+ async function conversion(text:string,lineNumber=1) {
+  seed('Host.md',text);let buffer=text;
+  const editor={getValue:()=>buffer,getLine:(n:number)=>buffer.split('\n')[n]};
+  const view={file:hostFile,editor};
+  host.syncTaskEditorDeleteOpenViews=(_path:string,_before:string,after:string)=>{buffer=after;return true;};
+  host.taskEditorDeleteOpenViewsMatch=(_path:string,expected:string)=>buffer===expected;
+  await host.openCheckboxConversionCreator(editor,view,lineNumber);
+  return {ui:modal,view,edit:(value:string)=>buffer=value,buffer:()=>buffer};
+ }
  async function open(initial=emptyDraft()) {
   await prepare.call(host,initial,{
    onSubmitInline:async(draft:any)=>{const content=host.buildTaskCreatorInlineTaskLine(draft,hostFile.path,0,{parentTask:targetParent},'2026-10-11T10:00:00');const before=contents.get(hostFile.path)!;return host.writePreparedCreatorInline(draft,hostFile,before,`${before}${content.taskLine}\n`);},
@@ -117,7 +139,7 @@ async function fixture() {
   e.nativePropertyField=(name:string,type:string)=>({propertyName:name,type});
   await e.refreshDesktopFileProperties();assert.equal(e.filePropertyUnavailable,false);return e;
  }
- return {notices,disk,storage,settings,app,native,indexer,writer,host,open,scan,snapshot,editor,contents,reads,writes,seed,metadataReads:()=>metadataReads,failure:(value:string)=>failure=value,targetParent:(value:string)=>targetParent=value,close:async()=>{indexer.destroy();await disk.dispose();}};
+ return {conversion,notices,disk,storage,settings,app,native,indexer,writer,host,open,scan,snapshot,editor,contents,reads,writes,seed,metadataReads:()=>metadataReads,failure:(value:string)=>failure=value,targetParent:(value:string)=>targetParent=value,close:async()=>{indexer.destroy();await disk.dispose();}};
 }
 
 for(const mode of ['file','inline'] as const)test(`production Creator adapter -> writer/storage -> index -> table: 20 ${mode} cycles`,async()=>{
@@ -283,5 +305,73 @@ for(const scenario of ['cancel','failed','uncertain','empty','save-error','chang
   assert.equal(result.outcome,scenario==='failed'?'failed':scenario==='uncertain'?'uncertain':scenario==='preview'?'preview':'committed');
   assert.equal(f.settings.defaultInlineTaskTemplateId,scenario==='changed-default'?'manual':'original');
   if(scenario==='save-error'){assert.equal(f.writes.length,1);assert.deepEqual(f.notices,['taskCreatedTemplatePreferencesSaveFailed']);}
+ }finally{await f.close();}
+});
+
+for (const sourceLine of ['  - [ ] Plain task #source','  - [x] Done task #source','  - [-] Cancelled task #source','  - [ ] 10:00-11:00 Emoji task #source 📅 2026-11-01 ➕ 2026-09-01 🔁 every day']) test(`checkbox Creator replaces one line and retains source: ${sourceLine}`,async()=>{
+ const f=await fixture();try {
+  const before=`Header\n${sourceLine}\nFooter`;
+  const {ui,buffer}=await f.conversion(before);
+  assert.ok(ui);assert.equal(ui.options.submitMode,'inline-only');assert.equal(ui.options.initialCreateType,'inline');
+  assert.equal(f.writes.length,0);assert.equal(f.contents.get('Host.md'),before);
+  f.seed('Template.md','---\ndateDue: 2030-01-01\ntaskColor: "#00ff00"\n---\n');
+  await ui.model.select({id:'template',name:'Template',kind:'folder',path:'Template.md'},ui.options.initialDraft.description);
+  const sourceDue=sourceLine.includes('📅');
+  const request=ui.model.submission('inline',ui.options.initialDraft.description,'keep-completed');
+  assert.equal((await ui.options.preparedAdapter.onSubmit(request)).outcome,'committed');
+  const after=f.contents.get('Host.md')!;assert.equal(buffer(),after);assert.equal(after.split('\n').length,3);
+  assert.equal(after.split('\n')[0],'Header');assert.equal(after.split('\n')[2],'Footer');assert.ok(after.split('\n')[1].startsWith('  - ['));
+  const task=parseTaskLine(after.split('\n')[1],1,'Host.md',f.settings.keyMappings)!;
+  assert.ok(task.operonId);assert.equal(task.checkbox,sourceLine.includes('[x]')?'done':sourceLine.includes('[-]')?'cancelled':'open');
+  assert.ok(task.tags.includes('source'));const fields=Object.fromEntries(task.fields.map(field=>[field.key,field.value]));
+  assert.equal(fields.dateDue,sourceDue?'2026-11-01':'2030-01-01');assert.equal(fields.taskColor,'00ff00');
+  if(sourceDue){assert.equal(fields.datetimeCreated.slice(0,10),'2026-09-01');assert.equal(task.timePrefix?.startTime,'10:00');assert.ok(fields.repeatSeriesId);}
+ }finally{await f.close();}
+});
+for (const scenario of ['cancel','source-edit','file-switch','disk-edit','failure','uncertain','success']) test(`checkbox Creator guards and template learning: ${scenario}`,async()=>{
+ const f=await fixture();try{
+  await f.storage.updateSettings({inlineTaskUseLastTemplateAsDefault:true,defaultInlineTaskTemplateId:'original'});
+  const before='Header\n- [ ] Original\nFooter';const c=await f.conversion(before);const ui=c.ui;
+  await ui.model.select({id:'template',name:'Template',kind:'folder',path:'Template.md'},'Original');
+  ui.model.draft.setValue('priority','high');
+  if(scenario==='cancel'){ui.completeAndClose();assert.equal(f.writes.length,0);assert.equal(f.contents.get('Host.md'),before);assert.equal(f.settings.defaultInlineTaskTemplateId,'original');return;}
+  if(scenario==='source-edit')c.edit(before+'\nUser edit');
+  if(scenario==='file-switch')c.view.file=f.seed('Elsewhere.md','Other');
+  if(scenario==='disk-edit')f.seed('Host.md',before+'\nExternal edit');
+  if(scenario==='failure')f.failure('before');if(scenario==='uncertain')f.failure('lost');
+  const result=await ui.options.preparedAdapter.onSubmit(ui.model.submission('inline','Edited description','keep-completed'));
+  assert.equal(result.outcome,scenario==='success'?'committed':scenario==='uncertain'?'uncertain':'failed');
+  assert.equal(f.settings.defaultInlineTaskTemplateId,scenario==='success'?'template':'original');
+  assert.equal(f.writes.length,scenario==='success'||scenario==='uncertain'?1:0);
+  if(scenario==='success'){assert.match(f.contents.get('Host.md')!,/Edited description/);assert.match(f.contents.get('Host.md')!,/priority:: high/);}
+ }finally{await f.close();}
+});
+
+for (const enabled of [false,true]) test(`Live Preview conversion toggle routes both icons: ${enabled}`,async()=>{
+ let call:Typescript.CallExpression|undefined;
+ const visit=(node:Typescript.Node)=>{if(ts.isCallExpression(node)&&node.expression.getText(source)==='operonLivePreviewClassicTaskConvertExtension')call=node;ts.forEachChild(node,visit);};visit(source);assert.ok(call);
+ const code=transformSync(`function routes(){return ${call.arguments[0].getText(source)};}`,{loader:'ts'}).code;
+ const make=new Function('runAsyncAction',`${code};return routes;`)((_label:string,action:()=>unknown)=>action());
+ const events:string[]=[];const view={editor:{}};
+ const host={settings:{inlineTaskOpenCreatorBeforeConversion:enabled},getMarkdownViewForEditorView:()=>view,
+  openCheckboxConversionCreator:async(editor:unknown,actualView:unknown,line:number)=>{assert.equal(editor,view.editor);assert.equal(actualView,view);events.push(`creator:${line}`);},
+  handleConvertTasksEmojiLineToOperonInlineTaskCommand:async()=>events.push('emoji-direct'),upgradePlainCheckboxLineToOperonInlineTask:async()=>events.push('plain-direct')};
+ const routes=make.call(host);routes.convertTasksEmojiLine(2,{});routes.upgradePlainCheckboxLine(3,{});
+ assert.deepEqual(events,enabled?['creator:2','creator:3']:['emoji-direct','plain-direct']);
+});
+for (const text of ['```\n- [ ] Protected\n```','Header\n- [ ] Existing {{operonId:: abcdefgh}}\nFooter','Header\nOrdinary paragraph\nFooter']) test(`conversion Creator rejects unsupported sources: ${text.split('\n')[1]}`,async()=>{
+ const f=await fixture();try{const c=await f.conversion(text);assert.equal(c.ui,undefined);assert.equal(f.writes.length,0);assert.equal(f.contents.get('Host.md'),text);}finally{await f.close();}
+});
+test('conversion Creator permits template status and later manual due-date override',async()=>{
+ const f=await fixture();try{
+  const pipeline=f.settings.pipelines[0];const status=pipeline.statuses.find(item=>!item.isFinished&&!item.isCancelled)!;
+  f.seed('Template.md',`---\nstatus: "${composeStatusValue(pipeline.name,status.label)}"\ndateDue: 2030-01-01\n---\n`);
+  const {ui}=await f.conversion('Header\n- [ ] Source 📅 2026-11-01\nFooter');
+  await ui.model.select({id:'template',name:'Template',kind:'folder',path:'Template.md'},'Source');
+  const statusField=ui.model.draft.snapshot().fields.find((field:any)=>field.property.canonicalKey==='status');
+  assert.equal(statusField.value,composeStatusValue(pipeline.name,status.label));assert.ok(statusField.contributions.some((entry:any)=>entry.source==='template'));
+  ui.model.draft.setValue('dateDue','2027-02-01');
+  assert.equal((await ui.options.preparedAdapter.onSubmit(ui.model.submission('inline','Source','keep-completed'))).outcome,'committed');
+  assert.match(f.contents.get('Host.md')!,/dateDue:: 2027-02-01/);
  }finally{await f.close();}
 });

@@ -814,6 +814,8 @@
 		"checkboxConversion": "Преобразование чекбоксов",
 		"showTasksEmojiConvertIcon": "Показывать значок преобразования Tasks в Operon на классических строках задач",
 		"showTasksEmojiConvertIconDesc": "Только для Live Preview. При наведении показывает значок круга с плюсом для строк Tasks с эмодзи, которые можно преобразовать в Operon.",
+		"openCreatorBeforeConversion": "Открывать Task Creator перед преобразованием",
+		"openCreatorBeforeConversionDesc": "При нажатии на любой значок преобразования открывает Task Creator для проверки исходной задачи и выбора шаблона перед заменой строки. Команды и массовое преобразование не меняются.",
 		"showPlainCheckboxConvertIcon": "Показывать значок преобразования чекбокса в Operon на классических строках задач",
 		"showPlainCheckboxConvertIconDesc": "Только для Live Preview. При наведении показывает значок квадрата с плюсом для строк обычных чекбоксов, которые можно повысить до Operon.",
 		"defaultStateIconsSection": "Значки состояний по умолчанию",

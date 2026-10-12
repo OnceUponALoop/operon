@@ -1,8 +1,8 @@
 {
   "schemaVersion": 1,
   "locale": "zh-CN",
-  "keyCount": 3645,
-  "keyFingerprint": "16fb077f2299ab1c25cfe05b4f6416fb6ef581064a3891481c8676923be3307f",
+  "keyCount": 3647,
+  "keyFingerprint": "cec976ab14c1d1afad3b6fed0cd2b607962beb9a2fc67711e00fbf86a6588963",
   "translations": {
     "buttons": {
       "addFileSubtask": "添加文件子任务",
@@ -2077,6 +2077,8 @@
       "newPipelineNamePlaceholder": "新工作流名称……",
       "newPriorityLabel": "新优先级",
       "newStatusLabel": "新状态",
+      "openCreatorBeforeConversion": "转换前打开 Task Creator",
+      "openCreatorBeforeConversionDesc": "点击任一转换图标时打开 Task Creator，在替换该行前检查原任务并选择模板。命令和批量转换保持不变。",
       "openDocumentationFor": "打开 {{name}} 的文档",
       "operonDocsAutoUpdateEnabled": "自动更新 Operon Docs",
       "operonDocsAutoUpdateEnabledDesc": "Operon 更新后刷新选定文件夹中的官方文档。只会覆盖受管理的 DOCS-*.md 文件。",
@@ -3690,5 +3692,5 @@
       "toggleDescendantPreview": "切换子任务预览"
     }
   },
-  "sourceVersion": "d37c314bb485509427529442c13f29bcaf2132e1bdb4adbdb245d480783f7331"
+  "sourceVersion": "5b3c4db9649ac82490070abee9203a4c2ef2d34752624f2bff4ee8a437ec2d38"
 }

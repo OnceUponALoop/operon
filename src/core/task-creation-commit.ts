@@ -35,7 +35,7 @@ export interface PreparedCreationContent {
 
 /** Serialization only. Source priority and user intent have already been resolved by the shared draft. */
 export function prepareCreationCommit(input: PreparedCreationInput, context: CreationDraftPropertyContext,
- identity: { operonId: string; now: string; checkbox?: ParsedTask['checkbox']; allocateId?: () => string }, repeat: NormalizeTaskFieldPatchOptions = {}): PreparedCreationContent {
+ identity: { operonId: string; now: string; createdAt?: string; checkbox?: ParsedTask['checkbox']; allocateId?: () => string }, repeat: NormalizeTaskFieldPatchOptions = {}): PreparedCreationContent {
  if (input.template.status === 'loading' || input.template.status === 'error' || input.snapshot.pendingSources.length) throw new Error('Template is not ready');
  const catalog = new CreationDraftProperties(context), mappings = [...context.keyMappings];
  const template = input.template.status === 'ready' ? input.template : null;
@@ -106,7 +106,7 @@ export function prepareCreationCommit(input: PreparedCreationInput, context: Cre
    native.push({ sourceName: name, type: property.type, expected: { present: false }, mutation: { kind: 'set', value: value===null && property.type==='text' ? '' : value===null && property.type==='list' ? [] : value } });
   } else if (key && key !== 'subtasks' && key !== 'pinned') managed[key] = Array.isArray(value) ? serializeTaskListValue(value.map(String)) : value == null ? '' : String(value);
  }
- const fieldValues = { ...managed, operonId: identity.operonId, datetimeCreated: identity.now, datetimeModified: identity.now };
+ const fieldValues = { ...managed, operonId: identity.operonId, datetimeCreated: identity.createdAt ?? identity.now, datetimeModified: identity.now };
  normalizeRepeatIdentityPayload({}, fieldValues, repeat.getAllRepeatSeriesIds ?? (() => new Set<string>()));
  for (const [key,value] of Object.entries(fieldValues)) {
   const property = catalog.resolve(key);

@@ -814,6 +814,8 @@
 		"checkboxConversion": "Checkbox Conversion",
 		"showTasksEmojiConvertIcon": "Show Tasks-to-Operon icon on classic task lines",
 		"showTasksEmojiConvertIconDesc": "Live Preview only. Shows a circle-plus icon on hover for Tasks emoji lines that can be converted to Operon.",
+		"openCreatorBeforeConversion": "Open Task Creator before conversion",
+		"openCreatorBeforeConversionDesc": "Open Task Creator when clicking either conversion icon to review the source task and choose a template before replacing the line. Commands and bulk conversion are unchanged.",
 		"showPlainCheckboxConvertIcon": "Show checkbox-to-Operon icon on classic task lines",
 		"showPlainCheckboxConvertIconDesc": "Live Preview only. Shows a square-plus icon on hover for plain checkbox lines that can be upgraded to Operon.",
 		"defaultStateIconsSection": "Default State Icons",

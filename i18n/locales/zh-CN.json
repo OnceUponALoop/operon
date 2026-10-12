@@ -814,6 +814,8 @@
 		"checkboxConversion": "复选框转换",
 		"showTasksEmojiConvertIcon": "在经典任务行上显示 Tasks 转 Operon 图标",
 		"showTasksEmojiConvertIconDesc": "仅限实时预览。在可转换为 Operon 的 Tasks 表情符号行上，悬停时显示一个加号圆圈图标。",
+		"openCreatorBeforeConversion": "转换前打开 Task Creator",
+		"openCreatorBeforeConversionDesc": "点击任一转换图标时打开 Task Creator，在替换该行前检查原任务并选择模板。命令和批量转换保持不变。",
 		"showPlainCheckboxConvertIcon": "在经典任务行上显示复选框转 Operon 图标",
 		"showPlainCheckboxConvertIconDesc": "仅限实时预览。在可升级为 Operon 的普通复选框行上，悬停时显示一个加号方块图标。",
 		"defaultStateIconsSection": "默认状态图标",

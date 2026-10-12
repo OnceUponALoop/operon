@@ -814,6 +814,8 @@
 		"checkboxConversion": "核取方塊轉換",
 		"showTasksEmojiConvertIcon": "在經典任務行上顯示 Tasks 轉 Operon 圖示",
 		"showTasksEmojiConvertIconDesc": "僅限即時預覽。在可轉換為 Operon 的 Tasks 表情符號行上，懸停時顯示一個加號圓圈圖示。",
+		"openCreatorBeforeConversion": "轉換前開啟 Task Creator",
+		"openCreatorBeforeConversionDesc": "點擊任一轉換圖示時開啟 Task Creator，在取代該行前檢查原任務並選擇範本。命令和批次轉換保持不變。",
 		"showPlainCheckboxConvertIcon": "在經典任務行上顯示覆選框轉 Operon 圖示",
 		"showPlainCheckboxConvertIconDesc": "僅限即時預覽。在可升級為 Operon 的普通核取方塊行上，懸停時顯示一個加號方塊圖示。",
 		"defaultStateIconsSection": "預設狀態圖示",

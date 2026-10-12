@@ -156,6 +156,7 @@ export const ALL_OPERON_SETTINGS_BACKUP_KEYS = [
 	'inlineTaskShowSubtaskAction',
 	'inlineTaskShowTasksEmojiConvertIcon',
 	'inlineTaskShowPlainCheckboxConvertIcon',
+	'inlineTaskOpenCreatorBeforeConversion',
 	'filterTaskShowPlayAction',
 	'filterTaskShowPinAction',
 	'filterTaskShowNoteAction',

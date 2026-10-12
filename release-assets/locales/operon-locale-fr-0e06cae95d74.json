@@ -1,8 +1,8 @@
 {
   "schemaVersion": 1,
   "locale": "fr",
-  "keyCount": 3645,
-  "keyFingerprint": "16fb077f2299ab1c25cfe05b4f6416fb6ef581064a3891481c8676923be3307f",
+  "keyCount": 3647,
+  "keyFingerprint": "cec976ab14c1d1afad3b6fed0cd2b607962beb9a2fc67711e00fbf86a6588963",
   "translations": {
     "buttons": {
       "addFileSubtask": "Ajouter une sous-tâche-fichier",
@@ -2077,6 +2077,8 @@
       "newPipelineNamePlaceholder": "Nom du nouveau pipeline...",
       "newPriorityLabel": "Nouvelle priorité",
       "newStatusLabel": "Nouveau statut",
+      "openCreatorBeforeConversion": "Ouvrir Task Creator avant la conversion",
+      "openCreatorBeforeConversionDesc": "Ouvre Task Creator au clic sur une icône de conversion pour vérifier la tâche source et choisir un modèle avant de remplacer la ligne. Les commandes et la conversion en masse restent inchangées.",
       "openDocumentationFor": "Ouvrir la documentation de {{name}}",
       "operonDocsAutoUpdateEnabled": "Mettre à jour Operon Docs automatiquement",
       "operonDocsAutoUpdateEnabledDesc": "Actualise la documentation officielle dans le dossier choisi après les mises à jour d'Operon. Seuls les fichiers DOCS-*.md gérés sont écrasés.",
@@ -3690,5 +3692,5 @@
       "toggleDescendantPreview": "Basculer l'aperçu des descendants"
     }
   },
-  "sourceVersion": "07204694c5ee35145b10328e44fdb46ffaa2fb2db444b6a94fe13e0360672f5e"
+  "sourceVersion": "7638a5b40827fd6d13483a9a2e4483d0fedcc7d2eb6d667b5641161054ca8542"
 }

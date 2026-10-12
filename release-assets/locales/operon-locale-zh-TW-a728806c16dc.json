@@ -1,8 +1,8 @@
 {
   "schemaVersion": 1,
   "locale": "zh-TW",
-  "keyCount": 3645,
-  "keyFingerprint": "16fb077f2299ab1c25cfe05b4f6416fb6ef581064a3891481c8676923be3307f",
+  "keyCount": 3647,
+  "keyFingerprint": "cec976ab14c1d1afad3b6fed0cd2b607962beb9a2fc67711e00fbf86a6588963",
   "translations": {
     "buttons": {
       "addFileSubtask": "新增檔案子任務",
@@ -2077,6 +2077,8 @@
       "newPipelineNamePlaceholder": "新工作流名稱……",
       "newPriorityLabel": "新優先順序",
       "newStatusLabel": "新狀態",
+      "openCreatorBeforeConversion": "轉換前開啟 Task Creator",
+      "openCreatorBeforeConversionDesc": "點擊任一轉換圖示時開啟 Task Creator，在取代該行前檢查原任務並選擇範本。命令和批次轉換保持不變。",
       "openDocumentationFor": "開啟 {{name}} 的文件",
       "operonDocsAutoUpdateEnabled": "自動更新 Operon Docs",
       "operonDocsAutoUpdateEnabledDesc": "Operon 更新後重新整理選定資料夾中的官方文件。只會覆寫受管理的 DOCS-*.md 檔案。",
@@ -3690,5 +3692,5 @@
       "toggleDescendantPreview": "切換子任務預覽"
     }
   },
-  "sourceVersion": "62cee1e8fa0ebaa0ef9bcb5496cfc55fad6d3d3b8c9f1a8c636f706aa9c7cbd5"
+  "sourceVersion": "76a0732b68a1c179541f8231a6767363d849a3ffebce90bb61bd06dcac010d26"
 }

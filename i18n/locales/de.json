@@ -812,6 +812,8 @@
 		"checkboxConversion": "Kontrollkästchen-Umwandlung",
 		"showTasksEmojiConvertIcon": "Tasks-zu-Operon-Symbol auf klassischen Aufgabenzeilen anzeigen",
 		"showTasksEmojiConvertIconDesc": "Nur Live-Vorschau. Zeigt beim Überfahren ein Kreis-Plus-Symbol für Tasks-Emoji-Zeilen an, die in Operon umgewandelt werden können.",
+		"openCreatorBeforeConversion": "Task Creator vor der Konvertierung öffnen",
+		"openCreatorBeforeConversionDesc": "Öffnet beim Klick auf eines der Konvertierungssymbole Task Creator, um die Quellaufgabe zu prüfen und vor dem Ersetzen der Zeile eine Vorlage auszuwählen. Befehle und Stapelkonvertierung bleiben unverändert.",
 		"showPlainCheckboxConvertIcon": "Kontrollkästchen-zu-Operon-Symbol auf klassischen Aufgabenzeilen anzeigen",
 		"showPlainCheckboxConvertIconDesc": "Nur Live-Vorschau. Zeigt beim Überfahren ein Quadrat-Plus-Symbol für einfache Kontrollkästchen-Zeilen an, die zu Operon erweitert werden können.",
 		"defaultStateIconsSection": "Standard-Statussymbole",

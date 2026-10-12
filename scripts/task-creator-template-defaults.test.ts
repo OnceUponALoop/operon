@@ -90,3 +90,21 @@ test('profile unknown extensions survive learning and disabled toggles are remov
   const reloaded=disk.createStorage();await reloaded.initialize();assert.equal(reloaded.getSettings().inlineTaskUseLastTemplateAsDefault,false);assert.equal(reloaded.getSettings().defaultInlineTaskTemplateId,'B');
  }finally{await disk.dispose();}
 });
+
+test('conversion Creator setting defaults off, persists, and preserves unrelated settings',async()=>{
+ const {disk,storage,settings}=await fixture();try{
+  assert.equal(settings.inlineTaskOpenCreatorBeforeConversion,false);
+  assert.equal(migrateSettings({inlineTaskOpenCreatorBeforeConversion:'true'}).inlineTaskOpenCreatorBeforeConversion,false);
+  const before=disk.canonicalAttempts;const reopened=disk.createStorage();await reopened.initialize();assert.equal(disk.canonicalAttempts,before);
+  const target=settings.defaultInlineTaskTemplateId;
+  await storage.updateSettings({inlineTaskOpenCreatorBeforeConversion:true});
+  const reload=disk.createStorage();await reload.initialize();assert.equal(reload.getSettings().inlineTaskOpenCreatorBeforeConversion,true);assert.equal(reload.getSettings().defaultInlineTaskTemplateId,target);
+  await storage.updateSettings({inlineTaskOpenCreatorBeforeConversion:false});
+  const final=disk.createStorage();await final.initialize();assert.equal(final.getSettings().inlineTaskOpenCreatorBeforeConversion,false);
+ }finally{await disk.dispose();}
+});
+
+test('canonical package without conversion toggle reloads byte-for-byte without writes',async()=>{
+ const first=await fixture();let raw:string;try{const pkg=first.disk.package();delete (pkg.settings as Partial<typeof pkg.settings>).inlineTaskOpenCreatorBeforeConversion;raw=JSON.stringify(pkg);}finally{await first.disk.dispose();}
+ const disk=new SettingsPreservationHarness({table:false,initialRaw:raw!});try{const storage=disk.createStorage();await storage.initialize();assert.equal(storage.getSettings().inlineTaskOpenCreatorBeforeConversion,false);assert.equal(disk.canonicalAttempts,0);assert.equal(disk.raw(),raw!);}finally{await disk.dispose();}
+});

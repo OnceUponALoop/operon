@@ -814,6 +814,8 @@
 		"checkboxConversion": "Conversion des cases à cocher",
 		"showTasksEmojiConvertIcon": "Afficher l'icône de conversion Tasks vers Operon sur les lignes de tâche classiques",
 		"showTasksEmojiConvertIconDesc": "Aperçu en direct uniquement. Affiche une icône cercle-plus au survol pour les lignes emoji Tasks qui peuvent être converties en Operon.",
+		"openCreatorBeforeConversion": "Ouvrir Task Creator avant la conversion",
+		"openCreatorBeforeConversionDesc": "Ouvre Task Creator au clic sur une icône de conversion pour vérifier la tâche source et choisir un modèle avant de remplacer la ligne. Les commandes et la conversion en masse restent inchangées.",
 		"showPlainCheckboxConvertIcon": "Afficher l'icône de conversion des cases à cocher vers Operon sur les lignes de tâche classiques",
 		"showPlainCheckboxConvertIconDesc": "Aperçu en direct uniquement. Affiche une icône carré-plus au survol pour les lignes de case à cocher simples qui peuvent être transformées en Operon.",
 		"defaultStateIconsSection": "Icônes d’état par défaut",

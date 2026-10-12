@@ -814,6 +814,8 @@
 		"checkboxConversion": "Conversão para Tarefa",
 		"showTasksEmojiConvertIcon": "Mostrar ícone de Tarefa para Operon nas linhas clássicas de tarefas",
 		"showTasksEmojiConvertIconDesc": "Somente na Pré-visualização ao Vivo. Mostra um ícone de círculo com sinal de mais ao passar o mouse sobre linhas de emoji do Tasks que podem ser convertidas para o Operon.",
+		"openCreatorBeforeConversion": "Abrir Task Creator antes da conversão",
+		"openCreatorBeforeConversionDesc": "Abre Task Creator ao clicar em qualquer ícone de conversão para revisar a tarefa original e escolher um modelo antes de substituir a linha. Comandos e conversão em massa permanecem inalterados.",
 		"showPlainCheckboxConvertIcon": "Mostrar ícone de caixa de seleção para Operon nas linhas clássicas de tarefas",
 		"showPlainCheckboxConvertIconDesc": "Apenas Pré-visualização ao vivo. Exibe um ícone de quadrado mais ao passar o mouse em linhas simples de caixa de seleção que podem ser atualizadas para Operon.",
 		"defaultStateIconsSection": "Ícones de estado padrão",

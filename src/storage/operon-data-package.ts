@@ -942,6 +942,8 @@ function sortPinnedTaskEntries(
 
 function buildSettingsPackage(settings: OperonSettings): OperonDataPackageSettings {
 	const packageSettings = { ...settings } as Partial<OperonSettings>;
+	// Missing and false are equivalent; installing this opt-in UI setting must not rewrite old packages.
+	if (packageSettings.inlineTaskOpenCreatorBeforeConversion !== true) delete packageSettings.inlineTaskOpenCreatorBeforeConversion;
 	for (const key of OPERON_DATA_PACKAGE_OWNED_SETTINGS_KEYS) {
 		delete packageSettings[key];
 	}

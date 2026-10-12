@@ -1,8 +1,8 @@
 {
   "schemaVersion": 1,
   "locale": "de",
-  "keyCount": 3645,
-  "keyFingerprint": "16fb077f2299ab1c25cfe05b4f6416fb6ef581064a3891481c8676923be3307f",
+  "keyCount": 3647,
+  "keyFingerprint": "cec976ab14c1d1afad3b6fed0cd2b607962beb9a2fc67711e00fbf86a6588963",
   "translations": {
     "buttons": {
       "addFileSubtask": "Datei-Unteraufgabe hinzufügen",
@@ -2077,6 +2077,8 @@
       "newPipelineNamePlaceholder": "Name des neuen Arbeitsablaufs…",
       "newPriorityLabel": "Neue Priorität",
       "newStatusLabel": "Neuer Status",
+      "openCreatorBeforeConversion": "Task Creator vor der Konvertierung öffnen",
+      "openCreatorBeforeConversionDesc": "Öffnet beim Klick auf eines der Konvertierungssymbole Task Creator, um die Quellaufgabe zu prüfen und vor dem Ersetzen der Zeile eine Vorlage auszuwählen. Befehle und Stapelkonvertierung bleiben unverändert.",
       "openDocumentationFor": "Dokumentation für {{name}} öffnen",
       "operonDocsAutoUpdateEnabled": "Operon Docs automatisch aktualisieren",
       "operonDocsAutoUpdateEnabledDesc": "Aktualisiert offizielle Dokumente im gewählten Ordner nach Operon-Updates. Nur verwaltete DOCS-*.md-Dateien werden überschrieben.",
@@ -3690,5 +3692,5 @@
       "toggleDescendantPreview": "Vorschau untergeordneter Aufgaben umschalten"
     }
   },
-  "sourceVersion": "9ec97d7961b4a7f8be18ae82c4fb8397ab75788fcfc9422256040a8676b5727f"
+  "sourceVersion": "d1545715485b0165f08e5f710cd5eca327380d000a75e26526b270eed90a3e6e"
 }

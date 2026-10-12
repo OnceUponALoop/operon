@@ -814,6 +814,8 @@
 		"checkboxConversion": "Onay Kutusu Dönüşümü",
 		"showTasksEmojiConvertIcon": "Klasik görev satırlarında Tasks-to-Operon simgesini göster",
 		"showTasksEmojiConvertIconDesc": "Yalnızca Canlı Önizleme'de. Operon'a dönüştürülebilen Tasks emoji satırlarında üzerine gelince yuvarlak + simgesi gösterir.",
+		"openCreatorBeforeConversion": "Dönüşümden önce Task Creator’ı aç",
+		"openCreatorBeforeConversionDesc": "Her iki dönüşüm simgesine tıklandığında, satırı değiştirmeden önce kaynak görevi incelemek ve şablon seçmek için Task Creator’ı açar. Komutlar ve toplu dönüşüm etkilenmez.",
 		"showPlainCheckboxConvertIcon": "Klasik görev satırlarında onay kutusunu Operon'a dönüştürme simgesini göster",
 		"showPlainCheckboxConvertIconDesc": "Yalnızca Canlı Önizleme'de. Operon'a yükseltilebilen düz onay kutusu satırlarında üzerine gelince kare + simgesi gösterir.",
 		"defaultStateIconsSection": "Varsayılan Durum Simgeleri",

@@ -814,6 +814,8 @@
 		"checkboxConversion": "Conversión de casillas",
 		"showTasksEmojiConvertIcon": "Mostrar el icono Tasks-a-Operon en las líneas de tarea clásicas",
 		"showTasksEmojiConvertIconDesc": "Solo Live Preview. Muestra un icono de círculo con más al pasar el cursor sobre las líneas con emoji de Tasks que se pueden convertir a Operon.",
+		"openCreatorBeforeConversion": "Abrir Task Creator antes de convertir",
+		"openCreatorBeforeConversionDesc": "Al pulsar cualquiera de los iconos de conversión, abre Task Creator para revisar la tarea y elegir una plantilla antes de reemplazar la línea. No afecta a los comandos ni a la conversión masiva.",
 		"showPlainCheckboxConvertIcon": "Mostrar el icono casilla-a-Operon en las líneas de tarea clásicas",
 		"showPlainCheckboxConvertIconDesc": "Solo Live Preview. Muestra un icono de cuadrado con más al pasar el cursor sobre las líneas de casilla simples que se pueden actualizar a Operon.",
 		"defaultStateIconsSection": "Iconos de estado predeterminados",

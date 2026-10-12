@@ -1,8 +1,8 @@
 {
   "schemaVersion": 1,
   "locale": "ja",
-  "keyCount": 3645,
-  "keyFingerprint": "16fb077f2299ab1c25cfe05b4f6416fb6ef581064a3891481c8676923be3307f",
+  "keyCount": 3647,
+  "keyFingerprint": "cec976ab14c1d1afad3b6fed0cd2b607962beb9a2fc67711e00fbf86a6588963",
   "translations": {
     "buttons": {
       "addFileSubtask": "ファイルサブタスクを追加",
@@ -2077,6 +2077,8 @@
       "newPipelineNamePlaceholder": "新しいワークフロー名...",
       "newPriorityLabel": "新しい優先度",
       "newStatusLabel": "新しいステータス",
+      "openCreatorBeforeConversion": "変換前にTask Creatorを開く",
+      "openCreatorBeforeConversionDesc": "いずれかの変換アイコンをクリックするとTask Creatorが開き、行を置き換える前に元のタスクを確認してテンプレートを選択できます。コマンドと一括変換には影響しません。",
       "openDocumentationFor": "{{name}} のドキュメントを開く",
       "operonDocsAutoUpdateEnabled": "Operon Docs を自動的に更新",
       "operonDocsAutoUpdateEnabledDesc": "Operon の更新後に選択したフォルダーの公式ドキュメントを更新します。管理対象の DOCS-*.md ファイルのみが上書きされます。",
@@ -3690,5 +3692,5 @@
       "toggleDescendantPreview": "子孫プレビューを切り替え"
     }
   },
-  "sourceVersion": "2fb9dcfd71c73b5746d39f34b14055cc66bb88faf9797407dd2e22d415a3b683"
+  "sourceVersion": "9afc6af0bd270f7aaf5733f4d82eef95e9ce1f07e42f1e21556c8ebe5e6c6be5"
 }

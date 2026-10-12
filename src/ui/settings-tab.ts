@@ -1579,7 +1579,7 @@ export class OperonSettingsTab extends PluginSettingTab {
 			return this.buildTaskSettingsGroups([
 				['defaultInlineTaskTemplate', ['defaultInlineTaskTemplateId', 'inlineTaskUseLastTemplateAsDefault'], (el, key) => this.renderInlineCreationDefaultSettings(el, key), 'DOCS-020 Task Creator'],
 				['dailyNoteInlineTaskDefaults', ['inlineTaskDailyNoteAddStartDate', 'inlineTaskDailyNoteAddScheduledDate'], (el, key) => this.renderInlineDailyNoteDefaultsSettings(el, key), 'DOCS-050 Daily Notes workflows'],
-				['checkboxConversion', ['inlineTaskShowTasksEmojiConvertIcon', 'inlineTaskShowPlainCheckboxConvertIcon'], (el, key) => this.renderInlineConversionSettings(el, key), 'DOCS-049 Obsidian Tasks migration'],
+				['checkboxConversion', ['inlineTaskShowTasksEmojiConvertIcon', 'inlineTaskShowPlainCheckboxConvertIcon', 'inlineTaskOpenCreatorBeforeConversion'], (el, key) => this.renderInlineConversionSettings(el, key), 'DOCS-049 Obsidian Tasks migration'],
 				['tasksBulkTitle', ['tasksEmojiBulkConversion'], el => this.renderTasksBulkConversion(el)],
 			], entries, t('settings', 'subtabInlineTasks'), 'DOCS-011 Inline tasks');
 		}
@@ -5954,6 +5954,10 @@ export class OperonSettingsTab extends PluginSettingTab {
 		}
 		if (!selectedKey || selectedKey === 'inlineTaskShowPlainCheckboxConvertIcon') {
 			this.renderBoundToggleSetting(containerEl, t('settings', 'showPlainCheckboxConvertIcon'), t('settings', 'showPlainCheckboxConvertIconDesc'), 'inlineTaskShowPlainCheckboxConvertIcon');
+		}
+
+		if (!selectedKey || selectedKey === 'inlineTaskOpenCreatorBeforeConversion') {
+			this.renderBoundToggleSetting(containerEl, t('settings', 'openCreatorBeforeConversion'), t('settings', 'openCreatorBeforeConversionDesc'), 'inlineTaskOpenCreatorBeforeConversion');
 		}
 
 	}

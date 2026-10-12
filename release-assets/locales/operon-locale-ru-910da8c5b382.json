@@ -1,8 +1,8 @@
 {
   "schemaVersion": 1,
   "locale": "ru",
-  "keyCount": 3645,
-  "keyFingerprint": "16fb077f2299ab1c25cfe05b4f6416fb6ef581064a3891481c8676923be3307f",
+  "keyCount": 3647,
+  "keyFingerprint": "cec976ab14c1d1afad3b6fed0cd2b607962beb9a2fc67711e00fbf86a6588963",
   "translations": {
     "buttons": {
       "addFileSubtask": "Добавить файловую подзадачу",
@@ -2077,6 +2077,8 @@
       "newPipelineNamePlaceholder": "Название нового конвейера...",
       "newPriorityLabel": "Новый приоритет",
       "newStatusLabel": "Новый статус",
+      "openCreatorBeforeConversion": "Открывать Task Creator перед преобразованием",
+      "openCreatorBeforeConversionDesc": "При нажатии на любой значок преобразования открывает Task Creator для проверки исходной задачи и выбора шаблона перед заменой строки. Команды и массовое преобразование не меняются.",
       "openDocumentationFor": "Открыть документацию по {{name}}",
       "operonDocsAutoUpdateEnabled": "Автоматически обновлять документацию Operon",
       "operonDocsAutoUpdateEnabledDesc": "Обновляет официальную документацию в выбранной папке после обновлений Operon. Перезаписываются только управляемые файлы DOCS-*.md.",
@@ -3690,5 +3692,5 @@
       "toggleDescendantPreview": "Переключить предпросмотр потомков"
     }
   },
-  "sourceVersion": "f720a98da0eeba7f7de2704a22c915cd7e79e7b70209c6189085d4a41cd1eaee"
+  "sourceVersion": "dc750b3a2e6c66cf882f5f8843f937a41dd9ffeb7ec86b92fee73fdb4a484a6f"
 }

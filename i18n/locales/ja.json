@@ -814,6 +814,8 @@
 		"checkboxConversion": "チェックボックスの変換",
 		"showTasksEmojiConvertIcon": "クラシックなタスク行に Tasks→Operon アイコンを表示",
 		"showTasksEmojiConvertIconDesc": "ライブプレビューのみ。Operon に変換できる Tasks 絵文字行にホバー時にプラス（円）アイコンを表示します。",
+		"openCreatorBeforeConversion": "変換前にTask Creatorを開く",
+		"openCreatorBeforeConversionDesc": "いずれかの変換アイコンをクリックするとTask Creatorが開き、行を置き換える前に元のタスクを確認してテンプレートを選択できます。コマンドと一括変換には影響しません。",
 		"showPlainCheckboxConvertIcon": "クラシックなタスク行にチェックボックス→Operon アイコンを表示",
 		"showPlainCheckboxConvertIconDesc": "ライブプレビューのみ。Operon にアップグレードできるプレーンなチェックボックス行にホバー時にプラス（四角）アイコンを表示します。",
 		"defaultStateIconsSection": "既定の状態アイコン",

@@ -1738,6 +1738,8 @@ export interface OperonSettings extends TaskCardSettings {
 	inlineTaskShowTasksEmojiConvertIcon: boolean;
 	/** Whether plain checkbox lines show a hover-only convert icon in Live Preview. */
 	inlineTaskShowPlainCheckboxConvertIcon: boolean;
+	/** Review single-line icon conversions in Task Creator before replacing the source. */
+	inlineTaskOpenCreatorBeforeConversion: boolean;
 	/** Whether filter rows show the right-side timer action when the task is actionable. */
 	filterTaskShowPlayAction: boolean;
 	/** Whether filter rows show the right-side pin action when the task is actionable. */
@@ -2281,6 +2283,7 @@ export const DEFAULT_SETTINGS: OperonSettings = {
 	inlineTaskShowSubtaskAction: true,
 	inlineTaskShowTasksEmojiConvertIcon: true,
 	inlineTaskShowPlainCheckboxConvertIcon: true,
+	inlineTaskOpenCreatorBeforeConversion: false,
 	filterTaskShowPlayAction: true,
 	filterTaskShowPinAction: false,
 	filterTaskShowNoteAction: true,
@@ -4429,6 +4432,7 @@ export function migrateSettings(raw: unknown): OperonSettings {
 	out.inlineTaskShowTasksEmojiConvertIcon = typeof src.inlineTaskShowTasksEmojiConvertIcon === 'boolean'
 		? src.inlineTaskShowTasksEmojiConvertIcon
 		: DEFAULT_SETTINGS.inlineTaskShowTasksEmojiConvertIcon;
+	out.inlineTaskOpenCreatorBeforeConversion = src.inlineTaskOpenCreatorBeforeConversion === true;
 	out.inlineTaskShowPlainCheckboxConvertIcon = typeof src.inlineTaskShowPlainCheckboxConvertIcon === 'boolean'
 		? src.inlineTaskShowPlainCheckboxConvertIcon
 		: DEFAULT_SETTINGS.inlineTaskShowPlainCheckboxConvertIcon;

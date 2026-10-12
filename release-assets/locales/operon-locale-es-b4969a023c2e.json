@@ -1,8 +1,8 @@
 {
   "schemaVersion": 1,
   "locale": "es",
-  "keyCount": 3645,
-  "keyFingerprint": "16fb077f2299ab1c25cfe05b4f6416fb6ef581064a3891481c8676923be3307f",
+  "keyCount": 3647,
+  "keyFingerprint": "cec976ab14c1d1afad3b6fed0cd2b607962beb9a2fc67711e00fbf86a6588963",
   "translations": {
     "buttons": {
       "addFileSubtask": "Añadir subtarea de archivo",
@@ -2077,6 +2077,8 @@
       "newPipelineNamePlaceholder": "Nombre del nuevo flujo de trabajo...",
       "newPriorityLabel": "Nueva prioridad",
       "newStatusLabel": "Nuevo estado",
+      "openCreatorBeforeConversion": "Abrir Task Creator antes de convertir",
+      "openCreatorBeforeConversionDesc": "Al pulsar cualquiera de los iconos de conversión, abre Task Creator para revisar la tarea y elegir una plantilla antes de reemplazar la línea. No afecta a los comandos ni a la conversión masiva.",
       "openDocumentationFor": "Abrir la documentación de {{name}}",
       "operonDocsAutoUpdateEnabled": "Actualizar Operon Docs automáticamente",
       "operonDocsAutoUpdateEnabledDesc": "Actualiza la documentación oficial en la carpeta elegida después de las actualizaciones de Operon. Solo se sobrescriben los archivos DOCS-*.md gestionados.",
@@ -3690,5 +3692,5 @@
       "toggleDescendantPreview": "Alternar vista previa de descendientes"
     }
   },
-  "sourceVersion": "bee94f19c5115c29b1b885950c29313cd30ddf114e46df3093f065f20de0ffeb"
+  "sourceVersion": "666cf4bd432eccf88205047a09361a9db2e2e6cabe4f5cf2a2ba7162650099c5"
 }

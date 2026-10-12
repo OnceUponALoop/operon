@@ -1,8 +1,8 @@
 {
   "schemaVersion": 1,
   "locale": "tr",
-  "keyCount": 3645,
-  "keyFingerprint": "16fb077f2299ab1c25cfe05b4f6416fb6ef581064a3891481c8676923be3307f",
+  "keyCount": 3647,
+  "keyFingerprint": "cec976ab14c1d1afad3b6fed0cd2b607962beb9a2fc67711e00fbf86a6588963",
   "translations": {
     "buttons": {
       "addFileSubtask": "Dosya Tipi Alt Görev Ekle",
@@ -2077,6 +2077,8 @@
       "newPipelineNamePlaceholder": "Yeni akış adı...",
       "newPriorityLabel": "Yeni Öncelik",
       "newStatusLabel": "Yeni Durum",
+      "openCreatorBeforeConversion": "Dönüşümden önce Task Creator’ı aç",
+      "openCreatorBeforeConversionDesc": "Her iki dönüşüm simgesine tıklandığında, satırı değiştirmeden önce kaynak görevi incelemek ve şablon seçmek için Task Creator’ı açar. Komutlar ve toplu dönüşüm etkilenmez.",
       "openDocumentationFor": "{{name}} belgelerini aç",
       "operonDocsAutoUpdateEnabled": "Operon Docs'u otomatik güncelle",
       "operonDocsAutoUpdateEnabledDesc": "Operon güncellemelerinden sonra resmi belgeleri seçtiğin klasörde yeniler. Yalnızca yönetilen DOCS-*.md dosyalarının üzerine yazılır.",
@@ -3690,5 +3692,5 @@
       "toggleDescendantPreview": "Alt görev önizlemesini aç/kapat"
     }
   },
-  "sourceVersion": "6a4a095e4e8127a16a41318b03445e0d761db2df716d48296ab0cd81ce492d8a"
+  "sourceVersion": "64bba486cff4f19ee9fc04fe6e7a9bc8b80200ae9f702286191e58178653d885"
 }
