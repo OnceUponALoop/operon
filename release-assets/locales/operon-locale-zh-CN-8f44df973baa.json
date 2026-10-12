@@ -2470,7 +2470,7 @@
       "settingsPageRelationshipsDesc": "任务层级的自动父级链接、继承和项目序号。",
       "settingsPageRemindersDesc": "提醒发送、系统通知、声音和错过提醒的补发行为。",
       "settingsPageStateIconsDesc": "任务图标的点击行为、备用图标和颜色来源。",
-      "settingsPageTaskChipsDesc": "任务创建器工具栏按钮，以及用于行内任务、筛选视图结果、看板卡片、任务查找器和任务维基链接覆盖层的紧凑任务标签。",
+      "settingsPageTaskChipsDesc": "Task Creator 标签，以及用于行内任务、筛选视图结果、看板卡片、任务查找器和任务维基链接覆盖层的紧凑任务标签。",
       "settingsPageTaskEditorDesc": "任务编辑器选择器行、顺序和可见性。",
       "settingsPageTaskFinderDesc": "任务查找器启动行为、可见结果、记住的范围、快捷键和结果标签。",
       "settingsPageTaskRouterDesc": "选择行内任务和文件任务的创建位置、相对于父任务的放置方式以及归档位置。",
@@ -2629,8 +2629,8 @@
       "taskCreatorToolbarPinned": "已固定",
       "taskCreatorToolbarPreview": "可见图标",
       "taskCreatorToolbarReorder": "重新排序图标",
-      "taskCreatorToolbarSection": "Task Creator 工具栏",
-      "taskCreatorToolbarSectionDesc": "选择 Task Creator 工具栏显示的字段及其顺序。此设置仅改变工具栏外观，不影响任务创建功能。",
+      "taskCreatorToolbarSection": "Task Creator 标签",
+      "taskCreatorToolbarSectionDesc": "选择 Task Creator 中显示的标签及其顺序。此设置仅改变标签外观，不影响任务创建功能。",
       "taskCreatorToolbarToggleTitle": "切换工具栏图标",
       "taskCreatorToolbarTooltipDesc_assignees": "负责的人员",
       "taskCreatorToolbarTooltipDesc_blockedBy": "此任务的前置条件",
@@ -3692,5 +3692,5 @@
       "toggleDescendantPreview": "切换子任务预览"
     }
   },
-  "sourceVersion": "5b3c4db9649ac82490070abee9203a4c2ef2d34752624f2bff4ee8a437ec2d38"
+  "sourceVersion": "48f4a748a2897f80e33a6070c49489e904fe853cf0575e03ebf5701e9512b7d0"
 }

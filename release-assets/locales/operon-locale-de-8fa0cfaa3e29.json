@@ -2470,7 +2470,7 @@
       "settingsPageRelationshipsDesc": "Automatische übergeordnete Verknüpfungen, Vererbung und Projektseriennummern für Aufgabenhierarchien.",
       "settingsPageRemindersDesc": "Erinnerungszustellung, Systembenachrichtigungen, Ton und Nachholen verpasster Erinnerungen.",
       "settingsPageStateIconsDesc": "Klickverhalten der Aufgabensymbole, Ersatzsymbole und Farbquellen.",
-      "settingsPageTaskChipsDesc": "Symbolleisten-Schaltflächen des Aufgaben-Erstellers sowie kompakte Aufgaben-Chips für Inline-Aufgaben, Filteransicht-Ergebnisse, Kanban-Karten, Aufgabensuche und Task Wikilink Overlays.",
+      "settingsPageTaskChipsDesc": "Task-Creator-Chips sowie kompakte Aufgaben-Chips für Inline-Aufgaben, Filteransicht-Ergebnisse, Kanban-Karten, Aufgabensuche und Task Wikilink Overlays.",
       "settingsPageTaskEditorDesc": "Auswahlzeilen, Reihenfolge und Sichtbarkeit im Aufgaben-Editor.",
       "settingsPageTaskFinderDesc": "Startverhalten der Aufgabensuche, sichtbare Ergebnisse, gemerkte Suchbereiche, Kürzel und Ergebnis-Chips.",
       "settingsPageTaskRouterDesc": "Wählen Sie, wo Inline- und Datei-Aufgaben erstellt, relativ zu übergeordneten Aufgaben platziert und archiviert werden.",
@@ -2629,8 +2629,8 @@
       "taskCreatorToolbarPinned": "Angeheftet",
       "taskCreatorToolbarPreview": "Sichtbare Symbole",
       "taskCreatorToolbarReorder": "Symbole neu anordnen",
-      "taskCreatorToolbarSection": "Task-Creator-Werkzeugleiste",
-      "taskCreatorToolbarSectionDesc": "Wähle die Felder und ihre Reihenfolge in der Task-Creator-Werkzeugleiste. Dies ändert nur die Darstellung, nicht die Funktionen zur Aufgabenerstellung.",
+      "taskCreatorToolbarSection": "Task-Creator-Chips",
+      "taskCreatorToolbarSectionDesc": "Wähle die Chips und ihre Reihenfolge im Task Creator. Dies ändert nur ihre Darstellung, nicht die Funktionen zur Aufgabenerstellung.",
       "taskCreatorToolbarToggleTitle": "Symbolleisten-Symbole umschalten",
       "taskCreatorToolbarTooltipDesc_assignees": "Verantwortliche Personen",
       "taskCreatorToolbarTooltipDesc_blockedBy": "Voraussetzungen dieser Aufgabe",
@@ -3692,5 +3692,5 @@
       "toggleDescendantPreview": "Vorschau untergeordneter Aufgaben umschalten"
     }
   },
-  "sourceVersion": "d1545715485b0165f08e5f710cd5eca327380d000a75e26526b270eed90a3e6e"
+  "sourceVersion": "834bfd219827cf155226f0b04b7e742dfa3496f9aef6e718897a0e8f83fc4086"
 }

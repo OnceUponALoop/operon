@@ -2470,7 +2470,7 @@
       "settingsPageRelationshipsDesc": "Collegamenti automatici all'attività principale, ereditarietà e serie di progetto per le gerarchie di attività.",
       "settingsPageRemindersDesc": "Consegna dei promemoria, notifiche di sistema, suono e recupero dei promemoria mancati.",
       "settingsPageStateIconsDesc": "Comportamento al clic sull’icona dell’attività, icone alternative e fonti di colore.",
-      "settingsPageTaskChipsDesc": "Pulsanti della barra degli strumenti del Creatore di attività più chip di attività compatti per attività in linea, risultati della Vista filtro, schede Kanban, Ricerca attività e overlay wikilink attività.",
+      "settingsPageTaskChipsDesc": "Chip di Task Creator più chip di attività compatti per attività in linea, risultati della Vista filtro, schede Kanban, Ricerca attività e overlay wikilink attività.",
       "settingsPageTaskEditorDesc": "Righe di selezione dell'Editor attività, ordine e visibilità.",
       "settingsPageTaskFinderDesc": "Comportamento di avvio della Ricerca attività, risultati visibili, ambiti memorizzati, scorciatoie e chip dei risultati.",
       "settingsPageTaskRouterDesc": "Scegli dove vengono create le attività in linea e le attività-file, come vengono posizionate rispetto ai genitori e dove vengono archiviate.",
@@ -2629,8 +2629,8 @@
       "taskCreatorToolbarPinned": "Fissata",
       "taskCreatorToolbarPreview": "Icone visibili",
       "taskCreatorToolbarReorder": "Riordina icone",
-      "taskCreatorToolbarSection": "Barra di Task Creator",
-      "taskCreatorToolbarSectionDesc": "Scegli i campi nella barra di Task Creator e il loro ordine. Cambia solo l’aspetto della barra, non le funzioni di creazione delle attività.",
+      "taskCreatorToolbarSection": "Chip di Task Creator",
+      "taskCreatorToolbarSectionDesc": "Scegli i chip mostrati in Task Creator e il loro ordine. Cambia solo il loro aspetto, non le funzioni di creazione delle attività.",
       "taskCreatorToolbarToggleTitle": "Alterna icone barra degli strumenti",
       "taskCreatorToolbarTooltipDesc_assignees": "Persone responsabili",
       "taskCreatorToolbarTooltipDesc_blockedBy": "Prerequisiti per questa attività",
@@ -3692,5 +3692,5 @@
       "toggleDescendantPreview": "Alterna anteprima discendenti"
     }
   },
-  "sourceVersion": "8de51411b9ed48f11cd954b324112d7b90d584c5821795292f75d4d96900385f"
+  "sourceVersion": "e468e868911cfa7e63a377921fbdad929586210b9280acaea2d4e7eb407c1325"
 }

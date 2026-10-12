@@ -2470,7 +2470,7 @@
       "settingsPageRelationshipsDesc": "タスク階層の自動親リンク、継承、プロジェクトシリアル。",
       "settingsPageRemindersDesc": "リマインダーの配信、システム通知、サウンド、未通知リマインダーの追跡動作。",
       "settingsPageStateIconsDesc": "タスクアイコンのクリック動作、代替アイコン、色のソース。",
-      "settingsPageTaskChipsDesc": "タスク作成ツールバーのボタンと、インラインタスク・フィルタービューの結果・Kanban カード・タスクファインダー・タスクウィキリンクオーバーレイ用のコンパクトなタスクチップ。",
+      "settingsPageTaskChipsDesc": "Task Creator のチップと、インラインタスク・フィルタービューの結果・Kanban カード・タスクファインダー・タスクウィキリンクオーバーレイ用のコンパクトなタスクチップ。",
       "settingsPageTaskEditorDesc": "タスクエディターのピッカー行、順序、表示。",
       "settingsPageTaskFinderDesc": "タスクファインダーの起動動作、表示する結果、記憶される範囲、ショートカット、結果チップ。",
       "settingsPageTaskRouterDesc": "インラインタスクとファイルタスクの作成先、親に対する配置、アーカイブ先を選択します。",
@@ -2629,8 +2629,8 @@
       "taskCreatorToolbarPinned": "ピン留め",
       "taskCreatorToolbarPreview": "表示するアイコン",
       "taskCreatorToolbarReorder": "アイコンを並べ替え",
-      "taskCreatorToolbarSection": "Task Creator ツールバー",
-      "taskCreatorToolbarSectionDesc": "Task Creator のツールバーに表示する項目と順序を選択します。外観のみが変わり、タスク作成機能は変わりません。",
+      "taskCreatorToolbarSection": "Task Creator チップ",
+      "taskCreatorToolbarSectionDesc": "Task Creator に表示するチップと順序を選択します。外観のみが変わり、タスク作成機能は変わりません。",
       "taskCreatorToolbarToggleTitle": "ツールバーアイコンを切り替え",
       "taskCreatorToolbarTooltipDesc_assignees": "責任者",
       "taskCreatorToolbarTooltipDesc_blockedBy": "このタスクの前提条件",
@@ -3692,5 +3692,5 @@
       "toggleDescendantPreview": "子孫プレビューを切り替え"
     }
   },
-  "sourceVersion": "9afc6af0bd270f7aaf5733f4d82eef95e9ce1f07e42f1e21556c8ebe5e6c6be5"
+  "sourceVersion": "e5b801cf8b8e93436d5d63eca803682b1db5533cec745f63a2333cf668bf0744"
 }

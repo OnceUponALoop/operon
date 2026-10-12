@@ -2470,7 +2470,7 @@
       "settingsPageRelationshipsDesc": "Автоматические родительские связи, наследование и проектные серийные номера для иерархий задач.",
       "settingsPageRemindersDesc": "Доставка напоминаний, системные уведомления, звук и обработка пропущенных напоминаний.",
       "settingsPageStateIconsDesc": "Действие при нажатии на значок задачи, резервные значки и источники цвета.",
-      "settingsPageTaskChipsDesc": "Кнопки панели инструментов конструктора задач и компактные чипы задач для встроенных задач, результатов представления фильтра, карточек канбана, поиска задач и оверлеев вики-ссылок задач.",
+      "settingsPageTaskChipsDesc": "Чипы Task Creator и компактные чипы задач для встроенных задач, результатов представления фильтра, карточек канбана, поиска задач и оверлеев вики-ссылок задач.",
       "settingsPageTaskEditorDesc": "Строки выбора, порядок и видимость в редакторе задач.",
       "settingsPageTaskFinderDesc": "Поведение запуска поиска задач, видимые результаты, запоминаемые области, сочетания клавиш и чипы результатов.",
       "settingsPageTaskRouterDesc": "Выберите, где создаются встроенные и файловые задачи, как они размещаются относительно родительских задач и где архивируются.",
@@ -2629,8 +2629,8 @@
       "taskCreatorToolbarPinned": "Закреплено",
       "taskCreatorToolbarPreview": "Видимые значки",
       "taskCreatorToolbarReorder": "Изменить порядок значков",
-      "taskCreatorToolbarSection": "Панель Task Creator",
-      "taskCreatorToolbarSectionDesc": "Выберите поля панели Task Creator и их порядок. Это меняет вид панели, но не функции создания задач.",
+      "taskCreatorToolbarSection": "Чипы Task Creator",
+      "taskCreatorToolbarSectionDesc": "Выберите чипы, отображаемые в Task Creator, и их порядок. Это меняет их вид, но не функции создания задач.",
       "taskCreatorToolbarToggleTitle": "Переключить значки панели инструментов",
       "taskCreatorToolbarTooltipDesc_assignees": "Ответственные лица",
       "taskCreatorToolbarTooltipDesc_blockedBy": "Предпосылки для этой задачи",
@@ -3692,5 +3692,5 @@
       "toggleDescendantPreview": "Переключить предпросмотр потомков"
     }
   },
-  "sourceVersion": "dc750b3a2e6c66cf882f5f8843f937a41dd9ffeb7ec86b92fee73fdb4a484a6f"
+  "sourceVersion": "4f822f0e8ace5debb3164ab778c122fffa076952cdcec9cbc4921d0cd9ed946f"
 }

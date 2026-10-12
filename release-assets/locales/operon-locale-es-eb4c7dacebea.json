@@ -2470,7 +2470,7 @@
       "settingsPageRelationshipsDesc": "Enlaces automáticos a tareas principales, herencia y números de serie de proyecto para jerarquías de tareas.",
       "settingsPageRemindersDesc": "Entrega de recordatorios, notificaciones del sistema, sonido y recuperación de recordatorios perdidos.",
       "settingsPageStateIconsDesc": "Comportamiento al pulsar el icono de tarea, iconos alternativos y fuentes de color.",
-      "settingsPageTaskChipsDesc": "Botones de la barra de herramientas del Creador de tareas más chips de tarea compactos para tareas en línea, resultados de la Vista de filtros, tarjetas Kanban, Buscador de tareas y Task Wikilink Overlays.",
+      "settingsPageTaskChipsDesc": "Chips de Task Creator más chips de tarea compactos para tareas en línea, resultados de la Vista de filtros, tarjetas Kanban, Buscador de tareas y Task Wikilink Overlays.",
       "settingsPageTaskEditorDesc": "Filas de selector del Editor de tareas, orden y visibilidad.",
       "settingsPageTaskFinderDesc": "Comportamiento de inicio del Buscador de tareas, resultados visibles, ámbitos recordados, atajos y chips de resultados.",
       "settingsPageTaskRouterDesc": "Elige dónde se crean las tareas en línea y de archivo, cómo se colocan respecto a sus tareas principales y dónde se archivan.",
@@ -2629,8 +2629,8 @@
       "taskCreatorToolbarPinned": "Fijado",
       "taskCreatorToolbarPreview": "Iconos visibles",
       "taskCreatorToolbarReorder": "Reordenar iconos",
-      "taskCreatorToolbarSection": "Barra de Task Creator",
-      "taskCreatorToolbarSectionDesc": "Elige los campos de la barra de Task Creator y su orden. Esto cambia su apariencia, no las funciones de creación de tareas.",
+      "taskCreatorToolbarSection": "Chips de Task Creator",
+      "taskCreatorToolbarSectionDesc": "Elige los chips que aparecen en Task Creator y su orden. Esto cambia su apariencia, no las funciones de creación de tareas.",
       "taskCreatorToolbarToggleTitle": "Alternar iconos de la barra de herramientas",
       "taskCreatorToolbarTooltipDesc_assignees": "Personas responsables",
       "taskCreatorToolbarTooltipDesc_blockedBy": "Requisitos previos de esta tarea",
@@ -3692,5 +3692,5 @@
       "toggleDescendantPreview": "Alternar vista previa de descendientes"
     }
   },
-  "sourceVersion": "666cf4bd432eccf88205047a09361a9db2e2e6cabe4f5cf2a2ba7162650099c5"
+  "sourceVersion": "722f50c556da937a911ee25e323e35ecfa528841aa04024505820105306ead9e"
 }

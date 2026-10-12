@@ -2470,7 +2470,7 @@
       "settingsPageRelationshipsDesc": "任務層級的自動父級連結、繼承和專案序號。",
       "settingsPageRemindersDesc": "提醒傳送、系統通知、聲音與錯過提醒的補送行為。",
       "settingsPageStateIconsDesc": "任務圖示的點擊行為、備用圖示及顏色來源。",
-      "settingsPageTaskChipsDesc": "任務建立器工具欄按鈕，以及用於行內任務、篩選檢視結果、看板卡片、任務查詢器和任務維基連結覆蓋層的緊湊任務標籤。",
+      "settingsPageTaskChipsDesc": "Task Creator 標籤，以及用於行內任務、篩選檢視結果、看板卡片、任務查詢器和任務維基連結覆蓋層的緊湊任務標籤。",
       "settingsPageTaskEditorDesc": "任務編輯器選擇器行、順序和可見性。",
       "settingsPageTaskFinderDesc": "任務查詢器啟動行為、可見結果、記住的範圍、快捷鍵和結果標籤。",
       "settingsPageTaskRouterDesc": "選擇行內任務和檔案任務的建立位置、相對於父任務的放置方式，以及封存位置。",
@@ -2629,8 +2629,8 @@
       "taskCreatorToolbarPinned": "已固定",
       "taskCreatorToolbarPreview": "可見圖示",
       "taskCreatorToolbarReorder": "重新排序圖示",
-      "taskCreatorToolbarSection": "Task Creator 工具列",
-      "taskCreatorToolbarSectionDesc": "選擇 Task Creator 工具列顯示的欄位及其順序。此設定僅改變工具列外觀，不影響任務建立功能。",
+      "taskCreatorToolbarSection": "Task Creator 標籤",
+      "taskCreatorToolbarSectionDesc": "選擇 Task Creator 中顯示的標籤及其順序。此設定僅改變標籤外觀，不影響任務建立功能。",
       "taskCreatorToolbarToggleTitle": "切換工具欄圖示",
       "taskCreatorToolbarTooltipDesc_assignees": "負責的人員",
       "taskCreatorToolbarTooltipDesc_blockedBy": "此任務的前置條件",
@@ -3692,5 +3692,5 @@
       "toggleDescendantPreview": "切換子任務預覽"
     }
   },
-  "sourceVersion": "76a0732b68a1c179541f8231a6767363d849a3ffebce90bb61bd06dcac010d26"
+  "sourceVersion": "2a638aca67b4311a7178f49aeab560699632963ddeaf8fee134f4623b08c5706"
 }

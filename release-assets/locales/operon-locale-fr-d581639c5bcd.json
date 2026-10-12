@@ -2470,7 +2470,7 @@
       "settingsPageRelationshipsDesc": "Liens parents automatiques, héritage et numéros de série de projet pour les hiérarchies de tâches.",
       "settingsPageRemindersDesc": "Distribution des rappels, notifications système, son et rattrapage des rappels manqués.",
       "settingsPageStateIconsDesc": "Comportement au clic sur l’icône de tâche, icônes de remplacement et sources de couleur.",
-      "settingsPageTaskChipsDesc": "Boutons de la barre d'outils du créateur de tâches et puces de tâche compactes pour les tâches en ligne, les résultats de la vue de filtre, les cartes Kanban, la recherche de tâches et les Task Wikilink Overlays.",
+      "settingsPageTaskChipsDesc": "Puces de Task Creator et puces de tâche compactes pour les tâches en ligne, les résultats de la vue de filtre, les cartes Kanban, la recherche de tâches et les Task Wikilink Overlays.",
       "settingsPageTaskEditorDesc": "Lignes de sélecteurs de l'éditeur de tâche, ordre et visibilité.",
       "settingsPageTaskFinderDesc": "Comportement de lancement de la recherche de tâches, résultats visibles, portées mémorisées, raccourcis et puces de résultats.",
       "settingsPageTaskRouterDesc": "Choisissez où les tâches en ligne et les tâches-fichiers sont créées, placées par rapport à leurs parents et archivées.",
@@ -2629,8 +2629,8 @@
       "taskCreatorToolbarPinned": "Épinglée",
       "taskCreatorToolbarPreview": "Icônes visibles",
       "taskCreatorToolbarReorder": "Réorganiser les icônes",
-      "taskCreatorToolbarSection": "Barre de Task Creator",
-      "taskCreatorToolbarSectionDesc": "Choisissez les champs de la barre de Task Creator et leur ordre. Cela modifie son apparence, pas les fonctions de création de tâches.",
+      "taskCreatorToolbarSection": "Puces de Task Creator",
+      "taskCreatorToolbarSectionDesc": "Choisissez les puces affichées dans Task Creator et leur ordre. Cela modifie leur apparence, pas les fonctions de création de tâches.",
       "taskCreatorToolbarToggleTitle": "Basculer les icônes de la barre d'outils",
       "taskCreatorToolbarTooltipDesc_assignees": "Personnes responsables",
       "taskCreatorToolbarTooltipDesc_blockedBy": "Prérequis de cette tâche",
@@ -3692,5 +3692,5 @@
       "toggleDescendantPreview": "Basculer l'aperçu des descendants"
     }
   },
-  "sourceVersion": "7638a5b40827fd6d13483a9a2e4483d0fedcc7d2eb6d667b5641161054ca8542"
+  "sourceVersion": "2a9b8bf1c07ccf734d83c89d9894cd522ef178ad8355b3aa90f00597e2efa62a"
 }
