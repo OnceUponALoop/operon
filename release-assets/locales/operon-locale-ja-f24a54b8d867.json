@@ -1,8 +1,8 @@
 {
   "schemaVersion": 1,
   "locale": "ja",
-  "keyCount": 3647,
-  "keyFingerprint": "cec976ab14c1d1afad3b6fed0cd2b607962beb9a2fc67711e00fbf86a6588963",
+  "keyCount": 3648,
+  "keyFingerprint": "bc6d2b2e45ec2f99c7c76ed8d6e8fbbc6422bfa00c8d26c10b025a5ea491637e",
   "translations": {
     "buttons": {
       "addFileSubtask": "ファイルサブタスクを追加",
@@ -3183,6 +3183,7 @@
       "chooseInlineTaskTargetFile": "インラインタスクの対象ファイルを選択...",
       "chooseRepeatingFileTaskSeries": "繰り返しファイルタスクシリーズを選択...",
       "clearParentTask": "親タスクをクリア",
+      "clickToFinish": "クリックして完了",
       "colorHue": "色相",
       "colorNameAmber": "アンバー",
       "colorNameBlack": "黒",
@@ -3692,5 +3693,5 @@
       "toggleDescendantPreview": "子孫プレビューを切り替え"
     }
   },
-  "sourceVersion": "e5b801cf8b8e93436d5d63eca803682b1db5533cec745f63a2333cf668bf0744"
+  "sourceVersion": "d68fe57f1f57d51aec69c4a20dac3c846682c77ee7447bbc228d7b64e361429e"
 }

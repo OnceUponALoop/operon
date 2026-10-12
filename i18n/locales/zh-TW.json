@@ -2775,6 +2775,7 @@
 		"datetimeAm": "上午",
 		"datetimePm": "下午",
 		"finished": "已完成",
+		"clickToFinish": "點擊完成",
 		"finishedDatePlaceholder": "完成日期",
 		"cancelled": "已取消",
 		"cancelledDatePlaceholder": "取消日期",

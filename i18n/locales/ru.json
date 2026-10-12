@@ -2775,6 +2775,7 @@
 		"datetimeAm": "ДП",
 		"datetimePm": "ПП",
 		"finished": "Завершено",
+		"clickToFinish": "Нажмите, чтобы завершить",
 		"finishedDatePlaceholder": "Дата завершения",
 		"cancelled": "Отменено",
 		"cancelledDatePlaceholder": "Дата отмены",

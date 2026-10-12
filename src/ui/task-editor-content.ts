@@ -28,7 +28,7 @@ import { PinnedCache } from '../storage/pinned-cache';
 
 import { IndexedTask, ParsedTask, OperonField } from '../types/fields';
 import type { ProjectSerialDisplay } from '../core/project-serials';
-import { OperonSettings, type KeyMapping } from '../types/settings';
+import { getFallbackStateIcon, OperonSettings, type KeyMapping } from '../types/settings';
 import { generateOperonId, generateRepeatSeriesId, isValidOperonId } from '../core/id-generator';
 import {
 	resolveAutomationWorkflowStatus,
@@ -498,6 +498,8 @@ export class TaskEditorContent {
 	/** Auto-save debounce */
 	private saveTimer: WindowTimeoutHandle | null = null;
 	private autoSaveSuspended = false;
+	private quickFinishInProgress = false;
+	private refreshQuickFinishControl: (() => void) | null = null;
 	private disposed = false;
 	private destroyCloseSaveInFlight = false;
 	private deleteInProgress = false;
@@ -2245,6 +2247,7 @@ export class TaskEditorContent {
 	}
 
 	private refreshMobileCoreButtons(): void {
+		this.refreshQuickFinishControl?.();
 		for (const refresh of this.mobileCoreButtonRefreshers) {
 			refresh();
 		}
@@ -2492,6 +2495,7 @@ export class TaskEditorContent {
   this.additionalPropertyKeys = [];
   this.filePropertyGeneration++;
   this.disposed = true;
+  this.refreshQuickFinishControl = null;
 		this.checkboxSaveListenerController.abort();
 		window.removeEventListener('resize', this.mobileResizeHandler);
 		this.pinnedCacheUnsubscribe?.();
@@ -2775,6 +2779,7 @@ export class TaskEditorContent {
 				text: this.desktopSectionLabel('description'),
 			});
 			const descriptionActions = descriptionHeader.createDiv('operon-task-editor-workflow-actions operon-editor-description-actions');
+			this.renderQuickFinishButton(descriptionActions);
 			this.renderProjectSerialControl(descriptionActions);
 			this.renderCopyOperonIdButton(descriptionActions);
 			this.renderDescription(descriptionGroup, false);
@@ -3913,6 +3918,62 @@ export class TaskEditorContent {
 			button.remove();
 		};
 		schedule();
+	}
+
+	private renderQuickFinishButton(container: HTMLElement): void {
+		if (this.isNewTask) return;
+		const button = container.createEl('button', {
+			cls: 'operon-task-editor-workflow-action-button operon-editor-quick-finish',
+			attr: { type: 'button' },
+		});
+		this.refreshQuickFinishControl = () => {
+			const status = resolveWorkflowStatus(this.settings.pipelines, this.fieldValues['status']);
+			const done = this.isTaskFinished();
+			const label = t('taskEditor', done ? 'finished' : 'clickToFinish');
+			const configuredIcon = status?.definition.pipelineStatusIcon?.trim();
+			setIcon(button, configuredIcon && getIcon(configuredIcon) ? configuredIcon : getFallbackStateIcon(this.settings, done ? 'done' : this.checkbox) || 'square');
+			button.setAttribute('aria-disabled', String(done || this.quickFinishInProgress));
+			setAccessibleLabelWithoutTooltip(button, label);
+			this.bindTaskEditorTooltip(button, label);
+		};
+		button.addEventListener('click', () => { runAsyncAction('task editor quick finish failed', () => this.finishFromHeader()); });
+		this.refreshQuickFinishControl();
+	}
+
+	private isTaskFinished(): boolean {
+		return this.checkbox === 'done' || resolveWorkflowStatus(this.settings.pipelines, this.fieldValues['status'])?.checkbox === 'done';
+	}
+
+	private async finishFromHeader(): Promise<void> {
+		if (this.isNewTask || this.disposed || this.deleteInProgress || this.quickFinishInProgress || this.isTaskFinished()) return;
+		this.quickFinishInProgress = true;
+		this.refreshQuickFinishControl?.();
+		try {
+			if (this.persistInFlight) await this.persistInFlight;
+			if (this.disposed || this.deleteInProgress || this.isTaskFinished()) return;
+			const previous = { status: this.fieldValues['status'], dateCompleted: this.fieldValues['dateCompleted'], dateCancelled: this.fieldValues['dateCancelled'] };
+			const previousCheckbox = this.checkbox;
+			const wasEdited = this.hasBeenEdited;
+			if (!this.applyTerminalDateDraftChange('dateCompleted', localToday())) return;
+			this.refreshWorkflowPickerSurfaceValues();
+			this.markEdited();
+			const version = this.editVersion;
+			const outcome = await this.persistEditorState('explicit-save');
+			if (!outcome.ok && this.editVersion === version) {
+				for (const [key, value] of Object.entries(previous)) {
+					if (value === undefined) delete this.fieldValues[key]; else this.fieldValues[key] = value;
+				}
+				this.checkbox = previousCheckbox;
+				this.hasBeenEdited = wasEdited;
+				this.refreshWorkflowPickerSurfaceValues();
+				this.refreshSchedulingDraftControls();
+				this.refreshMobileCoreButtons();
+				this.refreshFileBodySaveButtonState();
+			}
+		} finally {
+			this.quickFinishInProgress = false;
+			this.refreshQuickFinishControl?.();
+		}
 	}
 
 	private renderCopyOperonIdButton(container: HTMLElement): void {
@@ -5817,7 +5878,11 @@ export class TaskEditorContent {
 		const duration = desktop ? row.createDiv('operon-editor-desktop-property-label operon-editor-session-duration') : null;
 		if (duration) {
 			this.appendCanonicalIcon(duration, 'duration', 'operon-editor-desktop-property-icon has-value');
-			duration.createSpan({ text: formatDurationHuman(session.durationSeconds) });
+			duration.createSpan({ cls: 'operon-editor-session-duration-text', text: formatDurationHuman(session.durationSeconds) });
+			duration.setAttribute('role', 'button');
+			duration.setAttribute('tabindex', '0');
+			setAccessibleLabelWithoutTooltip(duration, t('taskEditor', 'editSession'));
+			this.bindTaskEditorTooltip(duration, t('taskEditor', 'editSession'));
 		}
 		const body = row.createDiv('operon-editor-tracking-session-body');
 		const range = body.createDiv({
@@ -5832,7 +5897,7 @@ export class TaskEditorContent {
 
 		const actions = (desktop ? body : row).createDiv('operon-editor-tracking-session-actions');
 		const edit = this.createSessionActionButton(actions, 'pencil', t('taskEditor', 'editSession'));
-		edit.addEventListener('click', () => {
+		const openSession = () => {
 			new TrackerSessionEditModal(this.app, {
 				title: t('taskEditor', 'editSession'),
 				taskNote: this.buildTrackerSessionTaskNoteOptions(session.operonId),
@@ -5881,6 +5946,11 @@ export class TaskEditorContent {
 					this.refreshTrackingSessionsSection?.();
 				},
 			}).open();
+		};
+		edit.addEventListener('click', openSession);
+		duration?.addEventListener('click', openSession);
+		duration?.addEventListener('keydown', event => {
+			if (event.key === 'Enter' || event.key === ' ') { event.preventDefault(); openSession(); }
 		});
 
 		if (desktop) return;
@@ -6015,6 +6085,7 @@ export class TaskEditorContent {
 			if (result === false) return;
 			deleted = true;
 			this.disposed = true;
+			this.refreshQuickFinishControl = null;
 			this.checkboxSaveListenerController.abort();
 			this.requestEditorClose('force-after-delete');
 		} finally {
@@ -7149,6 +7220,7 @@ export class TaskEditorContent {
 
 	markEdited(): void {
 		if (this.disposed) return;
+		this.refreshQuickFinishControl?.();
 		this.hasBeenEdited = true;
 		this.editVersion += 1;
 		if ((this.desktopPropertyRows?.size ?? 0) > 0) this.refreshDesktopPropertyRows();

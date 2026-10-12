@@ -2775,6 +2775,7 @@
 		"datetimeAm": "午前",
 		"datetimePm": "午後",
 		"finished": "完了",
+		"clickToFinish": "クリックして完了",
 		"finishedDatePlaceholder": "完了日",
 		"cancelled": "キャンセル",
 		"cancelledDatePlaceholder": "キャンセル日",

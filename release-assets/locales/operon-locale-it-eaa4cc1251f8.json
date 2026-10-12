@@ -1,8 +1,8 @@
 {
   "schemaVersion": 1,
   "locale": "it",
-  "keyCount": 3647,
-  "keyFingerprint": "cec976ab14c1d1afad3b6fed0cd2b607962beb9a2fc67711e00fbf86a6588963",
+  "keyCount": 3648,
+  "keyFingerprint": "bc6d2b2e45ec2f99c7c76ed8d6e8fbbc6422bfa00c8d26c10b025a5ea491637e",
   "translations": {
     "buttons": {
       "addFileSubtask": "Aggiungi sotto-attività-file",
@@ -3183,6 +3183,7 @@
       "chooseInlineTaskTargetFile": "Scegli un file di destinazione per l'attività in linea...",
       "chooseRepeatingFileTaskSeries": "Scegli una serie di attività-file ricorrenti...",
       "clearParentTask": "Cancella attività principale",
+      "clickToFinish": "Fai clic per completare",
       "colorHue": "Tonalità",
       "colorNameAmber": "Ambra",
       "colorNameBlack": "Nero",
@@ -3692,5 +3693,5 @@
       "toggleDescendantPreview": "Alterna anteprima discendenti"
     }
   },
-  "sourceVersion": "e468e868911cfa7e63a377921fbdad929586210b9280acaea2d4e7eb407c1325"
+  "sourceVersion": "7bc6397eaed4fb026802e9694e1805a8f23d649097741f4b7333d0517b308817"
 }

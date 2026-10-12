@@ -1,8 +1,8 @@
 {
   "schemaVersion": 1,
   "locale": "tr",
-  "keyCount": 3647,
-  "keyFingerprint": "cec976ab14c1d1afad3b6fed0cd2b607962beb9a2fc67711e00fbf86a6588963",
+  "keyCount": 3648,
+  "keyFingerprint": "bc6d2b2e45ec2f99c7c76ed8d6e8fbbc6422bfa00c8d26c10b025a5ea491637e",
   "translations": {
     "buttons": {
       "addFileSubtask": "Dosya Tipi Alt Görev Ekle",
@@ -3183,6 +3183,7 @@
       "chooseInlineTaskTargetFile": "Satır içi görev hedef dosyası seç...",
       "chooseRepeatingFileTaskSeries": "Yinelenen dosya görevi serisi seç...",
       "clearParentTask": "Üst görevi temizle",
+      "clickToFinish": "Tamamlamak için tıkla",
       "colorHue": "Renk Tonu",
       "colorNameAmber": "Kehribar",
       "colorNameBlack": "Siyah",
@@ -3692,5 +3693,5 @@
       "toggleDescendantPreview": "Alt görev önizlemesini aç/kapat"
     }
   },
-  "sourceVersion": "071e583e79c9b2a375bf2b981467222414080a6dfc0211a4d049bc04b495fbc8"
+  "sourceVersion": "ba59b688c427b2276205533fd5a96742fe82b01c28e30589ae52acb2a5dc8b5f"
 }

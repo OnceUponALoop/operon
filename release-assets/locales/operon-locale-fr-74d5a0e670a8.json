@@ -1,8 +1,8 @@
 {
   "schemaVersion": 1,
   "locale": "fr",
-  "keyCount": 3647,
-  "keyFingerprint": "cec976ab14c1d1afad3b6fed0cd2b607962beb9a2fc67711e00fbf86a6588963",
+  "keyCount": 3648,
+  "keyFingerprint": "bc6d2b2e45ec2f99c7c76ed8d6e8fbbc6422bfa00c8d26c10b025a5ea491637e",
   "translations": {
     "buttons": {
       "addFileSubtask": "Ajouter une sous-tâche-fichier",
@@ -3183,6 +3183,7 @@
       "chooseInlineTaskTargetFile": "Choisir un fichier cible pour la tâche en ligne...",
       "chooseRepeatingFileTaskSeries": "Choisir une série de tâches-fichiers récurrentes...",
       "clearParentTask": "Effacer la tâche parente",
+      "clickToFinish": "Cliquer pour terminer",
       "colorHue": "Teinte",
       "colorNameAmber": "Ambre",
       "colorNameBlack": "Noir",
@@ -3692,5 +3693,5 @@
       "toggleDescendantPreview": "Basculer l'aperçu des descendants"
     }
   },
-  "sourceVersion": "2a9b8bf1c07ccf734d83c89d9894cd522ef178ad8355b3aa90f00597e2efa62a"
+  "sourceVersion": "1d1cfbbd93af7671dcb756b6cd8c40aa2015dbf5bb821f4c340f23203161651d"
 }

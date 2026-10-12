@@ -1,8 +1,8 @@
 {
   "schemaVersion": 1,
   "locale": "de",
-  "keyCount": 3647,
-  "keyFingerprint": "cec976ab14c1d1afad3b6fed0cd2b607962beb9a2fc67711e00fbf86a6588963",
+  "keyCount": 3648,
+  "keyFingerprint": "bc6d2b2e45ec2f99c7c76ed8d6e8fbbc6422bfa00c8d26c10b025a5ea491637e",
   "translations": {
     "buttons": {
       "addFileSubtask": "Datei-Unteraufgabe hinzufügen",
@@ -3183,6 +3183,7 @@
       "chooseInlineTaskTargetFile": "Zieldatei für Inline-Aufgabe auswählen…",
       "chooseRepeatingFileTaskSeries": "Serie wiederkehrender Datei-Aufgaben auswählen…",
       "clearParentTask": "Übergeordnete Aufgabe entfernen",
+      "clickToFinish": "Zum Abschließen klicken",
       "colorHue": "Farbton",
       "colorNameAmber": "Bernstein",
       "colorNameBlack": "Schwarz",
@@ -3692,5 +3693,5 @@
       "toggleDescendantPreview": "Vorschau untergeordneter Aufgaben umschalten"
     }
   },
-  "sourceVersion": "834bfd219827cf155226f0b04b7e742dfa3496f9aef6e718897a0e8f83fc4086"
+  "sourceVersion": "5321f808707ffca6244fd3a1245bbcf59c34f4e6e26da9ee5fcc8a34c9a4c7df"
 }

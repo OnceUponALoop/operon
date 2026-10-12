@@ -2775,6 +2775,7 @@
 		"datetimeAm": "AM",
 		"datetimePm": "PM",
 		"finished": "Tamamlandı",
+		"clickToFinish": "Tamamlamak için tıkla",
 		"finishedDatePlaceholder": "Tamamlanma Tarihi",
 		"cancelled": "İptal",
 		"cancelledDatePlaceholder": "İptal Tarihi",

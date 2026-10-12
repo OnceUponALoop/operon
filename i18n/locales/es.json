@@ -2775,6 +2775,7 @@
 		"datetimeAm": "AM",
 		"datetimePm": "PM",
 		"finished": "Finalizada",
+		"clickToFinish": "Haz clic para finalizar",
 		"finishedDatePlaceholder": "Fecha de finalización",
 		"cancelled": "Cancelada",
 		"cancelledDatePlaceholder": "Fecha de cancelación",

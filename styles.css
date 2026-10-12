@@ -11049,12 +11049,14 @@ body .operon-task-editor button.operon-editor-tracking-sessions-add:disabled {
 }
 
 .operon-task-editor:not(.operon-task-editor-mobile) .operon-editor-session-duration {
+	cursor: pointer;
 	padding-inline: 8px 0;
 }
 
-.operon-task-editor:not(.operon-task-editor-mobile) .operon-editor-tracking-session-row:hover .operon-editor-session-duration {
+.operon-task-editor:not(.operon-task-editor-mobile) .operon-editor-tracking-session-row:is(:hover, :focus-within) .operon-editor-session-duration {
 	font-weight: var(--font-bold, 700);
-	text-decoration: none;
+	text-decoration: underline;
+	text-underline-offset: 3px;
 }
 
 .operon-task-editor:not(.operon-task-editor-mobile) .operon-editor-tracking-session-body {

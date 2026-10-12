@@ -1,8 +1,8 @@
 {
   "schemaVersion": 1,
   "locale": "zh-TW",
-  "keyCount": 3647,
-  "keyFingerprint": "cec976ab14c1d1afad3b6fed0cd2b607962beb9a2fc67711e00fbf86a6588963",
+  "keyCount": 3648,
+  "keyFingerprint": "bc6d2b2e45ec2f99c7c76ed8d6e8fbbc6422bfa00c8d26c10b025a5ea491637e",
   "translations": {
     "buttons": {
       "addFileSubtask": "新增檔案子任務",
@@ -3183,6 +3183,7 @@
       "chooseInlineTaskTargetFile": "選擇行內任務目標檔案……",
       "chooseRepeatingFileTaskSeries": "選擇重複的檔案任務系列……",
       "clearParentTask": "清除父任務",
+      "clickToFinish": "點擊完成",
       "colorHue": "色相",
       "colorNameAmber": "琥珀色",
       "colorNameBlack": "黑色",
@@ -3692,5 +3693,5 @@
       "toggleDescendantPreview": "切換子任務預覽"
     }
   },
-  "sourceVersion": "2a638aca67b4311a7178f49aeab560699632963ddeaf8fee134f4623b08c5706"
+  "sourceVersion": "74f52fd7a3038b95125d2937978dce284b56439580556ad5aa73db6a29ed21ba"
 }

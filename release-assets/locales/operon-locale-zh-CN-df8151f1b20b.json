@@ -1,8 +1,8 @@
 {
   "schemaVersion": 1,
   "locale": "zh-CN",
-  "keyCount": 3647,
-  "keyFingerprint": "cec976ab14c1d1afad3b6fed0cd2b607962beb9a2fc67711e00fbf86a6588963",
+  "keyCount": 3648,
+  "keyFingerprint": "bc6d2b2e45ec2f99c7c76ed8d6e8fbbc6422bfa00c8d26c10b025a5ea491637e",
   "translations": {
     "buttons": {
       "addFileSubtask": "添加文件子任务",
@@ -3183,6 +3183,7 @@
       "chooseInlineTaskTargetFile": "选择行内任务目标文件……",
       "chooseRepeatingFileTaskSeries": "选择重复的文件任务系列……",
       "clearParentTask": "清除父任务",
+      "clickToFinish": "点击完成",
       "colorHue": "色相",
       "colorNameAmber": "琥珀色",
       "colorNameBlack": "黑色",
@@ -3692,5 +3693,5 @@
       "toggleDescendantPreview": "切换子任务预览"
     }
   },
-  "sourceVersion": "48f4a748a2897f80e33a6070c49489e904fe853cf0575e03ebf5701e9512b7d0"
+  "sourceVersion": "4f43688531ec02d45db2d248175fc775184d00ccc3c23f1ed1734368e229ef77"
 }
