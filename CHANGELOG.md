@@ -9,7 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### New
 
-- Added **Obsidian’s six highlight colors** across task views, with native color selection in Task Editor, Task Creator, and Markdown text popovers.
+- Added **Obsidian’s six highlight colors** across task views and Edit session descriptions, with native color selection in Task Editor, Task Creator, and Markdown text popovers.
 - Added **Vault Properties** to the desktop Task Editor and main and embedded Tables for both File and Inline Tasks, with editors for Text, List, Number, Checkbox, Date, and Date & time values.
 - Added **Inline Task templates** in Task Creator using the same template picker as File Tasks. Inline Tasks use supported template properties without copying the template body.
 - Added **Default Inline Task Template** in Inline Tasks settings, including None and minimal pipeline templates, for Task Creator, quick creation, and supported checkbox and selection conversions.
