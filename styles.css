@@ -15712,24 +15712,24 @@ body:not(.is-mobile) .mod-root .workspace-leaf-content[data-type="operon-filter-
 	height: var(--icon-s, 16px);
 }
 
-/* Reveal only the innermost hovered or keyboard-focused group's own controls. */
+/* Quiet inactive logic and footer actions; keep group management and selected logic visible. */
 @media (hover: hover) and (pointer: fine) {
-	body:not(.is-mobile) .operon-filter-group-card > :is(.operon-filter-group-header, .operon-filter-group-footer) button {
+	body:not(.is-mobile) .operon-filter-group-card > :is(.operon-filter-group-header, .operon-filter-group-footer) button:is(.operon-filter-modal-logic-button:not(.is-active), .operon-filter-modal-add-button) {
 		position: relative;
 	}
 
-	body:not(.is-mobile) .operon-filter-group-card:not(:is(:hover:not(:has(.operon-filter-group-card:hover)), :has(:focus-visible):not(:has(.operon-filter-group-card :focus-visible)))) > :is(.operon-filter-group-header, .operon-filter-group-footer) button {
+	body:not(.is-mobile) .operon-filter-group-card:not(:is(:hover:not(:has(.operon-filter-group-card:hover)), :has(:focus-visible):not(:has(.operon-filter-group-card :focus-visible)))) > :is(.operon-filter-group-header, .operon-filter-group-footer) button:is(.operon-filter-modal-logic-button:not(.is-active), .operon-filter-modal-add-button) {
 		color: transparent;
 		border-color: transparent;
 		background: transparent;
 		box-shadow: none;
 	}
 
-	body:not(.is-mobile) .operon-filter-group-card:not(:is(:hover:not(:has(.operon-filter-group-card:hover)), :has(:focus-visible):not(:has(.operon-filter-group-card :focus-visible)))) > :is(.operon-filter-group-header, .operon-filter-group-footer) button svg {
+	body:not(.is-mobile) .operon-filter-group-card:not(:is(:hover:not(:has(.operon-filter-group-card:hover)), :has(:focus-visible):not(:has(.operon-filter-group-card :focus-visible)))) > :is(.operon-filter-group-header, .operon-filter-group-footer) button:is(.operon-filter-modal-logic-button:not(.is-active), .operon-filter-modal-add-button) svg {
 		opacity: 0;
 	}
 
-	body:not(.is-mobile) .operon-filter-group-card:not(:is(:hover:not(:has(.operon-filter-group-card:hover)), :has(:focus-visible):not(:has(.operon-filter-group-card :focus-visible)))) > :is(.operon-filter-group-header, .operon-filter-group-footer) button::after {
+	body:not(.is-mobile) .operon-filter-group-card:not(:is(:hover:not(:has(.operon-filter-group-card:hover)), :has(:focus-visible):not(:has(.operon-filter-group-card :focus-visible)))) > :is(.operon-filter-group-header, .operon-filter-group-footer) button:is(.operon-filter-modal-logic-button:not(.is-active), .operon-filter-modal-add-button)::after {
 		content: "";
 		position: absolute;
 		inset-inline: 0;
@@ -15738,10 +15738,6 @@ body:not(.is-mobile) .mod-root .workspace-leaf-content[data-type="operon-filter-
 		border-radius: 2px;
 		background: var(--background-modifier-hover);
 		pointer-events: none;
-	}
-
-	body:not(.is-mobile) .operon-filter-group-card:not(:is(:hover:not(:has(.operon-filter-group-card:hover)), :has(:focus-visible):not(:has(.operon-filter-group-card :focus-visible)))) > :is(.operon-filter-group-header, .operon-filter-group-footer) button.operon-filter-modal-logic-button.is-active::after {
-		background: var(--interactive-accent);
 	}
 }
 
