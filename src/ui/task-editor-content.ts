@@ -67,7 +67,7 @@ import { getAppLocale } from '../core/obsidian-app';
 import { formatShortLocationCoordinate, parseLocationCoordinate } from '../core/location-coordinates';
 import { getLocationPlaceIndex } from '../core/location-source-resolver';
 import { TimeTracker, type TimeTrackerEvent } from '../systems/time-tracker';
-import { bindOperonHoverTooltip, cleanupOperonHoverTooltips } from './operon-hover-tooltip';
+import { bindOperonHoverTooltip, closeBoundOperonHoverTooltip, cleanupOperonHoverTooltips } from './operon-hover-tooltip';
 import { setAccessibleLabelWithoutTooltip } from './accessibility-label';
 import {
 	formatDurationHuman,
@@ -582,6 +582,8 @@ export class TaskEditorContent {
 	private mobileNoteWrapEl: HTMLElement | null = null;
 	private mobileNoteOpen = false;
 	readonly isPhone = Platform.isPhone;
+	readonly isTablet = Platform.isTablet;
+	readonly usesTouchDesktopLayout: boolean;
 	readonly usesMobileLayout: boolean;
 	private mobilePickerOpenDepth = 0;
 	private mobileCoreToolbarEl: HTMLElement | null = null;
@@ -648,6 +650,7 @@ export class TaskEditorContent {
 		this.indexer = indexer;
 		this.settings = settings;
 		this.usesMobileLayout = this.isPhone && settings.taskEditorUseMobileLayout === true;
+		this.usesTouchDesktopLayout = !this.usesMobileLayout && (this.isPhone || this.isTablet);
 		this.existingTask = existingTask;
 		this.isNewTask = !existingTask;
 		this.onSave = onSave;
@@ -985,8 +988,27 @@ export class TaskEditorContent {
 		this.mainPanelEl?.style.setProperty('--operon-task-editor-accent', color);
 	}
 
-	private bindTaskEditorTooltip(target: HTMLElement, content: string): void {
+	private readonly touchPointerHandler = (event: PointerEvent): void => {
+		if (!this.usesTouchDesktopLayout || !this.rootEl) return;
+		const mode = event.pointerType === 'mouse' ? 'mouse' : 'touch';
+		if (this.rootEl.dataset.editorInput === mode) return;
+		this.rootEl.dataset.editorInput = mode;
+		if (mode === 'touch') {
+			for (const target of [this.rootEl, ...Array.from(this.rootEl.querySelectorAll<HTMLElement>('*'))]) closeBoundOperonHoverTooltip(target);
+		}
+	};
+	private readonly touchKeyboardHandler = (event: KeyboardEvent): void => {
+		if (this.usesTouchDesktopLayout && this.rootEl && ['Tab', 'Enter', ' '].includes(event.key)) this.rootEl.dataset.editorInput = 'keyboard';
+	};
+	private bindEditorHoverTooltip(target: HTMLElement, options: Parameters<typeof bindOperonHoverTooltip>[1]): void {
 		bindOperonHoverTooltip(target, {
+			...options,
+			shouldOpen: () => (!this.usesTouchDesktopLayout || this.rootEl?.dataset.editorInput !== 'touch') && (options.shouldOpen?.() ?? true),
+		});
+	}
+
+	private bindTaskEditorTooltip(target: HTMLElement, content: string): void {
+		this.bindEditorHoverTooltip(target, {
 			content,
 			taskColor: () => this.getThemeColor(),
 		});
@@ -1025,7 +1047,7 @@ export class TaskEditorContent {
 
 	private bindTruncatedTextTooltip(target: HTMLElement | null): void {
 		if (!target || this.isPhone) return;
-		bindOperonHoverTooltip(target, {
+		this.bindEditorHoverTooltip(target, {
 			content: target.textContent ?? '',
 			taskColor: () => this.getThemeColor(),
 			shouldOpen: () => target.clientWidth > 0 && target.scrollWidth > target.clientWidth + 1,
@@ -2328,9 +2350,19 @@ export class TaskEditorContent {
 		container.addClass('operon-task-editor');
 		container.toggleClass('operon-task-editor-mobile', this.usesMobileLayout);
 		container.toggleClass('operon-task-editor-phone-desktop', this.isPhone && !this.usesMobileLayout);
+		container.toggleClass('operon-task-editor-touch-desktop', this.usesTouchDesktopLayout);
+		if (this.usesTouchDesktopLayout) container.dataset.editorInput = 'touch';
+		this.rootEl?.removeEventListener('pointerdown', this.touchPointerHandler, true);
+		this.rootEl?.removeEventListener('pointermove', this.touchPointerHandler, true);
+		this.rootEl?.removeEventListener('keydown', this.touchKeyboardHandler, true);
 		this.rootEl?.removeEventListener(TASK_EDITOR_MOBILE_PICKER_OPEN_EVENT, this.mobilePickerOpenHandler);
 		this.rootEl?.removeEventListener(TASK_EDITOR_MOBILE_PICKER_CLOSE_EVENT, this.mobilePickerCloseHandler);
 		this.rootEl = container;
+		if (this.usesTouchDesktopLayout) {
+			container.addEventListener('pointerdown', this.touchPointerHandler, true);
+			container.addEventListener('pointermove', this.touchPointerHandler, true);
+			container.addEventListener('keydown', this.touchKeyboardHandler, true);
+		}
 		container.addEventListener(TASK_EDITOR_MOBILE_PICKER_OPEN_EVENT, this.mobilePickerOpenHandler);
 		container.addEventListener(TASK_EDITOR_MOBILE_PICKER_CLOSE_EVENT, this.mobilePickerCloseHandler);
 		this.schedulingDraftRefreshers.clear();
@@ -2551,6 +2583,9 @@ export class TaskEditorContent {
 		this.clearMobileCoreToolbarState();
 		this.mainPanelEl = null;
 		this.shellEl = null;
+		this.rootEl?.removeEventListener('pointerdown', this.touchPointerHandler, true);
+		this.rootEl?.removeEventListener('pointermove', this.touchPointerHandler, true);
+		this.rootEl?.removeEventListener('keydown', this.touchKeyboardHandler, true);
 		this.rootEl?.removeEventListener(TASK_EDITOR_MOBILE_PICKER_OPEN_EVENT, this.mobilePickerOpenHandler);
 		this.rootEl?.removeEventListener(TASK_EDITOR_MOBILE_PICKER_CLOSE_EVENT, this.mobilePickerCloseHandler);
 		this.rootEl = null;
@@ -3492,7 +3527,7 @@ export class TaskEditorContent {
    if (this.additionalPropertyAdd) actions.insertBefore(action, this.additionalPropertyAdd);
    setIcon(action, entry.field.icon); setAccessibleLabelWithoutTooltip(action, name);
    action.disabled = !this.canEditFileProperty(entry);
-   bindOperonHoverTooltip(action, { content: name, taskColor: () => this.getThemeColor() });
+   this.bindEditorHoverTooltip(action, { content: name, taskColor: () => this.getThemeColor() });
    action.addEventListener('click', () => this.openFilePropertyPicker(name));
    const row = group.createDiv('operon-editor-desktop-property-row'); row.dataset.propertyKey = entry.field.key;
    row.toggleClass('is-list-property', entry.field.type === 'list');
@@ -3535,7 +3570,7 @@ export class TaskEditorContent {
   const icon = surface.row.querySelector<HTMLElement>('.operon-editor-desktop-property-icon');
   if (icon) { icon.empty(); setIcon(icon, automatic ? 'shield-alert' : valueIcon); }
   if (reason) bindPropertyReadOnlyWarning(surface.action, name, reason, () => this.getThemeColor());
-  else bindOperonHoverTooltip(surface.action, { content: name, taskColor: () => this.getThemeColor() });
+  else this.bindEditorHoverTooltip(surface.action, { content: name, taskColor: () => this.getThemeColor() });
   const labelName = label?.querySelector<HTMLElement>('.operon-editor-desktop-property-name') ?? null;
   if (label) {
    cleanupOperonHoverTooltips(label);
@@ -4771,7 +4806,7 @@ export class TaskEditorContent {
 				setAccessibleLabelWithoutTooltip(chip, display.ariaLabel);
 				chip.dataset.fieldKey = fieldKey;
 				chip.dataset.reminderIndex = String(index);
-				if (fieldKey === 'reminderRules') bindOperonHoverTooltip(chip, {
+				if (fieldKey === 'reminderRules') this.bindEditorHoverTooltip(chip, {
 					title: display.tooltipTitle,
 					content: display.tooltipContent,
 					taskColor: () => this.getThemeColor(),
@@ -5271,7 +5306,7 @@ export class TaskEditorContent {
 			const hasStart = !!(this.fieldValues['datetimeStart'] ?? '').trim();
 			button.classList.toggle('is-empty', !value);
 			button.disabled = key === 'datetimeEnd' && !hasStart;
-			bindOperonHoverTooltip(button, {
+			this.bindEditorHoverTooltip(button, {
 				content: key === 'datetimeEnd' && !hasStart
 					? t('taskEditor', 'datetimeEndRequiresStart')
 					: '',
@@ -5397,8 +5432,8 @@ export class TaskEditorContent {
 			const proposal = this.getEstimateReallocationProposal();
 			const tooltip = this.getEstimateReallocationTooltip();
 			button.disabled = !proposal;
-			bindOperonHoverTooltip(button, { content: tooltip, taskColor: () => this.getThemeColor() });
-			bindOperonHoverTooltip(actions, { content: tooltip, taskColor: () => this.getThemeColor() });
+			this.bindEditorHoverTooltip(button, { content: tooltip, taskColor: () => this.getThemeColor() });
+			this.bindEditorHoverTooltip(actions, { content: tooltip, taskColor: () => this.getThemeColor() });
 		};
 		button.addEventListener('click', () => {
 			void this.handleEstimateReallocationClick();
@@ -5597,7 +5632,7 @@ export class TaskEditorContent {
 				|| ((this.fieldValues['datetimeRepeatEnd'] ?? '').trim() !== (this.persistedFieldValues['datetimeRepeatEnd'] ?? '').trim())
 			);
 			skipButton.disabled = true;
-			bindOperonHoverTooltip(skipButton, {
+			this.bindEditorHoverTooltip(skipButton, {
 				content: t('taskEditor', 'repeatSkipUnavailable'),
 				taskColor: () => this.getThemeColor(),
 			});
@@ -5634,7 +5669,7 @@ export class TaskEditorContent {
 				&& (parsed.mode === 'schedule' || parsed.mode === 'count')
 			);
 			skipButton.disabled = !canManageFutureSkips;
-			bindOperonHoverTooltip(skipButton, {
+			this.bindEditorHoverTooltip(skipButton, {
 				content: parsed.mode === 'done'
 					? t('taskEditor', 'repeatSkipModeDoneHint')
 					: canManageFutureSkips
@@ -6802,7 +6837,7 @@ export class TaskEditorContent {
 		// If no operonId yet, keep the same surface but block interaction.
 		if (!currentTaskId) {
 			anchor.addClass('is-locked');
-			bindOperonHoverTooltip(anchor, {
+			this.bindEditorHoverTooltip(anchor, {
 				content: t('taskEditor', 'subtasksSaveFirst'),
 				taskColor: () => this.getThemeColor(),
 			});
@@ -6912,7 +6947,7 @@ export class TaskEditorContent {
 			parentSelectedWrap.replaceChildren();
 			parentSelectedWrap.classList.toggle('is-empty', !selectedParentId);
 			parentAnchor.classList.toggle('is-locked', !!selectedParentId);
-			bindOperonHoverTooltip(parentAnchor, {
+			this.bindEditorHoverTooltip(parentAnchor, {
 				content: selectedParentId ? t('taskEditor', 'parentTaskClearFirst') : '',
 				taskColor: () => this.getThemeColor(),
 			});

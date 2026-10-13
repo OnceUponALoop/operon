@@ -36633,3 +36633,208 @@ body:not(.is-mobile) .operon-task-creator:not(:has(.operon-task-creator-toolbar:
 body:not(.is-mobile) .operon-task-creator:not(:has(.operon-task-creator-toolbar:hover, .operon-task-creator-tool:focus-within)):not(.has-open-creator-picker):not(.has-open-creator-picker *) .operon-task-creator-tool::after {
 	opacity: 1;
 }
+
+/* Task Editor touch desktop layout: phones opting out of legacy mobile, and tablets. */
+.operon-task-editor-modal-container-touch-desktop {
+	top: var(--operon-task-editor-viewport-top, 0px);
+	height: var(--operon-task-editor-mobile-viewport-height, 100dvh);
+	box-sizing: border-box;
+	padding: max(8px, env(safe-area-inset-top)) max(8px, env(safe-area-inset-right)) max(8px, env(safe-area-inset-bottom)) max(8px, env(safe-area-inset-left));
+}
+
+.modal.operon-task-editor-modal-touch-desktop {
+	position: relative;
+	transform: none;
+	max-height: 100%;
+	height: min(80vh, 100%);
+}
+
+.modal.operon-task-editor-modal-touch-desktop.operon-task-editor-modal-phone-desktop {
+	height: 100%;
+}
+
+.operon-task-editor.operon-task-editor-touch-desktop {
+	--operon-task-editor-property-control-height: 44px;
+	--operon-task-editor-header-action-width: 44px;
+}
+
+.operon-task-editor-touch-desktop .operon-task-editor-main-panel {
+	container-name: operon-editor-touch;
+	container-type: inline-size;
+	min-width: 0;
+	overflow-y: auto;
+	overscroll-behavior: contain;
+}
+
+.operon-task-editor.operon-task-editor-touch-desktop .operon-editor-desktop-property-row {
+	grid-template-columns: clamp(112px, 30%, 168px) minmax(0, 1fr);
+	gap: 8px;
+}
+
+.operon-task-editor.operon-task-editor-touch-desktop :is(.operon-editor-desktop-group-header, .operon-editor-tracking-sessions-header) {
+	display: flex;
+	flex-wrap: wrap;
+	align-items: center;
+	gap: 8px;
+	min-width: 0;
+}
+
+.operon-task-editor.operon-task-editor-touch-desktop :is(.operon-editor-description-actions, .operon-task-editor-workflow-actions, .operon-editor-core-actions, .operon-editor-tracking-session-actions) {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 8px;
+	min-width: 0;
+	max-width: 100%;
+	opacity: 1;
+	pointer-events: auto;
+}
+
+body .operon-task-editor.operon-task-editor-touch-desktop :is(.operon-editor-desktop-group-header, .operon-editor-desktop-commands, .operon-editor-text-field-group, .operon-editor-tracking-sessions, .operon-task-editor-title-row, .operon-editor-time-summary) button,
+body .operon-task-editor.operon-task-editor-touch-desktop .operon-editor-desktop-property-value :is(button, input),
+body .operon-task-editor.operon-task-editor-touch-desktop :is(.operon-editor-session-duration, button.operon-editor-desktop-property-label) {
+	box-sizing: border-box;
+	min-width: 44px;
+	min-height: 44px;
+	height: auto;
+	max-width: 100%;
+	touch-action: manipulation;
+}
+
+body .operon-task-editor.operon-task-editor-touch-desktop :is(button.operon-editor-core-action-btn, button.operon-task-editor-workflow-action-button, button.operon-editor-file-property-add, button.operon-editor-tracking-session-action) {
+	flex: 0 0 44px;
+	width: 44px;
+	min-width: 44px;
+	min-height: 44px;
+	height: 44px;
+	opacity: 1;
+	pointer-events: auto;
+}
+
+body .operon-task-editor.operon-task-editor-touch-desktop :is(.operon-editor-desktop-property-value, .operon-editor-desktop-group-header, .operon-editor-tracking-sessions-header) button:is(.operon-editor-value-clear, .operon-editor-compact-selection-chip-remove, .operon-editor-picker-chip-remove, .operon-editor-file-property-add, .operon-editor-tracking-sessions-add) {
+	flex: 0 0 44px;
+	width: 44px;
+	min-width: 44px;
+	min-height: 44px;
+	height: 44px;
+	opacity: 1;
+	pointer-events: auto;
+}
+
+body .operon-task-editor.operon-task-editor-touch-desktop .operon-editor-desktop-property-value :is(.operon-editor-value-token, .operon-editor-compact-selection-chip, .operon-editor-picker-chip, .operon-editor-picker-button) {
+	height: auto;
+	min-height: 44px;
+	max-width: 100%;
+	white-space: normal;
+	overflow-wrap: anywhere;
+	border-color: var(--operon-task-editor-workflow-value-border);
+}
+
+body .operon-task-editor.operon-task-editor-touch-desktop .operon-editor-desktop-property-value :is(.operon-editor-value-token, .operon-editor-compact-selection-chip, .operon-editor-picker-chip) {
+	gap: 8px;
+	padding-inline-end: 0;
+}
+
+body .operon-task-editor.operon-task-editor-touch-desktop .operon-editor-desktop-property-value .operon-editor-value-token :is(button:not(.operon-editor-value-clear), input, .operon-editor-estimate-input-shell) {
+	height: auto;
+	min-height: 44px;
+	min-width: 0;
+	flex: 1 1 auto;
+}
+
+.operon-task-editor.operon-task-editor-touch-desktop :is(.operon-editor-desktop-property-name, .operon-inline-compact-chip-label, .operon-editor-picker-button-text, .operon-editor-tracking-session-range) {
+	white-space: normal;
+	overflow-wrap: anywhere;
+	min-width: 0;
+}
+
+.operon-task-editor.operon-task-editor-touch-desktop .operon-editor-tracking-session-body {
+	min-width: 0;
+	max-width: 100%;
+	flex-wrap: wrap;
+}
+
+body .operon-task-editor.operon-task-editor-touch-desktop .operon-editor-desktop-property-label {
+	height: auto;
+	min-height: 44px;
+}
+
+body .operon-task-editor-phone-desktop.operon-task-editor-touch-desktop :is(input, textarea, .operon-task-editor-compact-text-host) {
+	font-size: max(16px, var(--font-ui-medium, 16px));
+	max-width: 100%;
+	box-sizing: border-box;
+}
+
+.operon-task-editor.operon-task-editor-touch-desktop[data-editor-input="touch"] .operon-editor-desktop-property-row:not(:has(:focus-visible, .is-picker-open)) .operon-editor-desktop-property-name {
+	text-decoration: none;
+	font-weight: var(--font-normal, 400);
+}
+
+.operon-task-editor.operon-task-editor-touch-desktop[data-editor-input="touch"] .operon-editor-session-duration:not(:focus-visible) {
+	text-decoration: none;
+}
+
+.operon-task-editor-touch-picker {
+	overflow-y: auto;
+	overscroll-behavior: contain;
+}
+
+body .operon-task-editor-touch-picker :is(button, input, textarea, [role="option"]) {
+	box-sizing: border-box;
+	min-height: 44px;
+	font-size: max(16px, var(--font-ui-medium, 16px));
+}
+
+body .operon-task-editor-touch-picker button {
+	min-width: 44px;
+}
+
+body .operon-task-editor-touch-picker :is(button, [role="option"]) {
+	white-space: normal;
+	overflow-wrap: anywhere;
+}
+
+@container operon-editor-touch (max-width: 420px) {
+	.operon-task-editor.operon-task-editor-touch-desktop .operon-editor-desktop-property-row {
+		grid-template-columns: minmax(0, 1fr);
+		gap: 0;
+	}
+
+	.operon-task-editor.operon-task-editor-touch-desktop :is(.operon-editor-description-actions, .operon-task-editor-workflow-actions) {
+		flex-basis: 100%;
+		justify-content: flex-start;
+	}
+}
+
+/* Match the existing header/command specificity without affecting body-editor controls. */
+body .operon-task-editor.operon-task-editor-touch-desktop :is(.operon-editor-desktop-group-header, .operon-editor-desktop-commands) button.operon-editor-core-action-btn {
+	flex: 0 0 44px;
+	width: 44px;
+	min-width: 44px;
+	height: 44px;
+	min-height: 44px;
+}
+
+body .operon-task-editor.operon-task-editor-touch-desktop .operon-editor-desktop-property-value .operon-editor-value-token button:not(.operon-editor-value-clear) {
+	min-width: 44px;
+}
+
+/* Dense seven-column pickers keep flexible widths, as approved for narrow phones. */
+body .operon-task-editor-touch-picker :is(.operon-day-picker-grid, .operon-repeat-picker-day-grid, .operon-repeat-skip-picker-grid, .operon-icon-picker-grid, .operon-color-picker-grid, .operon-color-picker-tone-strip) button {
+	min-width: 0;
+	width: 100%;
+	min-height: 44px;
+	padding-inline: 0;
+}
+
+.operon-task-editor-touch-picker :is(.operon-floating-item, .operon-icon-picker-grid) {
+	grid-auto-rows: minmax(44px, auto);
+}
+
+.operon-task-editor-touch-picker .operon-floating-item {
+	min-height: 44px;
+}
+
+.operon-task-editor-touch-picker .operon-floating-actions {
+	flex-wrap: wrap;
+	gap: 8px;
+}
