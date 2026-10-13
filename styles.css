@@ -1869,7 +1869,7 @@ button.operon-text-field-popover-close:focus-visible {
 	.media-embed,
 	.markdown-embed,
 	.cm-embed-block,
-	img,
+	img:not(.cm-highlight-color-widget > .highlight-swatch),
 	video,
 	audio
 ) {
