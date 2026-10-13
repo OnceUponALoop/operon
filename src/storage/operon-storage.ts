@@ -774,10 +774,8 @@ export class OperonStorage {
 				tablePresetFileBindings: this.settings.tablePresetFileBindings.map(binding => ({ ...binding })),
 				tablePresetFileInitialized: this.settings.tablePresetFileInitialized,
 				tableDefaultPresetId: this.settings.tableDefaultPresetId,
-				presetFavorites: clonePresetFavorites(this.settings.presetFavorites),
 			};
 			const presetsById = new Map(availablePresets.map(preset => [preset.id, preset]));
-			const validIds = new Set(authority.presetIds);
 			this.settings.tablePresets = authority.presetIds.flatMap(id => {
 				const preset = presetsById.get(id);
 				return preset ? [cloneTablePreset(preset)] : [];
@@ -786,17 +784,14 @@ export class OperonStorage {
 			this.settings.tablePresetFileBindings = authority.fileBindings.map(binding => ({ ...binding }));
 			this.settings.tablePresetFileInitialized = authority.initialized;
 			this.settings.tableDefaultPresetId = authority.tableDefaultPresetId;
-			this.settings.presetFavorites = {
-				...clonePresetFavorites(this.settings.presetFavorites),
-				table: this.settings.presetFavorites.table.filter(id => validIds.has(id)),
-			};
+			// Discovery is not a user deletion. Favorites survive unavailable files;
+			// explicit preset deletion already removes its own favorite.
 
 			try {
 				await this.dataPackageStore.updateDataPackageCas(currentPackage => buildTablePresetAuthorityDataPackage(
 					currentPackage,
 					authority,
 					this.settings,
-					this.settings.presetFavorites,
 				));
 			} catch (error) {
 				this.settings.tablePresets = previous.tablePresets.map(cloneTablePreset);
@@ -804,7 +799,6 @@ export class OperonStorage {
 				this.settings.tablePresetFileBindings = previous.tablePresetFileBindings.map(binding => ({ ...binding }));
 				this.settings.tablePresetFileInitialized = previous.tablePresetFileInitialized;
 				this.settings.tableDefaultPresetId = previous.tableDefaultPresetId;
-				this.settings.presetFavorites = clonePresetFavorites(previous.presetFavorites);
 				throw error;
 			}
 			this.tablePresetRecovery = {

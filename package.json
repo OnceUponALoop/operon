@@ -157,7 +157,7 @@
     "table:column-color-lock:test": "node scripts/run-table-column-color-lock-tests.mjs",
     "table:file-property-color:test": "node scripts/run-table-file-property-color-tests.mjs",
     "table:preset-color-mode:test": "node scripts/run-table-preset-color-mode-tests.mjs",
-    "table:manifest-recovery:test": "node scripts/run-table-preset-manifest-recovery-tests.mjs",
+    "table:manifest-recovery:test": "node scripts/run-table-preset-manifest-recovery-tests.mjs && node scripts/table-preset-favorites-preservation.test.mjs",
     "table:file-v3-migration:test": "node scripts/run-table-file-v3-migration-tests.mjs",
     "table:default-folder:test": "node scripts/run-table-default-folder-tests.mjs",
     "table:embed-width:test": "node scripts/run-table-embed-width-tests.mjs",

@@ -15607,6 +15607,7 @@ export default class OperonPlugin extends Plugin {
 			currentPresetIds: this.settings.tablePresetOrderIds,
 			currentDefaultPresetId: this.settings.tableDefaultPresetId,
 			currentInitialized: this.settings.tablePresetFileInitialized,
+			currentFileBindings: this.settings.tablePresetFileBindings,
 			availableFiles,
 		});
 		const presetsById = new Map(discovery.files.flatMap(file =>
@@ -15626,6 +15627,8 @@ export default class OperonPlugin extends Plugin {
 			this.storage.markTablePresetDegraded('table-file-invalid', 'isolated-invalid-table-file');
 		} else if (snapshot.conflicts.length > 0) {
 			this.storage.markTablePresetDegraded('table-file-duplicate', 'runtime-table-file-conflict');
+		} else if ([...snapshot.entries.values()].some(entry => entry.status === 'missing')) {
+			this.storage.markTablePresetDegraded('table-file-missing', 'runtime-missing-table-file');
 		}
 	}
 

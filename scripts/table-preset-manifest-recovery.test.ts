@@ -189,7 +189,7 @@ test('disposable vault discovery adopts valid external files and isolates invali
 	}
 });
 
-test('canonical package cleanup removes embedded Table residue and stale favorites idempotently', () => {
+test('canonical package cleanup removes embedded Table residue without changing favorites', () => {
 	const source = buildOperonDataPackageFromSettings(DEFAULT_SETTINGS);
 	const rootSettings = source.settings as unknown as Record<string, unknown>;
 	rootSettings.tablePresets = [{ id: 'settings-only' }];
@@ -209,22 +209,16 @@ test('canonical package cleanup removes embedded Table residue and stale favorit
 		currentInitialized: true,
 		availableFiles: [{ id: 'table-valid', path: 'Tables/Valid.table' }],
 	});
-	const favorites = {
-		table: ['table-valid'],
-		calendar: ['calendar-one'],
-		kanban: ['kanban-one'],
-		filter: ['filter-one'],
-	};
-	const candidate = buildTablePresetAuthorityDataPackage(source, authority, DEFAULT_SETTINGS, favorites);
+	const candidate = buildTablePresetAuthorityDataPackage(source, authority, DEFAULT_SETTINGS);
 	for (const key of ['tablePresets', 'tablePresetOrderIds', 'tablePresetFileBindings', 'tableDefaultPresetId']) {
 		assert.equal(Object.prototype.hasOwnProperty.call(candidate.settings, key), false, `${key} must be removed from root Settings`);
 	}
 	assert.deepEqual(candidate.views.tablePresets.presetIds, ['table-valid']);
 	assert.deepEqual(candidate.views.tablePresets.fileBindings, [{ id: 'table-valid', path: 'Tables/Valid.table' }]);
 	assert.equal(candidate.views.tablePresets.tableDefaultPresetId, 'table-valid');
-	assert.deepEqual(candidate.ui.presetFavorites, { version: 1, ...favorites });
+	assert.deepEqual(candidate.ui.presetFavorites, source.ui.presetFavorites);
 	assert.deepEqual(
-		buildTablePresetAuthorityDataPackage(candidate, authority, DEFAULT_SETTINGS, favorites),
+		buildTablePresetAuthorityDataPackage(candidate, authority, DEFAULT_SETTINGS),
 		candidate,
 		'second startup must produce the same canonical package',
 	);
