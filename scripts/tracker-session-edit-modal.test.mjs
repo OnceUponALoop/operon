@@ -70,3 +70,9 @@ test('session Save and Delete lifecycle remains independent from note persistenc
 	assert.match(modalSource, /if \(result === false\) \{[\s\S]*?this\.resetModalAction\(\);/u);
 	assert.match(modalSource, /noteButton\.disabled = disabled;/u);
 });
+
+test('session context uses shared read-only Markdown without changing metadata', () => {
+	assert.match(modalSource, /renderCompactTaskMarkdown\(titleEl, \{\s*value: this\.options\.contextTitle,\s*mode: 'visual-only',/u);
+	assert.match(modalSource, /contextTitle: options\.taskLabel/u);
+	assert.match(modalSource, /text: meta,/u);
+});
