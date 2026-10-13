@@ -12,6 +12,7 @@ import { parseTaskLine } from './parser';
 import { buildTaskLine } from './serializer';
 import { resolveSubtaskInitialFieldsFromParentValues } from './subtask-inheritance';
 import {
+	UnsafeMarkdownHeadingInsertionError,
 	insertInlineTaskUnderFirstHeadingKeyword,
 	insertInlineTaskUnderHeading,
 } from './markdown-heading-insertion';
@@ -396,7 +397,13 @@ export function prepareCanonicalTaskCreation(
 	const preparedTasks = validated.items
 		.map(item => preparedByKey.get(item.itemKey))
 		.filter((task): task is MutablePreparedTask => !!task);
-	const sourceGroups = buildSourceGroups(preparedTasks, validated.sourceSnapshots, blockers);
+	let sourceGroups: ReturnType<typeof buildSourceGroups>;
+	try {
+		sourceGroups = buildSourceGroups(preparedTasks, validated.sourceSnapshots, blockers);
+	} catch (error) {
+		if (!(error instanceof UnsafeMarkdownHeadingInsertionError)) throw error;
+		return { ok: false, blockers: [{ code: 'invalid-insertion-line', message: error.message }] };
+	}
 	if (!sourceGroups || blockers.length > 0) return { ok: false, blockers };
 
 	const tasks = preparedTasks

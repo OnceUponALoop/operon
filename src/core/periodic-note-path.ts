@@ -88,7 +88,7 @@ export function formatPeriodicNoteTitleFromDateKey(
 	if (!isValidPeriodicNoteFormat(kind, normalizedFormat)) return null;
 	const title = parsed.format(normalizedFormat);
 	if (title.toLowerCase().endsWith('.md')) return null;
-	return isSafeVaultRelativePath(title) ? title : null;
+	return isSafeVaultRelativeMarkdownPath(`${title}.md`) ? title : null;
 }
 
 export function resolvePeriodicNotePathFromDateKey(
@@ -120,7 +120,7 @@ export function resolvePeriodicNoteDateKeyFromPath(
 			? pathWithoutExtension.slice(folder.length + 1)
 			: null
 		: pathWithoutExtension;
-	if (!formattedTitle || !isSafeVaultRelativePath(formattedTitle)) return null;
+	if (!formattedTitle || !isSafeVaultRelativeMarkdownPath(`${formattedTitle}.md`)) return null;
 
 	const parseMomentDate = moment as unknown as MomentParser;
 	const parsed = parseMomentDate(formattedTitle, normalizePeriodicNoteFormat(kind, config.format), true);

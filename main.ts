@@ -12681,7 +12681,7 @@ export default class OperonPlugin extends Plugin {
 				destinationResulting = preparedNoteContent;
 			}
 			if (this.wouldCreatePeriodicParentCycle(indexed.operonId, parentAfter)) return { ok: false, code: 'invalid-request', reason: 'Periodic realignment would create a parent cycle.' };
-			templatePath = preparedNote.status === 'prepared' ? preparedNote.plan.templatePath : resolution.config.template.trim() || null;
+			templatePath = preparedNote.status === 'prepared' ? preparedNote.plan.templatePath : null;
 			if (templatePath) {
 				const template = this.app.vault.getAbstractFileByPath(templatePath);
 				if (!(template instanceof TFile) || template.extension !== 'md') return { ok: false, code: 'template-processing-required', reason: 'The periodic template is unavailable.' };
@@ -13006,7 +13006,7 @@ export default class OperonPlugin extends Plugin {
 			sealedIds ? new Set(sealedIds.keys()) : undefined,
 		);
 		if (!preparation.ok) return { ok: false, code: preparation.code, reason: preparation.reason };
-		const templatePath = preparedNote.status === 'prepared' ? preparedNote.plan.templatePath : config.template.trim() || null;
+		const templatePath = preparedNote.status === 'prepared' ? preparedNote.plan.templatePath : null;
 		let templateDigest = sha256HexV1('');
 		let templateRevision: string | undefined;
 		if (templatePath) {
@@ -21735,9 +21735,11 @@ export default class OperonPlugin extends Plugin {
 				this.deletePeriodicNoteIfContentMatches(path, expectedContent)
 			),
 			loadTemplate: async path => {
-				const file = this.app.vault.getAbstractFileByPath(path);
+				const file = this.app.vault.getAbstractFileByPath(path)
+					?? this.app.metadataCache.getFirstLinkpathDest(path, '');
 				if (!(file instanceof TFile) || file.extension.toLowerCase() !== 'md') return null;
 				return {
+					path: file.path,
 					content: await this.app.vault.cachedRead(file),
 					revision: this.buildPeriodicNoteTemplateRevision(file),
 				};

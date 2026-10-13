@@ -138,3 +138,9 @@ test('Daily and Weekly commands gate Operon management before using the shared p
 	assert.match(handler, /if \(!resolved\.noticeShown\)/);
 	assert.match(handler, /this\.app\.workspace\.getLeaf\(false\)\.openFile\(resolved\.file\)/);
 });
+
+
+test('Runtime periodic preparation pins templates only for new notes', () => {
+	const selections = mainSource.match(/templatePath = preparedNote\.status === 'prepared' \? preparedNote\.plan\.templatePath : null;/g);
+	assert.equal(selections?.length, 2, 'create and realignment share the existing-note short circuit');
+});

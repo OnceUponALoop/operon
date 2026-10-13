@@ -4,7 +4,6 @@ import {
 	normalizePeriodicNoteFormat,
 	type PeriodicNoteKind,
 } from './periodic-note-path';
-import { isSafeVaultRelativePath } from './vault-path-safety';
 
 export type PeriodicNoteConfigSource = 'operon' | 'core-daily-notes';
 
@@ -66,14 +65,13 @@ export function resolveHistoricalPeriodicNoteConfig(
 		...config,
 		enabled: true,
 		createAsOperonTask: true,
-	}, false);
+	});
 }
 
 function normalizeEffectiveConfig(
 	kind: PeriodicNoteKind,
 	source: PeriodicNoteConfigSource,
 	config: PeriodicNoteManagedConfig,
-	validateTemplate = true,
 ): PeriodicNoteConfigResolution {
 	const folder = normalizePeriodicNoteFolder(config.folder ?? '');
 	const format = normalizePeriodicNoteFormat(kind, config.format);
@@ -81,9 +79,7 @@ function normalizeEffectiveConfig(
 	if (folder === null || !formatPeriodicNoteTitleFromDateKey(kind, '2026-01-05', format)) {
 		return { available: false, reason: 'invalid-config', source };
 	}
-	if (validateTemplate && template && (!template.toLowerCase().endsWith('.md') || !isSafeVaultRelativePath(template))) {
-		return { available: false, reason: 'invalid-config', source };
-	}
+	// Template validation belongs to new-note preparation; existing notes do not use it.
 	return {
 		available: true,
 		config: {

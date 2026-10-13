@@ -523,24 +523,29 @@ async function literalTemplaterClosingTextStaysDeterministic(): Promise<void> {
 }
 
 async function templaterUsesFinalPathAndSucceeds(): Promise<void> {
-	const ports = new FakePorts();
-	ports.templates.set('Templates/Daily.md', { content: '# <% tp.file.title %>', revision: 'template-r2' });
-	ports.templaterOverride = async input => {
-		assert.equal(input.path, 'Journal/2026-08-17.md');
-		assert.equal(input.now, '2026-08-17T12:34:56+02:00');
-		ports.files.set(input.path, { kind: 'file', content: '# 2026-08-17' });
-		return { ok: true, operationOwnedContent: '# 2026-08-17' };
-	};
-	const result = await new PeriodicNoteService(ports).getOrCreate({
-		kind: 'daily',
-		dateKey: '2026-08-17',
-		config: config({ template: 'Templates/Daily.md' }),
-	});
+	for (const template of ['Templates/Daily.md', 'Daily']) {
+		const ports = new FakePorts();
+		const snapshot = { path: 'Templates/Daily.md', content: '# <% tp.file.title %>', revision: 'template-r2' };
+		ports.templates.set('Templates/Daily.md', snapshot);
+		ports.templates.set('Daily.md', snapshot);
+		ports.templaterOverride = async input => {
+			assert.equal(input.templatePath, 'Templates/Daily.md');
+			assert.equal(input.path, 'Journal/2026-08-17.md');
+			assert.equal(input.now, '2026-08-17T12:34:56+02:00');
+			ports.files.set(input.path, { kind: 'file', content: '# 2026-08-17' });
+			return { ok: true, operationOwnedContent: '# 2026-08-17' };
+		};
+		const result = await new PeriodicNoteService(ports).getOrCreate({
+			kind: 'daily',
+			dateKey: '2026-08-17',
+			config: config({ template }),
+		});
 
-	assert.equal(result.ok && result.status, 'created');
-	assert.equal(result.ok && result.status === 'created' && result.operationOwnedContent, '# 2026-08-17');
-	assert.equal(ports.templaterCalls, 1);
-	assert.equal(ports.deleteCalls, 0);
+		assert.equal(result.ok && result.status, 'created');
+		assert.equal(result.ok && result.status === 'created' && result.operationOwnedContent, '# 2026-08-17');
+		assert.equal(ports.templaterCalls, 1);
+		assert.equal(ports.deleteCalls, 0);
+	}
 }
 
 async function templaterWithoutOwnedFinalContentPreservesFileOnCleanRegistrationFailure(): Promise<void> {
@@ -2235,7 +2240,59 @@ async function writeTextSafelyRecoversAcknowledgementLossWithoutDiscardingVerifi
 	assert.deepEqual(backupEntries(restoreFailure.files, restoreFailure.targetPath).map(([, bytes]) => bytes), [priorBytes], 'a failed restoration retains exact prior backup evidence');
 }
 
+async function templateReferencesAndExistingNotes(): Promise<void> {
+	for (const kind of ['daily', 'weekly'] as const) {
+		for (const template of ['Templates/Daily', 'Templates/Daily.md', 'Daily']) {
+			const ports = new FakePorts();
+			const snapshot = { path: 'Templates/Daily.md', content: '# {{title}}', revision: 'r1' };
+			ports.templates.set('Templates/Daily.md', snapshot);
+			ports.templates.set('Daily.md', snapshot);
+			const service = new PeriodicNoteService(ports);
+			const request = { kind, dateKey: '2026-08-17', config: config({ kind, template }) };
+			const prepared = await service.prepare(request);
+			assert.equal(prepared.status, 'prepared');
+			if (prepared.status !== 'prepared') throw new Error('Expected prepared note');
+			assert.equal(prepared.plan.templatePath, 'Templates/Daily.md');
+			assert.equal((await service.commit(prepared.plan)).ok, true);
+			assert.equal(ports.createCalls, 1);
+			const reads = ports.templateCalls;
+			assert.equal((await service.getOrCreate(request)).ok, true);
+			assert.equal(ports.createCalls, 1);
+			assert.equal(ports.templateCalls, reads);
+		}
+		for (const template of ['../Templates/Daily', '/Templates/Daily.md', 'C:/Daily', 'Templates//Daily', 'Templates\\Daily']) {
+			const ports = new FakePorts();
+			const service = new PeriodicNoteService(ports);
+			const request = { kind, dateKey: '2026-08-17', config: config({ kind, template }) };
+			const failed = await service.getOrCreate(request);
+			assert.equal(failed.ok, false);
+			if (!failed.ok) assert.equal(failed.error.code, 'invalid-target');
+			assert.equal(ports.templateCalls, 0);
+			assert.equal(ports.ensureCalls + ports.createCalls, 0);
+			ports.files.set('Journal/2026-08-17.md', { kind: 'file', content: 'original' });
+			assert.equal((await service.getOrCreate(request)).ok, true);
+			assert.equal(ports.templateCalls, 0);
+			assert.equal(fileContent(ports, 'Journal/2026-08-17.md'), 'original');
+		}
+	}
+	const changed = new FakePorts();
+	changed.templates.set('Templates/Daily.md', { path: 'Templates/Daily.md', content: 'original', revision: 'same' });
+	const service = new PeriodicNoteService(changed);
+	const prepared = await service.prepare({ kind: 'daily', dateKey: '2026-08-17', config: config({ template: 'Templates/Daily' }) });
+	assert.equal(prepared.status, 'prepared');
+	if (prepared.status !== 'prepared') throw new Error('Expected prepared note');
+	changed.templates.set('Templates/Daily.md', { path: 'Other/Daily.md', content: 'different', revision: 'same' });
+	assert.equal((await service.commit(prepared.plan)).ok, false, 'same revision at a different resolved template path is stale');
+	assert.equal(changed.ensureCalls + changed.createCalls, 0);
+	const ports = new FakePorts();
+	ports.templates.set('Daily.md', { path: '../outside.md', content: 'bad' });
+	const result = await new PeriodicNoteService(ports).getOrCreate({ kind: 'daily', dateKey: '2026-08-17', config: config({ template: 'Daily' }) });
+	assert.equal(result.ok, false);
+	assert.equal(ports.ensureCalls + ports.createCalls, 0);
+}
+
 async function run(): Promise<void> {
+	await templateReferencesAndExistingNotes();
 	await existingFileShortCircuitsEveryPreparationPort();
 	await deterministicLanePreparesInMemoryBeforeWriting();
 	await createResultOwnsRollbackEvidenceAcrossRegistrationInterleaving();
