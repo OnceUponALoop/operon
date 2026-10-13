@@ -1577,15 +1577,15 @@ export class OperonSettingsTab extends PluginSettingTab {
 	private buildTaskCaptureSearchSections(tabId: string, entries: OperonSettingsSearchEntry[]): SettingDefinitionItem[] {
 		if (tabId === 'tasksInlineTasks') {
 			return this.buildTaskSettingsGroups([
-				['defaultInlineTaskTemplate', ['defaultInlineTaskTemplateId', 'inlineTaskUseLastTemplateAsDefault'], (el, key) => this.renderInlineCreationDefaultSettings(el, key), 'DOCS-020 Task Creator'],
+				['defaultInlineTaskTemplate', ['defaultInlineTaskTemplateId', 'inlineTaskUseLastTemplateAsDefault'], (el, key) => this.renderInlineCreationDefaultSettings(el, key), ['DOCS-150 Using inline task templates', 'DOCS-024 Task templates']],
 				['dailyNoteInlineTaskDefaults', ['inlineTaskDailyNoteAddStartDate', 'inlineTaskDailyNoteAddScheduledDate'], (el, key) => this.renderInlineDailyNoteDefaultsSettings(el, key), 'DOCS-050 Daily Notes workflows'],
-				['checkboxConversion', ['inlineTaskShowTasksEmojiConvertIcon', 'inlineTaskShowPlainCheckboxConvertIcon', 'inlineTaskOpenCreatorBeforeConversion'], (el, key) => this.renderInlineConversionSettings(el, key), 'DOCS-049 Obsidian Tasks migration'],
-				['tasksBulkTitle', ['tasksEmojiBulkConversion'], el => this.renderTasksBulkConversion(el)],
+				['checkboxConversion', ['inlineTaskShowTasksEmojiConvertIcon', 'inlineTaskShowPlainCheckboxConvertIcon', 'inlineTaskOpenCreatorBeforeConversion'], (el, key) => this.renderInlineConversionSettings(el, key), ['DOCS-049 Obsidian Tasks migration', 'DOCS-020 Task Creator']],
+				['tasksBulkTitle', ['tasksEmojiBulkConversion'], el => this.renderTasksBulkConversion(el), ['DOCS-149 Tasks bulk conversion', 'DOCS-049 Obsidian Tasks migration']],
 			], entries, t('settings', 'subtabInlineTasks'), 'DOCS-011 Inline tasks');
 		}
 		if (tabId !== 'tasksFileTasks') return [];
 		return this.buildTaskSettingsGroups([
-			['newFileTaskCreationDefaults', ['taskCreatorDefaultToFileTask', 'taskCreatorDefaultFileTemplateId', 'fileTaskUseLastTemplateAsDefault'], (el, key) => this.renderFileCreationDefaultsSection(el, key), 'DOCS-020 Task Creator'],
+			['newFileTaskCreationDefaults', ['taskCreatorDefaultToFileTask', 'taskCreatorDefaultFileTemplateId', 'fileTaskUseLastTemplateAsDefault'], (el, key) => this.renderFileCreationDefaultsSection(el, key), ['DOCS-024 Task templates', 'DOCS-020 Task Creator']],
 			['fileTaskTemplates', ['fileTaskTemplateFolder'], el => this.renderFileTemplatesSection(el), 'DOCS-024 Task templates'],
 			['fileTaskDailyNotes', ['manageDailyNotesWithOperon', 'dailyNoteFormat', 'dailyNoteTemplate', 'dailyNoteFolder', 'createDailyNotesAsOperonTask'], (el, key) => this.renderFileDailyNotesSettings(el, key), ['DOCS-050 Daily Notes workflows', 'DOCS-137 Daily and Weekly Notes']],
 			['fileTaskWeeklyNotes', ['manageWeeklyNotesWithOperon', 'weeklyNoteFormat', 'weeklyNoteTemplate', 'weeklyNoteFolder', 'createWeeklyNotesAsOperonTask'], (el, key) => this.renderFileWeeklyNotesSettings(el, key), 'DOCS-137 Daily and Weekly Notes'],
@@ -2083,6 +2083,7 @@ export class OperonSettingsTab extends PluginSettingTab {
 			}],
 		], entries, t('settings', 'subtabTaskEditor'), 'DOCS-021 Task Editor');
 		groups.push({ type: 'group', heading: t('settings', 'taskEditorSections'), cls: 'operon-task-editor-sections-settings',
+			extraButtons: [this.buildDeclarativeSettingsDocsButton(t('settings', 'taskEditorSections'), 'DOCS-021 Task Editor', 'operon-native-settings-declarative-docs-action--inline-heading')],
 			items: normalizeTaskEditorSections(this.settings.taskEditorSections).map(section => ({
 				name: section.name || taskEditorSectionDefaultLabel(section.id),
 				aliases: [taskEditorSectionDefaultLabel(section.id), t('settings', 'taskEditorSections')],
@@ -4641,7 +4642,8 @@ export class OperonSettingsTab extends PluginSettingTab {
 	private renderInterfaceTaskEditorTab(containerEl: HTMLElement): void {
 		this.renderBoundToggleSetting(containerEl, t('settings', 'taskEditorShowLineNumbers'), t('settings', 'taskEditorShowLineNumbersDesc'), 'taskEditorShowLineNumbers');
 		this.renderBoundToggleSetting(containerEl, t('settings', 'taskEditorHighlightActiveLine'), t('settings', 'taskEditorHighlightActiveLineDesc'), 'taskEditorHighlightActiveLine');
-		const sections = renderNativeSettingsGroupedSection(containerEl, t('settings', 'taskEditorSections'));
+		const sections = renderNativeSettingsGroupedSection(containerEl, t('settings', 'taskEditorSections'), undefined,
+			this.buildNativeSettingsDocsAction(t('settings', 'taskEditorSections'), 'DOCS-021 Task Editor'));
 		sections.addClass('operon-task-editor-sections-settings');
 		const renderSections = (): void => {
 			sections.empty();
