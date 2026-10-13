@@ -918,6 +918,8 @@
 		"locationPreviewMinZoomDesc": "位置标签地图预览内允许的最低缩放级别。",
 		"locationPreviewMaxZoom": "预览最大缩放",
 		"locationPreviewMaxZoomDesc": "位置标签地图预览内允许的最高缩放级别。",
+		"taskEditorUseMobileLayout": "在手机上使用移动版 Task Editor",
+		"taskEditorUseMobileLayoutDesc": "启用后，手机使用移动布局及其设置；关闭后，使用桌面布局及其设置。下次打开 Task Editor 时生效，不影响平板和桌面设备。",
 		"taskEditorMobileCoreTools": "工具栏显示与顺序",
 		"taskEditorMobileCoreToolsDesc": "“移动端任务编辑器工具栏”控制手机上出现哪些核心图标并调整其顺序。可见时，“前往源文件”始终在最前，“移除”始终在最后。",
 		"taskEditorMobileCoreToolsReorder": "重新排序移动端核心图标",

@@ -779,3 +779,48 @@ add('reload discards directly mutated settings left dirty by a rejected save', a
   assert.equal(fixture.package().settings.releaseNotesLastShownVersion, 'later-direct-save');
  });
 });
+
+add('phone editor layout round trips without changing either editor preference set', async () => {
+ await withSettingsFixture({ configDir: '.synthetic' }, async fixture => {
+  const storage = fixture.createStorage();
+  await storage.initialize();
+  assert.equal(storage.getSettings().taskEditorUseMobileLayout, false);
+  await storage.saveSettings();
+  const baseline = fixture.package();
+  assert.equal('taskEditorUseMobileLayout' in baseline.ui.taskUiPreferences, false);
+  const before = fixture.raw();
+  const second = fixture.createStorage();
+  await second.initialize();
+  assertBytesEqual(fixture.raw(), before, 'Missing optional layout flag must not trigger a startup write');
+  for (const enabled of [true, false, true, false]) {
+   await second.updateSettings({ taskEditorUseMobileLayout: enabled });
+   const saved = fixture.package();
+   assert.equal(saved.ui.taskUiPreferences.taskEditorUseMobileLayout ?? false, enabled);
+   const comparable = clone(saved);
+   delete comparable.ui.taskUiPreferences.taskEditorUseMobileLayout;
+   assert.deepEqual(comparable, baseline, 'Only the layout flag may change');
+   const committed = fixture.raw();
+   const reopened = fixture.createStorage();
+   await reopened.initialize();
+   assert.equal(reopened.getSettings().taskEditorUseMobileLayout, enabled);
+   assertBytesEqual(fixture.raw(), committed, 'Reopening must not rewrite the layout flag');
+  }
+ });
+});
+
+add('phone editor layout failed save preserves saved preferences and retry succeeds', async () => {
+ await withSettingsFixture({}, async fixture => {
+  const storage = fixture.createStorage();
+  await storage.initialize();
+  await storage.saveSettings();
+  const before = fixture.raw();
+  fixture.writeFault = 'throw-before';
+  assert.equal(await outcome(() => storage.updateSettings({ taskEditorUseMobileLayout: true })), 'rejected');
+  assertBytesEqual(fixture.raw(), before);
+  const reopened = fixture.createStorage();
+  await reopened.initialize();
+  assert.equal(reopened.getSettings().taskEditorUseMobileLayout, false);
+  await reopened.updateSettings({ taskEditorUseMobileLayout: true });
+  assert.equal(fixture.package().ui.taskUiPreferences.taskEditorUseMobileLayout, true);
+ });
+});

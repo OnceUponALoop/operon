@@ -918,6 +918,8 @@
 		"locationPreviewMinZoomDesc": "Lowest zoom level allowed inside the location chip map preview.",
 		"locationPreviewMaxZoom": "Preview maximum zoom",
 		"locationPreviewMaxZoomDesc": "Highest zoom level allowed inside the location chip map preview.",
+		"taskEditorUseMobileLayout": "Use mobile Task Editor on phones",
+		"taskEditorUseMobileLayoutDesc": "When enabled, phones use the mobile layout and its settings. When disabled, phones use the desktop layout and its settings. Applies the next time Task Editor opens; tablets and desktops are unaffected.",
 		"taskEditorMobileCoreTools": "Toolbar Visibility & Order",
 		"taskEditorMobileCoreToolsDesc": "Mobile Task Editor Toolbar controls which core icons appear on phones and adjusts their order. Go to Source stays first and Remove stays last when visible.",
 		"taskEditorMobileCoreToolsReorder": "Reorder mobile core icons",

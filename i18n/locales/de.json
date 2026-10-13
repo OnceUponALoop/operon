@@ -916,6 +916,8 @@
 		"locationPreviewMinZoomDesc": "Niedrigste Zoomstufe in der Karten-Vorschau des Location-Chips.",
 		"locationPreviewMaxZoom": "Maximaler Vorschau-Zoom",
 		"locationPreviewMaxZoomDesc": "Höchste Zoomstufe in der Karten-Vorschau des Location-Chips.",
+		"taskEditorUseMobileLayout": "Mobilen Task Editor auf Smartphones verwenden",
+		"taskEditorUseMobileLayoutDesc": "Wenn aktiviert, verwenden Smartphones das mobile Layout und dessen Einstellungen. Andernfalls verwenden sie das Desktop-Layout und dessen Einstellungen. Gilt beim nächsten Öffnen des Task Editors; Tablets und Desktopgeräte bleiben unverändert.",
 		"taskEditorMobileCoreTools": "Sichtbarkeit und Reihenfolge der Werkzeuge",
 		"taskEditorMobileCoreToolsDesc": "Die Symbolleiste des mobilen Aufgaben-Editors steuert, welche Kern-Symbole auf Telefonen erscheinen, und passt ihre Reihenfolge an. „Zur Quelle“ bleibt vorne und „Entfernen“ bleibt hinten, sofern sichtbar.",
 		"taskEditorMobileCoreToolsReorder": "Mobile Kern-Symbole neu anordnen",

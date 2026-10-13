@@ -1,8 +1,8 @@
 {
   "schemaVersion": 1,
   "locale": "tr",
-  "keyCount": 3648,
-  "keyFingerprint": "bc6d2b2e45ec2f99c7c76ed8d6e8fbbc6422bfa00c8d26c10b025a5ea491637e",
+  "keyCount": 3650,
+  "keyFingerprint": "3ba55f91f00b60baa21640f349ca7a1def7b8960ba503bc8feebf25d803cd49c",
   "translations": {
     "buttons": {
       "addFileSubtask": "Dosya Tipi Alt Görev Ekle",
@@ -2703,6 +2703,8 @@
       "taskEditorSectionsSaveFailed": "Task Editor bölümleri kaydedilemedi.",
       "taskEditorShowLineNumbers": "Görev Editörü'nde satır numaralarını göster",
       "taskEditorShowLineNumbersDesc": "Görev Editörü dosya gövdesi panelinde kaynak satır numaralarını gösterir.",
+      "taskEditorUseMobileLayout": "Telefonlarda mobil Task Editor kullan",
+      "taskEditorUseMobileLayoutDesc": "Açıkken telefonlar mobil düzeni ve ayarlarını kullanır. Kapalıyken masaüstü düzenini ve ayarlarını kullanır. Sonraki Task Editor açılışında uygulanır; tabletleri ve masaüstünü etkilemez.",
       "taskEditorWorkflowPickers": "Özellik Görünürlüğü ve Sıralaması",
       "taskEditorWorkflowPickersDesc": "Mobile Task Editor içinde görünecek property satırlarını ve sıralarını seçin; desteklenen custom property’ler de dahildir. Bu tercihler desktop editörünü veya mevcut task verilerini etkilemez.",
       "taskEditorWorkflowPickersMoveDown": "Aşağı taşı",
@@ -3693,5 +3695,5 @@
       "toggleDescendantPreview": "Alt görev önizlemesini aç/kapat"
     }
   },
-  "sourceVersion": "ba59b688c427b2276205533fd5a96742fe82b01c28e30589ae52acb2a5dc8b5f"
+  "sourceVersion": "fa3f51656f77073edd88bb4013d73b2ce1519fcb765fcd780f50ad2107b1cd74"
 }

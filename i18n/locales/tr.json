@@ -918,6 +918,8 @@
 		"locationPreviewMinZoomDesc": "Location chip harita önizlemesi içinde izin verilen en düşük zoom seviyesi.",
 		"locationPreviewMaxZoom": "Önizleme maksimum zoom",
 		"locationPreviewMaxZoomDesc": "Location chip harita önizlemesi içinde izin verilen en yüksek zoom seviyesi.",
+		"taskEditorUseMobileLayout": "Telefonlarda mobil Task Editor kullan",
+		"taskEditorUseMobileLayoutDesc": "Açıkken telefonlar mobil düzeni ve ayarlarını kullanır. Kapalıyken masaüstü düzenini ve ayarlarını kullanır. Sonraki Task Editor açılışında uygulanır; tabletleri ve masaüstünü etkilemez.",
 		"taskEditorMobileCoreTools": "Araç Çubuğu Görünürlüğü ve Sırası",
 		"taskEditorMobileCoreToolsDesc": "Mobil Görev Editörü Araç Çubuğu, telefonda hangi temel simgelerin görüneceğini ve sıralarını belirler. Görünür olduklarında Kaynağa Git başta, Kaldır sonda kalır.",
 		"taskEditorMobileCoreToolsReorder": "Mobil temel simgeleri sırala",

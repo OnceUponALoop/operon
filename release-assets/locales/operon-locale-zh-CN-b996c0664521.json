@@ -1,8 +1,8 @@
 {
   "schemaVersion": 1,
   "locale": "zh-CN",
-  "keyCount": 3648,
-  "keyFingerprint": "bc6d2b2e45ec2f99c7c76ed8d6e8fbbc6422bfa00c8d26c10b025a5ea491637e",
+  "keyCount": 3650,
+  "keyFingerprint": "3ba55f91f00b60baa21640f349ca7a1def7b8960ba503bc8feebf25d803cd49c",
   "translations": {
     "buttons": {
       "addFileSubtask": "添加文件子任务",
@@ -2703,6 +2703,8 @@
       "taskEditorSectionsSaveFailed": "无法保存 Task Editor 分区。",
       "taskEditorShowLineNumbers": "在任务编辑器中显示行号",
       "taskEditorShowLineNumbersDesc": "在任务编辑器的文件正文面板中显示源行号。",
+      "taskEditorUseMobileLayout": "在手机上使用移动版 Task Editor",
+      "taskEditorUseMobileLayoutDesc": "启用后，手机使用移动布局及其设置；关闭后，使用桌面布局及其设置。下次打开 Task Editor 时生效，不影响平板和桌面设备。",
       "taskEditorWorkflowPickers": "属性显示与排序",
       "taskEditorWorkflowPickersDesc": "选择移动版 Task Editor 中显示的属性及其顺序，包括支持的自定义属性。这些偏好不会影响桌面编辑器或现有任务数据。",
       "taskEditorWorkflowPickersMoveDown": "下移",
@@ -3693,5 +3695,5 @@
       "toggleDescendantPreview": "切换子任务预览"
     }
   },
-  "sourceVersion": "4f43688531ec02d45db2d248175fc775184d00ccc3c23f1ed1734368e229ef77"
+  "sourceVersion": "8d20c44b3220b49f0d10ce01445fe50edd8c3f856c1930c92f71c54fdbd8347c"
 }

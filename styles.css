@@ -8964,6 +8964,55 @@ body.operon-subtasks-filter-modal-open .hover-popover {
 	scrollbar-gutter: auto;
 }
 
+/* Phone host for the desktop layout. Legacy mobile layout rules stay separate. */
+.operon-task-editor-modal-container-phone-desktop {
+	align-items: flex-start;
+	justify-content: center;
+	box-sizing: border-box;
+	height: var(--operon-task-editor-mobile-viewport-height, 100dvh);
+	min-height: 0;
+	padding: max(8px, env(safe-area-inset-top)) max(8px, env(safe-area-inset-right)) max(8px, env(safe-area-inset-bottom)) max(8px, env(safe-area-inset-left));
+	overflow: hidden;
+}
+
+.operon-task-editor-modal-container-phone-desktop > .modal.operon-task-editor-modal-phone-desktop {
+	position: relative;
+	top: auto;
+	left: auto;
+	right: auto;
+	width: 100%;
+	max-width: 680px;
+	height: 100%;
+	max-height: 100%;
+	margin: 0;
+	transform: none;
+}
+
+.operon-task-editor-modal-phone-desktop .operon-task-editor-phone-desktop {
+	box-sizing: border-box;
+	min-height: 0;
+	height: 100%;
+	padding: 10px 12px 12px;
+}
+
+.operon-task-editor-phone-desktop .operon-task-editor-shell {
+	min-height: 0;
+	height: 100%;
+	overflow: hidden;
+}
+
+.operon-task-editor-phone-desktop .operon-task-editor-main-panel {
+	min-width: 0;
+	min-height: 0;
+	overflow-y: auto;
+	overscroll-behavior: contain;
+}
+
+.operon-task-editor-phone-desktop-picker-surface {
+	border-color: var(--background-modifier-border);
+	background: var(--modal-background, var(--background-primary));
+}
+
 .operon-mobile-picker-surface {
 	box-sizing: border-box;
 	z-index: 10060;

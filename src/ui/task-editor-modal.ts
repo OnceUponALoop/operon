@@ -3,7 +3,7 @@
  * Opens the task editor as a floating modal window.
  */
 
-import { App, KeymapEventHandler, Modal, Platform } from 'obsidian';
+import { App, KeymapEventHandler, Modal } from 'obsidian';
 import { OperonIndexer } from '../indexer/indexer';
 import { ParsedTask } from '../types/fields';
 import { OperonSettings } from '../types/settings';
@@ -86,9 +86,9 @@ export class TaskEditorModal extends Modal {
 	onOpen(): void {
 		this.containerEl.addClass('operon-task-editor-modal-container');
 		this.modalEl.addClass('operon-task-editor-modal');
-		if (Platform.isPhone) {
-			this.containerEl.addClass('operon-task-editor-modal-container-mobile');
-			this.modalEl.addClass('operon-task-editor-modal-mobile');
+		if (this.content.isPhone) {
+			this.containerEl.addClass(this.content.usesMobileLayout ? 'operon-task-editor-modal-container-mobile' : 'operon-task-editor-modal-container-phone-desktop');
+			this.modalEl.addClass(this.content.usesMobileLayout ? 'operon-task-editor-modal-mobile' : 'operon-task-editor-modal-phone-desktop');
 		}
 		window.addEventListener('resize', this.resizeHandler);
 		this.registerMobileViewportListeners();
@@ -248,31 +248,31 @@ export class TaskEditorModal extends Modal {
 	}
 
 	private registerMobileViewportListeners(): void {
-		if (!Platform.isPhone) return;
+		if (!this.content.isPhone) return;
 		window.visualViewport?.addEventListener('resize', this.visualViewportHandler);
 		window.visualViewport?.addEventListener('scroll', this.visualViewportHandler);
 	}
 
 	private unregisterMobileViewportListeners(): void {
-		if (!Platform.isPhone) return;
+		if (!this.content.isPhone) return;
 		window.visualViewport?.removeEventListener('resize', this.visualViewportHandler);
 		window.visualViewport?.removeEventListener('scroll', this.visualViewportHandler);
 	}
 
 	private registerMobilePickerListeners(): void {
-		if (!Platform.isPhone) return;
+		if (!this.content.isPhone) return;
 		this.contentEl.addEventListener(TASK_EDITOR_MOBILE_PICKER_OPEN_EVENT, this.mobilePickerOpenHandler);
 		this.contentEl.addEventListener(TASK_EDITOR_MOBILE_PICKER_CLOSE_EVENT, this.mobilePickerCloseHandler);
 	}
 
 	private unregisterMobilePickerListeners(): void {
-		if (!Platform.isPhone) return;
+		if (!this.content.isPhone) return;
 		this.contentEl.removeEventListener(TASK_EDITOR_MOBILE_PICKER_OPEN_EVENT, this.mobilePickerOpenHandler);
 		this.contentEl.removeEventListener(TASK_EDITOR_MOBILE_PICKER_CLOSE_EVENT, this.mobilePickerCloseHandler);
 	}
 
 	private updateMobileViewportHeight(): void {
-		if (!Platform.isPhone) return;
+		if (!this.content.isPhone) return;
 		if (this.mobilePickerOpenDepth > 0) return;
 		const height = window.visualViewport?.height ?? window.innerHeight;
 		if (!Number.isFinite(height) || height <= 0) return;

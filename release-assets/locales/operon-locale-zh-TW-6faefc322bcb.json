@@ -1,8 +1,8 @@
 {
   "schemaVersion": 1,
   "locale": "zh-TW",
-  "keyCount": 3648,
-  "keyFingerprint": "bc6d2b2e45ec2f99c7c76ed8d6e8fbbc6422bfa00c8d26c10b025a5ea491637e",
+  "keyCount": 3650,
+  "keyFingerprint": "3ba55f91f00b60baa21640f349ca7a1def7b8960ba503bc8feebf25d803cd49c",
   "translations": {
     "buttons": {
       "addFileSubtask": "新增檔案子任務",
@@ -2703,6 +2703,8 @@
       "taskEditorSectionsSaveFailed": "無法儲存 Task Editor 區段。",
       "taskEditorShowLineNumbers": "在任務編輯器中顯示行號",
       "taskEditorShowLineNumbersDesc": "在任務編輯器的檔案正文面板中顯示源行號。",
+      "taskEditorUseMobileLayout": "在手機上使用行動版 Task Editor",
+      "taskEditorUseMobileLayoutDesc": "啟用後，手機使用行動版面及其設定；關閉後，使用桌面版面及其設定。下次開啟 Task Editor 時生效，不影響平板及桌面裝置。",
       "taskEditorWorkflowPickers": "屬性顯示與排序",
       "taskEditorWorkflowPickersDesc": "選擇行動版 Task Editor 中顯示的屬性及其順序，包括支援的自訂屬性。這些偏好不會影響桌面編輯器或現有任務資料。",
       "taskEditorWorkflowPickersMoveDown": "下移",
@@ -3693,5 +3695,5 @@
       "toggleDescendantPreview": "切換子任務預覽"
     }
   },
-  "sourceVersion": "74f52fd7a3038b95125d2937978dce284b56439580556ad5aa73db6a29ed21ba"
+  "sourceVersion": "e10996e170d6652a5ca7fb267bfba22902c91e04d1a5fab957f35e70c8031ab1"
 }

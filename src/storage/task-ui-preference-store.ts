@@ -21,6 +21,7 @@ export type TaskUiPreferenceStoreSettings = Pick<
 	| 'taskEditorShowLineNumbers'
 	| 'taskEditorHighlightActiveLine'
 	| 'taskEditorWorkflowPickers'
+	| 'taskEditorUseMobileLayout'
 	| 'taskEditorMobileCoreTools'
 	| 'inlineExpandedTaskChips'
 	| 'inlineTaskCompactChips'
@@ -74,6 +75,7 @@ function cloneSettings(settings: TaskUiPreferenceStoreSettings): TaskUiPreferenc
 		taskEditorShowLineNumbers: settings.taskEditorShowLineNumbers,
 		taskEditorHighlightActiveLine: settings.taskEditorHighlightActiveLine,
 		taskEditorWorkflowPickers: settings.taskEditorWorkflowPickers.map(item => ({ ...item })),
+		taskEditorUseMobileLayout: settings.taskEditorUseMobileLayout === true,
 		taskEditorMobileCoreTools: settings.taskEditorMobileCoreTools.map(item => ({ ...item })),
 		inlineExpandedTaskChips: { ...settings.inlineExpandedTaskChips },
 		inlineTaskCompactChips: settings.inlineTaskCompactChips.map(item => ({ ...item })),
@@ -158,6 +160,7 @@ function readStoreData(
 				? buildCompatibilityTaskEditorWorkflowPickerItems()
 				: fallback.taskEditorWorkflowPickers,
 		),
+		taskEditorUseMobileLayout: raw.taskEditorUseMobileLayout === true,
 		taskEditorMobileCoreTools: normalizeTaskEditorMobileCoreTools(
 			raw.taskEditorMobileCoreTools,
 			fallback.taskEditorMobileCoreTools,
@@ -243,8 +246,8 @@ export class TaskUiPreferenceStore {
 		this.packagePersist = persist;
 	}
 
-	loadFromPackage(settings: TaskUiPreferenceStoreSettings): void {
-		this.settings = cloneSettings(settings);
+	loadFromPackage(settings: Omit<TaskUiPreferenceStoreSettings, 'taskEditorUseMobileLayout'> & { taskEditorUseMobileLayout?: boolean }): void {
+		this.settings = cloneSettings({ ...settings, taskEditorUseMobileLayout: settings.taskEditorUseMobileLayout === true });
 		this.serializedSettings = JSON.stringify(this.settings);
 		this.recoveredFromMalformed = false;
 	}

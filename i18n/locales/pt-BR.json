@@ -918,6 +918,8 @@
 		"locationPreviewMinZoomDesc": "O nível de zoom mais baixo permitido na pré-visualização do mapa do chip de localização.",
 		"locationPreviewMaxZoom": "Zoom máximo da pré-visualização",
 		"locationPreviewMaxZoomDesc": "O nível de zoom mais alto permitido na pré-visualização do mapa do chip de localização.",
+		"taskEditorUseMobileLayout": "Usar o Task Editor móvel em celulares",
+		"taskEditorUseMobileLayoutDesc": "Quando ativado, os celulares usam o layout móvel e suas configurações. Quando desativado, usam o layout de desktop e suas configurações. Aplica-se na próxima abertura do Task Editor; tablets e computadores não são afetados.",
 		"taskEditorMobileCoreTools": "Visibilidade e ordem das ferramentas",
 		"taskEditorMobileCoreToolsDesc": "A barra de ferramentas móvel do Editor de Tarefa controla quais ícones principais aparecem nos telefones e ajusta sua ordem. Ir para a origem permanece primeiro e Remover permanece por último quando visíveis.",
 		"taskEditorMobileCoreToolsReorder": "Reordenar ícones principais móveis",

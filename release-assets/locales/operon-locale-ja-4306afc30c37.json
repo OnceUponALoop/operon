@@ -1,8 +1,8 @@
 {
   "schemaVersion": 1,
   "locale": "ja",
-  "keyCount": 3648,
-  "keyFingerprint": "bc6d2b2e45ec2f99c7c76ed8d6e8fbbc6422bfa00c8d26c10b025a5ea491637e",
+  "keyCount": 3650,
+  "keyFingerprint": "3ba55f91f00b60baa21640f349ca7a1def7b8960ba503bc8feebf25d803cd49c",
   "translations": {
     "buttons": {
       "addFileSubtask": "ファイルサブタスクを追加",
@@ -2703,6 +2703,8 @@
       "taskEditorSectionsSaveFailed": "Task Editorのセクションを保存できませんでした。",
       "taskEditorShowLineNumbers": "タスクエディターに行番号を表示",
       "taskEditorShowLineNumbersDesc": "タスクエディターのファイル本文パネルにソースの行番号を表示します。",
+      "taskEditorUseMobileLayout": "スマートフォンでモバイル版Task Editorを使用",
+      "taskEditorUseMobileLayoutDesc": "オンの場合、スマートフォンではモバイルレイアウトとその設定を使用します。オフの場合はデスクトップレイアウトとその設定を使用します。次回Task Editorを開いたときに適用され、タブレットやデスクトップには影響しません。",
       "taskEditorWorkflowPickers": "プロパティの表示と順序",
       "taskEditorWorkflowPickersDesc": "モバイル版Task Editorに表示するプロパティと順序を選択します。対応するカスタムプロパティも含まれます。デスクトップ版や既存のタスクデータには影響しません。",
       "taskEditorWorkflowPickersMoveDown": "下へ移動",
@@ -3693,5 +3695,5 @@
       "toggleDescendantPreview": "子孫プレビューを切り替え"
     }
   },
-  "sourceVersion": "d68fe57f1f57d51aec69c4a20dac3c846682c77ee7447bbc228d7b64e361429e"
+  "sourceVersion": "af65a8646b9fd0a0871085286e76605a334a53921e7e7bd5295d4093aec670c6"
 }

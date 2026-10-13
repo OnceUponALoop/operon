@@ -229,3 +229,16 @@ test('existing JSON projection retains protected package authority for a reset c
 		defaultDynamicTemplatePreferences(),
 	);
 });
+
+
+test('explicit defaults reset disables phone mobile layout and restores existing defaults', () => {
+ const target = migrateSettings({ ...DEFAULT_SETTINGS, taskEditorUseMobileLayout: true });
+ const result = preflightOperonSettingsResetDefaultsV1({ source: SOURCE, createdAt: CREATED_AT, targetSnapshot: {
+  settings: target, dataPackageSchemaVersion: OPERON_DATA_PACKAGE_SCHEMA_VERSION, settingsVersion: CURRENT_SETTINGS_VERSION,
+  canonicalWritesSuspended: false, canonicalWriteSuspensionReason: null,
+ } });
+ assert.ok(result.preflight?.restorePlan);
+ assert.equal(result.preflight.restorePlan.candidateSettings.taskEditorUseMobileLayout, false);
+ assert.deepEqual(result.preflight.restorePlan.candidateSettings.taskEditorMobileCoreTools, DEFAULT_SETTINGS.taskEditorMobileCoreTools);
+ assert.deepEqual(result.preflight.restorePlan.candidateSettings.taskEditorSections, DEFAULT_SETTINGS.taskEditorSections);
+});

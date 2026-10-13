@@ -113,6 +113,7 @@ export const OPERON_DATA_PACKAGE_OWNED_SETTINGS_KEYS = [
 	'taskEditorShowLineNumbers',
 	'taskEditorHighlightActiveLine',
 	'taskEditorWorkflowPickers',
+	'taskEditorUseMobileLayout',
 	'taskEditorMobileCoreTools',
 	'inlineExpandedTaskChips',
 	'inlineTaskCompactChips',
@@ -217,6 +218,7 @@ const TASK_UI_PREFERENCE_PACKAGE_KEYS = [
 	'taskEditorShowLineNumbers',
 	'taskEditorHighlightActiveLine',
 	'taskEditorWorkflowPickers',
+	'taskEditorUseMobileLayout',
 	'taskEditorMobileCoreTools',
 	'inlineExpandedTaskChips',
 	'inlineTaskCompactChips',
@@ -323,7 +325,7 @@ export interface OperonViewsPackageV1 {
 export interface OperonUiPackageV1 {
 	propertyValuePool?: unknown;
 	contextualMenu: VersionedStoreSlice<ContextualMenuStoreSettings>;
-	taskUiPreferences: VersionedStoreSlice<TaskUiPreferenceStoreSettings>;
+	taskUiPreferences: VersionedStoreSlice<Omit<TaskUiPreferenceStoreSettings, 'taskEditorUseMobileLayout'>> & { taskEditorUseMobileLayout?: boolean };
 	taskCreationProfile: VersionedStoreSlice<Omit<TaskCreationProfileStoreSettings, 'defaultInlineTaskTemplateId' | 'inlineTaskUseLastTemplateAsDefault' | 'fileTaskUseLastTemplateAsDefault'>> & { defaultInlineTaskTemplateId?: string | null; inlineTaskUseLastTemplateAsDefault?: boolean; fileTaskUseLastTemplateAsDefault?: boolean };
 	workspaceTweaks: VersionedStoreSlice<WorkspaceTweaksPackageSettings>;
 	presetFavorites?: VersionedStoreSlice<PresetFavorites>;
@@ -595,6 +597,7 @@ export function buildOperonDataPackageFromSettings(
 				taskEditorShowLineNumbers: normalized.taskEditorShowLineNumbers,
 				taskEditorHighlightActiveLine: normalized.taskEditorHighlightActiveLine,
 				taskEditorWorkflowPickers: cloneUnknown(normalized.taskEditorWorkflowPickers),
+				...(normalized.taskEditorUseMobileLayout ? { taskEditorUseMobileLayout: true } : {}),
 				taskEditorMobileCoreTools: cloneUnknown(normalized.taskEditorMobileCoreTools),
 				inlineExpandedTaskChips: cloneUnknown(normalized.inlineExpandedTaskChips),
 				inlineTaskCompactChips: cloneUnknown(normalized.inlineTaskCompactChips),

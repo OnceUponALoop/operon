@@ -339,6 +339,7 @@ export const OPERON_SETTINGS_SEARCH_REGISTRY: readonly OperonSettingsSearchEntry
 	e('ui', 'mobileGeneral', 'mobileGlobalTaskFabHideInKanban', 'settings', 'mobileGlobalTaskFabHideInKanban', 'mobileGlobalTaskFabHideInKanbanDesc', 'toggle', ['mobile', 'phone', 'touch', 'quick-create', 'fab', 'kanban']),
 	e('ui', 'mobileGeneral', 'contextualMenuMobileAutoHideMs', 'settings', 'contextualMenuMobileAutoHide', 'contextualMenuMobileAutoHideDesc', 'number', ['mobile', 'phone', 'touch', 'context menu', 'auto hide', 'dismiss delay', 'mobile context menu timeout']),
 	section('ui', 'mobileGeneral', 'mobileGlobalTaskFabReset', 'settings', 'mobileGlobalTaskFabResetPosition', 'mobileGlobalTaskFabResetPositionDesc', ['mobile', 'phone', 'touch', 'quick-create', 'fab', 'reset fab position']),
+	e('ui', 'mobileTaskEditor', 'taskEditorUseMobileLayout', 'settings', 'taskEditorUseMobileLayout', 'taskEditorUseMobileLayoutDesc', 'toggle', ['phone', 'mobile task editor', 'desktop layout']),
 	section('ui', 'mobileTaskEditor', 'taskEditorMobileCoreTools', 'settings', 'taskEditorMobileCoreTools', 'taskEditorMobileCoreToolsDesc', ['mobile', 'phone', 'touch', 'mobile task editor toolbar']),
 	e('ui', 'mobileCalendar', 'calendarMobileEnabled', 'settings', 'calendarMobileEnabled', 'calendarMobileEnabledDesc', 'toggle', ['mobile', 'phone', 'touch', 'narrow pane', 'mobile calendar']),
 	e('ui', 'mobileCalendar', 'calendarMobileMaxWidthPx', 'settings', 'calendarMobileMaxWidth', 'calendarMobileMaxWidthDesc', 'number', ['mobile', 'phone', 'narrow pane', 'mobile calendar max width']),

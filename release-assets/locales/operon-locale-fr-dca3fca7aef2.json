@@ -1,8 +1,8 @@
 {
   "schemaVersion": 1,
   "locale": "fr",
-  "keyCount": 3648,
-  "keyFingerprint": "bc6d2b2e45ec2f99c7c76ed8d6e8fbbc6422bfa00c8d26c10b025a5ea491637e",
+  "keyCount": 3650,
+  "keyFingerprint": "3ba55f91f00b60baa21640f349ca7a1def7b8960ba503bc8feebf25d803cd49c",
   "translations": {
     "buttons": {
       "addFileSubtask": "Ajouter une sous-tâche-fichier",
@@ -2703,6 +2703,8 @@
       "taskEditorSectionsSaveFailed": "Impossible d’enregistrer les sections de Task Editor.",
       "taskEditorShowLineNumbers": "Afficher les numéros de ligne dans l'éditeur de tâche",
       "taskEditorShowLineNumbersDesc": "Afficher les numéros de ligne source dans le panneau de contenu du fichier de l'éditeur de tâche.",
+      "taskEditorUseMobileLayout": "Utiliser le Task Editor mobile sur téléphone",
+      "taskEditorUseMobileLayoutDesc": "Lorsque cette option est activée, les téléphones utilisent la disposition mobile et ses réglages. Sinon, ils utilisent la disposition de bureau et ses réglages. Le changement prend effet à la prochaine ouverture de Task Editor ; les tablettes et ordinateurs ne sont pas affectés.",
       "taskEditorWorkflowPickers": "Visibilité et ordre des propriétés",
       "taskEditorWorkflowPickersDesc": "Choisissez les propriétés et leur ordre dans Task Editor mobile, y compris les propriétés personnalisées prises en charge. Ces préférences ne modifient ni l’éditeur sur ordinateur ni les données existantes des tâches.",
       "taskEditorWorkflowPickersMoveDown": "Déplacer vers le bas",
@@ -3693,5 +3695,5 @@
       "toggleDescendantPreview": "Basculer l'aperçu des descendants"
     }
   },
-  "sourceVersion": "1d1cfbbd93af7671dcb756b6cd8c40aa2015dbf5bb821f4c340f23203161651d"
+  "sourceVersion": "0aa65944bf8454f5db48c33b721fcd164e6d5fbb833508856249b9b8628147a2"
 }

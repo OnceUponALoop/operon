@@ -2629,7 +2629,7 @@ export class OperonSettingsTab extends PluginSettingTab {
 	private buildMobileTaskEditorSettingsItems(entries: OperonSettingsSearchEntry[]): SettingDefinitionItem[] {
 		const heading = t('settings', 'taskEditorMobileCoreTools');
 		const entry = entries.find(candidate => candidate.id === 'ui.taskEditorMobileCoreTools');
-		return [{ type: 'group', heading, cls: 'operon-task-chip-settings-group operon-mobile-settings-group', items: [
+		return [...this.compactSettingsSearchDefinitions([this.buildSettingsSearchSettingDefinition(entries, 'taskEditorUseMobileLayout')]), { type: 'group', heading, cls: 'operon-task-chip-settings-group operon-mobile-settings-group', items: [
 			{ name: heading, desc: t('settings', 'taskEditorMobileCoreToolsDesc'), aliases: entry ? this.getSettingsSearchAliases(entry) : [], render: setting => {
 				setting.settingEl.empty();
 				setting.settingEl.addClass('operon-task-chip-description');
@@ -4944,6 +4944,7 @@ export class OperonSettingsTab extends PluginSettingTab {
 	}
 
 	private renderMobileTaskEditorTab(containerEl: HTMLElement): void {
+		this.renderBoundToggleSetting(containerEl, t('settings', 'taskEditorUseMobileLayout'), t('settings', 'taskEditorUseMobileLayoutDesc'), 'taskEditorUseMobileLayout');
 		const title = t('settings', 'taskEditorMobileCoreTools');
 		const sectionEl = renderNativeSettingsGroupedSection(
 			containerEl,

@@ -918,6 +918,8 @@
 		"locationPreviewMinZoomDesc": "Niveau de zoom le plus bas autorisé dans l'aperçu de carte de la puce Location.",
 		"locationPreviewMaxZoom": "Zoom maximum de l'aperçu",
 		"locationPreviewMaxZoomDesc": "Niveau de zoom le plus élevé autorisé dans l'aperçu de carte de la puce Location.",
+		"taskEditorUseMobileLayout": "Utiliser le Task Editor mobile sur téléphone",
+		"taskEditorUseMobileLayoutDesc": "Lorsque cette option est activée, les téléphones utilisent la disposition mobile et ses réglages. Sinon, ils utilisent la disposition de bureau et ses réglages. Le changement prend effet à la prochaine ouverture de Task Editor ; les tablettes et ordinateurs ne sont pas affectés.",
 		"taskEditorMobileCoreTools": "Visibilité et ordre des outils",
 		"taskEditorMobileCoreToolsDesc": "La barre d'outils de l'éditeur de tâche mobile détermine quelles icônes essentielles apparaissent sur les téléphones et ajuste leur ordre. Les actions Aller à la source et Retirer restent respectivement en première et dernière position lorsqu'elles sont visibles.",
 		"taskEditorMobileCoreToolsReorder": "Réorganiser les icônes essentielles mobiles",

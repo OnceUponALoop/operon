@@ -1672,6 +1672,8 @@ export interface OperonSettings extends TaskCardSettings {
 	taskEditorHighlightActiveLine: boolean;
 	/** Ordered, user-customizable picker rows shown in the Task Editor workflow area. */
 	taskEditorWorkflowPickers: TaskEditorWorkflowPickerItem[];
+	/** Use the legacy mobile layout on phones; captured when Task Editor opens. */
+	taskEditorUseMobileLayout: boolean;
 	/** Ordered, phone-only core action icons shown in the Task Editor compact toolbar. */
 	taskEditorMobileCoreTools: TaskEditorMobileCoreToolItem[];
 	/** Ordered, user-customizable compact inline-task chips used in live preview conceal and reading view. */
@@ -2247,6 +2249,7 @@ export const DEFAULT_SETTINGS: OperonSettings = {
 	taskEditorShowLineNumbers: false,
 	taskEditorHighlightActiveLine: true,
 	taskEditorWorkflowPickers: buildDefaultTaskEditorWorkflowPickerItems(),
+	taskEditorUseMobileLayout: false,
 	taskEditorMobileCoreTools: buildDefaultTaskEditorMobileCoreToolItems(),
 	inlineTaskCompactChips: buildDefaultInlineTaskCompactChipItems(),
 	filterTaskCompactChips: buildDefaultFilterTaskCompactChipItems(),
@@ -4349,6 +4352,7 @@ export function migrateSettings(raw: unknown): OperonSettings {
 			? DEFAULT_SETTINGS.taskEditorWorkflowPickers
 			: buildCompatibilityTaskEditorWorkflowPickerItems(),
 	);
+	out.taskEditorUseMobileLayout = src.taskEditorUseMobileLayout === true;
 	out.taskEditorMobileCoreTools = normalizeTaskEditorMobileCoreTools(src.taskEditorMobileCoreTools);
 	out.inlineTaskCompactChips = normalizeInlineTaskCompactChips(src.inlineTaskCompactChips);
 	out.filterTaskCompactChips = normalizeFilterTaskCompactChips(src);
@@ -5041,6 +5045,7 @@ function normalizeSurfaceOrderingSettings(out: OperonSettings, src: Record<strin
 			: buildCompatibilityTaskEditorWorkflowPickerItems(),
 		out.keyMappings,
 	);
+	out.taskEditorUseMobileLayout = src.taskEditorUseMobileLayout === true;
 	out.taskEditorMobileCoreTools = normalizeTaskEditorMobileCoreTools(
 		src.taskEditorMobileCoreTools,
 		DEFAULT_SETTINGS.taskEditorMobileCoreTools,

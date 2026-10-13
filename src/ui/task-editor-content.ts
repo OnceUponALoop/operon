@@ -581,6 +581,8 @@ export class TaskEditorContent {
 	private mainPanelEl: HTMLElement | null = null;
 	private mobileNoteWrapEl: HTMLElement | null = null;
 	private mobileNoteOpen = false;
+	readonly isPhone = Platform.isPhone;
+	readonly usesMobileLayout: boolean;
 	private mobilePickerOpenDepth = 0;
 	private mobileCoreToolbarEl: HTMLElement | null = null;
 	private mobileCoreToolsEl: HTMLElement | null = null;
@@ -645,6 +647,7 @@ export class TaskEditorContent {
 		this.app = app;
 		this.indexer = indexer;
 		this.settings = settings;
+		this.usesMobileLayout = this.isPhone && settings.taskEditorUseMobileLayout === true;
 		this.existingTask = existingTask;
 		this.isNewTask = !existingTask;
 		this.onSave = onSave;
@@ -667,7 +670,7 @@ export class TaskEditorContent {
 		this.fileBodyContext = options.fileBody ?? null;
 		this.fileBodyDraft = options.fileBody?.initialContent ?? '';
 		this.persistedFileBodyDraft = this.fileBodyDraft;
-		this.isFileBodyVisible = this.fileBodyContext?.format === 'yaml';
+		this.isFileBodyVisible = !this.isPhone && this.fileBodyContext?.format === 'yaml';
 		this.taskOperonId = existingTask?.operonId ?? null;
 
 		// Load existing values
@@ -730,6 +733,7 @@ export class TaskEditorContent {
 	}
 
 	private registerFileBodyViewportListener(): void {
+		if (this.isPhone) return;
 		if (!this.hasFileBodyContext()) return;
 		this.unregisterFileBodyViewportListener();
 		const modal = this.rootEl?.closest<HTMLElement>('.operon-task-editor-modal');
@@ -768,6 +772,7 @@ export class TaskEditorContent {
 	}
 
 	private setFileBodyVisible(visible: boolean, focusEditor = false): void {
+		if (this.isPhone) return;
 		if (!this.hasFileBodyContext()) return;
 		const mainPanelScrollTop = this.mainPanelEl?.scrollTop ?? null;
 		if (this.isFileBodyVisible === visible) {
@@ -863,6 +868,7 @@ export class TaskEditorContent {
 	}
 
 	private updateFileBodyLayout(): void {
+		if (this.isPhone) return;
 		const shell = this.shellEl;
 		if (!shell) return;
 		const isVisible = this.hasFileBodyContext() && this.isFileBodyVisible;
@@ -1018,7 +1024,7 @@ export class TaskEditorContent {
 	}
 
 	private bindTruncatedTextTooltip(target: HTMLElement | null): void {
-		if (!target || Platform.isPhone) return;
+		if (!target || this.isPhone) return;
 		bindOperonHoverTooltip(target, {
 			content: target.textContent ?? '',
 			taskColor: () => this.getThemeColor(),
@@ -1027,7 +1033,7 @@ export class TaskEditorContent {
 	}
 
 	private appendWeekdayHint(target: HTMLElement, value: string): void {
-		if (Platform.isPhone || !value) return;
+		if (this.usesMobileLayout || !value) return;
 		const canonical = value.length === 10 ? `${value}T12:00:00`
 			: value.length === 16 ? `${value}:00` : value;
 		const date = parseLocalDatetime(canonical);
@@ -1037,7 +1043,8 @@ export class TaskEditorContent {
 	}
 
 	private focusDescriptionField(selectAll = this.selectDescriptionOnMount): boolean {
-		if (!Platform.isPhone && this.descriptionCompactEditor) {
+		if (this.isPhone && this.mobilePickerOpenDepth > 0) return false;
+		if (this.descriptionCompactEditor) {
 			if (selectAll) {
 				this.descriptionCompactEditor.selectAll();
 			} else {
@@ -1049,7 +1056,7 @@ export class TaskEditorContent {
 		const root = this.rootEl;
 		if (!input || !root) return false;
 		if (!input.isConnected || !root.isConnected) return false;
-		if (Platform.isPhone && root.ownerDocument.querySelector('.operon-task-editor-mobile-picker-surface')) return false;
+		if (this.isPhone && root.ownerDocument.querySelector('.operon-task-editor-mobile-picker-surface')) return false;
 
 		input.focus();
 		if (input.ownerDocument.activeElement !== input) return false;
@@ -1064,7 +1071,7 @@ export class TaskEditorContent {
 	}
 
 	private scheduleMobileDescriptionRefocus(): void {
-		if (!Platform.isPhone) return;
+		if (!this.usesMobileLayout) return;
 		const ownerWindow = getActiveWindow();
 		ownerWindow.requestAnimationFrame(() => {
 			const root = this.rootEl;
@@ -1170,7 +1177,7 @@ export class TaskEditorContent {
 				if (candidate.closest('[hidden], .is-hidden')) return false;
 				const compactRoot = candidate.closest('.operon-compact-markdown-editor');
 				if (!compactRoot) return true;
-				return candidate.classList.contains('cm-content');
+				return candidate.matches('textarea, .cm-content');
 			});
 		const activeElement = root.ownerDocument.activeElement;
 		let index = candidates.findIndex(candidate => (
@@ -2213,7 +2220,11 @@ export class TaskEditorContent {
 	}
 
 	private autoSizeMobileTextareas(): void {
-		if (!Platform.isPhone) return;
+		if (!this.isPhone) return;
+		if (!this.usesMobileLayout) {
+			this.refreshCompactTextEditorLayouts();
+			return;
+		}
 		if (this.descriptionInputEl) {
 			this.autoSizeMobileTextarea(this.descriptionInputEl, 44);
 		}
@@ -2254,7 +2265,7 @@ export class TaskEditorContent {
 	}
 
 	private scheduleMobileCoreToolbarOverflowState(): void {
-		if (!Platform.isPhone || !this.mobileCoreToolbarEl || !this.mobileCoreToolsEl) return;
+		if (!this.isPhone || !this.mobileCoreToolbarEl || !this.mobileCoreToolsEl) return;
 		if (this.mobileCoreOverflowFrame != null) return;
 		this.mobileCoreOverflowFrame = getActiveWindow().requestAnimationFrame(() => {
 			this.mobileCoreOverflowFrame = null;
@@ -2315,7 +2326,8 @@ export class TaskEditorContent {
 		this.destroyCompactTextEditors();
 		container.empty();
 		container.addClass('operon-task-editor');
-		container.toggleClass('operon-task-editor-mobile', Platform.isPhone);
+		container.toggleClass('operon-task-editor-mobile', this.usesMobileLayout);
+		container.toggleClass('operon-task-editor-phone-desktop', this.isPhone && !this.usesMobileLayout);
 		this.rootEl?.removeEventListener(TASK_EDITOR_MOBILE_PICKER_OPEN_EVENT, this.mobilePickerOpenHandler);
 		this.rootEl?.removeEventListener(TASK_EDITOR_MOBILE_PICKER_CLOSE_EVENT, this.mobilePickerCloseHandler);
 		this.rootEl = container;
@@ -2330,7 +2342,7 @@ export class TaskEditorContent {
 		this.clearMobileCoreToolbarState();
 		this.clearInitialDescriptionFocusTimers();
 		window.removeEventListener('resize', this.mobileResizeHandler);
-		if (Platform.isPhone) {
+		if (this.isPhone) {
 			window.addEventListener('resize', this.mobileResizeHandler);
 		}
 		this.trackerUnsubscribe?.();
@@ -2348,7 +2360,7 @@ export class TaskEditorContent {
 		}) ?? null;
 
 		this.shellEl = container.createDiv('operon-task-editor-shell');
-		if (!Platform.isPhone && this.hasFileBodyContext()) {
+		if (!this.isPhone && this.hasFileBodyContext()) {
 			this.registerFileBodyViewportListener();
 			this.fileBodyBackdropEl = this.shellEl.createEl('button', {
 				cls: 'operon-task-editor-file-panel-backdrop',
@@ -2362,17 +2374,15 @@ export class TaskEditorContent {
 		}
 
 		this.mainPanelEl = this.shellEl.createDiv('operon-task-editor-main-panel');
-		if (Platform.isPhone) {
+		if (this.usesMobileLayout) {
 			this.mobileNoteOpen = !!(this.fieldValues['note'] ?? '').trim();
 			this.renderMobileTaskEditorBody(this.mainPanelEl);
 		} else {
 			this.renderTaskEditorBody(this.mainPanelEl);
 		}
 		this.applyThemeColor();
-		if (!Platform.isPhone) {
-			this.updateFileBodyLayout();
-			this.refreshCompactTextEditorLayouts();
-		}
+		if (!this.isPhone) this.updateFileBodyLayout();
+		if (!this.usesMobileLayout) this.refreshCompactTextEditorLayouts();
 		this.scheduleMobileCoreToolbarOverflowState();
 	}
 
@@ -2426,16 +2436,14 @@ export class TaskEditorContent {
 		this.refreshStatsCounters = null;
 		cleanupOperonHoverTooltips(this.mainPanelEl);
 		this.mainPanelEl.empty();
-		if (Platform.isPhone) {
+		if (this.usesMobileLayout) {
 			this.renderMobileTaskEditorBody(this.mainPanelEl);
 		} else {
 			this.renderTaskEditorBody(this.mainPanelEl);
 		}
 		this.applyThemeColor();
-		if (!Platform.isPhone) {
-			this.updateFileBodyLayout();
-			this.refreshCompactTextEditorLayouts();
-		}
+		if (!this.isPhone) this.updateFileBodyLayout();
+		if (!this.usesMobileLayout) this.refreshCompactTextEditorLayouts();
 		this.scheduleMobileCoreToolbarOverflowState();
 	}
 
@@ -2867,7 +2875,7 @@ export class TaskEditorContent {
 			cls: 'operon-editor-picker-anchor-text',
 		});
 		const iconWrap = button.createSpan('operon-editor-picker-anchor-icon');
-		setIcon(iconWrap, Platform.isPhone ? 'chevron-right' : 'search');
+		setIcon(iconWrap, this.usesMobileLayout ? 'chevron-right' : 'search');
 		button.dataset.placeholder = placeholder;
 		button.dataset.placeholderTarget = text.className;
 		return button;
@@ -3363,7 +3371,7 @@ export class TaskEditorContent {
  }
 
  private mountDesktopFileProperties(root: HTMLElement): void {
-  if (Platform.isPhone || this.isNewTask || !this.fileBodyContext) return;
+  if (this.usesMobileLayout || this.isNewTask || !this.fileBodyContext) return;
   this.filePropertyRoot = root.createDiv('operon-editor-desktop-file-properties');
   if (!this.filePropertyCleanup) {
    this.filePropertyCleanup = getNativePropertyIndex(this.app).subscribe(() => {
@@ -4020,6 +4028,7 @@ export class TaskEditorContent {
 	}
 
 	private renderFileBodyToggle(container: HTMLElement, extraClass = ''): void {
+		if (this.isPhone) return;
 		if (!this.hasFileBodyContext()) return;
 
 		const button = container.createEl('button', {
@@ -4048,7 +4057,7 @@ export class TaskEditorContent {
 			: false;
 
 		this.renderCoreTrackerActionButton(container);
-		if (!Platform.isPhone && this.onSetShowLineNumbers) {
+		if (!this.isPhone && this.onSetShowLineNumbers) {
 			const button = container.createEl('button', {
 				cls: 'operon-editor-core-action-btn operon-editor-core-line-numbers-action',
 				attr: { type: 'button' },
@@ -4085,7 +4094,7 @@ export class TaskEditorContent {
 		}
 
 
-		if (!Platform.isPhone && this.onSetHideScrollbars) {
+		if (!this.isPhone && this.onSetHideScrollbars) {
 			const button = container.createEl('button', {
 				cls: 'operon-editor-core-action-btn operon-editor-core-scrollbars-action',
 				attr: { type: 'button' },
@@ -4190,7 +4199,7 @@ export class TaskEditorContent {
 			void this.requestSubtask();
 		});
 
-		if (!Platform.isPhone && !this.isNewTask && this.fileBodyContext?.format === 'yaml') {
+		if (!this.usesMobileLayout && !this.isNewTask && this.fileBodyContext?.format === 'yaml') {
 			const inlineLabel = t('buttons', 'addInlineSubtask');
 			const inlineButton = container.createEl('button', {
 				cls: 'operon-editor-core-action-btn operon-editor-core-inline-subtask-action',
@@ -4283,7 +4292,7 @@ export class TaskEditorContent {
 	}
 
 	private getRenderableWorkflowPickerItems(): TaskEditorWorkflowPickerItem[] {
-		const items = Platform.isPhone
+		const items = this.usesMobileLayout
 			? this.settings.taskEditorWorkflowPickers
 			: normalizeTaskEditorWorkflowPickers(undefined, undefined, this.settings.keyMappings);
 		return items
@@ -4675,7 +4684,7 @@ export class TaskEditorContent {
 	}
 
 	private shouldCloseWorkflowPickerOnSelect(): boolean {
-		return Platform.isPhone;
+		return this.isPhone;
 	}
 
 	private renderWorkflowPicker(container: HTMLElement, key: string): void {
@@ -5789,8 +5798,8 @@ export class TaskEditorContent {
 		const section = container.createDiv('operon-editor-tracking-sessions');
 		const header = section.createDiv('operon-editor-tracking-sessions-header');
 		const title = header.createEl('h6', { cls: 'operon-editor-core-title-badge operon-editor-tracking-sessions-title' });
-		if (Platform.isPhone) this.appendCanonicalIcon(title, 'trackers', 'operon-editor-tracking-sessions-title-icon');
-		title.createSpan({ text: Platform.isPhone ? t('taskEditor', 'trackingSessions') : this.desktopSectionLabel('sessions') });
+		if (this.usesMobileLayout) this.appendCanonicalIcon(title, 'trackers', 'operon-editor-tracking-sessions-title-icon');
+		title.createSpan({ text: this.usesMobileLayout ? t('taskEditor', 'trackingSessions') : this.desktopSectionLabel('sessions') });
 		const addButton = header.createEl('button', {
 			cls: 'operon-editor-core-action-btn operon-editor-tracking-sessions-add',
 			attr: { type: 'button' },
@@ -5799,7 +5808,7 @@ export class TaskEditorContent {
 		addButton.createSpan({ text: t('taskEditor', 'addSession') });
 
 		const list = section.createDiv('operon-editor-tracking-sessions-list');
-		const more = Platform.isPhone ? null : section.createEl('button', {
+		const more = this.usesMobileLayout ? null : section.createEl('button', {
 			cls: 'operon-editor-tracking-sessions-more',
 			attr: { type: 'button', 'aria-expanded': 'false' },
 		});
@@ -5849,9 +5858,9 @@ export class TaskEditorContent {
 					else addButton.focus({ preventScroll: true });
 				}
 			}
-			list.hidden = !Platform.isPhone && sessions.length === 0;
+			list.hidden = !this.usesMobileLayout && sessions.length === 0;
 			if (sessions.length === 0) {
-				if (!Platform.isPhone) return;
+				if (!this.usesMobileLayout) return;
 				list.createDiv({
 					cls: 'operon-editor-tracking-sessions-empty',
 					text: t('taskEditor', 'noTrackingSessions'),
@@ -5874,7 +5883,7 @@ export class TaskEditorContent {
 	}
 
 	private renderTrackingSessionRow(container: HTMLElement, session: TrackerSession): void {
-		const desktop = !Platform.isPhone;
+		const desktop = !this.usesMobileLayout;
 		const row = container.createDiv('operon-editor-tracking-session-row');
 		if (desktop) row.addClass('operon-editor-desktop-property-row');
 		const duration = desktop ? row.createDiv('operon-editor-desktop-property-label operon-editor-session-duration') : null;
@@ -7191,7 +7200,7 @@ export class TaskEditorContent {
 		const date = parseLocalDatetime(value);
 		if (!date) return value;
 		const dateKey = value.substring(0, 10);
-		const dateLabel = Platform.isPhone ? formatTrackerDayHeader(this.app, dateKey) : formatUiDate(dateKey, this.settings);
+		const dateLabel = this.usesMobileLayout ? formatTrackerDayHeader(this.app, dateKey) : formatUiDate(dateKey, this.settings);
 		return `${dateLabel}, ${formatUiTime(this.app, this.settings, value)}`;
 	}
 

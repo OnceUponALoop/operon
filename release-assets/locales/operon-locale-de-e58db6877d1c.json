@@ -1,8 +1,8 @@
 {
   "schemaVersion": 1,
   "locale": "de",
-  "keyCount": 3648,
-  "keyFingerprint": "bc6d2b2e45ec2f99c7c76ed8d6e8fbbc6422bfa00c8d26c10b025a5ea491637e",
+  "keyCount": 3650,
+  "keyFingerprint": "3ba55f91f00b60baa21640f349ca7a1def7b8960ba503bc8feebf25d803cd49c",
   "translations": {
     "buttons": {
       "addFileSubtask": "Datei-Unteraufgabe hinzufügen",
@@ -2703,6 +2703,8 @@
       "taskEditorSectionsSaveFailed": "Task-Editor-Abschnitte konnten nicht gespeichert werden.",
       "taskEditorShowLineNumbers": "Zeilennummern im Aufgaben-Editor anzeigen",
       "taskEditorShowLineNumbersDesc": "Quell-Zeilennummern im Dateiinhaltsbereich des Aufgaben-Editors anzeigen.",
+      "taskEditorUseMobileLayout": "Mobilen Task Editor auf Smartphones verwenden",
+      "taskEditorUseMobileLayoutDesc": "Wenn aktiviert, verwenden Smartphones das mobile Layout und dessen Einstellungen. Andernfalls verwenden sie das Desktop-Layout und dessen Einstellungen. Gilt beim nächsten Öffnen des Task Editors; Tablets und Desktopgeräte bleiben unverändert.",
       "taskEditorWorkflowPickers": "Sichtbarkeit und Reihenfolge der Eigenschaften",
       "taskEditorWorkflowPickersDesc": "Wählen Sie die Eigenschaftszeilen und ihre Reihenfolge im mobilen Task Editor, einschließlich unterstützter benutzerdefinierter Eigenschaften. Diese Einstellungen beeinflussen weder den Desktop-Editor noch vorhandene Aufgabendaten.",
       "taskEditorWorkflowPickersMoveDown": "Nach unten",
@@ -3693,5 +3695,5 @@
       "toggleDescendantPreview": "Vorschau untergeordneter Aufgaben umschalten"
     }
   },
-  "sourceVersion": "5321f808707ffca6244fd3a1245bbcf59c34f4e6e26da9ee5fcc8a34c9a4c7df"
+  "sourceVersion": "30d5a17a3ef1bbd6fca6314845e80049fd3dec87cdb810ef7446428f531b9a3c"
 }

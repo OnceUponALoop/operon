@@ -918,6 +918,8 @@
 		"locationPreviewMinZoomDesc": "場所チップの地図プレビュー内で許可される最小ズームレベル。",
 		"locationPreviewMaxZoom": "プレビューの最大ズーム",
 		"locationPreviewMaxZoomDesc": "場所チップの地図プレビュー内で許可される最大ズームレベル。",
+		"taskEditorUseMobileLayout": "スマートフォンでモバイル版Task Editorを使用",
+		"taskEditorUseMobileLayoutDesc": "オンの場合、スマートフォンではモバイルレイアウトとその設定を使用します。オフの場合はデスクトップレイアウトとその設定を使用します。次回Task Editorを開いたときに適用され、タブレットやデスクトップには影響しません。",
 		"taskEditorMobileCoreTools": "ツールバーの表示と順序",
 		"taskEditorMobileCoreToolsDesc": "モバイルタスクエディターツールバーは、スマートフォンに表示されるコアアイコンを制御し、順序を調整します。表示時、「ソースへ移動」は常に先頭、「削除」は常に末尾になります。",
 		"taskEditorMobileCoreToolsReorder": "モバイルのコアアイコンを並べ替え",

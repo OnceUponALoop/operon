@@ -1,8 +1,8 @@
 {
   "schemaVersion": 1,
   "locale": "es",
-  "keyCount": 3648,
-  "keyFingerprint": "bc6d2b2e45ec2f99c7c76ed8d6e8fbbc6422bfa00c8d26c10b025a5ea491637e",
+  "keyCount": 3650,
+  "keyFingerprint": "3ba55f91f00b60baa21640f349ca7a1def7b8960ba503bc8feebf25d803cd49c",
   "translations": {
     "buttons": {
       "addFileSubtask": "Añadir subtarea de archivo",
@@ -2703,6 +2703,8 @@
       "taskEditorSectionsSaveFailed": "No se pudieron guardar las secciones de Task Editor.",
       "taskEditorShowLineNumbers": "Mostrar números de línea en el Editor de tareas",
       "taskEditorShowLineNumbersDesc": "Mostrar los números de línea de origen en el panel de cuerpo del archivo del Editor de tareas.",
+      "taskEditorUseMobileLayout": "Usar el Task Editor móvil en teléfonos",
+      "taskEditorUseMobileLayoutDesc": "Si se activa, los teléfonos usan el diseño móvil y sus ajustes. Si se desactiva, usan el diseño de escritorio y sus ajustes. Se aplica al volver a abrir Task Editor; no afecta a tabletas ni ordenadores.",
       "taskEditorWorkflowPickers": "Visibilidad y orden de propiedades",
       "taskEditorWorkflowPickersDesc": "Elige las propiedades y su orden en Task Editor móvil, incluidas las propiedades personalizadas compatibles. Estas preferencias no afectan al editor de escritorio ni a los datos existentes de las tareas.",
       "taskEditorWorkflowPickersMoveDown": "Mover hacia abajo",
@@ -3693,5 +3695,5 @@
       "toggleDescendantPreview": "Alternar vista previa de descendientes"
     }
   },
-  "sourceVersion": "7880501bb0994136455f75a1468a481a523a9771e3e32b481e4ab1553fb359aa"
+  "sourceVersion": "6b3f69b224fcd695c514f46d32d50020072dc82f7e985b80054320b48aead9ce"
 }

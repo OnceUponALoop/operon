@@ -126,6 +126,7 @@ export const ALL_OPERON_SETTINGS_BACKUP_KEYS = [
 	'taskEditorShowLineNumbers',
 	'taskEditorHighlightActiveLine',
 	'taskEditorWorkflowPickers',
+	'taskEditorUseMobileLayout',
 	'taskEditorMobileCoreTools',
 	'inlineTaskCompactChips',
 	'filterTaskCompactChips',

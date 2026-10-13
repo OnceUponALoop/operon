@@ -1,8 +1,8 @@
 {
   "schemaVersion": 1,
   "locale": "it",
-  "keyCount": 3648,
-  "keyFingerprint": "bc6d2b2e45ec2f99c7c76ed8d6e8fbbc6422bfa00c8d26c10b025a5ea491637e",
+  "keyCount": 3650,
+  "keyFingerprint": "3ba55f91f00b60baa21640f349ca7a1def7b8960ba503bc8feebf25d803cd49c",
   "translations": {
     "buttons": {
       "addFileSubtask": "Aggiungi sotto-attività-file",
@@ -2703,6 +2703,8 @@
       "taskEditorSectionsSaveFailed": "Impossibile salvare le sezioni di Task Editor.",
       "taskEditorShowLineNumbers": "Mostra numeri di riga nell'Editor attività",
       "taskEditorShowLineNumbersDesc": "Mostra i numeri di riga di origine nel pannello contenuto del file dell'Editor attività.",
+      "taskEditorUseMobileLayout": "Usa Task Editor mobile sui telefoni",
+      "taskEditorUseMobileLayoutDesc": "Se attivo, i telefoni usano il layout mobile e le relative impostazioni. Se disattivo, usano il layout desktop e le relative impostazioni. Si applica alla prossima apertura di Task Editor; tablet e computer non sono interessati.",
       "taskEditorWorkflowPickers": "Visibilità e ordine delle proprietà",
       "taskEditorWorkflowPickersDesc": "Scegli le proprietà e il loro ordine in Task Editor mobile, incluse le proprietà personalizzate supportate. Queste preferenze non influiscono sull’editor desktop né sui dati esistenti delle attività.",
       "taskEditorWorkflowPickersMoveDown": "Sposta in basso",
@@ -3693,5 +3695,5 @@
       "toggleDescendantPreview": "Alterna anteprima discendenti"
     }
   },
-  "sourceVersion": "7bc6397eaed4fb026802e9694e1805a8f23d649097741f4b7333d0517b308817"
+  "sourceVersion": "502f1a1770cdf07332ece71202716aa425dccbc1fc5d96aaa609ab18d2a78bab"
 }

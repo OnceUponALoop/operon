@@ -1,8 +1,8 @@
 {
   "schemaVersion": 1,
   "locale": "ru",
-  "keyCount": 3648,
-  "keyFingerprint": "bc6d2b2e45ec2f99c7c76ed8d6e8fbbc6422bfa00c8d26c10b025a5ea491637e",
+  "keyCount": 3650,
+  "keyFingerprint": "3ba55f91f00b60baa21640f349ca7a1def7b8960ba503bc8feebf25d803cd49c",
   "translations": {
     "buttons": {
       "addFileSubtask": "Добавить файловую подзадачу",
@@ -2703,6 +2703,8 @@
       "taskEditorSectionsSaveFailed": "Не удалось сохранить разделы Task Editor.",
       "taskEditorShowLineNumbers": "Показывать номера строк в редакторе задач",
       "taskEditorShowLineNumbersDesc": "Отображать номера строк исходного текста на панели тела файла в редакторе задач.",
+      "taskEditorUseMobileLayout": "Использовать мобильный Task Editor на телефонах",
+      "taskEditorUseMobileLayoutDesc": "Если включено, телефоны используют мобильный интерфейс и его настройки. Если выключено — интерфейс для компьютера и его настройки. Изменение применяется при следующем открытии Task Editor; планшеты и компьютеры не затрагиваются.",
       "taskEditorWorkflowPickers": "Видимость и порядок свойств",
       "taskEditorWorkflowPickersDesc": "Выберите строки свойств и их порядок в мобильном Task Editor, включая поддерживаемые пользовательские свойства. Эти настройки не влияют на настольный редактор и существующие данные задач.",
       "taskEditorWorkflowPickersMoveDown": "Переместить вниз",
@@ -3693,5 +3695,5 @@
       "toggleDescendantPreview": "Переключить предпросмотр потомков"
     }
   },
-  "sourceVersion": "ea0669f5659e9ed8d08ae1614562a472c80356c85fcd1bdab908b671f02bac5d"
+  "sourceVersion": "258a89ddab60a741881df3621aa30cea9427e6c352a00adea9f961c851b46689"
 }
