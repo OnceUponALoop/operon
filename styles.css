@@ -15687,7 +15687,7 @@ body:not(.is-mobile) .mod-root .workspace-leaf-content[data-type="operon-filter-
 	flex-wrap: wrap;
 	gap: 8px;
 	margin-top: 12px;
-	padding-left: 8px;
+	padding-left: 0;
 }
 
 .operon-filter-group-clipboard-actions {
@@ -15710,6 +15710,35 @@ body:not(.is-mobile) .mod-root .workspace-leaf-content[data-type="operon-filter-
 .operon-filter-group-clipboard-button svg {
 	width: var(--icon-s, 16px);
 	height: var(--icon-s, 16px);
+}
+
+/* Keep filter actions quiet without changing their hit targets or wrapped layout. */
+@media (hover: hover) and (pointer: fine) {
+	body:not(.is-mobile) .operon-filter-group-footer .operon-filter-modal-add-button {
+		position: relative;
+	}
+
+	body:not(.is-mobile) .operon-filter-group-footer:not(:hover):not(:focus-within) .operon-filter-modal-add-button {
+		color: transparent;
+		border-color: transparent;
+		background: transparent;
+		box-shadow: none;
+	}
+
+	body:not(.is-mobile) .operon-filter-group-footer:not(:hover):not(:focus-within) .operon-filter-modal-add-button svg {
+		opacity: 0;
+	}
+
+	body:not(.is-mobile) .operon-filter-group-footer:not(:hover):not(:focus-within) .operon-filter-modal-add-button::after {
+		content: "";
+		position: absolute;
+		inset-inline: 0;
+		top: calc(50% - 2px);
+		height: 4px;
+		border-radius: 2px;
+		background: var(--background-modifier-hover);
+		pointer-events: none;
+	}
 }
 
 .operon-settings-list-card-chip,
