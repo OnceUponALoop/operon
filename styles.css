@@ -5215,6 +5215,30 @@ body .operon-searchable-option-picker-panel .operon-searchable-option-picker-ite
 	color: inherit;
 }
 
+.operon-compact-task-markdown-highlight[data-highlight="red"] {
+	background-color: var(--highlight-background-red, var(--text-highlight-bg));
+}
+
+.operon-compact-task-markdown-highlight[data-highlight="orange"] {
+	background-color: var(--highlight-background-orange, var(--text-highlight-bg));
+}
+
+.operon-compact-task-markdown-highlight[data-highlight="yellow"] {
+	background-color: var(--highlight-background-yellow, var(--text-highlight-bg));
+}
+
+.operon-compact-task-markdown-highlight[data-highlight="green"] {
+	background-color: var(--highlight-background-green, var(--text-highlight-bg));
+}
+
+.operon-compact-task-markdown-highlight[data-highlight="blue"] {
+	background-color: var(--highlight-background-blue, var(--text-highlight-bg));
+}
+
+.operon-compact-task-markdown-highlight[data-highlight="purple"] {
+	background-color: var(--highlight-background-purple, var(--text-highlight-bg));
+}
+
 .operon-compact-task-markdown-code {
 	padding: 0.05em 0.3em;
 	border-radius: 4px;

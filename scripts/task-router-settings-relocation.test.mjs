@@ -194,7 +194,7 @@ test('File Tasks keeps section copy and documentation attached while rendering t
 		'renderFileDailyNotesSettings', 'renderFileWeeklyNotesSettings',
 		'renderFileConversionSection', 'renderExcludedFolderSettings', 'renderFileTaskMigrationSettings',
 	]);
-	assert.match(extractMethod(settingsTabSource, 'buildTaskCaptureSearchSections'), /renderFileCreationDefaultsSection\(el, key\), 'DOCS-020 Task Creator'/);
+	assert.match(extractMethod(settingsTabSource, 'buildTaskCaptureSearchSections'), /renderFileCreationDefaultsSection\(el, key\), \['DOCS-024 Task templates', 'DOCS-020 Task Creator'\]/);
 	assert.match(extractMethod(settingsTabSource, 'buildTaskCaptureSearchSections'), /renderFileTemplatesSection\(el\), 'DOCS-024 Task templates'/);
 	assert.match(extractMethod(settingsTabSource, 'buildTaskCaptureSearchSections'), /renderFileConversionSection\(el, key\), 'DOCS-019 Converting inline and file tasks'/);
 	assert.doesNotMatch(

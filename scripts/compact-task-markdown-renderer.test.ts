@@ -113,6 +113,26 @@ function flatten(nodes: readonly CompactTaskMarkdownNode[]): string {
 }
 
 function run(): void {
+	for (const [emoji, color] of [['🔴', 'red'], ['🟠', 'orange'], ['🟡', 'yellow'], ['🟢', 'green'], ['🔵', 'blue'], ['🟣', 'purple']]) {
+		const source = `==${emoji}**highlight**==`;
+		deepEqual(parseCompactTaskMarkdown(source), [{ type: 'highlight', color, children: [{ type: 'strong', children: [{ type: 'text', value: 'highlight' }] }] }]);
+		for (const mode of ['interactive', 'visual-only', 'tooltip'] as const) {
+			const container = createContainer();
+			renderCompactTaskMarkdown(container as unknown as HTMLElement, { value: source, mode });
+			equal(container.children[0].tagName, 'MARK');
+			equal(container.children[0].attributes.get('data-highlight'), color);
+			equal(container.children[0].children[0].children[0].textContent, 'highlight');
+		}
+		equal(source, `==${emoji}**highlight**==`, 'rendering must preserve source');
+	}
+	deepEqual(parseCompactTaskMarkdown('==default=='), [{ type: 'highlight', children: [{ type: 'text', value: 'default' }] }]);
+	for (const value of ['text🔴', '⚫text', '**🔴text**']) {
+		equal(flatten(parseCompactTaskMarkdown(`==${value}==`)), value.replace(/\*\*/gu, ''));
+	}
+	deepEqual(parseCompactTaskMarkdown('`==🔴literal==`'), [{ type: 'code', value: '==🔴literal==' }]);
+	deepEqual(parseCompactTaskMarkdown('\\==🔴literal\\=='), [{ type: 'text', value: '==🔴literal==' }]);
+	equal(flatten(parseCompactTaskMarkdown('==🔴🔵two==')), '🔵two');
+	deepEqual(nodeTypes('==🔴[Label](https://example.com)=='), ['highlight']);
 	deepEqual(nodeTypes('A **bold** *italic* `code`'), ['text', 'strong', 'text', 'emphasis', 'text', 'code']);
 	deepEqual(nodeTypes('A __bold__ _italic_ ~~strike~~ ++underline++ ==highlight=='), [
 		'text',
