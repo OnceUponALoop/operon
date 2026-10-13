@@ -1,3 +1,5 @@
+import { cleanupTaskContextualHoverMenus } from '../contextual-hover-menu';
+import { clearTableNativePending, retainTableNativePending } from './table-native-pending';
 import { retainTablePropertyDraft, tablePropertyPickerDraft, tablePropertyUpdateRequest } from './table-file-property-editor';
 import { cancelTableNativePropertyRequest, clearTableNativePropertySnapshot, getTableNativePropertySnapshot } from './table-native-property';
 import { formatTableCompactDuration } from './table-display';
@@ -258,7 +260,7 @@ import { getOwnerWindow } from '../../core/dom-compat';
 import { getAppLocale } from '../../core/obsidian-app';
 import type { ContextualMenuActionHandler } from '../../core/contextual-menu-engine';
 import { setAccessibleLabelWithoutTooltip } from '../accessibility-label';
-import { resolveSurfaceFloatingHostOptions, snapshotFloatingRectAnchor } from '../field-pickers/common';
+import { closeFloatingPanelsForRoot, resolveSurfaceFloatingHostOptions, snapshotFloatingRectAnchor } from '../field-pickers/common';
 import { openWebViewerNewTab } from '../external-link-actions';
 import { bindOperonHoverTooltip, cleanupOperonHoverTooltips } from '../operon-hover-tooltip';
 import {
@@ -631,6 +633,7 @@ export class OperonTableView extends FileView {
 	}
 
 	async onClose(): Promise<void> {
+		clearTableNativePending(this.contentEl);
 		clearTableNativePropertySnapshot(this);
 		this.presetSelectionGeneration += 1;
 		this.lifecycleEpoch += 1;
@@ -778,6 +781,7 @@ export class OperonTableView extends FileView {
 	}
 
 	private renderLoadingTableFile(): void {
+		clearTableNativePending(this.contentEl);
 		this.currentRenderState = null;
 		this.cleanupActiveResize();
 		this.cleanupTableResizeObserver();
@@ -798,6 +802,7 @@ export class OperonTableView extends FileView {
 	}
 
 	private renderInvalidTableFile(): void {
+		clearTableNativePending(this.contentEl);
 		this.cleanupActiveResize();
 		this.cleanupTableResizeObserver();
 		this.cleanupToolbarLayout();
@@ -905,11 +910,27 @@ export class OperonTableView extends FileView {
 			this, this.app, baseFilePropertySnapshot, searchContext.scopeFilteredTasks, this.indexer.getGeneration(), settings,
 			() => { if (this.contentEl.isConnected) this.render(); }, usesNativeProperties,
 		);
-  if (filePropertySnapshot.loading) {
-   this.renderLoadingTableFile();
-   renderTrace?.finish('loaded', () => this.containerEl.isConnected);
-   return;
-  }
+		if (filePropertySnapshot.loading) {
+			if (retainTableNativePending(this.contentEl, preset.id, previousRenderState?.preset.id, t('settings', 'languagePackUpdating'))) {
+				// Retain pixels only: pending values must not drive export, queries or deferred rows.
+				this.currentRenderState = null;
+				this.cancelSearchPrewarm();
+				this.closeActivePicker();
+				closeFloatingPanelsForRoot(this.contentEl);
+				cleanupTaskContextualHoverMenus(this.contentEl);
+				cleanupOperonHoverTooltips(this.contentEl);
+				this.cleanupActiveResize();
+				this.ganttInteraction?.destroy();
+				this.ganttInteraction = null;
+				this.ganttDividerCleanup?.();
+				this.ganttDividerCleanup = null;
+			} else {
+				this.renderLoadingTableFile();
+			}
+			renderTrace?.finish('loaded', () => this.containerEl.isConnected);
+			return;
+		}
+		clearTableNativePending(this.contentEl);
 
 		const resolvedColumns = resolveTableColumns(preset, settings);
 		const taskColumns = resolvedColumns.taskColumns.map(column => ({ ...column }));
@@ -3979,6 +4000,7 @@ export class OperonTableView extends FileView {
 	}
 
 	private restorePendingCellFocus(): void {
+		if (!this.currentRenderState) return;
 		const cellKey = this.pendingFocusKey;
 		if (!cellKey) return;
 		this.pendingFocusKey = null;

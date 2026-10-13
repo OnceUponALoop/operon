@@ -392,7 +392,11 @@ export function bindTableFilePropertyRemovalMenu(options: {
 		menu.addItem(item => item
 			.setTitle(t('table', 'filePropertyRemove'))
 			.setIcon('trash-2')
-			.onClick(options.onRemove));
+			.onClick(() => {
+				// A body-owned menu may outlive the table snapshot that opened it.
+				if (!options.cell.isConnected || options.cell.closest('[inert]')) return;
+				options.onRemove();
+			}));
 		if (event.type === 'contextmenu') menu.showAtMouseEvent(event as MouseEvent);
 		else menu.showAtPosition({ x: options.cell.getBoundingClientRect().left, y: options.cell.getBoundingClientRect().bottom });
 	};

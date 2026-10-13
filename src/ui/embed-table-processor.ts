@@ -1,3 +1,5 @@
+import { cleanupTaskContextualHoverMenus } from './contextual-hover-menu';
+import { clearTableNativePending, retainTableNativePending } from './table/table-native-pending';
 import { retainTablePropertyDraft, tablePropertyPickerDraft, tablePropertyUpdateRequest } from './table/table-file-property-editor';
 import { cancelTableNativePropertyRequest, clearTableNativePropertySnapshot, getTableNativePropertySnapshot } from './table/table-native-property';
 import { formatTableCompactDuration } from './table/table-display';
@@ -809,6 +811,7 @@ function createEmbedTableInstance(
 }
 
 function destroyEmbedTableInstance(instance: EmbedTableInstance): void {
+	clearTableNativePending(instance.el);
 	clearTableNativePropertySnapshot(instance);
 	instance.pendingMobileTextInputRender = false;
 	instance.mobileScrollGestureUntil = 0;
@@ -915,6 +918,7 @@ function renderEmbedTableContents(instance: EmbedTableInstance, deps: EmbedTable
 	syncEmbedTableWidthBinding(instance, settings, deps);
 	const preset = resolveEmbedTablePreset(deps, instance.presetId);
 	if (!preset) {
+		clearTableNativePending(instance.el);
 		cancelTableNativePropertyRequest(instance);
 		closeEmbedTableTransientUi(instance.el);
 		closeEmbedTableActivePicker(instance);
@@ -960,14 +964,34 @@ function renderEmbedTableContents(instance: EmbedTableInstance, deps: EmbedTable
 		instance, deps.app, baseFilePropertySnapshot, searchContext.scopeFilteredTasks, deps.indexer.getGeneration(), settings,
 		() => { if (instance.el.isConnected) renderEmbedTable(instance, deps); }, usesNativeProperties,
 	);
- if (filePropertySnapshot.loading) {
-  resetEmbedTableRenderState(instance);
-  cleanupOperonHoverTooltips(instance.el);
-  instance.el.empty();
-  instance.el.createDiv({ text: t('table', 'fileLoading'), attr: { role: 'status', 'aria-live': 'polite' } });
-  renderTrace?.finish('loaded', () => instance.el.isConnected);
-  return;
- }
+	if (filePropertySnapshot.loading) {
+		if (restoreSearchFocus && activeInput) instance.pendingSearchFocus = captureTableSearchFocusRange(activeInput);
+		const retained = retainTableNativePending(instance.el, preset.id, instance.currentRenderState?.preset.id, t('settings', 'languagePackUpdating'));
+		closeEmbedTableTransientUi(instance.el);
+		closeEmbedTableActivePicker(instance);
+		cleanupTaskContextualHoverMenus(instance.el);
+		cleanupOperonHoverTooltips(instance.el);
+		if (retained) {
+			// Keep the DOM, not an actionable stale snapshot; force a coherent render on readiness.
+			instance.currentRenderState = null;
+			instance.lastQuerySignature = null;
+			instance.lastRenderSignature = null;
+			cancelEmbedTableSearchPrewarm(instance);
+			cancelEmbedTableSummaryIdle(instance);
+			cleanupTableHeaderActiveResize(instance.headerInteractionState);
+			instance.ganttInteraction?.destroy();
+			instance.ganttInteraction = null;
+			instance.ganttDividerCleanup?.();
+			instance.ganttDividerCleanup = null;
+		} else {
+			resetEmbedTableRenderState(instance);
+			instance.el.empty();
+			instance.el.createDiv({ text: t('table', 'fileLoading'), attr: { role: 'status', 'aria-live': 'polite' } });
+		}
+		renderTrace?.finish('loaded', () => instance.el.isConnected);
+		return;
+	}
+	clearTableNativePending(instance.el);
 
 	const querySignature = buildEmbedTableQuerySignature(
 		instance,
@@ -4788,6 +4812,7 @@ function clearRenderedEmbedTablePendingCellState(instance: EmbedTableInstance, c
 }
 
 function restoreEmbedTablePendingCellFocus(instance: EmbedTableInstance): void {
+	if (!instance.currentRenderState) return;
 	const cellKey = instance.pendingFocusKey;
 	if (!cellKey) return;
 	instance.pendingFocusKey = null;

@@ -30223,6 +30223,26 @@ body:not(.is-mobile) .mod-root .workspace-leaf-content:is(
 	word-break: break-word;
 }
 
+/* A coherent table stays visible while native properties catch up with a source edit. */
+.operon-table-native-pending-host {
+ position: relative;
+}
+.operon-table-root.operon-table-native-pending {
+ opacity: 0.6;
+}
+.operon-table-native-pending-status {
+ position: absolute;
+ top: 8px;
+ right: 8px;
+ padding: 4px 8px;
+ border: 1px solid var(--background-modifier-border);
+ border-radius: 8px;
+ background: var(--background-primary);
+ color: var(--text-muted);
+ font-size: var(--font-ui-small);
+ pointer-events: none;
+}
+
 .operon-table-root {
 	--operon-table-row-height: 38px;
 	--operon-table-border: var(--background-modifier-border);

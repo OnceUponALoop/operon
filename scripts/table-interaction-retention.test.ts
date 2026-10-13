@@ -96,6 +96,14 @@ async function run(): Promise<void> {
 	}
 	match(workspaceSource, /programmaticScrollGuard\.isExpected\(timelineBodyScroller\)/);
 	match(embeddedSource, /preserveFloatingPanels: instance\.keepActivePickerOnRender/);
+	for (const source of [workspaceSource, embeddedSource]) {
+		match(source, /retainTableNativePending\(/, 'both surfaces retain their coherent DOM while native data is pending');
+		match(source, /clearTableNativePending\(/, 'pending DOM state is cleaned up');
+		match(source, /currentRenderState = null/, 'stale results cannot drive deferred rows or export');
+	}
+	const pendingEmbed = embeddedSource.slice(embeddedSource.indexOf('if (filePropertySnapshot.loading)'), embeddedSource.indexOf('const querySignature = buildEmbedTableQuerySignature'));
+	match(pendingEmbed, /lastQuerySignature = null/);
+	match(pendingEmbed, /lastRenderSignature = null/, 'same-signature ready data must still unlock the retained DOM');
 	match(popoverSource, /repositionOnScroll: true/);
 	match(popoverSource, /shouldClose: reason => reason !== 'window-blur'/);
 
