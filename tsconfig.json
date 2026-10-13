@@ -23,6 +23,7 @@
 		"**/*.ts"
 	],
 	"exclude": [
-		"scripts/agent-runtime/developer-api/native-acceptance-consumer/**"
+		"scripts/agent-runtime/developer-api/native-acceptance-consumer/**",
+		"scripts/test-stubs/w032-empty-id-fix/repair.ts"
 	]
 }
