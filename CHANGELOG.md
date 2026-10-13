@@ -24,11 +24,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Improved
 
 - Reorganized the desktop **Task Editor** into compact property groups with consistent task colors, expandable description and notes, clearer identity actions, and stable split-panel sizing.
-- Unified custom and vault properties in **Additional**. Existing empty properties appear as header shortcuts, and Automatic properties can be selected with a warning icon and an explanation of why editing is unavailable.
-- Made **Automatic and incompatible property warnings** clearer in Task Editor and Tables, including empty cells. Automatic fields use a red shield icon, and read-only explanations take precedence over truncated-value tooltips.
+- Unified custom and vault properties in **Additional**. Existing empty properties appear as header shortcuts.
+- Made **Automatic and incompatible property warnings** clearer in Task Editor and Tables, including empty cells. Automatic properties remain selectable in Task Editor with a red shield icon and an explanation of why editing is unavailable. Read-only explanations take precedence over truncated-value tooltips.
 - Included **Vault Properties in the persistent task index**, so tasks and their properties load together on subsequent launches. The first launch after upgrading automatically builds the new index; no manual reindex is required.
 - Improved **Table preset switching** by reusing valid Vault Property snapshots when returning from a preset without Vault Properties, reducing repeated property preparation in standalone and embedded Tables.
-- Made **Task Creator** show the combined user, parent, surface, and template values before creation. Relevant hidden properties appear temporarily, empty template fields remain available to fill, and user edits and removals survive template changes. Previewed template dates remain fixed when saved.
+- Made **Task Creator** show the combined user, parent, surface, and template values before creation. Relevant hidden properties appear temporarily, and empty template fields remain available to fill. User edits and removals are preserved through template changes, File/Inline switches, and template-based creation and conversion. Previewed template dates remain fixed when saved.
 - Reduced **Task Creator** visual clutter with compact spacing and one line per property icon when the controls are inactive. Icons expand during property interaction, and typing Template in the description offers a shortcut to the template picker.
 - Made **Task Creator tooltips and property indicators** follow the current task color, falling back to the accent color and updating when templates or task modes change. Warning indicators retain their warning color.
 - Made **prefilled Task Creator descriptions** place the cursor at the end on first opening across integrations, while preserving subsequent user cursor placement.
@@ -37,8 +37,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Made **Session durations** clickable in Task Editor, opening the same edit window as the pencil action.
 - Adapted the **desktop Task Editor layout on phones and tablets** with larger touch targets, visible actions, wrapping values, and stacked property names in narrow panels. Tablet controls keep their size when switching between touch and trackpad input, and pickers follow the visible viewport.
 - Made **Stats and Sessions** more compact and easier to scan, with time summaries, subtask counters, collapsible session lists, and clearer duration and weekday hints. Empty Stats sections stay hidden.
-- Improved **File Body** source focus, cursor placement, active-line feedback, and line-number background, alongside more consistent hover controls, date pickers, truncated-text hints, and theme compatibility.
-- Made **template-based creation and conversion** preserve native value types, repeated list members, source priorities, and user changes. Bulk selection conversions within notes reuse template content and keep existing Operon tasks unchanged. Destination inheritance is applied in the same submission without an extra review step.
+- Improved **File Body** source focus, cursor placement, and line-number background, alongside more consistent hover controls, date pickers, truncated-text hints, and theme compatibility.
+- Made **template-based creation and conversion** preserve native value types, repeated list members, and source priorities. Bulk selection conversions within notes reuse template content and keep existing Operon tasks unchanged. Destination inheritance is applied in the same submission without an extra review step.
 
 - Expanded **Tasks emoji conversion** with dependency linking within the conversion set and support for more recurrence patterns, preserving unsupported metadata in task notes. Tasks converted through Settings use the default Inline Task template while remaining independent, without inferred parent links or inherited parent fields; source emoji fields follow the configured conversion options.
 
@@ -50,7 +50,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
-- Switching between **File and Inline** in Task Creator now loads the destination mode's default template while preserving user edits. Manual template selection or clearing remains in effect until the mode changes.
+- Switching between **File and Inline** in Task Creator now loads the destination mode's default template. Manual template selection or clearing remains in effect until the mode changes.
 - The **template shortcut suggestion** now always reads “Pick a Template”, while the bottom template control continues to show the selected template name.
 - Renamed **Task Creator Toolbar** to **Task Creator Chips** in Settings to match the other Task Chips sections.
 - **File Body** is unavailable in both phone Task Editor layouts; tablet and desktop access is preserved.
@@ -77,12 +77,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Validation
 
-- Passed the unified local regression suite: **4,951/4,951 checks**, with all imported test groups registered and no test filter.
-- Passed combined local validation, including strict lint, production build, Runtime and Developer API regressions, Index V8 checks, locale checks, and the Plugin release guard.
-- Earlier combined-source validation passed 66 creation-draft, 31 prepared-Creator, and 164 native-property and index tests.
-- Earlier combined-source validation passed 40 File/Inline creation and index round trips, 100-task note conversion and 100-task Settings conversion scenarios, and 33 focused Creator and property-warning UI checks.
-- Passed 11 focused touch/picker regressions and 8 narrow-viewport tests, plus synthetic browser checks for touch targets, wrapping, panel breakpoints, and unchanged legacy mobile and desktop geometry.
-- Physical phone and tablet validation has not been performed; automated checks do not establish physical-device acceptance.
+- Passed the unified local regression suite: **4,951/4,951 checks**, with all imported test groups registered and no test filter; combined local validation covered strict lint, production build, Runtime and Developer API regressions, Index V8 checks, locale checks, and the Plugin release guard. Earlier combined-source validation passed 66 creation-draft, 31 prepared-Creator, and 164 native-property and index tests; 40 File/Inline creation and index round trips; 100-task note conversion and 100-task Settings conversion scenarios; and 33 focused Creator and property-warning UI checks. Additional validation passed 11 focused touch/picker regressions and 8 narrow-viewport tests, plus synthetic browser checks for touch targets, wrapping, panel breakpoints, and unchanged legacy mobile and desktop geometry. Physical phone and tablet validation has not been performed; automated checks do not establish physical-device acceptance.
 
 ## [3.12.0] - 2026-10-06
 
