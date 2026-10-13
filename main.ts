@@ -1330,6 +1330,7 @@ interface DirectTaskEditContext {
 }
 
 interface TaskFieldsUpdateOptions {
+ tableCommittedSource?: boolean;
  ownedDrawingSources?: readonly InlineMarkdownSource[];
  directEdit?: DirectTaskEditContext;
  dependencyOptions?: DependencyChangeOptions;
@@ -24017,10 +24018,36 @@ export default class OperonPlugin extends Plugin {
 	}
 
 	private refreshLocationPlaceTableSurfaces(): void {
+		if (this.tableMutationRefreshDepth > 0) { this.tableMutationRefreshPending = true; return; }
 		this.refreshTableLeaves();
 		if (this.embedTableDeps) {
 			refreshEmbedTables(this.embedTableDeps);
 		}
+	}
+
+	private tableMutationRefreshDepth = 0;
+	private tableMutationRefreshPending = false;
+
+	private async withTableMutationRefresh<T>(mutate: () => Promise<T>): Promise<T> {
+		this.tableMutationRefreshDepth++;
+		try { return await mutate(); }
+		finally {
+			this.tableMutationRefreshDepth--;
+			if (this.tableMutationRefreshDepth === 0 && this.tableMutationRefreshPending) {
+				this.tableMutationRefreshPending = false;
+				this.scheduleTableFilePropertyRefresh();
+			}
+		}
+	}
+
+	private consumeTableMutationRefresh(): void {
+		// The immediately following coherent refresh covers only already received notifications.
+		// Later metadata events schedule new work normally; failure paths never consume it.
+		if (this.tableFilePropertyRefreshTimer) clearWindowTimeout(this.tableFilePropertyRefreshTimer);
+		if (this.locationPlaceTableRefreshTimer) clearWindowTimeout(this.locationPlaceTableRefreshTimer);
+		this.tableFilePropertyRefreshTimer = null;
+		this.locationPlaceTableRefreshTimer = null;
+		this.tableMutationRefreshPending = false;
 	}
 
 	private scheduleTableFilePropertyRefresh(delayMs = 0): void {
@@ -24029,6 +24056,7 @@ export default class OperonPlugin extends Plugin {
 		}
 		this.tableFilePropertyRefreshTimer = setWindowTimeout(() => {
 			this.tableFilePropertyRefreshTimer = null;
+			if (this.tableMutationRefreshDepth > 0) { this.tableMutationRefreshPending = true; return; }
 			this.refreshViews({ reason: 'file-properties' });
 		}, delayMs);
 	}
@@ -34728,6 +34756,8 @@ export default class OperonPlugin extends Plugin {
 				}
 				throw error;
 			}
+		} else if (options.tableCommittedSource) {
+			await this.indexer.reindexCommittedMutationSources([task.primary.filePath], reindexOptions);
 		} else {
 			await this.indexer.reindexFilePath(task.primary.filePath, reindexOptions);
 		}
@@ -34812,6 +34842,7 @@ export default class OperonPlugin extends Plugin {
 			})
 			: undefined;
 		this.scheduleProjectSerialIndexReconcile();
+		if (options.tableCommittedSource) this.consumeTableMutationRefresh();
 		this.refreshViews({
 			preserveKanbanViewport: true,
 			...(isStatusCycleRefresh || options.statusCycleTrace ? {
@@ -35099,6 +35130,10 @@ export default class OperonPlugin extends Plugin {
 	}
 
 	private async updateTableTaskFieldsAndRefresh(operonId: string, payload: Record<string, string>): Promise<boolean> {
+		return this.withTableMutationRefresh(() => this.commitTableTaskFieldsAndRefresh(operonId, payload));
+	}
+
+	private async commitTableTaskFieldsAndRefresh(operonId: string, payload: Record<string, string>): Promise<boolean> {
 		const guardedUpdate = this.normalizeTableTaskFieldsWritebackPayload(payload);
 		if (!guardedUpdate) return false;
 		const { payload: guardedPayload, changedKeys } = guardedUpdate;
@@ -35116,11 +35151,11 @@ export default class OperonPlugin extends Plugin {
 					? this.buildNormalizedTaskFieldUpdate(task, key, value)
 					: this.buildTerminalDateRemovalNormalization(task, key);
 				if (!normalizedPayload) return false;
-				return this.updateDirectTaskFieldsAndRefresh(operonId, normalizedPayload, { changedKeys: [key] });
+				return this.updateDirectTaskFieldsAndRefresh(operonId, normalizedPayload, { changedKeys: [key], tableCommittedSource: true });
 			}
 		}
 
-		return this.updateDirectTaskFieldsAndRefresh(operonId, guardedPayload, { changedKeys });
+		return this.updateDirectTaskFieldsAndRefresh(operonId, guardedPayload, { changedKeys, tableCommittedSource: true });
 	}
 
 	private async updateGanttTaskFieldsAndRefresh(
@@ -35676,7 +35711,11 @@ export default class OperonPlugin extends Plugin {
 		}
 	}
 
-	private async updateTableFilePropertyAndRefresh(
+	private async updateTableFilePropertyAndRefresh(operonId: string, request: TableFilePropertyUpdateRequest): Promise<RawYamlPropertyWriteOutcome> {
+		return this.withTableMutationRefresh(() => this.commitTableFilePropertyAndRefresh(operonId, request));
+	}
+
+	private async commitTableFilePropertyAndRefresh(
 		operonId: string,
 		request: TableFilePropertyUpdateRequest,
 	): Promise<RawYamlPropertyWriteOutcome> {
@@ -35685,7 +35724,8 @@ export default class OperonPlugin extends Plugin {
   if (request.nativeType) {
    const outcome = await writeTableNativeProperty(this.app, this.writer, task, request, this.settings, localNow());
    this.tableFilePropertyIndex?.invalidateFile(task.primary.filePath);
-   await this.indexer.reindexFilePath(task.primary.filePath, { notify: false });
+   await this.indexer.reindexCommittedMutationSources([task.primary.filePath], { notify: false });
+   this.consumeTableMutationRefresh();
    this.refreshViews({ preserveKanbanViewport: true });
    return outcome;
   }
@@ -35700,7 +35740,8 @@ export default class OperonPlugin extends Plugin {
 		const filePath = result.filePath ?? task.primary.filePath;
 		if (result.outcome === 'updated') {
 			this.tableFilePropertyIndex?.applyMutation(filePath, request.propertyName, request.mutation);
-			await this.indexer.reindexFilePath(filePath, { notify: false });
+			await this.indexer.reindexCommittedMutationSources([filePath], { notify: false });
+			this.consumeTableMutationRefresh();
 			this.refreshViews({ preserveKanbanViewport: true });
 		} else if (result.outcome === 'conflict' || result.outcome === 'already-updated') {
 			const currentMutation: RawYamlPropertyMutation = result.current.present
@@ -35713,10 +35754,14 @@ export default class OperonPlugin extends Plugin {
 	}
 
 	private async updateTableTaskDescriptionAndRefresh(task: IndexedTask, description: string): Promise<boolean> {
+		return this.withTableMutationRefresh(() => this.commitTableTaskDescriptionAndRefresh(task, description));
+	}
+
+	private async commitTableTaskDescriptionAndRefresh(task: IndexedTask, description: string): Promise<boolean> {
 		const nextDescription = description.trim();
 		if (nextDescription === task.description.trim()) return true;
 		if (task.primary.format !== 'yaml') {
-			return this.updateDirectTaskFieldsAndRefresh(task.operonId, { _description: nextDescription }, { changedKeys: ['_description'] });
+			return this.updateDirectTaskFieldsAndRefresh(task.operonId, { _description: nextDescription }, { changedKeys: ['_description'], tableCommittedSource: true });
 		}
 
 		const file = this.app.vault.getAbstractFileByPath(task.primary.filePath);
@@ -35734,7 +35779,7 @@ export default class OperonPlugin extends Plugin {
 		};
 		const nextPath = await this.writeYamlTaskInstance(task as IndexedTaskInstance, nextDescription, fieldValues, task.tags, null);
 		if (!nextPath) return false;
-		await this.indexer.reindexFilePath(nextPath, { notify: false });
+		await this.indexer.reindexCommittedMutationSources([nextPath], { notify: false });
 		const afterTask = this.indexer.getTask(task.operonId);
 		if (!afterTask || afterTask.description.trim() !== nextDescription) return false;
 		await this.refreshAggregateTotalsAfterTaskMutation(task, afterTask ?? null, {
@@ -35742,6 +35787,7 @@ export default class OperonPlugin extends Plugin {
 			autoUnpinCandidate: afterTask ?? null,
 		});
 		this.scheduleProjectSerialIndexReconcile();
+		this.consumeTableMutationRefresh();
 		this.refreshViews({ preserveKanbanViewport: true });
 		return true;
 	}

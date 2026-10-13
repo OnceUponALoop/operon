@@ -1,7 +1,7 @@
-import { cleanupTaskContextualHoverMenus } from '../contextual-hover-menu';
-import { clearTableNativePending, retainTableNativePending } from './table-native-pending';
+import { cleanupTaskContextualHoverMenus, hideTaskContextualHoverMenu } from '../contextual-hover-menu';
+import { clearTableNativePending, getPendingTableRenderState, retainTableNativePending } from './table-native-pending';
 import { retainTablePropertyDraft, tablePropertyPickerDraft, tablePropertyUpdateRequest } from './table-file-property-editor';
-import { cancelTableNativePropertyRequest, clearTableNativePropertySnapshot, getTableNativePropertySnapshot } from './table-native-property';
+import { cancelTableNativePropertyRequest, clearTableNativePropertySnapshot, getTableNativePropertySnapshot, getVerifiedTableRowKeys } from './table-native-property';
 import { formatTableCompactDuration } from './table-display';
 import { registerFilterDayRefresh } from '../../core/filter-day-refresh';
 import { getScopedTrackerSessions } from '../../core/time-scope-values';
@@ -187,6 +187,8 @@ import {
 	createTableVirtualRowCache,
 	orderTableVirtualRowElements,
 	reconcileTableVirtualRows,
+	getTableRowRevision,
+	createTableLiveRowContext,
 	resolveTableVirtualRowKey,
 } from './table-virtual-row-reconciler';
 import { resolveTablePresetPickerButtonState } from './table-preset-visibility';
@@ -203,7 +205,7 @@ import {
 	createTableTaskSearchMatcherCache,
 	isTableSearchNarrowingSafe,
 } from './table-search';
-import { buildTableRelevantSettingsSignature } from './table-signature';
+import { buildTableRelevantSettingsSignature, buildTableFieldLayoutSignature } from './table-signature';
 import { bindTableActiveCellHighlight } from './table-active-cell-highlight';
 import {
 	TableProgrammaticScrollGuard,
@@ -262,7 +264,7 @@ import type { ContextualMenuActionHandler } from '../../core/contextual-menu-eng
 import { setAccessibleLabelWithoutTooltip } from '../accessibility-label';
 import { closeFloatingPanelsForRoot, resolveSurfaceFloatingHostOptions, snapshotFloatingRectAnchor } from '../field-pickers/common';
 import { openWebViewerNewTab } from '../external-link-actions';
-import { bindOperonHoverTooltip, cleanupOperonHoverTooltips } from '../operon-hover-tooltip';
+import { bindOperonHoverTooltip, cleanupOperonHoverTooltips, closeBoundOperonHoverTooltips } from '../operon-hover-tooltip';
 import {
 	buildPresetFilterUsageTooltip,
 	createUniquePresetFilterName,
@@ -455,7 +457,7 @@ export class OperonTableView extends FileView {
 	private ganttRenderIntent: TableGanttRenderIntent | null = null;
 	private ganttRenderInvalidated = false;
 	private ganttInteraction: TableGanttInteractionController | null = null;
-	private ganttDividerCleanup: (() => void) | null = null;
+	private ganttDividerCleanup: ReturnType<typeof bindTableGanttDivider> | null = null;
 	private readonly ganttSession = createTableGanttSessionState();
 	private readonly ganttTaskModelCache = new TableGanttTaskModelCache();
 	private readonly scrollPerformance = new TableScrollPerformanceRecorder('workspace');
@@ -690,6 +692,7 @@ export class OperonTableView extends FileView {
 		this.ganttTaskModelCache.clear();
 		clearTableVirtualRowCache(this.virtualRows, row => {
 			cleanupOperonHoverTooltips(row);
+			cleanupTaskContextualHoverMenus(row);
 			row.remove();
 		});
 		this.currentRenderState = null;
@@ -871,7 +874,7 @@ export class OperonTableView extends FileView {
 			this.renderInvalidTableFile();
 			return;
 		}
-		const previousRenderState = this.currentRenderState;
+		const previousRenderState = this.currentRenderState ?? getPendingTableRenderState<TableRenderState>(this.contentEl);
 		const activeElement = this.contentEl.ownerDocument.activeElement;
 		const activeSearchInput = activeElement instanceof HTMLInputElement
 			&& activeElement.matches('.operon-table-search-input')
@@ -911,19 +914,17 @@ export class OperonTableView extends FileView {
 			() => { if (this.contentEl.isConnected) this.render(); }, usesNativeProperties,
 		);
 		if (filePropertySnapshot.loading) {
-			if (retainTableNativePending(this.contentEl, preset.id, previousRenderState?.preset.id, t('settings', 'languagePackUpdating'))) {
+			if (retainTableNativePending(this.contentEl, preset.id, previousRenderState?.preset.id, t('settings', 'languagePackUpdating'), getVerifiedTableRowKeys(this.app, this.virtualRows.rows.values(), previousRenderState, id => this.indexer.getTask(id)), previousRenderState)) {
 				// Retain pixels only: pending values must not drive export, queries or deferred rows.
 				this.currentRenderState = null;
 				this.cancelSearchPrewarm();
 				this.closeActivePicker();
 				closeFloatingPanelsForRoot(this.contentEl);
-				cleanupTaskContextualHoverMenus(this.contentEl);
-				cleanupOperonHoverTooltips(this.contentEl);
+				hideTaskContextualHoverMenu(true, this.contentEl);
+				closeBoundOperonHoverTooltips(this.contentEl);
 				this.cleanupActiveResize();
-				this.ganttInteraction?.destroy();
-				this.ganttInteraction = null;
-				this.ganttDividerCleanup?.();
-				this.ganttDividerCleanup = null;
+				this.ganttInteraction?.suspend();
+				this.ganttDividerCleanup?.suspend();
 			} else {
 				this.renderLoadingTableFile();
 			}
@@ -1124,7 +1125,7 @@ export class OperonTableView extends FileView {
 				searchControlSignature,
 				locationIndexSignature,
 				projectSerialSignature,
-				filePropertySignature: filePropertyRenderProjection.signature,
+				filePropertySignature: buildTableFieldLayoutSignature(filePropertyRenderProjection.fields),
 			}),
 		};
 		renderTrace?.mark('items');
@@ -1151,7 +1152,7 @@ export class OperonTableView extends FileView {
 			if (this.bodyScrollerEl) {
 				this.programmaticScrollGuard.set(this.bodyScrollerEl, { scrollTop: this.state.scrollTop });
 				renderTrace?.mark('shell');
-				this.renderVisibleRows(true);
+				this.renderVisibleRows(false);
 				renderTrace?.mark('visibleRows');
 			}
 			this.restoreSearchFocus();
@@ -1275,8 +1276,6 @@ export class OperonTableView extends FileView {
 			buildTableColumnTemplate(input.columns),
 			buildTableSearchVisibleColumnSignature(input.columns),
 			input.searchControlSignature,
-			input.locationIndexSignature,
-			input.projectSerialSignature,
 			input.filePropertySignature,
 			input.settings.dateDisplayFormat,
 			this.ganttSession.enabled ? 'gantt-split' : 'table-only',
@@ -2571,7 +2570,7 @@ export class OperonTableView extends FileView {
 		const createRow = (descriptor: { item: TableTaskTreeRenderItem; index: number }): HTMLElement => {
 			const staging = canvas.ownerDocument.win.createDiv();
 			staging.dataset.operonAvatarRow = resolveTableVirtualRowKey(descriptor.item);
-			this.renderVirtualRow(staging, descriptor.item, descriptor.index, columnTemplate, renderState);
+			this.renderVirtualRow(staging, descriptor.item, descriptor.index, columnTemplate, createTableLiveRowContext(() => this.currentRenderState, () => getPendingTableRenderState<TableRenderState>(this.contentEl)));
 			const row = staging.firstElementChild as HTMLElement | null;
 			if (!row) throw new Error('Operon: failed to render virtual Table row.');
 			// Count every physical row and cell built for the visible window.
@@ -2588,6 +2587,12 @@ export class OperonTableView extends FileView {
 			endIndex: range.endIndex,
 			forceReset: force,
 			resolveKey: resolveTableVirtualRowKey,
+			resolveRevision: item => getTableRowRevision(item, renderState, item.kind === 'task' || item.kind === 'parentContext' ? [
+				this.callbacks.getTaskSessions?.(item.task.operonId), this.callbacks.getProjectSerialDisplay?.(item.task.operonId, item.task),
+				this.callbacks.isTaskPinned?.(item.task.operonId), this.callbacks.hasSubtasks?.(item.task.operonId),
+				renderState.locationIndexSignature,
+				renderState.columns.some(column => column.key === '__countdown') ? renderState.rows.map(task => task.operonId) : null,
+			] : null),
 			createRow,
 			updateRow: (row, descriptor) => {
 				row.dataset.operonVirtualRowKey = descriptor.key;
@@ -2599,6 +2604,7 @@ export class OperonTableView extends FileView {
 			},
 			removeRow: row => {
 				cleanupOperonHoverTooltips(row);
+				cleanupTaskContextualHoverMenus(row);
 				row.remove();
 			},
 		});

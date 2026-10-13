@@ -327,7 +327,7 @@ async function run(): Promise<void> {
 	assert.match(splitSource, /activePointerType === 'touch'[\s\S]*?cancelPointer\(\)[\s\S]*?onCommit\?\.\(clampTableGanttSplitPercent/);
 	assert.match(splitSource, /addEventListener\('lostpointercapture', onLostPointerCapture\)/);
 	assert.match(splitSource, /addEventListener\('blur', cancelPointer\)/);
-	assert.match(splitSource, /return \(\) => \{[\s\S]*?keyboardCommitTimer[\s\S]*?removeEventListener/);
+	assert.match(splitSource, /const suspend = \(\): void => \{[\s\S]*?keyboardCommitTimer[\s\S]*?return Object\.assign\(\(\) => \{\s*suspend\(\);[\s\S]*?removeEventListener/);
 	assertions += 18;
 
 	console.log(`Table Gantt split tests passed (${assertions} assertions).`);

@@ -1,3 +1,6 @@
+import { parseTableTaskListValue } from './table-value-adapter';
+import type { TableValueResolver } from './table-value-cache';
+import type { TableColumn } from '../../types/table';
 import { getCheckboxPropertyTypeIcon } from '../custom-field-surfaces';
 import { TFile, type App } from 'obsidian';
 import type { IndexedTask } from '../../types/fields';
@@ -186,4 +189,39 @@ export async function writeTableNativeProperty(
    value: request.mutation.kind === 'set' ? request.mutation.value : null, remove: request.mutation.kind === 'delete', nativeType: request.nativeType }] };
  } else return 'unsupported';
  return await writer.writeTaskFields(task.operonId, { datetimeModified: modifiedTimestamp }, options) ? 'updated' : 'conflict';
+}
+
+/** A retained row is interactive only with positive proof, including out-of-scope/context rows. */
+export function getVerifiedTableRowKeys(
+ app: App, rows: Iterable<HTMLElement>, previous: {
+  columns: TableColumn[]; valueResolver: TableValueResolver;
+  getFilePropertyCell: (task: IndexedTask, key: string) => TableFilePropertyCellValue;
+  getContextFilePropertyCell: (task: IndexedTask, key: string) => TableFilePropertyCellValue;
+ } | null, getTask: (id: string) => IndexedTask | null | undefined,
+): ReadonlySet<string> {
+ const verified = new Set<string>();
+ if (!previous) return verified;
+ const index = getNativePropertyIndex(app);
+ // Descendant projections depend on the complete task set; do not reuse their actions during partial readiness.
+ if (previous.columns.some(column => ['progress', 'checkboxProgress', '__taskTree', '__countdown'].includes(column.key))) return verified;
+ for (const element of rows) {
+  const id = element.dataset.operonId ?? '';
+  const task = getTask(id), old = previous.valueResolver.taskLookup.getTask(id);
+  if (!task || !old || !index.isReady([task]) || JSON.stringify(task) !== JSON.stringify(old)) continue;
+  const row = index.getTask(task);
+  if (!row.available) continue;
+  const relations = ['blockedBy', 'blocking', 'parentTask'].flatMap(key => parseTableTaskListValue(key, task.fieldValues[key] ?? ''));
+  if (relations.some(id => { const current = getTask(id); return !current || !index.isReady([current])
+   || JSON.stringify(current) !== JSON.stringify(previous.valueResolver.taskLookup.getTask(id)); })) continue;
+  const readPrevious = element.classList.contains('operon-table-parent-context-row') ? previous.getContextFilePropertyCell : previous.getFilePropertyCell;
+  if (previous.columns.some(column => {
+   const name = decodeTableFilePropertyColumnKey(column.key)?.toLowerCase();
+   if (!name) return false;
+   const before = readPrevious(old, column.key), now = row.properties.get(name);
+   return before.nativeState !== 'ready' || !!now?.reason || before.present !== (now?.present ?? false)
+    || JSON.stringify(before.rawValue) !== JSON.stringify(now?.value);
+  })) continue;
+  verified.add(element.dataset.operonVirtualRowKey ?? id);
+ }
+ return verified;
 }

@@ -30227,8 +30227,19 @@ body:not(.is-mobile) .mod-root .workspace-leaf-content:is(
 .operon-table-native-pending-host {
  position: relative;
 }
-.operon-table-root.operon-table-native-pending {
- opacity: 0.6;
+.operon-table-row-pending {
+ outline: 1px dashed var(--background-modifier-border);
+ outline-offset: -1px;
+}
+.operon-table-row-pending::after {
+ content: attr(data-operon-pending-label);
+ position: absolute;
+ right: 8px;
+ padding: 2px 6px;
+ background: var(--background-primary);
+ color: var(--text-muted);
+ font-size: var(--font-ui-small);
+ pointer-events: none;
 }
 .operon-table-native-pending-status {
  position: absolute;

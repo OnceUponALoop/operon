@@ -202,6 +202,10 @@ export class ContextualHoverMenuController {
 		return this.options.getNow?.() ?? Date.now();
 	}
 
+	hideWithin(root: HTMLElement, immediate = true): void {
+		if (this.activeTrigger && root.contains(this.activeTrigger)) this.hide(immediate);
+	}
+
 	isActive(key: string): boolean {
 		return this.activeKey === key && !!this.activeMenuEl;
 	}
@@ -468,6 +472,7 @@ export function bindContextualHoverMenuTrigger(
 ): () => void {
 	const originalOpen = options.openMenu;
 	options = { ...options, openMenu: interaction => {
+		if (!options.triggerEl.isConnected || options.triggerEl.closest('[inert]')) return false;
 		const opened = originalOpen(interaction);
 		if (opened) options.controller.activateTrigger(options.triggerEl);
 		return opened;
@@ -662,8 +667,9 @@ const sharedTaskHoverMenu = new ContextualHoverMenuController({
 	},
 });
 
-export function hideTaskContextualHoverMenu(immediate = true): void {
-	sharedTaskHoverMenu.hide(immediate);
+export function hideTaskContextualHoverMenu(immediate = true, root?: HTMLElement): void {
+	if (root) sharedTaskHoverMenu.hideWithin(root, immediate);
+	else sharedTaskHoverMenu.hide(immediate);
 }
 
 export function cleanupTaskContextualHoverMenus(root: HTMLElement): void {

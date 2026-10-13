@@ -6,7 +6,7 @@ import { OperonIndexer } from '../src/indexer/indexer';
 import { scanFileWithMappings } from '../src/indexer/file-scanner';
 import { DEFAULT_SETTINGS } from '../src/types/settings';
 import type { IndexedTask } from '../src/types/fields';
-import { cancelTableNativePropertyRequest, clearTableNativePropertySnapshot, getTableNativePropertySnapshot } from '../src/ui/table/table-native-property';
+import { cancelTableNativePropertyRequest, clearTableNativePropertySnapshot, getTableNativePropertySnapshot, getVerifiedTableRowKeys } from '../src/ui/table/table-native-property';
 import { encodeTableFilePropertyColumnKey, type TableFilePropertySnapshot } from '../src/ui/table/table-file-property';
 
 function fixture(count = 4) {
@@ -277,5 +277,42 @@ test('retained table snapshot does not revive deleted, moved, duplicate or empty
   get(false);f.files.delete('N1.md');await f.indexer.handleFileDelete('N1.md');assert.equal(get().getCell(tasks.find(task=>task.operonId==='n000001')!,key).readOnlyReason,'unavailable');
   tasks=[tasks[0],tasks[0]];assert.equal(get().getCell(tasks[0],key).readOnlyReason,'unavailable');
   tasks=[{...tasks[0],operonId:''}];assert.equal(get().getCell(tasks[0],key).readOnlyReason,'unavailable');
+ } finally {f.indexer.destroy();}
+});
+
+
+test('table committed source settlement consumes the queued scan without trusting a pre-write flight', async () => {
+ const f=fixture(2);try {
+  await f.indexer.fullReindex();f.edit('N0.md','77');f.indexer.scheduleReindex('N0.md');
+  const before=f.reads.length;await f.indexer.reindexCommittedMutationSources(['N0.md'],{notify:false});
+  assert.equal(f.native.getTask(f.indexer.getTask('n000000')!).properties.get('value')!.value,77);
+  await new Promise(resolve=>setTimeout(resolve,280));assert.equal(f.reads.length-before,1);
+  const original=f.app.vault.read.bind(f.app.vault);let release!:()=>void;let entered!:()=>void;
+  const started=new Promise<void>(resolve=>entered=resolve), gate=new Promise<void>(resolve=>release=resolve);let first=true;
+  f.app.vault.read=async file=>{const captured=await original(file);if(first){first=false;entered();await gate;}return captured;};
+  const stale=f.indexer.reindexFilePath('N0.md',{notify:false});await started;f.edit('N0.md','88');
+  const committed=f.indexer.reindexCommittedMutationSources(['N0.md'],{notify:false});release();await Promise.all([stale,committed]);
+  assert.equal(f.native.getTask(f.indexer.getTask('n000000')!).properties.get('value')!.value,88);
+ } finally {f.indexer.destroy();}
+});
+
+test('pending tables require positive row validity, including context rows and native-only changes', async () => {
+ const f=fixture(3);try {
+  await f.indexer.fullReindex();const tasks=f.indexer.getAllTasks(), old=new Map(tasks.map(task=>[task.operonId,task]));
+  const key=encodeTableFilePropertyColumnKey('Value')!;
+  const snapshot=getTableNativePropertySnapshot({},f.app,base,tasks,1,f.settings,()=>{});
+  const state={columns:[{key}],valueResolver:{taskLookup:{getTask:(id:string)=>old.get(id)}},getFilePropertyCell:snapshot.getCell,getContextFilePropertyCell:snapshot.getCell};
+  const rows=tasks.map(task=>({dataset:{operonId:task.operonId},classList:{contains:()=>false}} as unknown as HTMLElement));
+  const verified=()=>getVerifiedTableRowKeys(f.app,rows,state as never,id=>f.indexer.getTask(id));
+  const context={dataset:{operonId:tasks[0].operonId,operonVirtualRowKey:'context'},classList:{contains:()=>true}} as unknown as HTMLElement;
+  const normal={dataset:{operonId:tasks[0].operonId,operonVirtualRowKey:'normal'},classList:{contains:()=>false}} as unknown as HTMLElement;
+  const separate=getVerifiedTableRowKeys(f.app,[normal,context],{...state,getContextFilePropertyCell:()=>({nativeState:'unsupported'})} as never,id=>f.indexer.getTask(id));
+  assert.ok(separate.has('normal'));assert.ok(!separate.has('context'),'each occurrence requires its own validity proof');
+  f.native.markPending('N0.md');assert.deepEqual([...verified()].sort(),['n000001','n000002']);
+  f.native.finishPending('N0.md');f.edit('N1.md','99');await f.indexer.reindexFilePath('N1.md');
+  assert.ok(!verified().has('n000001'),'ready but changed native data does not validate old DOM');
+  assert.ok(verified().has('n000002'),'an unrelated source remains usable');
+  old.set('n000002',{...old.get('n000002')!,description:'obsolete'});assert.ok(!verified().has('n000002'));
+  const missing=getVerifiedTableRowKeys(f.app,rows,state as never,()=>null);assert.equal(missing.size,0);
  } finally {f.indexer.destroy();}
 });

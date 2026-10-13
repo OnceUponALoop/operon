@@ -1,7 +1,7 @@
-import { cleanupTaskContextualHoverMenus } from './contextual-hover-menu';
-import { clearTableNativePending, retainTableNativePending } from './table/table-native-pending';
+import { cleanupTaskContextualHoverMenus, hideTaskContextualHoverMenu } from './contextual-hover-menu';
+import { clearTableNativePending, getPendingTableRenderState, retainTableNativePending } from './table/table-native-pending';
 import { retainTablePropertyDraft, tablePropertyPickerDraft, tablePropertyUpdateRequest } from './table/table-file-property-editor';
-import { cancelTableNativePropertyRequest, clearTableNativePropertySnapshot, getTableNativePropertySnapshot } from './table/table-native-property';
+import { cancelTableNativePropertyRequest, clearTableNativePropertySnapshot, getTableNativePropertySnapshot, getVerifiedTableRowKeys } from './table/table-native-property';
 import { formatTableCompactDuration } from './table/table-display';
 import { registerFilterDayRefresh } from '../core/filter-day-refresh';
 import { getScopedTrackerSessions } from '../core/time-scope-values';
@@ -116,7 +116,7 @@ import {
 	isTableSearchNarrowingSafe,
 	type TableTaskSearchMatcherCache,
 } from './table/table-search';
-import { buildTableRelevantSettingsSignature } from './table/table-signature';
+import { buildTableRelevantSettingsSignature, buildTableFieldLayoutSignature } from './table/table-signature';
 import { bindTableActiveCellHighlight } from './table/table-active-cell-highlight';
 import {
 	TableProgrammaticScrollGuard,
@@ -285,11 +285,13 @@ import {
 	createTableVirtualRowCache,
 	orderTableVirtualRowElements,
 	reconcileTableVirtualRows,
+	getTableRowRevision,
+	createTableLiveRowContext,
 	resolveTableVirtualRowKey,
 	type TableVirtualRowCache,
 } from './table/table-virtual-row-reconciler';
 import { showTableExportMenu } from './table/table-export-menu';
-import { bindOperonHoverTooltip, cleanupOperonHoverTooltips } from './operon-hover-tooltip';
+import { bindOperonHoverTooltip, cleanupOperonHoverTooltips, closeBoundOperonHoverTooltips } from './operon-hover-tooltip';
 import { renderRelatedViewsLauncher } from './related-views';
 import {
 	buildPresetFilterUsageTooltip,
@@ -402,7 +404,7 @@ interface EmbedTableInstance {
 	ganttRenderIntent: TableGanttRenderIntent | null;
 	ganttRenderInvalidated: boolean;
 	ganttInteraction: TableGanttInteractionController | null;
-	ganttDividerCleanup: (() => void) | null;
+	ganttDividerCleanup: ReturnType<typeof bindTableGanttDivider> | null;
 	ganttSession: TableGanttSessionState;
 	ganttTaskModelCache: TableGanttTaskModelCache;
 	scrollPerformance: TableScrollPerformanceRecorder;
@@ -431,6 +433,7 @@ interface EmbedTableInstance {
 }
 
 interface EmbeddedTableRenderState {
+	shellReuseSignature: string;
 	performanceTraceId?: number;
 	preset: TablePreset;
 	columns: TableColumn[];
@@ -870,6 +873,7 @@ function resetEmbedTableRenderState(instance: EmbedTableInstance): void {
 	instance.ganttTaskModelCache.clear();
 	clearTableVirtualRowCache(instance.virtualRows, row => {
 		cleanupOperonHoverTooltips(row);
+		cleanupTaskContextualHoverMenus(row);
 		row.remove();
 	});
 	instance.currentRenderState = null;
@@ -931,6 +935,7 @@ function renderEmbedTableContents(instance: EmbedTableInstance, deps: EmbedTable
 		renderTableEmbedError(instance.el, t('table', 'embedPresetNotFound', { presetId: instance.presetId }));
 		return;
 	}
+	const previousRenderState = instance.currentRenderState ?? getPendingTableRenderState<EmbeddedTableRenderState>(instance.el);
 	const renderTrace = beginTableLoadPerformance('table.embed.render.detail', getOwnerWindow(instance.el));
 	renderTrace?.setContext({ presetId: preset.id, sortRules: preset.sortRules.length });
 	syncEmbedTableGanttSessionFromPreset(instance, preset);
@@ -966,11 +971,11 @@ function renderEmbedTableContents(instance: EmbedTableInstance, deps: EmbedTable
 	);
 	if (filePropertySnapshot.loading) {
 		if (restoreSearchFocus && activeInput) instance.pendingSearchFocus = captureTableSearchFocusRange(activeInput);
-		const retained = retainTableNativePending(instance.el, preset.id, instance.currentRenderState?.preset.id, t('settings', 'languagePackUpdating'));
+		const retained = retainTableNativePending(instance.el, preset.id, previousRenderState?.preset.id, t('settings', 'languagePackUpdating'), getVerifiedTableRowKeys(deps.app, instance.virtualRows.rows.values(), previousRenderState, id => deps.indexer.getTask(id)), previousRenderState);
 		closeEmbedTableTransientUi(instance.el);
 		closeEmbedTableActivePicker(instance);
-		cleanupTaskContextualHoverMenus(instance.el);
-		cleanupOperonHoverTooltips(instance.el);
+		hideTaskContextualHoverMenu(true, instance.el);
+		closeBoundOperonHoverTooltips(instance.el);
 		if (retained) {
 			// Keep the DOM, not an actionable stale snapshot; force a coherent render on readiness.
 			instance.currentRenderState = null;
@@ -979,10 +984,8 @@ function renderEmbedTableContents(instance: EmbedTableInstance, deps: EmbedTable
 			cancelEmbedTableSearchPrewarm(instance);
 			cancelEmbedTableSummaryIdle(instance);
 			cleanupTableHeaderActiveResize(instance.headerInteractionState);
-			instance.ganttInteraction?.destroy();
-			instance.ganttInteraction = null;
-			instance.ganttDividerCleanup?.();
-			instance.ganttDividerCleanup = null;
+			instance.ganttInteraction?.suspend();
+			instance.ganttDividerCleanup?.suspend();
 		} else {
 			resetEmbedTableRenderState(instance);
 			instance.el.empty();
@@ -1166,7 +1169,7 @@ function renderEmbedTableContents(instance: EmbedTableInstance, deps: EmbedTable
 		filterFilePropertyContext.signature,
 	);
 	instance.lastQuerySignature = querySignature;
-	if (renderSignature === instance.lastRenderSignature) {
+	if (renderSignature === instance.lastRenderSignature && instance.currentRenderState) {
 		renderTrace?.mark('items');
 		renderTrace?.setContext({ presetId: preset.id, outcome: 'unchanged-render' });
 		renderTrace?.finish('loaded', () => instance.el.isConnected);
@@ -1176,6 +1179,11 @@ function renderEmbedTableContents(instance: EmbedTableInstance, deps: EmbedTable
 	instance.lastRenderSignature = renderSignature;
 	instance.lastRenderedRangeKey = null;
 	instance.currentRenderState = {
+		shellReuseSignature: JSON.stringify([result.preset, columns, columnGeometry.signature, rowHeight, tableWidthPx, scrollbarGutterPx,
+			buildTableFieldLayoutSignature(filePropertyRenderProjection.fields), buildTableRelevantSettingsSignature(settings), buildEmbedTableToolbarSignature(deps),
+			instance.searchScope, instance.parentSearchSelection, searchContext.parentSearchUi, canWriteEmbedTable(deps),
+			isTableSearchScopeActive(instance.searchScope, instance.parentSearchSelection, instance.searchQuery),
+			resolveEmbedTableVisibleRows(instance, settings), instance.ganttSession.enabled]),
 		performanceTraceId: renderTrace?.id,
 		preset: result.preset,
 		columns,
@@ -1222,6 +1230,25 @@ function renderEmbedTableContents(instance: EmbedTableInstance, deps: EmbedTable
 	);
 
 	renderTrace?.mark('scheduling');
+	if (previousRenderState?.shellReuseSignature === instance.currentRenderState.shellReuseSignature
+		&& instance.bodyCanvasEl?.isConnected && instance.bodyScrollerEl) {
+		const root = instance.el.querySelector<HTMLElement>('.operon-table-root');
+		const searchInput = instance.el.querySelector<HTMLInputElement>('.operon-table-search-input');
+		if (searchInput) {
+			searchInput.placeholder = formatTableSearchPlaceholder(result.counts.final);
+			setAccessibleLabelWithoutTooltip(searchInput, searchInput.placeholder);
+			searchInput.value = instance.searchQuery;
+		}
+		root?.style.setProperty('--operon-table-embed-shell-height', `${resolveTableEmbedShellHeightPx(items.length, rowHeight, resolveEmbedTableVisibleRows(instance, settings), result.preset.gantt.enabled)}px`);
+		root?.querySelector('.operon-table-empty')?.remove();
+		root?.querySelector('.operon-table-shell')?.setAttribute('aria-rowcount', String(items.length + 1));
+		if (root && result.rows.length === 0) renderEmbedTableEmptyState(root, result.counts.scoped > 0 && isTableSearchScopeActive(instance.searchScope, instance.parentSearchSelection, instance.searchQuery));
+		renderEmbedTableVisibleRows(instance, deps, false);
+		restoreEmbedTablePendingCellFocus(instance);
+		restoreEmbedTableSearchFocus(instance, searchInput, restoreSearchFocus, searchSelectionStart, searchSelectionEnd);
+		renderTrace?.finish('loaded', () => instance.el.isConnected);
+		return;
+	}
 	closeEmbedTableTransientUi(instance.el, {
 		preserveSearchFocus: restoreSearchFocus || instance.pendingSearchFocus !== null,
 		preserveFloatingPanels: instance.keepActivePickerOnRender,
@@ -2967,25 +2994,26 @@ function renderEmbedTableVisibleRowsContents(instance: EmbedTableInstance, deps:
 	canvas.style.setProperty('--operon-table-group-scroll-left', `${instance.horizontalScrollerEl?.scrollLeft ?? instance.scrollLeft}px`);
 	const columnTemplate = renderState.columnGeometry.columnTemplate;
 	const createRow = (descriptor: { item: TableTaskTreeRenderItem; index: number }): HTMLElement => {
+		const rowContext = createTableLiveRowContext(() => instance.currentRenderState, () => getPendingTableRenderState<EmbeddedTableRenderState>(instance.el));
 		const staging = canvas.ownerDocument.win.createDiv();
 		staging.dataset.operonAvatarRow = resolveTableVirtualRowKey(descriptor.item);
 		const item = descriptor.item;
 		const index = descriptor.index;
 		if (item.kind === 'group') {
-			renderEmbedTableGroupRow(staging, instance, item.group, item.groupKey, item.depth, index, renderState, deps, item.parentGroup);
+			renderEmbedTableGroupRow(staging, instance, item.group, item.groupKey, item.depth, index, rowContext, deps, item.parentGroup);
 		} else if (item.kind === 'summary') {
-			renderEmbedTableSummaryRow(staging, index, columnTemplate, renderState, renderState.summaries, false);
+			renderEmbedTableSummaryRow(staging, index, columnTemplate, rowContext, renderState.summaries, false);
 		} else if (item.kind === 'groupSummary') {
 			renderEmbedTableSummaryRow(
 				staging,
 				index,
 				columnTemplate,
-				renderState,
+				rowContext,
 				renderState.groupSummaries.get(item.groupKey) ?? new Map<string, TableSummaryCell>(),
 				true,
 			);
 		} else if (item.kind === 'parentContext') {
-			renderEmbedTableTaskRow(staging, instance, item.task, index, columnTemplate, renderState, deps, 'P', item.occurrenceKey);
+			renderEmbedTableTaskRow(staging, instance, item.task, index, columnTemplate, rowContext, deps, 'P', item.occurrenceKey);
 		} else {
 			renderEmbedTableTaskRow(
 				staging,
@@ -2993,7 +3021,7 @@ function renderEmbedTableVisibleRowsContents(instance: EmbedTableInstance, deps:
 				item.task,
 				index,
 				columnTemplate,
-				renderState,
+				rowContext,
 				deps,
 				item.tree && item.tree.depth > 0 ? null : renderState.taskOrdinals.get(item.ordinalKey) ?? null,
 				item.tree?.context ? item.ordinalKey : null,
@@ -3016,6 +3044,11 @@ function renderEmbedTableVisibleRowsContents(instance: EmbedTableInstance, deps:
 		endIndex: range.endIndex,
 		forceReset: force,
 		resolveKey: resolveTableVirtualRowKey,
+		resolveRevision: item => getTableRowRevision(item, renderState, item.kind === 'task' || item.kind === 'parentContext' ? [
+			deps.getTaskSessions?.(item.task.operonId), deps.getProjectSerialDisplay?.(item.task.operonId, item.task),
+			deps.isTaskPinned?.(item.task.operonId), deps.hasSubtasks?.(item.task.operonId), renderState.locationIndexSignature,
+			renderState.columns.some(column => column.key === '__countdown') ? renderState.rows.map(task => task.operonId) : null,
+		] : null),
 		createRow,
 		updateRow: (row, descriptor) => {
 			row.dataset.operonVirtualRowKey = descriptor.key;
@@ -3027,6 +3060,7 @@ function renderEmbedTableVisibleRowsContents(instance: EmbedTableInstance, deps:
 		},
 		removeRow: row => {
 			cleanupOperonHoverTooltips(row);
+			cleanupTaskContextualHoverMenus(row);
 			row.remove();
 		},
 	});

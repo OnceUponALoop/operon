@@ -425,6 +425,11 @@ export class TableGanttInteractionController {
 		options.canvasEl.ownerDocument.addEventListener?.('visibilitychange', this.onVisibilityChange);
 	}
 
+	suspend(): void {
+		this.cancelPointerSessions();
+		this.context = null;
+	}
+
 	updateContext(context: TableGanttInteractionContext): void {
 		this.context = context;
 		if (this.dependencyActive?.activated) this.updateDependencyPreview();

@@ -271,6 +271,11 @@ export function bindOperonHoverTooltip(
 	typedTarget._operonHoverCleanup = cleanup;
 }
 
+/** Hide retained UI without removing its hover/focus bindings or clock subscriptions. */
+export function closeBoundOperonHoverTooltips(root: HTMLElement): void {
+ for (const target of [root, ...Array.from(root.querySelectorAll<HTMLElement>('*'))]) closeBoundOperonHoverTooltip(target);
+}
+
 export function closeBoundOperonHoverTooltip(target: HTMLElement): void {
 	(target as BoundTooltipTarget)._operonHoverClose?.();
 }

@@ -426,7 +426,7 @@ export function bindTableGanttLinkedRowHover(
 	timelineCanvas.addEventListener('pointerleave', clearLinkedHover);
 }
 
-export function bindTableGanttDivider(options: BindTableGanttDividerOptions): () => void {
+export function bindTableGanttDivider(options: BindTableGanttDividerOptions): (() => void) & { suspend(): void } {
 	let keyboardCommitTimer: number | null = null;
 	let activePointerId: number | null = null;
 	let activePointerType = '';
@@ -506,10 +506,13 @@ export function bindTableGanttDivider(options: BindTableGanttDividerOptions): ()
 	options.divider.addEventListener('keydown', onKeyDown);
 	ownerWindow.addEventListener('blur', cancelPointer);
 	options.divider.ownerDocument.addEventListener('visibilitychange', onVisibilityChange);
-	return () => {
+	const suspend = (): void => {
 		cancelPointer();
 		if (keyboardCommitTimer !== null) ownerWindow.clearTimeout(keyboardCommitTimer);
 		keyboardCommitTimer = null;
+	};
+	return Object.assign(() => {
+		suspend();
 		options.divider.removeEventListener('pointerdown', onPointerDown);
 		options.divider.removeEventListener('pointermove', onPointerMove);
 		options.divider.removeEventListener('pointerup', onPointerUp);
@@ -518,7 +521,7 @@ export function bindTableGanttDivider(options: BindTableGanttDividerOptions): ()
 		options.divider.removeEventListener('keydown', onKeyDown);
 		ownerWindow.removeEventListener('blur', cancelPointer);
 		options.divider.ownerDocument.removeEventListener('visibilitychange', onVisibilityChange);
-	};
+	}, { suspend });
 }
 
 export function bindTableGanttPaneWheel(pane: HTMLElement, verticalScroller: HTMLElement): void {
