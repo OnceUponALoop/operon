@@ -548,17 +548,18 @@ export class FilterSetModal extends Modal {
 		return group.children.filter(isFilterGroupNode).length;
 	}
 
-	private buildFilterGroupNumberMap(rootGroup: FilterGroup): WeakMap<FilterGroup, number> {
-		const groupNumbers = new WeakMap<FilterGroup, number>();
-		let next = 1;
-		const visit = (group: FilterGroup): void => {
+	private buildFilterGroupNumberMap(rootGroup: FilterGroup): WeakMap<FilterGroup, string> {
+		const groupNumbers = new WeakMap<FilterGroup, string>();
+		const visit = (group: FilterGroup, prefix: string): void => {
+			let next = 1;
 			for (const child of group.children) {
 				if (!isFilterGroupNode(child)) continue;
-				groupNumbers.set(child, next++);
-				visit(child);
+				const number = prefix ? `${prefix}.${next++}` : String(next++);
+				groupNumbers.set(child, number);
+				visit(child, number);
 			}
 		};
-		visit(rootGroup);
+		visit(rootGroup, '');
 		return groupNumbers;
 	}
 
@@ -1331,7 +1332,7 @@ export class FilterSetModal extends Modal {
 		parentGroup: FilterGroup | null,
 		groupIndex: number,
 		isRoot = false,
-		groupNumbers: WeakMap<FilterGroup, number> = new WeakMap(),
+		groupNumbers: WeakMap<FilterGroup, string> = new WeakMap(),
 	): void {
 		const card = container.createDiv('operon-filter-group-card');
 		card.addClass(isRoot ? 'is-root' : 'is-nested');

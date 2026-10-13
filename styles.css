@@ -15620,17 +15620,6 @@ body:not(.is-mobile) .mod-root .workspace-leaf-content[data-type="operon-filter-
 	background: var(--background-primary-alt);
 }
 
-.operon-filter-group-card.is-nested::before {
-	content: "";
-	position: absolute;
-	left: -12px;
-	top: 14px;
-	bottom: 14px;
-	width: 2px;
-	border-radius: 999px;
-	background: var(--background-modifier-border-hover);
-}
-
 .operon-filter-group-header {
 	display: flex;
 	align-items: center;
@@ -15686,11 +15675,7 @@ body:not(.is-mobile) .mod-root .workspace-leaf-content[data-type="operon-filter-
 	gap: 8px;
 }
 
-.operon-filter-group-body.is-root {
-	padding-left: 8px;
-	border-left: 2px solid var(--background-modifier-border-hover);
-}
-
+.operon-filter-group-body.is-root,
 .operon-filter-group-body.is-nested {
 	padding-left: 8px;
 	border-left: 2px solid color-mix(in srgb, var(--interactive-accent) 35%, var(--background-modifier-border-hover));
