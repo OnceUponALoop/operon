@@ -1310,6 +1310,44 @@ function buildDefaultTaskWikilinkOverlayCompactChipItems(): InlineTaskCompactChi
 	];
 }
 
+/**
+ * Chip profile for verified first installations and explicit settings resets.
+ * Keep compatibility defaults unchanged for existing packages and partial preferences.
+ */
+export function buildDefaultTaskChipSettings(defaults: OperonSettings): OperonSettings {
+	const compact = (
+		items: readonly InlineTaskCompactChipItem[],
+		visibleKeys: readonly string[],
+	): InlineTaskCompactChipItem[] => items.map(item => ({
+		...item,
+		visible: visibleKeys.includes(item.key),
+		iconOnly: item.key === 'status' && visibleKeys.includes('status'),
+	}));
+	const creatorKeys = ['taskIcon', 'taskColor', 'taskType', 'priority', 'status', 'note'];
+	return {
+		...defaults,
+		taskCreatorToolbar: defaults.taskCreatorToolbar.map(item => ({
+			...item, visible: creatorKeys.includes(item.key),
+		})),
+		inlineTaskCompactChips: compact(defaults.inlineTaskCompactChips,
+			['priority', 'status', 'parentTask', 'dateScheduled', 'dateDue', 'repeat', 'tags']),
+		taskFinderCompactChips: compact(defaults.taskFinderCompactChips,
+			['taskType', 'priority', 'parentTask', 'assignees']),
+		filterTaskCompactChips: compact(defaults.filterTaskCompactChips,
+			['priority', 'status', 'parentTask', 'dateScheduled', 'dateDue', 'repeat', 'tags', 'assignees']),
+		kanbanTaskCompactChips: compact(defaults.kanbanTaskCompactChips,
+			['taskImage', 'priority', 'dateScheduled', 'dateDue', 'assignees']),
+		taskWikilinkOverlayCompactChips: compact(defaults.taskWikilinkOverlayCompactChips,
+			['priority', 'dateDue', 'assignees']),
+		taskCardCompactChips: compact(defaults.taskCardCompactChips,
+			['taskImage', 'priority', 'status', 'dateScheduled', 'dateDue', 'assignees']),
+		inlineTaskShowPlayAction: false,
+		inlineTaskShowSubtaskAction: false,
+		filterTaskShowPlayAction: false,
+		filterTaskShowSubtaskAction: false,
+	};
+}
+
 function buildDefaultTaskFinderDefaultScopeItems(): TaskFinderDefaultScopeItem[] {
 	return TASK_FINDER_DEFAULT_SCOPE_ORDER.map(key => ({
 		key,

@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
 import { PreparedTaskCreatorDraft, type PreparedTaskCreatorAdapter } from '../src/ui/task-creator-prepared-draft';
-import { DEFAULT_SETTINGS, migrateSettings } from '../src/types/settings';
+import { DEFAULT_SETTINGS, migrateSettings, buildDefaultTaskChipSettings } from '../src/types/settings';
 import { createEmptyTaskCreatorDraft, TaskCreatorModal } from '../src/ui/task-creator-modal';
 import { App } from 'obsidian';
 import { applyTaskFieldPatchToState } from '../src/core/task-field-patch';
@@ -314,4 +314,14 @@ test('Creator checkbox state icons override configured icons but preserve automa
  field.value = false; assert.equal(resolve(), 'square');
  field.value = null; assert.equal(resolve(), 'star');
  field.readOnlyReason = 'automatic'; assert.equal(resolve(), 'shield-alert');
+});
+
+
+test('default chip profile shows six Creator tools and still reveals template fields', async () => {
+ const f = fixture(yaml('contexts: [work]'));
+ const ui = new PreparedTaskCreatorDraft(f.adapter, buildDefaultTaskChipSettings(structuredClone(DEFAULT_SETTINGS)));
+ const expected = ['taskIcon', 'taskColor', 'taskType', 'priority', 'status', 'note'];
+ for (const mode of ['file', 'inline'] as const) assert.deepEqual(ui.visibleKeys(mode).sort(), [...expected].sort());
+ await ui.select(option(), 'Task');
+ for (const mode of ['file', 'inline'] as const) assert.deepEqual(ui.visibleKeys(mode).sort(), [...expected, 'contexts'].sort());
 });

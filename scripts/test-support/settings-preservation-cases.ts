@@ -824,3 +824,109 @@ add('phone editor layout failed save preserves saved preferences and retry succe
   assert.equal(fixture.package().ui.taskUiPreferences.taskEditorUseMobileLayout, true);
  });
 });
+
+// Independent product expectations for first-install chips; never copy these
+// from the production seeding helper, or a changed default could mask a regression.
+const firstInstallChips = {
+ taskCreatorToolbar: ['taskIcon', 'taskColor', 'taskType', 'priority', 'status', 'note'],
+ inlineTaskCompactChips: ['priority', 'status', 'parentTask', 'dateScheduled', 'dateDue', 'repeat', 'tags'],
+ taskFinderCompactChips: ['taskType', 'priority', 'parentTask', 'assignees'],
+ filterTaskCompactChips: ['priority', 'status', 'parentTask', 'dateScheduled', 'dateDue', 'repeat', 'tags', 'assignees'],
+ kanbanTaskCompactChips: ['taskImage', 'priority', 'dateScheduled', 'dateDue', 'assignees'],
+ taskWikilinkOverlayCompactChips: ['priority', 'dateDue', 'assignees'],
+ taskCardCompactChips: ['taskImage', 'priority', 'status', 'dateScheduled', 'dateDue', 'assignees'],
+};
+const chipSurfaceKeys = Object.keys(firstInstallChips) as (keyof typeof firstInstallChips)[];
+const quietFirstInstallActions = [
+ 'inlineTaskShowPlayAction', 'inlineTaskShowSubtaskAction',
+ 'filterTaskShowPlayAction', 'filterTaskShowSubtaskAction',
+] as const;
+
+add('first install seeds the agreed chips, persists them and does not rewrite on restart', async () => {
+ const compatibilityBefore = clone(DEFAULT_SETTINGS);
+ await withSettingsFixture({ initialRaw: null, table: false }, async fixture => {
+  const first = fixture.createStorage();
+  await first.initialize();
+  const settings = first.getSettings();
+  for (const key of chipSurfaceKeys) {
+   assert.deepEqual(settings[key].filter(item => item.visible).map(item => item.key).sort(),
+    [...firstInstallChips[key]].sort(), key);
+   assert.deepEqual(settings[key].map(item => item.key), DEFAULT_SETTINGS[key].map(item => item.key),
+    `${key} must keep every available chip and its order`);
+   if (key !== 'taskCreatorToolbar') {
+    assert.deepEqual(settings[key].filter(item => item.iconOnly).map(item => item.key),
+     ['inlineTaskCompactChips', 'filterTaskCompactChips', 'taskCardCompactChips'].includes(key) ? ['status'] : [], key);
+   }
+  }
+  for (const key of quietFirstInstallActions) assert.equal(settings[key], false, key);
+  for (const prefix of ['inlineTask', 'filterTask', 'kanbanTask', 'taskWikilinkOverlay', 'taskCard'] as const) {
+   assert.equal(settings[`${prefix}ShowNoteAction`], true);
+   assert.equal(settings[`${prefix}ShowPinAction`], false);
+   assert.equal(settings[`${prefix}ShowPlayAction`], false);
+   assert.equal(settings[`${prefix}ShowSubtaskAction`], false);
+  }
+  for (const prefix of ['filterTask', 'kanbanTask', 'taskWikilinkOverlay', 'taskCard'] as const) {
+   assert.equal(settings[`${prefix}ShowPlainCheckboxAction`], ['filterTask', 'taskWikilinkOverlay'].includes(prefix));
+  }
+  const committed = fixture.raw();
+  const commits = fixture.canonicalCommits;
+  const second = fixture.createStorage();
+  await second.initialize();
+  for (const key of [...chipSurfaceKeys, ...quietFirstInstallActions]) {
+   assert.deepEqual(second.getSettings()[key], settings[key]);
+  }
+  assertBytesEqual(fixture.raw(), committed);
+  assert.equal(fixture.canonicalCommits, commits, 'Restart must not rewrite first-install preferences');
+ });
+ assert.deepEqual(DEFAULT_SETTINGS, compatibilityBefore, 'First install must not mutate compatibility defaults');
+});
+
+add('existing customized chip order, visibility, icon mode and actions survive startup save and restart', async () => {
+ const source = sourcePackage();
+ const preferences = source.ui.taskUiPreferences as unknown as Record<string, unknown>;
+ for (const key of chipSurfaceKeys) {
+  preferences[key] = [...DEFAULT_SETTINGS[key]].reverse().map((item, index) => ({
+   ...item, visible: index % 2 === 0,
+   ...('iconOnly' in item ? { iconOnly: key !== 'taskFinderCompactChips' && index % 3 === 0 } : {}),
+  }));
+  if (key === 'taskCardCompactChips') source.settings.taskCardCompactChips = preferences[key] as typeof DEFAULT_SETTINGS.taskCardCompactChips;
+ }
+ for (const key of quietFirstInstallActions) preferences[key] = true;
+ await withSettingsFixture({ initialRaw: JSON.stringify(source) }, async fixture => {
+  const first = fixture.createStorage();
+  await first.initialize();
+  const assertPreferences = (storage: OperonStorage): void => {
+   for (const key of chipSurfaceKeys) {
+    const builtIns = new Set(DEFAULT_SETTINGS[key].map(item => item.key));
+    assert.deepEqual(storage.getSettings()[key].filter(item => builtIns.has(item.key)), preferences[key], key);
+   }
+   for (const key of quietFirstInstallActions) assert.equal(storage.getSettings()[key], true, key);
+  };
+  assertPreferences(first);
+  await saveReleaseMarker(first);
+  const committed = fixture.raw();
+  const second = fixture.createStorage();
+  await second.initialize();
+  assertPreferences(second);
+  assertBytesEqual(fixture.raw(), committed);
+ });
+});
+
+add('existing packages with absent chip fields keep compatibility defaults instead of the first-install profile', async () => {
+ const source = sourcePackage();
+ const preferences = source.ui.taskUiPreferences as unknown as Record<string, unknown>;
+ for (const key of [...chipSurfaceKeys, ...quietFirstInstallActions]) delete preferences[key];
+ delete (source.settings as unknown as Record<string, unknown>).taskCardCompactChips;
+ await withSettingsFixture({ initialRaw: JSON.stringify(source) }, async fixture => {
+  const first = fixture.createStorage();
+  await first.initialize();
+  for (const key of chipSurfaceKeys) {
+   const builtIns = new Set(DEFAULT_SETTINGS[key].map(item => item.key));
+   assert.deepEqual(first.getSettings()[key].filter(item => builtIns.has(item.key)), DEFAULT_SETTINGS[key], key);
+  }
+  for (const key of quietFirstInstallActions) assert.equal(first.getSettings()[key], true, key);
+  const committed = fixture.raw();
+  await fixture.createStorage().initialize();
+  assertBytesEqual(fixture.raw(), committed);
+ });
+});

@@ -1,6 +1,7 @@
 import { defaultPropertyPoolPreferences } from './property-value-pool';
 import {
 	DEFAULT_SETTINGS,
+	buildDefaultTaskChipSettings,
 	migrateSettings,
 } from '../types/settings';
 import {
@@ -56,7 +57,7 @@ export interface OperonSettingsResetDefaultsPreflightResultV1 {
 export function createOperonSettingsResetDefaultProfileV1(
 	input: OperonSettingsResetDefaultProfileInputV1,
 ): OperonSettingsBackupExportResultV1 {
-	const defaults = migrateSettings(cloneJson(DEFAULT_SETTINGS));
+	const defaults = migrateSettings(buildDefaultTaskChipSettings(cloneJson(DEFAULT_SETTINGS)));
 	defaults.propertyValuePool = defaultPropertyPoolPreferences();
 	return exportOperonSettingsBackupJsonV1({
 		settings: defaults,

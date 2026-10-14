@@ -17,6 +17,7 @@ import {
 import type { OperonStoragePaths } from './operon-storage-paths';
 import { preserveInvalidJsonFile, writeTextSafely } from './storage-file-ops';
 import {
+	buildDefaultTaskChipSettings,
 	CURRENT_SETTINGS_VERSION,
 	FILE_TASK_ARCHIVE_DELAY_SECONDS,
 	FILE_TASK_ARCHIVE_ROUTING_SETTINGS_VERSION,
@@ -279,7 +280,11 @@ export class OperonDataPackageStore {
 		const dataPackageSchemaMigrationRequired = !!existingPackage
 			&& !isSupportedDataPackageSchema(existingPackage.schemaVersion);
 		const hasRetiredSettings = hasRetiredOperonDataPackageSettings(existingPackage);
-		const mergedPackage = mergeOperonDataPackage(migratedExistingPackage, buildFallbackDataPackage(defaults));
+		// Missing/unreadable settings must never be mistaken for a new installation.
+		const initialDefaults = !existingPackage && this.canonicalSource === null && !this.writesSuspended
+			? buildDefaultTaskChipSettings(defaults)
+			: defaults;
+		const mergedPackage = mergeOperonDataPackage(migratedExistingPackage, buildFallbackDataPackage(initialDefaults));
 		const normalizedPackage = shouldNormalizePipelineTaxonomy(this.startupPipelineTaxonomyDiagnostics)
 			? normalizePipelineTaxonomySlice(mergedPackage, defaults)
 			: mergedPackage;
