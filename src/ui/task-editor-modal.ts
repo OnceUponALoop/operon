@@ -3,7 +3,7 @@
  * Opens the task editor as a floating modal window.
  */
 
-import { App, KeymapEventHandler, Modal, Platform } from 'obsidian';
+import { App, KeymapEventHandler, Modal } from 'obsidian';
 import { OperonIndexer } from '../indexer/indexer';
 import { ParsedTask } from '../types/fields';
 import { OperonSettings } from '../types/settings';
@@ -30,6 +30,7 @@ export class TaskEditorModal extends Modal {
 	content: TaskEditorContent;
 	onCloseSaveSettled: (() => void | Promise<void>) | null = null;
 	private mobilePickerOpenDepth = 0;
+	private viewportCloseTimer: number | null = null;
 	private escapeScopeHandler: KeymapEventHandler | null = null;
 	private closeSaveBeforeCloseInFlight: Promise<boolean> | null = null;
 	private allowDirectClose = false;
@@ -43,7 +44,11 @@ export class TaskEditorModal extends Modal {
 	};
 	private readonly mobilePickerCloseHandler = () => {
 		this.mobilePickerOpenDepth = Math.max(0, this.mobilePickerOpenDepth - 1);
-		window.setTimeout(() => this.updateMobileViewportHeight(), 80);
+		if (this.viewportCloseTimer != null) window.clearTimeout(this.viewportCloseTimer);
+		this.viewportCloseTimer = window.setTimeout(() => {
+			this.viewportCloseTimer = null;
+			if (!this.closed) this.updateMobileViewportHeight();
+		}, 80);
 	};
 	private readonly handleEditorCloseRequest = (event: Event) => {
 		const detail = (event as CustomEvent<TaskEditorCloseRequestDetail>).detail;
@@ -59,7 +64,7 @@ export class TaskEditorModal extends Modal {
 		void this.handleEscapeIntent({ fromEmbeddedFileBody: true });
 	};
 	private readonly handleWindowKeydownCapture = (event: KeyboardEvent): void => {
-		if (event.key !== 'Escape') return;
+		if (event.key !== 'Escape' || event.isComposing || Reflect.get(event, 'keyCode') === 229) return;
 		if (!this.modalEl.isConnected) return;
 		const target = event.target as Node | null;
 		const isModalTarget = target != null && this.containerEl.contains(target);
@@ -86,9 +91,13 @@ export class TaskEditorModal extends Modal {
 	onOpen(): void {
 		this.containerEl.addClass('operon-task-editor-modal-container');
 		this.modalEl.addClass('operon-task-editor-modal');
-		if (Platform.isPhone) {
-			this.containerEl.addClass('operon-task-editor-modal-container-mobile');
-			this.modalEl.addClass('operon-task-editor-modal-mobile');
+		if (this.content.isPhone) {
+			this.containerEl.addClass(this.content.usesMobileLayout ? 'operon-task-editor-modal-container-mobile' : 'operon-task-editor-modal-container-phone-desktop');
+			this.modalEl.addClass(this.content.usesMobileLayout ? 'operon-task-editor-modal-mobile' : 'operon-task-editor-modal-phone-desktop');
+		}
+		if (this.content.usesTouchDesktopLayout) {
+			this.containerEl.addClass('operon-task-editor-modal-container-touch-desktop');
+			this.modalEl.addClass('operon-task-editor-modal-touch-desktop');
 		}
 		window.addEventListener('resize', this.resizeHandler);
 		this.registerMobileViewportListeners();
@@ -96,7 +105,8 @@ export class TaskEditorModal extends Modal {
 		this.registerMobilePickerListeners();
 		this.content.mountInto(this.contentEl);
 		this.content.applyInitialDescriptionFocus();
-		this.escapeScopeHandler = this.scope.register(null, 'Escape', () => {
+		this.escapeScopeHandler = this.scope.register(null, 'Escape', (event) => {
+			if (event.isComposing || Reflect.get(event, 'keyCode') === 229) return true;
 			void this.handleEscapeIntent();
 			return false;
 		});
@@ -109,6 +119,8 @@ export class TaskEditorModal extends Modal {
 	onClose(): void {
 		if (this.closed) return;
 		this.closed = true;
+		if (this.viewportCloseTimer != null) window.clearTimeout(this.viewportCloseTimer);
+		this.viewportCloseTimer = null;
 		this.closeGeneration += 1;
 		if (this.escapeScopeHandler) {
 			this.scope.unregister(this.escapeScopeHandler);
@@ -122,6 +134,7 @@ export class TaskEditorModal extends Modal {
 		this.unregisterMobilePickerListeners();
 		this.mobilePickerOpenDepth = 0;
 		this.containerEl.style.removeProperty('--operon-task-editor-mobile-viewport-height');
+		this.containerEl.style.removeProperty('--operon-task-editor-viewport-top');
 		this.content.destroy({ skipCloseSave: true });
 		try {
 			void Promise.resolve(this.onCloseSaveSettled?.()).catch(error => {
@@ -248,34 +261,35 @@ export class TaskEditorModal extends Modal {
 	}
 
 	private registerMobileViewportListeners(): void {
-		if (!Platform.isPhone) return;
+		if (!this.content.isPhone && !this.content.usesTouchDesktopLayout) return;
 		window.visualViewport?.addEventListener('resize', this.visualViewportHandler);
 		window.visualViewport?.addEventListener('scroll', this.visualViewportHandler);
 	}
 
 	private unregisterMobileViewportListeners(): void {
-		if (!Platform.isPhone) return;
+		if (!this.content.isPhone && !this.content.usesTouchDesktopLayout) return;
 		window.visualViewport?.removeEventListener('resize', this.visualViewportHandler);
 		window.visualViewport?.removeEventListener('scroll', this.visualViewportHandler);
 	}
 
 	private registerMobilePickerListeners(): void {
-		if (!Platform.isPhone) return;
+		if (!this.content.isPhone && !this.content.usesTouchDesktopLayout) return;
 		this.contentEl.addEventListener(TASK_EDITOR_MOBILE_PICKER_OPEN_EVENT, this.mobilePickerOpenHandler);
 		this.contentEl.addEventListener(TASK_EDITOR_MOBILE_PICKER_CLOSE_EVENT, this.mobilePickerCloseHandler);
 	}
 
 	private unregisterMobilePickerListeners(): void {
-		if (!Platform.isPhone) return;
+		if (!this.content.isPhone && !this.content.usesTouchDesktopLayout) return;
 		this.contentEl.removeEventListener(TASK_EDITOR_MOBILE_PICKER_OPEN_EVENT, this.mobilePickerOpenHandler);
 		this.contentEl.removeEventListener(TASK_EDITOR_MOBILE_PICKER_CLOSE_EVENT, this.mobilePickerCloseHandler);
 	}
 
 	private updateMobileViewportHeight(): void {
-		if (!Platform.isPhone) return;
-		if (this.mobilePickerOpenDepth > 0) return;
+		if (!this.content.isPhone && !this.content.usesTouchDesktopLayout) return;
+		if (this.mobilePickerOpenDepth > 0 && !this.content.usesTouchDesktopLayout) return;
 		const height = window.visualViewport?.height ?? window.innerHeight;
 		if (!Number.isFinite(height) || height <= 0) return;
 		this.containerEl.style.setProperty('--operon-task-editor-mobile-viewport-height', `${Math.round(height)}px`);
+		if (this.content.usesTouchDesktopLayout) this.containerEl.style.setProperty('--operon-task-editor-viewport-top', `${Math.round(window.visualViewport?.offsetTop ?? 0)}px`);
 	}
 }

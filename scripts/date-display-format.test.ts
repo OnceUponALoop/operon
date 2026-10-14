@@ -1,3 +1,4 @@
+import { moveTimeSuggestion, resolveTimeInput, isValidTimePrefix, matchQuarterHourSlots } from '../src/ui/field-pickers/datetime-time-grid';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import test from 'node:test';
@@ -130,7 +131,8 @@ test('task and custom picker wiring passes the display preference while excluded
 	assert.ok(customDatetimeSource.includes('dateDisplayFormat: options.dateDisplayFormat'));
 	assert.ok(dispatchSource.includes('dateDisplayFormat: options.settings.dateDisplayFormat'));
 	assert.equal(reminderSource.includes('dateDisplayFormat'), false);
-	assert.equal(filePropertySource.includes('dateDisplayFormat'), false);
+	assert.ok(filePropertySource.includes('dateDisplayFormat: options.settings.dateDisplayFormat'));
+	assert.ok(filePropertySource.includes('formatUiTaskDatetime(options.app,'));
 });
 
 test('Filter date groups separate their display label from the canonical Daily Note key', () => {
@@ -247,14 +249,6 @@ test('Task Editor and Task Creator format labels without changing picker values'
 	assert.ok(creatorSource.includes('currentFieldValues: { ...this.draft.fieldValues }'));
 });
 
-test('Task Editor parent and child relation cards format date labels without changing date-tone inputs', () => {
-	const editorSource = readFileSync('src/ui/task-editor-content.ts', 'utf8');
-	assert.ok(editorSource.includes('TASK_EDITOR_DAY_PICKER_DATE_KEYS.has(key)'));
-	assert.ok(editorSource.includes('label = formatUiDate(rawValue, this.settings);'));
-	assert.ok(editorSource.includes('entry.iconTone = resolveTaskDateTone(key, rawValue, task.fieldValues);'));
-	assert.ok(editorSource.includes('this.buildRelationContextChipEntries(parent)'));
-	assert.ok(editorSource.includes('this.buildRelationContextChipEntries(child)'));
-});
 
 test('settings default and normalization preserve the additive no-migration contract', () => {
 	assert.equal(CURRENT_SETTINGS_VERSION, 115);
@@ -335,4 +329,47 @@ test('settings backup exports and restores date display format through portable 
 	});
 	assert.equal(restored.ok, true);
 	assert.equal(restored.restorePlan?.candidateSettings.dateDisplayFormat, 'DD/MM/YYYY');
+});
+
+
+test('typed minute precision stays independent of quarter-hour suggestions', () => {
+ for (const digits of ['1652', '1343', '0001', '2359']) {
+  assert.equal(resolveTimeInput(digits, '24h', 'am'), `${digits.slice(0, 2)}:${digits.slice(2)}`);
+ }
+ for (const digits of ['2400', '2360', '1699', '165', '____']) assert.equal(resolveTimeInput(digits, '24h', 'am'), null);
+ assert.equal(resolveTimeInput('1252', '12h', 'am'), '00:52');
+ assert.equal(resolveTimeInput('1252', '12h', 'pm'), '12:52');
+ assert.equal(isValidTimePrefix('2400', '24h', true), true);
+ assert.equal(isValidTimePrefix('2401', '24h', true), false);
+ const match = matchQuarterHourSlots({ digits: '1652', anchorIndex: 0, timeFormat: '24h', meridiem: 'pm' });
+ assert.equal(match.additionalSlots?.[0].canonical, '16:52');
+ assert.equal(match.visibleIndices.length, 1);
+});
+
+
+test('minute prefixes progressively offer ten exact minutes in both clock formats', () => {
+ for (const prefix of ['100', '101', '102', '105']) {
+  const match = matchQuarterHourSlots({ digits: prefix, anchorIndex: 0, timeFormat: '24h', meridiem: 'am' });
+  assert.equal(match.activeIndex, match.visibleIndices[0]);
+  assert.deepEqual(match.additionalSlots?.map(slot => slot.canonical), Array.from({ length: 10 }, (_, i) => `10:${prefix[2]}${i}`));
+ }
+ const hour = matchQuarterHourSlots({ digits: '10', anchorIndex: 0, timeFormat: '24h', meridiem: 'am' });
+ assert.deepEqual(hour.visibleIndices, [40, 41, 42, 43]);
+ for (const meridiem of ['am', 'pm'] as const) {
+  const match = matchQuarterHourSlots({ digits: '122', anchorIndex: 0, timeFormat: '12h', meridiem });
+  assert.equal(match.additionalSlots?.[0].canonical, `${meridiem === 'am' ? '00' : '12'}:20`);
+  assert.equal(match.additionalSlots?.length, 10);
+ }
+ assert.equal(matchQuarterHourSlots({ digits: '106', anchorIndex: 0, timeFormat: '24h', meridiem: 'am' }).visibleIndices.length, 0);
+});
+
+
+test('suggestion arrows stay inside the rendered list', () => {
+ const list = [96, 97, 98];
+ assert.equal(moveTimeSuggestion(list, null, 1), 96);
+ assert.equal(moveTimeSuggestion(list, null, -1), 98);
+ assert.equal(moveTimeSuggestion(list, 96, 1), 97);
+ assert.equal(moveTimeSuggestion(list, 98, 1), 96);
+ assert.equal(moveTimeSuggestion(list, 96, -1), 98);
+ assert.equal(moveTimeSuggestion([], null, 1), null);
 });

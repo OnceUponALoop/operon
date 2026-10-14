@@ -1920,7 +1920,7 @@ export class KanbanView extends ItemView {
 					cardGapPx: KANBAN_ESTIMATED_CARD_GAP_PX,
 				});
 				if (estimatedHeightPx > 0) {
-					cell.style.minHeight = `${estimatedHeightPx}px`;
+					cell.style.minHeight = `var(--operon-kanban-cell-min-height, ${estimatedHeightPx}px)`;
 				}
 				deferredCells.push({
 					cell,
@@ -3478,7 +3478,7 @@ export class KanbanView extends ItemView {
 					cardGapPx: KANBAN_ESTIMATED_CARD_GAP_PX,
 				});
 				if (estimatedHeightPx > 0) {
-					cell.style.minHeight = `${estimatedHeightPx}px`;
+					cell.style.minHeight = `var(--operon-kanban-cell-min-height, ${estimatedHeightPx}px)`;
 				} else {
 					cell.style.removeProperty('min-height');
 				}
@@ -5585,7 +5585,7 @@ export class KanbanView extends ItemView {
 					cell.classList.contains('is-scroll-limited')
 					&& !cell.classList.contains('is-collapsed')
 				) {
-					cell.style.maxHeight = `${rowHeight}px`;
+					cell.style.maxHeight = `var(--operon-kanban-cell-height-limit, ${rowHeight}px)`;
 				}
 			}
 		}
@@ -5632,7 +5632,7 @@ export class KanbanView extends ItemView {
 			cell.style.removeProperty('max-height');
 			return;
 		}
-		cell.style.maxHeight = `${maxHeightPx}px`;
+		cell.style.maxHeight = `var(--operon-kanban-cell-height-limit, ${maxHeightPx}px)`;
 		cell.classList.add('is-scroll-limited');
 	}
 

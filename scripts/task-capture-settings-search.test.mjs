@@ -18,6 +18,9 @@ ${method('buildTaskCaptureSearchSections')}
 ${method('buildTaskCaptureSearchSection')}
 ${method('buildTaskRouterSettingsItems')}
 ${method('buildTaskSettingsGroups')}
+${method('isTaskSettingsEntryVisible')}
+${method('renderPeriodicRoutingSettings')}
+${method('renderPeriodicFileTaskSettings')}
 buildDeclarativeSettingsDocsButton() { return () => {}; }
 getSettingsSearchTabPageName(tab) { return tab.id; }
 getSettingsSearchTabDescription() { return ''; }
@@ -30,7 +33,7 @@ const entriesFor = tabId => [...registry.matchAll(/(?:e|section)\('([^']+)', '([
  .filter(m => m[2] === tabId)
  .map(m => ({ id: `${m[1]}.${m[3]}`, name: { key: m[5] }, desc: { key: m[6] }, aliases: [...m[7].matchAll(/'([^']+)'/g)].map(a => a[1]) }));
 
-for (const [tabId, count] of [['tasksFileTasks',7],['tasksInlineTasks',2],['tasksTaskRouter',5]]) {
+for (const [tabId, count] of [['tasksFileTasks',6],['tasksInlineTasks',4],['tasksTaskRouter',6]]) {
  test(`${tabId}: actual page tree indexes every existing entry once without rendering or saving`, () => {
   const harness = new Harness();
   const entries = entriesFor(tabId);
@@ -53,12 +56,11 @@ for (const [tabId, count] of [['tasksFileTasks',7],['tasksInlineTasks',2],['task
 test('daily and weekly searches resolve separate existing renderers', () => {
  const harness = new Harness();
  const calls = [];
- harness.renderFileDailyNotesSettings = el => calls.push(['daily',el]);
- harness.renderFileWeeklyNotesSettings = el => calls.push(['weekly',el]);
- const items = harness.buildSettingsSearchTabPage({id:'tasksFileTasks'}, entriesFor('tasksFileTasks')).items.flatMap(group => group.items);
+ harness.renderPeriodicRoutingSettings = (el, key) => calls.push([key.includes('Weekly') || key.startsWith('weekly') ? 'weekly' : 'daily',el]);
+ const items = harness.buildSettingsSearchTabPage({id:'tasksTaskRouter'}, entriesFor('tasksTaskRouter')).items.flatMap(group => group.items);
  for (const kind of ['daily','weekly']) {
   const matches = items.filter(item => item.aliases.includes(`${kind} notes`));
-  assert.equal(matches.length,5);
+  assert.equal(matches.length,4);
   const el = { empty(){}, removeClass(value){ assert.equal(value,'setting-item'); }, addClass(...values){ assert.deepEqual(values,['operon-settings-tab-root','operon-settings-native-page-root']); } };
   for (const item of matches) item.render({settingEl:el});
   assert.deepEqual(calls.at(-1),[kind,el]);
@@ -72,3 +74,45 @@ for (const tabId of ['tasksInlineTasks','tasksFileTasks','tasksTaskRouter']) {
   for(const entry of entries){const item=leaves.find(i=>i.name===entry.name.key);assert.ok(item);assert.equal(item.desc,entry.desc.key);assert.deepEqual(item.aliases,entry.aliases);assert.equal(typeof item.visible,'function');}
  });
 }
+
+test('bulk Tasks action renders through its own searchable section without persisting settings', () => {
+ const harness = new Harness(), calls = [];
+ harness.renderTasksBulkConversion = el => calls.push(el);
+ const page = harness.buildSettingsSearchTabPage({ id: 'tasksInlineTasks' }, entriesFor('tasksInlineTasks'));
+ assert.deepEqual(page.items.map(group => group.heading), ['defaultInlineTaskTemplate', 'dailyNoteInlineTaskDefaults', 'checkboxConversion', 'tasksBulkTitle']);
+ const action = page.items.at(-1).items[0];
+ const el = { empty(){}, removeClass(){}, addClass(){} };
+ action.render({ settingEl: el }); assert.deepEqual(calls, [el]);
+ assert.ok(action.aliases.includes('tasks emoji'));
+});
+
+ test('periodic controls stay available for every placement without changing preferences', () => {
+  for (const mode of ['daily-notes', 'weekly-notes', 'active-file', 'specific-file', 'ask']) {
+   const harness = new Harness();
+   harness.settings = {inlineTaskSaveMode: mode, manageDailyNotesWithOperon: false, manageWeeklyNotesWithOperon: true, createDailyNotesAsOperonTask: true, createWeeklyNotesAsOperonTask: false};
+   const before = JSON.stringify(harness.settings);
+   const calls = [];
+   harness.renderFileDailyNotesSettings = () => calls.push('daily');
+   harness.renderFileWeeklyNotesSettings = () => calls.push('weekly');
+   harness.renderBoundToggleSetting = (_el, _name, _desc, key) => calls.push(key);
+   harness.renderPeriodicRoutingSettings({});
+   harness.renderPeriodicFileTaskSettings({});
+   assert.deepEqual(calls, ['daily', 'weekly', 'createDailyNotesAsOperonTask', 'createWeeklyNotesAsOperonTask']);
+   for (const key of ['manageDailyNotesWithOperon', 'manageWeeklyNotesWithOperon', 'createDailyNotesAsOperonTask', 'createWeeklyNotesAsOperonTask']) assert.equal(harness.isTaskSettingsEntryVisible(key), true);
+   assert.equal(harness.isTaskSettingsEntryVisible('dailyNoteFormat'), false);
+   assert.equal(harness.isTaskSettingsEntryVisible('weeklyNoteFormat'), true);
+   assert.equal(JSON.stringify(harness.settings), before);
+  }
+ });
+
+test('Daily and Weekly headings and singular/plural search aliases remain discoverable', () => {
+ assert.equal(locale.settings.periodicNotes, 'Daily and Weekly Notes');
+ assert.equal(locale.settings.periodicNotesAsFileTasks, 'Daily and Weekly Notes as File Tasks');
+ for (const kind of ['daily', 'weekly']) {
+  for (const [tabId, expected] of [['tasksTaskRouter', 4], ['tasksFileTasks', 1]]) {
+   const page = new Harness().buildSettingsSearchTabPage({id: tabId}, entriesFor(tabId));
+   const items = page.items.flatMap(group => group.items);
+   for (const query of [kind, `${kind} note`, `${kind} notes`]) assert.equal(items.filter(item => item.aliases.includes(query)).length, expected, `${tabId}: ${query}`);
+  }
+ }
+});

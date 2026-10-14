@@ -1,3 +1,4 @@
+import { StateField } from '@codemirror/state';
 import momentLibrary from 'moment';
 
 export const moment = momentLibrary;
@@ -8,7 +9,14 @@ export function normalizePath(path: string): string {
 
 export class App {}
 
-export const editorLivePreviewField = {};
+export const editorLivePreviewField = StateField.define<boolean>({
+	create: () => true,
+	update: value => value,
+});
+export const editorInfoField = StateField.define<{ file: { path: string } | null }>({
+	create: () => ({ file: { path: 'A.md' } }),
+	update: value => value,
+});
 
 export type KeymapEventHandler = (...args: any[]) => any;
 
@@ -348,6 +356,8 @@ export class TFolder {
 }
 
 export function parseYaml(source: string): Record<string, unknown> {
+	// Single-entry flow mapping used by reference-safety fixtures.
+	if (/^\s*\{[^{}\n,]+\}\s*$/u.test(source)) source = source.trim().slice(1, -1);
 	const result: Record<string, unknown> = {};
 	let activeListKey: string | null = null;
 	let activeListHasItems = false;

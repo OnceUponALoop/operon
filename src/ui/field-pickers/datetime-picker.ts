@@ -1,4 +1,5 @@
 import { App } from 'obsidian';
+import { bindTimeInput } from './time-input';
 import { t } from '../../core/i18n';
 import { localToday } from '../../core/local-time';
 import { getAppLocale } from '../../core/obsidian-app';
@@ -20,7 +21,8 @@ import {
 	getQuarterHourSlots,
 	getSlotIndexForCanonicalTime,
 	getTimeDigitsFromCanonicalTime,
-	getWrappedSlotIndex,
+	moveTimeSuggestion,
+	resolveTimeInput,
 	matchQuarterHourSlots,
 	parseStoredDatetimeValue,
 	QuarterHourSlot,
@@ -63,6 +65,8 @@ export interface DatetimePickerOptions {
 	fieldKey?: string;
 	language?: DatePickerLang;
 	value?: string;
+	/** Date-only seed for an empty picker; focuses time without creating a value. */
+	initialDate?: string;
 	retainInputFocus?: boolean;
 	classNames?: DatetimePickerClassNames;
 	onSelect: (value: string) => DatetimePickerActionResult;
@@ -84,6 +88,8 @@ export interface DatetimePickerContentOptions {
 	fieldKey?: string;
 	language?: DatePickerLang;
 	value?: string;
+	/** Date-only seed for an empty picker; focuses time without creating a value. */
+	initialDate?: string;
 	classNames?: Omit<DatetimePickerClassNames, 'panel'>;
 	onSelect: (value: string) => void;
 	onRemove?: () => void;
@@ -94,8 +100,6 @@ export interface DatetimePickerContentController {
 	requestFocus: () => void;
 	destroy: () => void;
 }
-
-const EDITABLE_CARET_POSITIONS = [0, 1, 3, 4];
 
 export function showDatetimePicker(anchor: HTMLElement | DOMRect, options: DatetimePickerOptions): () => void {
 	let completed = false;
@@ -126,6 +130,7 @@ export function showDatetimePicker(anchor: HTMLElement | DOMRect, options: Datet
 		fieldKey: options.fieldKey,
 		language: options.language,
 		value: options.value,
+		initialDate: options.initialDate,
 		classNames: options.classNames,
 		onSelect: value => {
 			completed = true;
@@ -181,8 +186,10 @@ export function renderDatetimePickerContent(
 	const app = resolvePickerApp(container, options.app);
 	const language = resolveDatePickerLanguage(options.language);
 	const strings = getDatePickerLocaleStrings(language);
-	const slots = getQuarterHourSlots();
+	let slots = getQuarterHourSlots();
 	const initial = parseStoredDatetimeValue(options.value);
+	const initialDate = !options.value?.trim() ? normalizeOperonDateKey(options.initialDate ?? '') : null;
+	if (initialDate) initial.datePart = initialDate;
 	const timeFormat = options.settings.timeFormat;
 	const context = {
 		fieldKey: options.fieldKey ?? 'datetimeStart',
@@ -307,11 +314,8 @@ export function renderDatetimePickerContent(
 		if (specialEndOfDay) {
 			return specialEndOfDay;
 		}
-		if (!hasTouchedTime && initial.timePart) {
-			return buildCanonicalDatetime(selectedDate, initial.timePart);
-		}
-		if (activeTimeIndex === null || visibleTimeIndices.length === 0) return '';
-		return buildCanonicalDatetime(selectedDate, slots[activeTimeIndex].canonical);
+		const time = resolveTimeInput(timeBuffer, timeFormat, currentMeridiem);
+		return time ? buildCanonicalDatetime(selectedDate, time) : '';
 	};
 
 	const getSpecialEndOfDayCommitValue = (): string => {
@@ -335,17 +339,8 @@ export function renderDatetimePickerContent(
 	};
 
 	const setTimeCaret = (requested: number) => {
-		const position = EDITABLE_CARET_POSITIONS.includes(requested)
-			? requested
-			: EDITABLE_CARET_POSITIONS.find(pos => pos >= requested) ?? EDITABLE_CARET_POSITIONS[EDITABLE_CARET_POSITIONS.length - 1];
-		window.setTimeout(() => timeInput.setSelectionRange(position, position), 0);
-	};
-
-	const getEditableIndexFromCaret = (caret: number): number => {
-		if (caret <= 0) return 0;
-		if (caret === 1) return 1;
-		if (caret <= 3) return 2;
-		return 3;
+		const position = Math.max(0, Math.min(5, requested));
+		timeInput.setSelectionRange(position, position);
 	};
 
 	const renderTimeResults = () => {
@@ -359,7 +354,7 @@ export function renderDatetimePickerContent(
 			const specialEndOfDay = getSpecialEndOfDayCommitValue();
 			timeNotice.textContent = specialEndOfDay
 				? '00:00 or 24:00 will be saved as next-day midnight for the end time.'
-				: preserveOffGridCommit && !hasTouchedTime && initial.isOffGrid
+				: preserveOffGridCommit && !hasTouchedTime && initial.isOffGrid && !resolveTimeInput(timeBuffer, timeFormat, currentMeridiem)
 					? t('taskEditor', 'datetimeOffGridTimeNotice')
 					: '';
 			return;
@@ -376,7 +371,7 @@ export function renderDatetimePickerContent(
 				if (activeTimeIndex === index) return;
 				const previousVisualIndex = activeTimeIndex === null ? -1 : visibleTimeIndices.indexOf(activeTimeIndex);
 				const previousButton = previousVisualIndex >= 0
-					? results.children[previousVisualIndex] as HTMLElement | undefined
+					? timeResults.children[previousVisualIndex] as HTMLElement | undefined
 					: undefined;
 				activeTimeIndex = index;
 				currentMeridiem = resolveMeridiem(slot.hour24);
@@ -400,7 +395,7 @@ export function renderDatetimePickerContent(
 		const specialEndOfDay = getSpecialEndOfDayCommitValue();
 		timeNotice.textContent = specialEndOfDay
 			? '00:00 or 24:00 will be saved as next-day midnight for the end time.'
-			: preserveOffGridCommit && !hasTouchedTime && initial.isOffGrid
+			: preserveOffGridCommit && !hasTouchedTime && initial.isOffGrid && !resolveTimeInput(timeBuffer, timeFormat, currentMeridiem)
 				? t('taskEditor', 'datetimeOffGridTimeNotice')
 				: '';
 		scrollActiveTimeIntoView();
@@ -465,6 +460,7 @@ export function renderDatetimePickerContent(
 			timeFormat,
 			meridiem: currentMeridiem,
 		});
+		slots = match.additionalSlots ? [...getQuarterHourSlots(), ...match.additionalSlots] : getQuarterHourSlots();
 		activeTimeIndex = match.activeIndex;
 		visibleTimeIndices = match.visibleIndices;
 		renderTimeResults();
@@ -510,13 +506,14 @@ export function renderDatetimePickerContent(
 	};
 
 	const moveActiveTime = (delta: number) => {
-		activeTimeIndex = getWrappedSlotIndex((activeTimeIndex ?? getNextQuarterHourSlotIndex()) + delta);
+		activeTimeIndex = moveTimeSuggestion(visibleTimeIndices, activeTimeIndex, delta);
+		if (activeTimeIndex === null) return;
 		currentMeridiem = resolveMeridiem(slots[activeTimeIndex].hour24);
 		hasTouchedTime = true;
 		preserveOffGridCommit = false;
 		timeBuffer = getTimeDigitsFromCanonicalTime(slots[activeTimeIndex].canonical, timeFormat, currentMeridiem).padEnd(4, '_').slice(0, 4);
 		syncTimeInputValue();
-		refreshTimeMatches();
+		renderTimeResults();
 	};
 
 	const updateTimeFromDigitInput = (nextBuffer: string, caretPosition: number) => {
@@ -533,48 +530,12 @@ export function renderDatetimePickerContent(
 		setTimeCaret(caretPosition);
 	};
 
-	const acceptTimeDigit = (digit: string, editableIndex: number): void => {
-		if (!/^\d$/.test(digit)) return;
-		if (editableIndex > 0 && timeBuffer.slice(0, editableIndex).split('').some(char => !/\d/.test(char))) {
-			return;
-		}
-
-		const digits = timeBuffer.split('');
-		digits[editableIndex] = digit;
-
-		const prefixDigits = getMatchingDigits(digits.join(''), editableIndex);
-		const prefixMatch = prefixDigits
-			? matchQuarterHourSlots({
-				digits: prefixDigits,
-				anchorIndex: activeTimeIndex ?? getNextQuarterHourSlotIndex(),
-				timeFormat,
-				meridiem: currentMeridiem,
-			})
-			: null;
-		if (prefixDigits && (!prefixMatch || prefixMatch.visibleIndices.length === 0)) {
-			return;
-		}
-
-		let nextBuffer = digits.join('');
-		const fullDigits = getMatchingDigits(nextBuffer);
-		if (fullDigits) {
-			const fullMatch = matchQuarterHourSlots({
-				digits: fullDigits,
-				anchorIndex: activeTimeIndex ?? getNextQuarterHourSlotIndex(),
-				timeFormat,
-				meridiem: currentMeridiem,
-			});
-			if (fullMatch.visibleIndices.length === 0 && editableIndex < digits.length - 1) {
-				for (let index = editableIndex + 1; index < digits.length; index += 1) {
-					digits[index] = '_';
-				}
-				nextBuffer = digits.join('');
-			}
-		}
-
-		const nextEditable = Math.min(3, editableIndex + 1);
-		updateTimeFromDigitInput(nextBuffer, EDITABLE_CARET_POSITIONS[nextEditable]);
-	};
+	bindTimeInput(timeInput, {
+		getBuffer: () => timeBuffer,
+		onChange: updateTimeFromDigitInput,
+		timeFormat,
+		allowEndOfDay: options.fieldKey === 'datetimeEnd' && timeFormat === '24h',
+	});
 
 	input.addEventListener('input', () => {
 		displayedCanonicalDate = '';
@@ -633,6 +594,7 @@ export function renderDatetimePickerContent(
 	});
 
 	timeInput.addEventListener('keydown', event => {
+		if (event.ctrlKey || event.metaKey || event.altKey || event.isComposing) return;
 		if (event.key === 'ArrowDown') {
 			event.preventDefault();
 			moveActiveTime(1);
@@ -641,35 +603,6 @@ export function renderDatetimePickerContent(
 		if (event.key === 'ArrowUp') {
 			event.preventDefault();
 			moveActiveTime(-1);
-			return;
-		}
-		if (event.key === 'ArrowLeft' || event.key === 'ArrowRight') {
-			event.preventDefault();
-			const current = timeInput.selectionStart ?? 0;
-			const editableIndex = getEditableIndexFromCaret(current);
-			const nextEditable = event.key === 'ArrowLeft'
-				? Math.max(0, editableIndex - 1)
-				: Math.min(3, editableIndex + 1);
-			setTimeCaret(EDITABLE_CARET_POSITIONS[nextEditable]);
-			return;
-		}
-		if (event.key === 'Backspace' || event.key === 'Delete') {
-			event.preventDefault();
-			const current = timeInput.selectionStart ?? 0;
-			const editableIndex = getEditableIndexFromCaret(current);
-			const removeIndex = event.key === 'Backspace'
-				? Math.max(0, editableIndex - (current === 0 ? 0 : 1))
-				: editableIndex;
-			const digits = timeBuffer.split('');
-			digits[removeIndex] = '_';
-			updateTimeFromDigitInput(digits.join(''), EDITABLE_CARET_POSITIONS[Math.max(0, removeIndex)]);
-			return;
-		}
-		if (/^\d$/.test(event.key)) {
-			event.preventDefault();
-			const current = timeInput.selectionStart ?? 0;
-			const editableIndex = getEditableIndexFromCaret(current);
-			acceptTimeDigit(event.key, editableIndex);
 			return;
 		}
 		if (event.key === 'Enter') {
@@ -684,7 +617,7 @@ export function renderDatetimePickerContent(
 	const setMeridiem = (next: 'am' | 'pm') => {
 		if (currentMeridiem === next) return;
 		currentMeridiem = next;
-		if (activeTimeIndex !== null) {
+		if (activeTimeIndex !== null && activeTimeIndex < getQuarterHourSlots().length) {
 			activeTimeIndex = remapSlotIndexForMeridiem(activeTimeIndex, next);
 		}
 		if (getMatchingDigits().length === 4) {
@@ -723,6 +656,10 @@ export function renderDatetimePickerContent(
 	return {
 		requestFocus: () => {
 			if (!input.isConnected) return;
+			if (initialDate) {
+				focusTimeInput();
+				return;
+			}
 			focusFloatingInput(input);
 			if (typeof input.select === 'function') input.select();
 		},

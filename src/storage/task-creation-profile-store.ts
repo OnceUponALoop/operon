@@ -40,6 +40,9 @@ export type TaskCreationProfileStoreSettings = Pick<
 	| 'childTaskInheritanceStatusPipelineSource'
 	| 'taskCreatorDefaultToFileTask'
 	| 'taskCreatorDefaultFileTemplateId'
+	| 'defaultInlineTaskTemplateId'
+	| 'inlineTaskUseLastTemplateAsDefault'
+	| 'fileTaskUseLastTemplateAsDefault'
 	| 'fileTaskTemplateFolder'
 	| 'manageDailyNotesWithOperon'
 	| 'dailyNoteFormat'
@@ -220,6 +223,9 @@ function readStoreData(
 			raw.taskCreatorDefaultToFileTask,
 			fallback.taskCreatorDefaultToFileTask,
 		),
+		inlineTaskUseLastTemplateAsDefault: readBoolean(raw.inlineTaskUseLastTemplateAsDefault, false),
+		fileTaskUseLastTemplateAsDefault: readBoolean(raw.fileTaskUseLastTemplateAsDefault, false),
+		defaultInlineTaskTemplateId: readNullableString(raw.defaultInlineTaskTemplateId, fallback.defaultInlineTaskTemplateId),
 		taskCreatorDefaultFileTemplateId: readNullableString(
 			raw.taskCreatorDefaultFileTemplateId,
 			fallback.taskCreatorDefaultFileTemplateId,
@@ -275,8 +281,8 @@ export class TaskCreationProfileStore {
 		this.packagePersist = persist;
 	}
 
-	loadFromPackage(settings: TaskCreationProfileStoreSettings): void {
-		this.settings = cloneSettings(settings);
+	loadFromPackage(settings: Omit<TaskCreationProfileStoreSettings, 'defaultInlineTaskTemplateId' | 'inlineTaskUseLastTemplateAsDefault' | 'fileTaskUseLastTemplateAsDefault'> & { defaultInlineTaskTemplateId?: string | null; inlineTaskUseLastTemplateAsDefault?: boolean; fileTaskUseLastTemplateAsDefault?: boolean }): void {
+		this.settings = cloneSettings({ ...settings, inlineTaskUseLastTemplateAsDefault: settings.inlineTaskUseLastTemplateAsDefault === true, fileTaskUseLastTemplateAsDefault: settings.fileTaskUseLastTemplateAsDefault === true, defaultInlineTaskTemplateId: settings.defaultInlineTaskTemplateId ?? null });
 		this.serializedSettings = JSON.stringify(this.settings);
 		this.recoveredFromMalformed = false;
 	}

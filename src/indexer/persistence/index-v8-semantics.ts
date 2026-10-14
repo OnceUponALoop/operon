@@ -2,7 +2,7 @@ import { buildWorkflowStatusSemanticsSignature } from '../../core/workflow-statu
 import { isRetiredKeyMapping, type OperonSettings } from '../../types/settings';
 import { INDEX_WARM_THRESHOLD_DAYS } from '../index-tier';
 
-const INDEX_V8_SEMANTICS_VERSION = 3;
+const INDEX_V8_SEMANTICS_VERSION = 4;
 
 /**
  * Build the V8 compatibility signature from settings that can change indexed
@@ -11,6 +11,7 @@ const INDEX_V8_SEMANTICS_VERSION = 3;
 export function buildIndexV8SemanticsSignature(settings: OperonSettings): string {
 	return JSON.stringify({
 		version: INDEX_V8_SEMANTICS_VERSION,
+		inlinePropertyDefinitions: settings.inlinePropertyDefinitions ?? null,
 		workflow: JSON.parse(buildWorkflowStatusSemanticsSignature(settings.pipelines)) as unknown,
 		keyMappings: settings.keyMappings
 			.filter(mapping => !isRetiredKeyMapping(mapping.canonicalKey))
@@ -18,6 +19,7 @@ export function buildIndexV8SemanticsSignature(settings: OperonSettings): string
 				canonicalKey: mapping.canonicalKey,
 				visiblePropertyName: mapping.visiblePropertyName,
 				type: mapping.type,
+				isSystem: mapping.isSystem,
 			})),
 		exclusions: {
 			fileTaskTemplateFolder: normalizeFolder(settings.fileTaskTemplateFolder),

@@ -43,7 +43,7 @@ test('Task Editor subtask action uses the compact icon-button geometry', () => {
 	);
 });
 
-test('Task Editor keeps its full-width Remove behavior and contains no conversion action', () => {
+test('Task Editor keeps Remove icon-only with its localized tooltip and unchanged deletion behavior', () => {
 	const removeControl = taskEditorSource.slice(
 		taskEditorSource.indexOf('\tprivate renderRemoveControl('),
 		taskEditorSource.indexOf('\n\tprivate async handleRemoveTaskClick('),
@@ -54,8 +54,9 @@ test('Task Editor keeps its full-width Remove behavior and contains no conversio
 	);
 	assert.doesNotMatch(removeControl, /unlink|convertToPlain/u);
 	assert.match(removeControl, /setAccessibleLabelWithoutTooltip\(button, t\('buttons', 'remove'\)\);/u);
-	assert.match(removeControl, /button\.createSpan\(\{ text: t\('buttons', 'remove'\) \}\);/u);
-	assert.doesNotMatch(removeControl, /operon-editor-terminal-action-cluster|bindTaskEditorTooltip/u);
+	assert.doesNotMatch(removeControl, /button\.createSpan/u);
+	assert.match(removeControl, /this\.bindTaskEditorTooltip\(button, t\('buttons', 'remove'\)\);/u);
+	assert.doesNotMatch(removeControl, /operon-editor-terminal-action-cluster/u);
 	assert.match(
 		removeHandler,
 		/await this\.onRequestDelete\([\s\S]*?this\.existingTask,[\s\S]*?expectedDirectChildCount/u,

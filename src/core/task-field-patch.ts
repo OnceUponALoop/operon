@@ -3,6 +3,8 @@ import { normalizeRepeatIdentityPayload } from './repeat-identity';
 import { calculateRepeatEndFromCount, parseRepeatRule } from './repeat-rule';
 
 export interface NormalizeTaskFieldPatchOptions {
+ /** Creator preview defers system identity allocation to the actual write. */
+ deferRepeatIdentity?: boolean;
 	getAllRepeatSeriesIds?: () => Set<string>;
 	getRepeatSkipDates?: (repeatSeriesId: string) => string[];
 }
@@ -73,6 +75,7 @@ export function normalizeTaskFieldPatch(
 		currentFields,
 		normalizedPayload,
 		options.getAllRepeatSeriesIds ?? (() => new Set<string>()),
+  options.deferRepeatIdentity,
 	);
 
 	const merged = {

@@ -1,6 +1,6 @@
 import { TASK_STATS_CANONICAL_KEYS } from '../types/keys';
 import { isRetiredKeyMapping, KeyMapping } from '../types/settings';
-import { buildForwardMapping, buildReverseMapping, getManagedYamlAliases, isManagedYamlCanonicalKey } from './yaml-fields';
+import { buildForwardMapping, buildReverseMapping, getManagedYamlAliases, isManagedYamlCanonicalKey, readYamlFields } from './yaml-fields';
 import { normalizeTaskIconValue } from './task-icon-value';
 import { formatTaskColorYamlValue } from './task-color-value';
 import { getManagedTaskFieldType } from './managed-task-fields';
@@ -326,6 +326,7 @@ export function applyYamlTaskFieldValues(
 	const reverseMap = buildReverseMapping(keyMappings);
 	const managedPayload = buildManagedFieldPayload(fieldValues, keyMappings);
 	const incomingKeys = new Set(Object.keys(managedPayload));
+    const existingProjection = readYamlFields(frontmatter, keyMappings);
 	const plan: YamlFrontmatterFormattingPlan = {
 		blankYamlKeys: new Set<string>(),
 		removedYamlKeys: new Set<string>(),
@@ -416,6 +417,15 @@ export function applyYamlTaskFieldValues(
 		const existingValue = pickExistingManagedValue(frontmatter, canonicalKey, aliasKeys, preferredYamlKey);
 		const hasIncomingValue = Object.prototype.hasOwnProperty.call(managedPayload, canonicalKey) === true;
 		const incomingValue = managedPayload[canonicalKey];
+        const custom = keyMappings.some(mapping => mapping.isSystem === false && mapping.canonicalKey === canonicalKey);
+        if (custom && existingManagedKeys.has(canonicalKey)) {
+            if (!hasIncomingValue && mode === 'merge') continue;
+            // An unchanged managed projection is not permission to coerce native values or normalize aliases.
+            const projected = existingProjection[canonicalKey] ?? '';
+            if (hasIncomingValue ? incomingValue === projected : projected === '') continue;
+            if (Array.isArray(existingValue) && existingValue.some(item => typeof item !== 'string'))
+                throw new Error('Native custom list edits require a typed property mutation');
+        }
 
 		if (canonicalKey === 'operonId') {
 			if (hasIncomingValue && incomingValue.trim()) {

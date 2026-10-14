@@ -1,3 +1,4 @@
+import { cloneInlinePropertyDefinitions, validateInlinePropertyDefinitions, type InlinePropertyDefinitions } from '../core/inline-property-definitions';
 import type { KanbanManualOrderBoard } from './kanban-order-store';
 import type { CalendarPresetStoreSettings } from './calendar-preset-store';
 import type { ContextualMenuStoreSettings } from './contextual-menu-store';
@@ -27,6 +28,10 @@ import {
 } from '../agent-runtime/developer-api/grants';
 
 export const OPERON_DATA_PACKAGE_SCHEMA_VERSION = 2;
+export const OPERON_TYPED_PROPERTY_SCHEMA_VERSION = 3;
+export function isSupportedDataPackageSchema(value: unknown): value is 2 | 3 {
+	return value === 2 || value === 3;
+}
 export const OPERON_TASK_CREATION_PROFILE_PACKAGE_VERSION = 3;
 export const OPERON_PINNED_TASKS_PACKAGE_VERSION = 2;
 export const OPERON_MOBILE_NOTIFICATIONS_INTEGRATION_VERSION = 1;
@@ -53,6 +58,7 @@ export type WorkspaceTweaksPackageSettings = Pick<
 
 export type OperonDataPackageOwnedSettingsKey =
 	| 'keyMappings'
+	| 'inlinePropertyDefinitions'
 	| 'filterSets'
 	| 'externalCalendars'
 	| keyof PipelineStoreSettings
@@ -70,6 +76,7 @@ export type OperonDataPackageOwnedSettingsKey =
 
 export const OPERON_DATA_PACKAGE_OWNED_SETTINGS_KEYS = [
 	'keyMappings',
+	'inlinePropertyDefinitions',
 	'filterSets',
 	'externalCalendars',
 	'pipelines',
@@ -102,8 +109,11 @@ export const OPERON_DATA_PACKAGE_OWNED_SETTINGS_KEYS = [
 	'contextualMenuMobileTransitionGraceMs',
 	'contextualMenuMobileAutoHideMs',
 	'taskCreatorToolbar',
+	'taskEditorSections',
 	'taskEditorShowLineNumbers',
+	'taskEditorHighlightActiveLine',
 	'taskEditorWorkflowPickers',
+	'taskEditorUseMobileLayout',
 	'taskEditorMobileCoreTools',
 	'inlineExpandedTaskChips',
 	'inlineTaskCompactChips',
@@ -166,6 +176,9 @@ export const OPERON_DATA_PACKAGE_OWNED_SETTINGS_KEYS = [
 	'childTaskInheritanceStatusPipelineSource',
 	'taskCreatorDefaultToFileTask',
 	'taskCreatorDefaultFileTemplateId',
+	'defaultInlineTaskTemplateId',
+	'inlineTaskUseLastTemplateAsDefault',
+	'fileTaskUseLastTemplateAsDefault',
 	'fileTaskTemplateFolder',
 	'manageDailyNotesWithOperon',
 	'dailyNoteFormat',
@@ -201,8 +214,11 @@ export const OPERON_DATA_PACKAGE_OWNED_SETTINGS_KEYS = [
 
 const TASK_UI_PREFERENCE_PACKAGE_KEYS = [
 	'taskCreatorToolbar',
+	'taskEditorSections',
 	'taskEditorShowLineNumbers',
+	'taskEditorHighlightActiveLine',
 	'taskEditorWorkflowPickers',
+	'taskEditorUseMobileLayout',
 	'taskEditorMobileCoreTools',
 	'inlineExpandedTaskChips',
 	'inlineTaskCompactChips',
@@ -292,6 +308,7 @@ export interface OperonPinnedTasksPackageV1 {
 }
 
 export interface OperonTaxonomyPackageV1 {
+	inlinePropertyDefinitions?: InlinePropertyDefinitions;
 	keyMappings: OperonKeyMappingsPackageV1;
 	priorities: VersionedStoreSlice<PriorityStoreSettings>;
 	pipelines: VersionedStoreSlice<PipelineStoreSettings>;
@@ -308,8 +325,8 @@ export interface OperonViewsPackageV1 {
 export interface OperonUiPackageV1 {
 	propertyValuePool?: unknown;
 	contextualMenu: VersionedStoreSlice<ContextualMenuStoreSettings>;
-	taskUiPreferences: VersionedStoreSlice<TaskUiPreferenceStoreSettings>;
-	taskCreationProfile: VersionedStoreSlice<TaskCreationProfileStoreSettings>;
+	taskUiPreferences: VersionedStoreSlice<Omit<TaskUiPreferenceStoreSettings, 'taskEditorUseMobileLayout'>> & { taskEditorUseMobileLayout?: boolean };
+	taskCreationProfile: VersionedStoreSlice<Omit<TaskCreationProfileStoreSettings, 'defaultInlineTaskTemplateId' | 'inlineTaskUseLastTemplateAsDefault' | 'fileTaskUseLastTemplateAsDefault'>> & { defaultInlineTaskTemplateId?: string | null; inlineTaskUseLastTemplateAsDefault?: boolean; fileTaskUseLastTemplateAsDefault?: boolean };
 	workspaceTweaks: VersionedStoreSlice<WorkspaceTweaksPackageSettings>;
 	presetFavorites?: VersionedStoreSlice<PresetFavorites>;
 }
@@ -320,10 +337,15 @@ export function mergeTaskCreationProfilePreservingUnknownV1(
 	known: OperonUiPackageV1['taskCreationProfile'],
 ): OperonUiPackageV1['taskCreationProfile'] {
 	if (!isRecord(existing)) return cloneUnknown(known);
-	return {
-		...cloneUnknown(existing),
-		...cloneUnknown(known),
+	const merged = {
+		...cloneUnknown<Record<string, unknown>>(existing),
+		...cloneUnknown<OperonUiPackageV1['taskCreationProfile']>(known),
 	};
+	// None is absent on disk: avoid startup churn and retire a previous selection on reset.
+	if (!Object.prototype.hasOwnProperty.call(known, 'defaultInlineTaskTemplateId')) delete merged.defaultInlineTaskTemplateId;
+	if (!Object.prototype.hasOwnProperty.call(known, 'inlineTaskUseLastTemplateAsDefault')) delete merged.inlineTaskUseLastTemplateAsDefault;
+	if (!Object.prototype.hasOwnProperty.call(known, 'fileTaskUseLastTemplateAsDefault')) delete merged.fileTaskUseLastTemplateAsDefault;
+	return merged;
 }
 
 export interface OperonAutomationPackageV1 {
@@ -341,7 +363,7 @@ export interface OperonStatePackageV1 {
 }
 
 export interface OperonDataPackageV1 {
-	schemaVersion: typeof OPERON_DATA_PACKAGE_SCHEMA_VERSION;
+	schemaVersion: 2 | 3;
 	settings: OperonDataPackageSettings;
 	taxonomy: OperonTaxonomyPackageV1;
 	views: OperonViewsPackageV1;
@@ -358,7 +380,12 @@ export interface OperonDataPackageV1 {
  * post-write readback.
  */
 export function isStructurallyCompleteOperonDataPackageV1(value: unknown): value is OperonDataPackageV1 {
-	if (!isRecord(value) || value.schemaVersion !== OPERON_DATA_PACKAGE_SCHEMA_VERSION) return false;
+	if (!isRecord(value) || !isSupportedDataPackageSchema(value.schemaVersion)) return false;
+	try {
+		const definitions = isRecord(value.taxonomy) ? value.taxonomy.inlinePropertyDefinitions : undefined;
+		if (value.schemaVersion === 3 || definitions !== undefined) validateInlinePropertyDefinitions(definitions);
+		if (value.schemaVersion === 2 && definitions !== undefined) return false;
+	} catch { return false; }
 	return isValidDataPackageSettingsDomain(value.settings)
 		&& isValidDataPackageTaxonomyDomain(value.taxonomy)
 		&& isValidDataPackageViewsDomain(value.views)
@@ -398,6 +425,7 @@ export function composeOperonSettingsFromDataPackage(
 		// Preserve the former shared width before defaults hide an absent Canvas preference.
 		canvasTaskCardWidth: packageSettings.canvasTaskCardWidth ?? packageSettings.taskCardWidth ?? defaults.canvasTaskCardWidth,
 		keyMappings: keyMappings.length > 0 ? keyMappings : defaults.keyMappings,
+		inlinePropertyDefinitions: cloneInlinePropertyDefinitions(dataPackage.taxonomy.inlinePropertyDefinitions),
 		filterSets,
 		priorities: readArray(dataPackage.taxonomy.priorities.priorities, defaults.priorities),
 		defaultPriority: readString(dataPackage.taxonomy.priorities.defaultPriority, defaults.defaultPriority),
@@ -511,10 +539,12 @@ export function buildOperonDataPackageFromSettings(
 	const filterSets = options.filterSets ?? normalized.filterSets;
 	const filters = buildFiltersPackage(filterSets);
 	const keyMappings = splitKeyMappings(normalized.keyMappings);
+	const definitions = cloneInlinePropertyDefinitions(normalized.inlinePropertyDefinitions);
 	return {
-		schemaVersion: OPERON_DATA_PACKAGE_SCHEMA_VERSION,
+		schemaVersion: definitions ? OPERON_TYPED_PROPERTY_SCHEMA_VERSION : OPERON_DATA_PACKAGE_SCHEMA_VERSION,
 		settings: buildSettingsPackage(normalized),
 		taxonomy: {
+			...(definitions ? { inlinePropertyDefinitions: definitions } : {}),
 			keyMappings,
 			priorities: {
 				version: 1,
@@ -563,8 +593,11 @@ export function buildOperonDataPackageFromSettings(
 			taskUiPreferences: {
 				version: 1,
 				taskCreatorToolbar: cloneUnknown(normalized.taskCreatorToolbar),
+				taskEditorSections: cloneUnknown(normalized.taskEditorSections),
 				taskEditorShowLineNumbers: normalized.taskEditorShowLineNumbers,
+				taskEditorHighlightActiveLine: normalized.taskEditorHighlightActiveLine,
 				taskEditorWorkflowPickers: cloneUnknown(normalized.taskEditorWorkflowPickers),
+				...(normalized.taskEditorUseMobileLayout ? { taskEditorUseMobileLayout: true } : {}),
 				taskEditorMobileCoreTools: cloneUnknown(normalized.taskEditorMobileCoreTools),
 				inlineExpandedTaskChips: cloneUnknown(normalized.inlineExpandedTaskChips),
 				inlineTaskCompactChips: cloneUnknown(normalized.inlineTaskCompactChips),
@@ -625,6 +658,10 @@ export function buildOperonDataPackageFromSettings(
 				childTaskInheritanceStatusPipelineSource: normalized.childTaskInheritanceStatusPipelineSource,
 				taskCreatorDefaultToFileTask: normalized.taskCreatorDefaultToFileTask,
 				taskCreatorDefaultFileTemplateId: normalized.taskCreatorDefaultFileTemplateId,
+				...(normalized.inlineTaskUseLastTemplateAsDefault ? { inlineTaskUseLastTemplateAsDefault: true } : {}),
+				...(normalized.fileTaskUseLastTemplateAsDefault ? { fileTaskUseLastTemplateAsDefault: true } : {}),
+
+				...(normalized.defaultInlineTaskTemplateId ? { defaultInlineTaskTemplateId: normalized.defaultInlineTaskTemplateId } : {}),
 				fileTaskTemplateFolder: normalized.fileTaskTemplateFolder,
 				manageDailyNotesWithOperon: normalized.manageDailyNotesWithOperon,
 				dailyNoteFormat: normalized.dailyNoteFormat,
@@ -706,7 +743,7 @@ export function mergeOperonDataPackage(
 		delete ui.presetFavorites;
 	}
 	return {
-		schemaVersion: OPERON_DATA_PACKAGE_SCHEMA_VERSION,
+		schemaVersion: existing?.schemaVersion === 3 || fallback.schemaVersion === 3 ? 3 : 2,
 		settings: cloneSettingsPackageWithoutRetiredKeys(existing?.settings, fallback.settings),
 		taxonomy: mergeTaxonomyPackage(existing?.taxonomy, fallback.taxonomy),
 		views: cloneExistingDomain(existing?.views, fallback.views, isViewsDomain),
@@ -908,6 +945,8 @@ function sortPinnedTaskEntries(
 
 function buildSettingsPackage(settings: OperonSettings): OperonDataPackageSettings {
 	const packageSettings = { ...settings } as Partial<OperonSettings>;
+	// Missing and false are equivalent; installing this opt-in UI setting must not rewrite old packages.
+	if (packageSettings.inlineTaskOpenCreatorBeforeConversion !== true) delete packageSettings.inlineTaskOpenCreatorBeforeConversion;
 	for (const key of OPERON_DATA_PACKAGE_OWNED_SETTINGS_KEYS) {
 		delete packageSettings[key];
 	}
@@ -1060,6 +1099,8 @@ function mergeTaxonomyPackage(
 ): OperonTaxonomyPackageV1 {
 	const source = isRecord(existing) ? existing : {};
 	return {
+		...(source.inlinePropertyDefinitions !== undefined || fallback.inlinePropertyDefinitions !== undefined
+			? { inlinePropertyDefinitions: cloneInlinePropertyDefinitions((source.inlinePropertyDefinitions ?? fallback.inlinePropertyDefinitions)) } : {}),
 		keyMappings: cloneExistingDomain(source.keyMappings, fallback.keyMappings),
 		priorities: cloneExistingDomain(source.priorities, fallback.priorities),
 		pipelines: cloneExistingDomain(source.pipelines, fallback.pipelines),

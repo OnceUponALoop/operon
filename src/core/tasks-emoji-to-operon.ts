@@ -1,21 +1,33 @@
 import { parseTaskLine, hasOperonFields } from './parser';
-import { buildCanonicalLocalDatetime, deriveDatetimeEnd } from './scheduling-rules';
+import { buildCanonicalLocalDatetime, shiftDatetimeByDays, deriveEstimateValue } from './scheduling-rules';
+import { parseLocalTimestamp, toLocalDate, toLocalDatetime } from './local-time';
+import type { TimePrefix } from '../types/fields';
 import { parseTasksRecurrenceToOperon } from './tasks-recurrence-to-operon';
 import { CheckboxState } from '../types/keys';
 import {
 	collectMarkdownProtectedRanges,
+	normalizeMarkdownProseWhitespace,
 	findMarkdownProtectedRangeAt,
 	type MarkdownProtectedRange,
 } from './markdown-protected-ranges';
+
+export interface TasksDependencyMetadata {
+	kind: 'id' | 'dependsOn';
+	raw: string;
+	/** Null means the complete expression is invalid; never salvage a partial ID. */
+	ids: string[] | null;
+}
 
 export type TasksEmojiToOperonResult =
 	| {
 		kind: 'converted';
 		checkbox: CheckboxState;
 		description: string;
+		timePrefix?: TimePrefix;
 		tags: string[];
 		mappedFields: Record<string, string>;
 		leftovers: string[];
+		dependencyMetadata?: TasksDependencyMetadata[];
 	}
 	| { kind: 'not_tasks_emoji' }
 	| { kind: 'already_operon' }
@@ -23,6 +35,8 @@ export type TasksEmojiToOperonResult =
 
 export interface TasksEmojiToOperonOptions {
 	priorities?: Array<{ label: string }>;
+	/** Compatibility for the existing generic checkbox command, never for Tasks migration. */
+	legacyCustomCheckboxFallback?: boolean;
 }
 
 type TextRange = MarkdownProtectedRange;
@@ -58,13 +72,13 @@ const TASKS_PRIORITY_EMOJIS: Array<{ emoji: string; rank: number }> = [
 ];
 const PRIORITY_EMOJIS = TASKS_PRIORITY_EMOJIS.map(entry => entry.emoji);
 const TASKS_RECURRENCE_EMOJI = '🔁';
-const UNSUPPORTED_LONG_EMOJIS = ['🆔', '⛔'];
+const LONG_METADATA_EMOJIS = ['🆔', '⛔', '🏁'];
 const UNSUPPORTED_SHORT_EMOJIS = ['⏰'];
 const ALL_TASKS_METADATA_EMOJIS = [
 	...SUPPORTED_DATE_EMOJIS.map(entry => entry.emoji),
 	...PRIORITY_EMOJIS,
 	TASKS_RECURRENCE_EMOJI,
-	...UNSUPPORTED_LONG_EMOJIS,
+	...LONG_METADATA_EMOJIS,
 	...UNSUPPORTED_SHORT_EMOJIS,
 ];
 
@@ -74,10 +88,6 @@ function rangeAt(ranges: TextRange[], index: number): TextRange | null {
 
 function overlaps(left: TextRange, right: TextRange): boolean {
 	return left.from < right.to && right.from < left.to;
-}
-
-function compressWhitespace(text: string): string {
-	return text.replace(/\s+/g, ' ').trim();
 }
 
 function normalizeCreatedDate(value: string): string {
@@ -129,37 +139,31 @@ function parseClockToSeconds(value: string): number | null {
 	return hours * 3600 + minutes * 60;
 }
 
-function buildTimedSchedulingFields(dateScheduled: string, timeBlock: LeadingTimeBlock): Record<string, string> | null {
-	const datetimeStart = buildCanonicalLocalDatetime(dateScheduled, timeBlock.startTime);
-	if (!datetimeStart) return null;
-
-	if (!timeBlock.endTime) {
-		const estimateSeconds = 15 * 60;
-		return {
-			datetimeStart,
-			datetimeEnd: deriveDatetimeEnd(datetimeStart, estimateSeconds),
-			estimate: String(estimateSeconds),
-		};
-	}
-
-	const startSeconds = parseClockToSeconds(timeBlock.startTime);
-	const endSeconds = parseClockToSeconds(timeBlock.endTime);
-	if (startSeconds == null || endSeconds == null || endSeconds <= startSeconds) return null;
-
-	const estimateSeconds = endSeconds - startSeconds;
-	const datetimeEnd = buildCanonicalLocalDatetime(dateScheduled, timeBlock.endTime);
-	if (!datetimeEnd) return null;
-	return {
-		datetimeStart,
-		datetimeEnd,
-		estimate: String(estimateSeconds),
-	};
+function validLocalDatetime(date: string, clock: string): string | null {
+	if (parseClockToSeconds(clock) === null) return null;
+	const value = buildCanonicalLocalDatetime(date, clock.padStart(5, '0'));
+	const timestamp = parseLocalTimestamp(value);
+	return timestamp !== null && Number.isFinite(timestamp) && toLocalDatetime(new Date(timestamp)) === value ? value : null;
 }
 
-function findNextMetadataBoundary(text: string, from: number, protectedRanges: TextRange[]): number {
+function buildTimedSchedulingFields(dateScheduled: string, timeBlock: LeadingTimeBlock): Record<string, string> | null {
+	const datetimeStart = validLocalDatetime(dateScheduled, timeBlock.startTime);
+	if (!datetimeStart) return null;
+	if (!timeBlock.endTime) return { datetimeStart };
+	const startSeconds = parseClockToSeconds(timeBlock.startTime), endSeconds = parseClockToSeconds(timeBlock.endTime);
+	if (startSeconds === null || endSeconds === null || startSeconds === endSeconds) return null;
+	const endDate = endSeconds < startSeconds ? shiftDatetimeByDays(`${dateScheduled}T12:00:00`, 1).slice(0, 10) : dateScheduled;
+	const datetimeEnd = validLocalDatetime(endDate, timeBlock.endTime);
+	if (!datetimeEnd) return null;
+	const estimate = deriveEstimateValue(datetimeStart, datetimeEnd);
+	return estimate ? { datetimeStart, datetimeEnd, estimate } : null;
+}
+
+function findNextMetadataBoundary(text: string, from: number, protectedRanges: TextRange[], stopAtProtected = true): number {
 	for (let i = from; i < text.length; i++) {
 		const protectedRange = rangeAt(protectedRanges, i);
 		if (protectedRange) {
+			if (stopAtProtected) return i;
 			i = protectedRange.to - 1;
 			continue;
 		}
@@ -175,11 +179,12 @@ function findNextMetadataBoundary(text: string, from: number, protectedRanges: T
 function collectTodoistLikeFragments(text: string): Array<{ range: TextRange; value: string }> {
 	const regex = /%%\[[^\]]+::[^\]]+\]%%|\b[a-z_]*id::\s*[^\s]+/gi;
 	const fragments: Array<{ range: TextRange; value: string }> = [];
+	const protectedRanges = collectMarkdownProtectedRanges(text);
 	for (const match of text.matchAll(regex)) {
 		const value = match[0]?.trim();
 		if (!value) continue;
 		const index = match.index ?? -1;
-		if (index < 0) continue;
+		if (index < 0 || protectedRanges.some(range => overlaps(range, { from: index, to: index + value.length }))) continue;
 		fragments.push({
 			range: { from: index, to: index + match[0].length },
 			value,
@@ -227,11 +232,12 @@ export function convertTasksEmojiLineToOperon(line: string, options: TasksEmojiT
 	const protectedRanges = collectMarkdownProtectedRanges(body);
 	const rangesToRemove: TextRange[] = [];
 	const leftovers: string[] = [];
+	const dependencyMetadata: TasksDependencyMetadata[] = [];
 	const pendingMetadataFragments: PendingTasksMetadataFragment[] = [];
 	const mappedFields: Record<string, string> = {};
 	const priorityLabels = normalizePriorityLabels(options);
 	let mappedPriorityEmoji = false;
-	let foundTasksSyntax = checkboxInfo.leftover !== null;
+	let foundTasksSyntax = options.legacyCustomCheckboxFallback === true && checkboxInfo.leftover !== null;
 
 	if (checkboxInfo.leftover) leftovers.push(checkboxInfo.leftover);
 
@@ -258,6 +264,10 @@ export function convertTasksEmojiLineToOperon(line: string, options: TasksEmojiT
 			const fragment = body.slice(i, valueStart + dateMatch[1].length).trim();
 			pushRange({ from: i, to: valueStart + dateMatch[1].length });
 			foundTasksSyntax = true;
+			const dateStamp = parseLocalTimestamp(dateMatch[1]);
+			if (dateStamp === null || !Number.isFinite(dateStamp) || toLocalDate(new Date(dateStamp)) !== dateMatch[1]) {
+				leftovers.push(`${fragment} (invalid date)`); i = valueStart + dateMatch[1].length - 1; matched = true; break;
+			}
 			const normalizedValue = entry.key === 'datetimeCreated'
 				? normalizeCreatedDate(dateMatch[1])
 				: dateMatch[1];
@@ -318,13 +328,15 @@ export function convertTasksEmojiLineToOperon(line: string, options: TasksEmojiT
 			let start = i + TASKS_RECURRENCE_EMOJI.length;
 			while (start < body.length && /\s/.test(body[start])) start++;
 			const end = findNextMetadataBoundary(body, start, protectedRanges);
-			const fragment = body.slice(i, end).trim();
+			const protectedBoundary = rangeAt(protectedRanges, end);
+			const joinedBoundary = protectedBoundary !== null && end > start && !/\s/u.test(body[end - 1]);
+			const fragment = body.slice(i, joinedBoundary ? findNextMetadataBoundary(body, start, protectedRanges, false) : end).trim();
 			pushRange({ from: i, to: end });
 			if (fragment) {
 				pendingMetadataFragments.push({
 					range: { from: i, to: end },
-					value: fragment,
-					kind: 'recurrence',
+					value: joinedBoundary ? `${fragment} (invalid recurrence expression adjacent to protected Markdown)` : fragment,
+					kind: joinedBoundary ? 'leftover' : 'recurrence',
 				});
 			}
 			foundTasksSyntax = true;
@@ -332,17 +344,30 @@ export function convertTasksEmojiLineToOperon(line: string, options: TasksEmojiT
 			continue;
 		}
 
-		for (const emoji of UNSUPPORTED_LONG_EMOJIS) {
+		for (const emoji of LONG_METADATA_EMOJIS) {
 			if (!body.startsWith(emoji, i)) continue;
 			let start = i + emoji.length;
 			while (start < body.length && /\s/.test(body[start])) start++;
 			const end = findNextMetadataBoundary(body, start, protectedRanges);
-			const fragment = body.slice(i, end).trim();
+			const protectedBoundary = rangeAt(protectedRanges, end);
+			const joinedBoundary = protectedBoundary !== null && end > start && !/\s/u.test(body[end - 1]);
+			const fragment = body.slice(i, joinedBoundary ? findNextMetadataBoundary(body, start, protectedRanges, false) : end).trim();
+			if (emoji === '🆔' || emoji === '⛔') {
+				const value = body.slice(start, end).trim();
+				const valid = !joinedBoundary && (emoji === '🆔'
+					? /^[A-Za-z0-9_-]+$/u.test(value)
+					: /^[A-Za-z0-9_-]+(?:\s*,\s*[A-Za-z0-9_-]+)*$/u.test(value));
+				dependencyMetadata.push({
+					kind: emoji === '🆔' ? 'id' : 'dependsOn',
+					raw: fragment,
+					ids: valid ? [...new Set(value.split(/\s*,\s*/u))] : null,
+				});
+			}
 			pushRange({ from: i, to: end });
 			if (fragment) {
 				pendingMetadataFragments.push({
 					range: { from: i, to: end },
-					value: fragment,
+					value: emoji === '🏁' ? `${fragment} (on-completion action is not supported)` : fragment,
 					kind: 'leftover',
 				});
 			}
@@ -385,13 +410,14 @@ export function convertTasksEmojiLineToOperon(line: string, options: TasksEmojiT
 	}
 
 	const scheduledDate = mappedFields['dateScheduled'];
-	if (scheduledDate && leadingTimeBlock) {
-		pushRange(leadingTimeBlock.range);
-		const timedFields = buildTimedSchedulingFields(scheduledDate, leadingTimeBlock);
-		if (timedFields) {
-			for (const [key, value] of Object.entries(timedFields)) {
-				mappedFields[key] = value;
-			}
+	if (leadingTimeBlock) {
+		const start = parseClockToSeconds(leadingTimeBlock.startTime), end = leadingTimeBlock.endTime ? parseClockToSeconds(leadingTimeBlock.endTime) : null;
+		const invalidClock = start === null || (leadingTimeBlock.endTime !== null && (end === null || end === start));
+		if (scheduledDate || invalidClock) {
+			const timedFields = !invalidClock && scheduledDate ? buildTimedSchedulingFields(scheduledDate, leadingTimeBlock) : null;
+			pushRange(leadingTimeBlock.range);
+			if (timedFields) Object.assign(mappedFields, timedFields);
+			else leftovers.push(`${leadingTimeBlock.raw} (invalid or ambiguous scheduled time)`);
 		}
 	}
 
@@ -402,7 +428,7 @@ export function convertTasksEmojiLineToOperon(line: string, options: TasksEmojiT
 		leftovers.push(fragment.value);
 		todoistRanges.push(fragment.range);
 	}
-	const cleanedBody = compressWhitespace(removeRanges(withoutEmojiMetadata, todoistRanges));
+	const cleanedBody = normalizeMarkdownProseWhitespace(removeRanges(withoutEmojiMetadata, todoistRanges));
 	if (!cleanedBody) return { kind: 'not_tasks_emoji' };
 
 	const checkboxChar = checkboxInfo.checkbox === 'done'
@@ -418,8 +444,10 @@ export function convertTasksEmojiLineToOperon(line: string, options: TasksEmojiT
 		kind: 'converted',
 		checkbox: checkboxInfo.checkbox,
 		description: parsed.description,
+		...(parsed.timePrefix ? { timePrefix: parsed.timePrefix } : {}),
 		tags: parsed.tags,
 		mappedFields,
 		leftovers,
+		...(dependencyMetadata.length ? { dependencyMetadata } : {}),
 	};
 }

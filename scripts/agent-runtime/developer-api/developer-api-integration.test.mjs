@@ -68,7 +68,7 @@ test('general settings persistence preserves the host-owned Developer API grant 
 	const persistSettings = methodBody(
 		operonStorageSource,
 		'\tprivate async persistSettings(',
-		'\n\tgetSettings(): OperonSettings',
+		'\n\tgetSettings(options?:',
 	);
 	assert.match(
 		persistSettings,

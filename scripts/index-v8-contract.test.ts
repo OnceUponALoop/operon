@@ -282,7 +282,7 @@ async function run(): Promise<void> {
 	wrongSchema.schemaVersion = 9;
 	await rejects(() => Promise.resolve(decodeIndexV8Manifest(stableCompactStringify(wrongSchema))), /schema/);
 	const wrongLayout = JSON.parse(forward.manifestPayload) as Record<string, unknown>;
-	wrongLayout.layoutVersion = 2;
+	wrongLayout.layoutVersion = INDEX_V8_LAYOUT_VERSION + 1;
 	await rejects(() => Promise.resolve(decodeIndexV8Manifest(stableCompactStringify(wrongLayout))), /layout/);
 	const missingCoherenceBasis = JSON.parse(forward.manifestPayload) as Record<string, unknown>;
 	delete missingCoherenceBasis.coherenceBasis;
@@ -329,6 +329,7 @@ async function run(): Promise<void> {
 		mtimeMs: source.mtimeMs,
 		sizeBytes: source.sizeBytes,
 		instances: [],
+		native: { rescan: true as const },
 	}));
 	await rejects(
 		() => Promise.resolve(hydrateIndexV8Shards([invalidMtimeShard])),
@@ -351,7 +352,7 @@ async function run(): Promise<void> {
 	giantSource.instances[0].description = 'x'.repeat(INDEX_V8_MAX_SHARD_BYTES);
 	await rejects(
 		() => buildIndexV8Snapshot(snapshotInput([giantSource])),
-		/exceeds the 4000000-byte contract limit/,
+		/exceeds the 5000000-byte contract limit/,
 	);
 
 	const semanticsBase = structuredClone(DEFAULT_SETTINGS);

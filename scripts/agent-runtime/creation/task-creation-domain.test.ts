@@ -1378,6 +1378,21 @@ async function runCommitPortTests(): Promise<void> {
 		assert.equal(configuredDefault.plan.tasks[0].representation, 'file');
 		assert.equal(configuredDefault.plan.tasks[0].filePath, 'Tasks/Configured default.md');
 	}
+	for (const content of ['---\nexample: value', '~~~md\n## Tasks']) {
+		const result = await prepareRuntimeTaskCreationV1('unsafe-heading', {
+			operation: 'create',
+			items: [{ itemRef: 'child', description: 'Safe insertion', target: { representation: 'inline', mode: 'configured-default' }, fields: [] }],
+		}, {
+			...runtimePorts,
+			readSource: async filePath => ({ filePath, content }),
+			resolveConfiguredInlineTarget: async () => ({ filePath: 'Daily/Note.md', placement: { kind: 'under-heading', headingKeyword: 'Tasks' } }),
+		});
+		assert.equal(result.ok, false, 'unclosed Markdown must return a blocker, not a prepared write');
+		if (!result.ok) {
+			assert.equal(result.code, 'invalid-request');
+			assert.match(result.reason, /unclosed/u);
+		}
+	}
 	const periodicSeed = '---\noperonId: par0001\ndatetimeModified: 2026-08-21T10:00\n---\n';
 	const absentSeedCreation = await prepareRuntimeTaskCreationV1(
 		'runtime-absent-periodic-seed',

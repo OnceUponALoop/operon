@@ -51,16 +51,16 @@ export function buildOperonStoragePaths(
 			periodicNoteContainersPath: joinVaultPath(pluginDir, 'state', 'periodic-note-containers.json'),
 		},
 		runtime: {
-			indexV8RecoveryRequiredPath: joinVaultPath(pluginDir, 'runtime', 'index-v8-recovery-required.json'),
+			indexV8RecoveryRequiredPath: joinVaultPath(pluginDir, 'runtime', 'index-v8-layout-2-recovery-required.json'),
 			locales: {
 				rootPath: joinVaultPath(pluginDir, 'runtime', 'locales'),
 				manifestPath: joinVaultPath(pluginDir, 'runtime', 'locales', 'manifest.json'),
 				packsPath: joinVaultPath(pluginDir, 'runtime', 'locales', 'packs'),
 			},
 			indexV8: {
-				rootPath: joinVaultPath(pluginDir, 'runtime', 'index-v8'),
-				manifestPath: joinVaultPath(pluginDir, 'runtime', 'index-v8', 'manifest.json'),
-				shardsPath: joinVaultPath(pluginDir, 'runtime', 'index-v8', 'shards'),
+				rootPath: joinVaultPath(pluginDir, 'runtime', 'index-v8-layout-2'),
+				manifestPath: joinVaultPath(pluginDir, 'runtime', 'index-v8-layout-2', 'manifest.json'),
+				shardsPath: joinVaultPath(pluginDir, 'runtime', 'index-v8-layout-2', 'shards'),
 			},
 		},
 		cache: {

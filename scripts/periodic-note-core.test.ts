@@ -1,4 +1,11 @@
 import assert from 'node:assert/strict';
+import moment from 'moment';
+import 'moment/locale/de';
+import 'moment/locale/fr';
+import { insertInlineTaskUnderFirstHeadingKeyword, insertInlineTaskUnderHeading, UnsafeMarkdownHeadingInsertionError } from '../src/core/markdown-heading-insertion';
+import { insertInlineTaskUnderHeading as insertCalendarTask } from '../src/systems/calendar-writeback';
+
+moment.locale('en');
 import {
 	DEFAULT_DAILY_NOTE_FORMAT,
 	dailyNotePathsMatch,
@@ -821,16 +828,7 @@ async function run(): Promise<void> {
 		format: 'GGGG-MM-DD',
 		template: '',
 	}), { available: false, reason: 'invalid-config', source: 'operon' });
-	deepEqual(resolveEffectivePeriodicNoteConfig({
-		kind: 'daily',
-		operon: {
-			enabled: true,
-			folder: 'Operon/Daily',
-			format: 'YYYY-MM-DD',
-			template: '../unsafe.md',
-		},
-	}), { available: false, reason: 'invalid-config', source: 'operon' },
-	'creation policy must continue to reject an unsafe template');
+
 
 	deepEqual(resolveEffectivePeriodicNoteConfig({
 		kind: 'weekly',
@@ -851,23 +849,13 @@ async function run(): Promise<void> {
 		kind: 'weekly',
 		operon: { enabled: true, folder: '../Weekly', format: DEFAULT_WEEKLY_NOTE_FORMAT },
 	}), { available: false, reason: 'invalid-config', source: 'operon' });
-	for (const template of [
-		'../Templates/Weekly.md',
-		'/Templates/Weekly.md',
-		'C:/Templates/Weekly.md',
-		'Templates\\Weekly.md',
-		'Templates//Weekly.md',
-		'Templates/Weekly.txt',
-	]) {
-		deepEqual(resolveEffectivePeriodicNoteConfig({
-			kind: 'weekly',
-			operon: {
-				enabled: true,
-				folder: 'Weekly',
-				format: DEFAULT_WEEKLY_NOTE_FORMAT,
-				template,
-			},
-		}), { available: false, reason: 'invalid-config', source: 'operon' });
+	// Target resolution is independent of template validity. The service validates
+	// templates only when creating a missing note (covered by service tests).
+	for (const template of ['Templates/Weekly', '../Templates/Weekly.md', 'Templates/Weekly.txt']) {
+		const resolved = resolveEffectivePeriodicNoteConfig({ kind: 'weekly',
+			operon: { enabled: true, folder: 'Weekly', format: DEFAULT_WEEKLY_NOTE_FORMAT, template } });
+		equal(resolved.available, true);
+		if (resolved.available) equal(resolved.config.template, template);
 	}
 
 	const parsedContainer = {
@@ -1064,6 +1052,43 @@ async function run(): Promise<void> {
 		{ kind: 'date', field: 'dateScheduled', value: '2026-08-22' },
 		{ kind: 'date', field: 'dateScheduled', value: '2026-08-23' },
 	]).ok, false, 'duplicate routing fields fail closed');
+
+	const previousLocale = moment.locale();
+	try {
+		for (const locale of ['en', 'de', 'fr']) {
+			moment.locale(locale);
+			const config = { folder: 'Calendar', format: 'YYYY/MM-MMMM/YYYY-MM-DD ddd' };
+			const expected = `Calendar/${moment('2026-10-13').format(config.format)}.md`;
+			equal(resolvePeriodicNotePathFromDateKey('daily', '2026-10-13', config), expected);
+			equal(resolvePeriodicNoteDateKeyFromPath('daily', expected, config), '2026-10-13');
+		}
+	} finally { moment.locale(previousLocale); }
+
+	for (const insert of [
+		(content: string) => insertInlineTaskUnderFirstHeadingKeyword(content, 'Tasks', '- [ ] New'),
+		(content: string) => insertInlineTaskUnderHeading(content, '## Tasks', '- [ ] New'),
+		(content: string) => insertCalendarTask(content, '## Tasks', '- [ ] New'),
+	]) {
+		for (const prefix of [
+			'---\nnote: |\n  ## Tasks\n  example\n---\n',
+			'```md\n## Tasks\n```\n',
+			'~~~~md\n## Tasks\n~~~\n## Tasks\n~~~~\n',
+			'    ## Tasks\n    example\n\n',
+			'\t## Tasks\n\texample\n\n',
+			'> ```md\n> ## Tasks\n> ```\n',
+			'- ```md\n  ## Tasks\n  ```\n',
+		]) {
+			const content = `${prefix}## Tasks\noriginal`;
+			equal(insert(content).content, `${prefix}## Tasks\n- [ ] New\noriginal`, `Ignore non-heading prefix: ${JSON.stringify(prefix)}`);
+		}
+		for (const content of ['---\nnote: value', '```md\nexample', '~~~~md\n~~~']) {
+			assert.throws(() => insert(content), UnsafeMarkdownHeadingInsertionError);
+			assertions++;
+		}
+		equal(insert('## Tasks\r\noriginal\r\n').content, '## Tasks\r\n- [ ] New\r\noriginal\r\n');
+		equal(insert('## Tasks\n```md\nexample').content, '## Tasks\n- [ ] New\n```md\nexample');
+		equal(insert('```md\n## Tasks\n```').content, '```md\n## Tasks\n```\n\n## Tasks\n- [ ] New');
+	}
 
 	console.log(`Periodic note core tests passed: ${assertions} assertions`);
 }

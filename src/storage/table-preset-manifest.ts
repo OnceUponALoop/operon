@@ -94,14 +94,14 @@ export function mergeTablePresetRegistryOrder(
 	return nextOrder;
 }
 
-/** Keep an adopted file-backed Table usable when old authority had no default. */
+/** Preserve the chosen default through temporary file unavailability. */
 export function resolveTablePresetDefaultAfterRegistrySync(
 	currentDefaultId: string | null,
 	orderedPresetIds: readonly string[],
 	availablePresetIds: readonly string[],
 ): string | null {
 	const available = new Set(availablePresetIds);
-	if (currentDefaultId && available.has(currentDefaultId)) return currentDefaultId;
+	if (currentDefaultId && orderedPresetIds.includes(currentDefaultId)) return currentDefaultId;
 	for (const presetId of orderedPresetIds) {
 		if (available.has(presetId)) return presetId;
 	}
@@ -109,26 +109,36 @@ export function resolveTablePresetDefaultAfterRegistrySync(
 }
 
 /**
- * Build the complete Table preset authority from usable `.table` files only.
- * Existing order survives for still-available ids; newly discovered files are
- * appended by a stable path order. Missing, conflicting, and settings-only ids
- * are intentionally omitted.
+ * Discover usable files without treating temporary absence as user deletion.
+ * Retain known file bindings and their order/default until explicitly removed;
+ * unavailable files remain unavailable in the registry, never editable snapshots.
  */
 export function reconcileTablePresetFileAuthority(input: {
 	currentPresetIds: readonly string[];
 	currentDefaultPresetId: string | null;
 	currentInitialized: boolean;
+	currentFileBindings?: readonly TablePresetFileBinding[];
 	availableFiles: readonly AvailableTablePresetFileAuthority[];
 }): ReconciledTablePresetFileAuthority {
 	const availableById = new Map<string, AvailableTablePresetFileAuthority>();
 	const claimedPaths = new Set<string>();
+	const boundPaths = new Map((input.currentFileBindings ?? [])
+		.map(binding => [binding.path.trim().toLocaleLowerCase('en-US'), binding.id]));
 	for (const candidate of [...input.availableFiles].sort(compareAvailableTableFiles)) {
 		const id = candidate.id.trim();
 		const path = candidate.path.trim();
 		const pathKey = path.toLocaleLowerCase('en-US');
 		if (!id || !path || availableById.has(id) || claimedPaths.has(pathKey)) continue;
+		// A different id at a bound path is a registry conflict, not a new preset.
+		if (boundPaths.has(pathKey) && boundPaths.get(pathKey) !== id) continue;
 		availableById.set(id, { id, path });
 		claimedPaths.add(pathKey);
+	}
+
+	// A scan cannot prove deletion: startup, sync, partial writes and read failures
+	// can all hide a previously known file. Explicit deletion removes its binding.
+	for (const binding of input.currentFileBindings ?? []) {
+		if (!availableById.has(binding.id)) availableById.set(binding.id, { ...binding });
 	}
 
 	const presetIds: string[] = [];

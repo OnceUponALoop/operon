@@ -86,7 +86,7 @@ export interface InlineMarkdownSource extends TaskMarkdownSource {
  * Scene JSON is never generated here. Pending scene edits stay in the native scene and the next
  * native save uses the updated Markdown buffer. No tentative text is installed before persistence.
  */
-export function createExcalidrawMarkdownSource(app: App, view: ExcalidrawTaskView, allowed: () => boolean, options: { sourceQueueOwned?: boolean; enforceViewMode?: boolean } = {}): InlineMarkdownSource {
+export function createExcalidrawMarkdownSource(app: App, view: ExcalidrawTaskView, allowed: () => boolean, options: { sourceQueueOwned?: boolean; enforceViewMode?: boolean; beforeAdopt?: (expected: string, content: string) => void } = {}): InlineMarkdownSource {
  const file = view.file, path = file?.path;
  if (!file || !path) throw new ExcalidrawSourceError('The drawing is no longer available.');
  let disposed = false, attempted = false;
@@ -172,6 +172,7 @@ export function createExcalidrawMarkdownSource(app: App, view: ExcalidrawTaskVie
    // Incremental native synchronization merges the scene but can retain an old
    // Markdown header. Native save/edit leases are owned here, so adopt the disk
    // source instead of treating that routine synchronization lag as a conflict.
+   options.beforeAdopt?.(source, source);
    adopt(views, source); check();
    return source;
   }),
@@ -189,13 +190,14 @@ export function createExcalidrawMarkdownSource(app: App, view: ExcalidrawTaskVie
      return next;
     });
     if (saved !== next) throw new ExcalidrawSourceError('The drawing write could not be verified.');
+    options.beforeAdopt?.(expected, saved);
     adopt(views, saved); check(); return saved;
    } catch (error) {
     // Read-only reconciliation, never replay a possibly committed write. This also
     // protects a CAS conflict from a subsequent native save of the stale header.
-    try { const saved = await app.vault.read(file); readExcalidrawMarkdownSections(saved); adopt(views, saved); }
+    try { const saved = await app.vault.read(file); readExcalidrawMarkdownSections(saved); options.beforeAdopt?.(expected, saved); adopt(views, saved); }
     catch {
-     for (const peer of views) guardUnknownDrawingWrite(app, peer, file, path);
+     for (const peer of views) guardUnknownDrawingWrite(app, peer, file, path, saved => options.beforeAdopt?.(expected, saved));
      throw new ExcalidrawSourceError('The drawing save result is unknown. Reopen the drawing before making further changes; do not repeat the task operation.');
     }
     throw error;
@@ -350,7 +352,7 @@ export async function saveExcalidrawTaskSceneInQueue(app: App, view: ExcalidrawT
  * header can be reconciled. A canceled save is never replayed. The guard removes itself
  * on recovery or on a different file and does not hold synchronization across user input.
  */
-function guardUnknownDrawingWrite(app: App, view: NativeSourceView, file: TFile, path: string): void {
+function guardUnknownDrawingWrite(app: App, view: NativeSourceView, file: TFile, path: string, beforeAdopt?: (saved: string) => void): void {
  const original = Reflect.get(view, 'withPersistenceWriteLease');
  const descriptor = Object.getOwnPropertyDescriptor(view, 'withPersistenceWriteLease');
  let recovered = false;
@@ -369,6 +371,7 @@ function guardUnknownDrawingWrite(app: App, view: NativeSourceView, file: TFile,
    const saved = await app.vault.read(file);
    readExcalidrawMarkdownSections(saved);
    if (view.file !== file || file.path !== path) throw new ExcalidrawSourceError('The drawing changed during save recovery.');
+   beforeAdopt?.(saved);
    view.data = saved; view.preparedSaveText = saved; view.lastSavedData = saved;
    restore();
    throw new ExcalidrawSourceError('Drawing Markdown was recovered. The unverified save was canceled.');
@@ -383,6 +386,7 @@ export async function withExcalidrawMarkdownSources<T>(
  app: App, writer: TaskWriter, paths: readonly string[], isDrawing: (file: TFile) => boolean,
  allowed: () => boolean, operation: (current: () => boolean) => Promise<T>,
  ownedSources: readonly InlineMarkdownSource[] = [],
+ beforeAdopt?: (path: string, expected: string, content: string) => void,
 ): Promise<T> {
  const sources: InlineMarkdownSource[] = [], created: InlineMarkdownSource[] = [];
  const captured = [...new Set(paths)].sort().flatMap(path => {
@@ -400,7 +404,7 @@ export async function withExcalidrawMarkdownSources<T>(
    const owned = ownedSources.find(source => source.file === file && writer.isMarkdownSourceOwner(source));
    if (writer.hasMarkdownSource(file) && !owned) throw new ExcalidrawSourceError('Another task operation in this drawing is still finishing.');
    if (view) {
-    const source = owned ?? createExcalidrawMarkdownSource(app, view, current);
+    const source = owned ?? createExcalidrawMarkdownSource(app, view, current, { beforeAdopt: (expected, content) => beforeAdopt?.(file.path, expected, content) });
     sources.push(source); if (!owned) created.push(source);
    }
   }

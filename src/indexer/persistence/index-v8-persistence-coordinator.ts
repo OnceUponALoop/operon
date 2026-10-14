@@ -1,4 +1,5 @@
 import type { IndexData } from '../../types/fields';
+import type { PersistedNativePropertySource } from '../native-property-persistence';
 import { enginePerfLog, enginePerfNow } from '../../core/engine-perf';
 import { getActiveWindow } from '../../core/dom-compat';
 import {
@@ -37,6 +38,7 @@ export interface IndexV8PersistenceInput {
 	sequence: number;
 	indexData: Readonly<IndexData>;
 	sourceStats: ReadonlyMap<string, IndexV8SourceStat>;
+	nativeSources?: ReadonlyMap<string, PersistedNativePropertySource>;
 	committedAt: string;
 	lastFullScanAt: string;
 	indexSemanticsSignature: string;
@@ -196,6 +198,7 @@ export class IndexV8PersistenceCoordinator {
 				: {}),
 			indexData: input.indexData,
 			sourceStats: input.sourceStats,
+			nativeSources: input.nativeSources,
 			sourceIndexes,
 			...(this.primaryBaselineMembership ? { baseMembership: this.primaryBaselineMembership } : {}),
 			dirtyBatch,
@@ -214,7 +217,7 @@ export class IndexV8PersistenceCoordinator {
 					shards: [],
 					shardPayloads: compiled.changedShardPayloads,
 				};
-				await assertIndexV8Parity(input.indexData, snapshot, Date.now(), input.sourceStats);
+				await assertIndexV8Parity(input.indexData, snapshot, Date.now(), input.sourceStats, input.nativeSources);
 				committed = await this.store.commit({
 					manifestPayload: compiled.manifestPayload,
 					shardPayloads: compiled.changedShardPayloads,
@@ -354,7 +357,7 @@ export class IndexV8PersistenceCoordinator {
 		this.status.phase = 'running';
 		this.status.attempted += 1;
 		try {
-			const sources = projectIndexDataToV8Sources(job.input.indexData, job.input.sourceStats);
+			const sources = projectIndexDataToV8Sources(job.input.indexData, job.input.sourceStats, job.input.nativeSources);
 			if (job.input.coherenceBasis === 'verified-full-scan'
 				&& sources.some(source => source.mtimeMs <= 0 || source.sizeBytes <= 0)) {
 				throw new IndexV8CodecError('Verified full-scan source metadata is incomplete');
@@ -372,6 +375,7 @@ export class IndexV8PersistenceCoordinator {
 				snapshot,
 				Date.parse(job.input.committedAt),
 				job.input.sourceStats,
+				job.input.nativeSources,
 			);
 			const result = await this.store.commit(snapshot);
 			this.lastCommittedSequence = job.input.sequence;
@@ -447,6 +451,7 @@ export function sealIndexV8PersistenceInput(input: IndexV8PersistenceInput): Ind
 		...input,
 		indexData: sealIndexData(input.indexData),
 		sourceStats: new Map(Array.from(input.sourceStats, ([path, stat]) => [path, { ...stat }])),
+		...(input.nativeSources ? { nativeSources: new Map(input.nativeSources) } : {}),
 		...(input.incrementalParityProjection ? {
 			incrementalParityProjection: structuredClone(input.incrementalParityProjection),
 		} : {}),

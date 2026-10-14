@@ -5,6 +5,7 @@ export function normalizeRepeatIdentityPayload(
 	taskFieldValues: Record<string, string>,
 	payload: Record<string, string>,
 	getAllSeriesIds: () => Set<string>,
+ deferAllocation = false,
 ): void {
 	const merged = {
 		...taskFieldValues,
@@ -14,7 +15,7 @@ export function normalizeRepeatIdentityPayload(
 	const rule = parseRepeatRule(repeatValue);
 	if (rule) {
 		const effectiveSeriesId = (merged['repeatSeriesId'] ?? '').trim();
-		if (!effectiveSeriesId) {
+		if (!effectiveSeriesId && !deferAllocation) {
 			payload['repeatSeriesId'] = generateRepeatSeriesId(getAllSeriesIds());
 		}
 		return;

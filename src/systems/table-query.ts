@@ -38,6 +38,7 @@ import { enginePerfLog, enginePerfNow, isOperonEnginePerfDebugEnabled } from '..
 
 // Match the existing natural, case-insensitive ordering without rebuilding a collator per comparison.
 const tableSortCollator = new Intl.Collator(undefined, { numeric: true, sensitivity: 'base' });
+const tableRowSortCaches = new WeakMap<object, { signature: string; order: number[] }>();
 
 type TableQuerySettings = Pick<OperonSettings, 'keyMappings' | 'pipelines'>;
 
@@ -131,6 +132,8 @@ export function queryTableRows(options: {
 	summaryKeys?: ReadonlySet<string>;
 	performanceTraceId?: number;
 	valueResolverOptions?: TableValueResolverOptions;
+	/** Surface-local ordering cache; query filtering and current task objects stay authoritative. */
+	sortCacheOwner?: object;
 }): TableQueryResult {
 	const startedAt = enginePerfNow();
 	const { preset, filterSet, tasks, priorities, pinnedCache } = options;
@@ -171,6 +174,7 @@ export function queryTableRows(options: {
 			priorityRank,
 			workflowStatusOrder,
 			options.settings,
+			options.sortCacheOwner,
 		);
 	const sortedAt = enginePerfNow();
 	const groupBy = resolveTableGroupBy(preset.groupBy, options.settings, valueResolver);
@@ -554,20 +558,43 @@ function sortTableRows(
 	priorityRank: ReadonlyMap<string, number>,
 	workflowStatusOrder: WorkflowStatusOrderIndex,
 	settings: TableQuerySettings | undefined,
+	cacheOwner?: object,
 ): IndexedTask[] {
 	const rows = [...tasks];
 	if (rows.length < 2) return rows;
-	if (sortRules.length === 0) return rows.sort(compareTableSourceOrder);
-	const comparators = sortRules.map(rule => createTableSortComparator(
-		rule, priorityRank, valueResolver, workflowStatusOrder, settings,
-	));
-	return rows.sort((left, right) => {
+	// Global index/metadata notifications can invalidate the query without
+	// changing its ordering inputs. Reuse only the permutation, never old tasks.
+	const signature = cacheOwner ? JSON.stringify([
+		sortRules,
+		sortRules.some(rule => rule.key === 'status') ? settings?.pipelines : null,
+		tasks.map(task => [task.operonId, task.primary.filePath, task.primary.lineNumber,
+			sortRules.map(rule => {
+				if (rule.key === 'status') return valueResolver.getRawValue(task, rule.key);
+				if (decodeTableFilePropertyColumnKey(rule.key)) {
+					const field = valueResolver.getFilePropertyField(rule.key);
+					return field ? [field.type, resolveTableFilePropertySortValue(task, rule.key, field.type, valueResolver)] : null;
+				}
+				const kind = getTableSortValueKind(rule.key, settings);
+				return [kind, valueResolver.getSortValue(task, rule.key, kind, priorityRank)];
+			}),
+		]),
+	]) : '';
+	const cached = cacheOwner ? tableRowSortCaches.get(cacheOwner) : undefined;
+	if (cached?.signature === signature) return cached.order.map(index => tasks[index]);
+	const comparators = sortRules.map(rule => createTableSortComparator(rule, priorityRank, valueResolver, workflowStatusOrder, settings));
+	const compareRows = (left: IndexedTask, right: IndexedTask): number => {
 		for (const compare of comparators) {
 			const comparison = compare(left, right);
 			if (comparison !== 0) return comparison;
 		}
 		return compareTableSourceOrder(left, right);
-	});
+	};
+	if (cacheOwner) {
+		const order = tasks.map((_, index) => index).sort((leftIndex, rightIndex) => compareRows(tasks[leftIndex], tasks[rightIndex]));
+		tableRowSortCaches.set(cacheOwner, { signature, order });
+		return order.map(index => tasks[index]);
+	}
+	return rows.sort(compareRows);
 }
 
 export function sortTableTaskTreeSiblings(

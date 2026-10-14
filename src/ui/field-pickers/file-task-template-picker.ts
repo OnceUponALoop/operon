@@ -10,6 +10,7 @@ interface FileTaskTemplatePickerOptions {
 	options: FileTaskTemplateOption[];
 	onSelect: (template: FileTaskTemplateOption) => void;
 	onClose?: () => void;
+ onClear?: () => void;
 }
 
 interface FileTaskTemplateCandidate {
@@ -37,6 +38,11 @@ export function showFileTaskTemplatePicker(
 	infoLabel.textContent = t('taskEditor', 'fileTemplateInfoLabel');
 	const infoValue = infoRow.createSpan('operon-file-template-picker-info-value');
 	const countLabel = panel.createDiv('operon-icon-picker-count operon-file-template-picker-count');
+
+	if (options.onClear) {
+  const clear = panel.createEl('button', { text: t('buttons', 'clear'), attr: { type: 'button' } });
+  clear.addEventListener('click', () => { if (completed) return; completed = true; options.onClear?.(); close(); });
+ }
 
 	const candidates = options.options.map(option => ({
 		option,

@@ -1,3 +1,6 @@
+import type { TasksConversionUiIntegration } from './tasks-conversion-controller';
+import { normalizeTaskEditorSections, type TaskEditorSection, type TaskEditorSectionId } from '../types/task-editor-sections';
+import { taskEditorSectionDefaultLabel } from './task-editor-section-label';
 import type { InterfaceIconRowSelection } from './settings/interface-editor-ui';
 import { scopeSettingsModal, scopeSettingsDefinitions, setSettingsScope } from './settings/settings-scope';
 import { PropertyPoolValueSession } from './property-value-pool-values';
@@ -1021,6 +1024,7 @@ export class OperonSettingsTab extends PluginSettingTab {
 		developerApiIntegration?: DeveloperApiSettingsIntegration,
 		settingsBackupUiIntegration?: SettingsBackupUiIntegration,
 		reconcileParentTaskDateRanges?: () => Promise<ParentTaskDateRangeReconcileResult>,
+		private readonly tasksConversionUi?: TasksConversionUiIntegration,
 	) {
 		super(app, plugin);
 		Reflect.set(this, 'icon', 'factory');
@@ -1225,6 +1229,10 @@ export class OperonSettingsTab extends PluginSettingTab {
 	}
 
 	async setControlValue(key: string, value: unknown): Promise<void> {
+		if (key === 'taskEditorSections') {
+			await this.saveTaskEditorSections(() => normalizeTaskEditorSections(value));
+			return;
+		}
 		if (key.startsWith('calendarPresetRangeMode:')) {
 			if (value !== 'rolling' && value !== 'calendarWeek') return;
 			await this.updateCalendarPreset(key.slice('calendarPresetRangeMode:'.length), preset => { preset.rangeMode = value; });
@@ -1569,16 +1577,17 @@ export class OperonSettingsTab extends PluginSettingTab {
 	private buildTaskCaptureSearchSections(tabId: string, entries: OperonSettingsSearchEntry[]): SettingDefinitionItem[] {
 		if (tabId === 'tasksInlineTasks') {
 			return this.buildTaskSettingsGroups([
+				['defaultInlineTaskTemplate', ['defaultInlineTaskTemplateId', 'inlineTaskUseLastTemplateAsDefault'], (el, key) => this.renderInlineCreationDefaultSettings(el, key), ['DOCS-150 Using inline task templates', 'DOCS-024 Task templates']],
 				['dailyNoteInlineTaskDefaults', ['inlineTaskDailyNoteAddStartDate', 'inlineTaskDailyNoteAddScheduledDate'], (el, key) => this.renderInlineDailyNoteDefaultsSettings(el, key), 'DOCS-050 Daily Notes workflows'],
-				['checkboxConversion', ['inlineTaskShowTasksEmojiConvertIcon', 'inlineTaskShowPlainCheckboxConvertIcon'], (el, key) => this.renderInlineConversionSettings(el, key), 'DOCS-049 Obsidian Tasks migration'],
+				['checkboxConversion', ['inlineTaskShowTasksEmojiConvertIcon', 'inlineTaskShowPlainCheckboxConvertIcon', 'inlineTaskOpenCreatorBeforeConversion'], (el, key) => this.renderInlineConversionSettings(el, key), ['DOCS-049 Obsidian Tasks migration', 'DOCS-020 Task Creator']],
+				['tasksBulkTitle', ['tasksEmojiBulkConversion'], el => this.renderTasksBulkConversion(el), ['DOCS-149 Tasks bulk conversion', 'DOCS-049 Obsidian Tasks migration']],
 			], entries, t('settings', 'subtabInlineTasks'), 'DOCS-011 Inline tasks');
 		}
 		if (tabId !== 'tasksFileTasks') return [];
 		return this.buildTaskSettingsGroups([
-			['newFileTaskCreationDefaults', ['taskCreatorDefaultToFileTask', 'taskCreatorDefaultFileTemplateId'], (el, key) => this.renderFileCreationDefaultsSection(el, key), 'DOCS-020 Task Creator'],
+			['newFileTaskCreationDefaults', ['taskCreatorDefaultToFileTask', 'taskCreatorDefaultFileTemplateId', 'fileTaskUseLastTemplateAsDefault'], (el, key) => this.renderFileCreationDefaultsSection(el, key), ['DOCS-024 Task templates', 'DOCS-020 Task Creator']],
 			['fileTaskTemplates', ['fileTaskTemplateFolder'], el => this.renderFileTemplatesSection(el), 'DOCS-024 Task templates'],
-			['fileTaskDailyNotes', ['manageDailyNotesWithOperon', 'dailyNoteFormat', 'dailyNoteTemplate', 'dailyNoteFolder', 'createDailyNotesAsOperonTask'], (el, key) => this.renderFileDailyNotesSettings(el, key), ['DOCS-050 Daily Notes workflows', 'DOCS-137 Daily and Weekly Notes']],
-			['fileTaskWeeklyNotes', ['manageWeeklyNotesWithOperon', 'weeklyNoteFormat', 'weeklyNoteTemplate', 'weeklyNoteFolder', 'createWeeklyNotesAsOperonTask'], (el, key) => this.renderFileWeeklyNotesSettings(el, key), 'DOCS-137 Daily and Weekly Notes'],
+			['periodicNotesAsFileTasks', ['createDailyNotesAsOperonTask', 'createWeeklyNotesAsOperonTask'], (el, key) => this.renderPeriodicFileTaskSettings(el, key), 'DOCS-137 Daily and Weekly Notes'],
 			['fileTaskConversion', ['inlineToFileTaskMovePlainCheckboxes', 'inlineToFileTaskSourceDisposition'], (el, key) => this.renderFileConversionSection(el, key), 'DOCS-019 Converting inline and file tasks'],
 			['excludedFolders', ['excludedFolders'], el => this.renderExcludedFolderSettings(el), 'DOCS-054 Missing tasks'],
 			['fileTaskMigrationTitle', ['fileTaskMigration'], el => this.renderFileTaskMigrationSettings(el), ['DOCS-082 Bulk convert a folder into file tasks', 'DOCS-093 How to migrate from TaskNotes']],
@@ -1628,6 +1637,7 @@ export class OperonSettingsTab extends PluginSettingTab {
 	private buildTaskRouterSettingsItems(entries: OperonSettingsSearchEntry[]): SettingDefinitionItem[] {
 		const sections: Array<[string, string[], (containerEl: HTMLElement, key: string) => void, string?]> = [
 			['inlineTasksSection', ['inlineTaskSaveMode', 'inlineTaskTargetFile', 'inlineTaskHeading'], (el, key) => this.renderInlineTaskRoutingSettings(el, key), 'DOCS-137 Daily and Weekly Notes'],
+			['periodicNotes', ['manageDailyNotesWithOperon', 'dailyNoteFormat', 'dailyNoteTemplate', 'dailyNoteFolder', 'manageWeeklyNotesWithOperon', 'weeklyNoteFormat', 'weeklyNoteTemplate', 'weeklyNoteFolder'], (el, key) => this.renderPeriodicRoutingSettings(el, key), 'DOCS-137 Daily and Weekly Notes'],
 			['parentAwareInlineSaveLocation', ['inlineTaskParentInlineTargetMode', 'inlineTaskParentFileTargetMode', 'inlineTaskParentFileHeadingKeyword', 'keepInlineTasksWithParent'], (el, key) => this.renderInlineTaskParentRoutingSettings(el, key), 'DOCS-094 How to create a task with Task Creator'],
 			['fileTasksSection', ['fileTasksFolder', 'fileTaskPipelineLocations', 'moveConvertedNotesToPipelineLocation'], (el, key) => this.renderFileTaskRoutingSettings(el, key), 'DOCS-013 File tasks'],
 			['parentAwareFileTaskPlacement', ['fileTaskParentInlineTargetMode', 'fileTaskParentFileTargetMode'], (el, key) => this.renderFileTaskParentRoutingSettings(el, key)],
@@ -2065,13 +2075,28 @@ export class OperonSettingsTab extends PluginSettingTab {
 
 	private buildTaskEditorSettingsItems(entries: OperonSettingsSearchEntry[]): SettingDefinitionItem[] {
 		const groups = this.buildTaskSettingsGroups([
-			['taskEditorFileBodySection', ['taskEditorShowLineNumbers'], containerEl => {
-				this.renderBoundToggleSetting(containerEl, t('settings', 'taskEditorShowLineNumbers'),
+			['taskEditorFileBodySection', ['taskEditorShowLineNumbers', 'taskEditorHighlightActiveLine'], (containerEl, key) => {
+				if (key === 'taskEditorShowLineNumbers') this.renderBoundToggleSetting(containerEl, t('settings', 'taskEditorShowLineNumbers'),
 					t('settings', 'taskEditorShowLineNumbersDesc'), 'taskEditorShowLineNumbers');
+				if (key === 'taskEditorHighlightActiveLine') this.renderBoundToggleSetting(containerEl, t('settings', 'taskEditorHighlightActiveLine'),
+					t('settings', 'taskEditorHighlightActiveLineDesc'), 'taskEditorHighlightActiveLine');
 			}],
 		], entries, t('settings', 'subtabTaskEditor'), 'DOCS-021 Task Editor');
+		groups.push({ type: 'group', heading: t('settings', 'taskEditorSections'), cls: 'operon-task-editor-sections-settings',
+			extraButtons: [this.buildDeclarativeSettingsDocsButton(t('settings', 'taskEditorSections'), 'DOCS-021 Task Editor', 'operon-native-settings-declarative-docs-action--inline-heading')],
+			items: normalizeTaskEditorSections(this.settings.taskEditorSections).map(section => ({
+				name: section.name || taskEditorSectionDefaultLabel(section.id),
+				aliases: [taskEditorSectionDefaultLabel(section.id), t('settings', 'taskEditorSections')],
+				render: (setting: Setting) => this.configureTaskEditorSectionRow(setting, section.id),
+			})),
+		});
+
+		return groups;
+	}
+
+	private buildMobilePropertySettingsGroup(): SettingDefinitionItem {
 		const heading = t('settings', 'taskEditorWorkflowPickers');
-		groups.push({
+		return {
 			type: 'group', heading, cls: 'operon-task-chip-settings-group operon-task-editor-properties-group',
 			extraButtons: ['DOCS-062 Field pickers overview', 'DOCS-070 Custom field pickers'].map(target =>
 				this.buildDeclarativeSettingsDocsButton(`${heading} — ${target}`, target, 'operon-native-settings-declarative-docs-action--inline-heading')),
@@ -2090,8 +2115,7 @@ export class OperonSettingsTab extends PluginSettingTab {
 					this.renderTaskEditorWorkflowPickerSettingsSection(setting.settingEl, { key: row.key });
 				},
 			}))],
-		});
-		return groups;
+		};
 	}
 
 	private buildMobileSettingsGroups(
@@ -2606,7 +2630,7 @@ export class OperonSettingsTab extends PluginSettingTab {
 	private buildMobileTaskEditorSettingsItems(entries: OperonSettingsSearchEntry[]): SettingDefinitionItem[] {
 		const heading = t('settings', 'taskEditorMobileCoreTools');
 		const entry = entries.find(candidate => candidate.id === 'ui.taskEditorMobileCoreTools');
-		return [{ type: 'group', heading, cls: 'operon-task-chip-settings-group operon-mobile-settings-group', items: [
+		return [...this.compactSettingsSearchDefinitions([this.buildSettingsSearchSettingDefinition(entries, 'taskEditorUseMobileLayout')]), { type: 'group', heading, cls: 'operon-task-chip-settings-group operon-mobile-settings-group', items: [
 			{ name: heading, desc: t('settings', 'taskEditorMobileCoreToolsDesc'), aliases: entry ? this.getSettingsSearchAliases(entry) : [], render: setting => {
 				setting.settingEl.empty();
 				setting.settingEl.addClass('operon-task-chip-description');
@@ -2625,7 +2649,7 @@ export class OperonSettingsTab extends PluginSettingTab {
 					this.renderTaskEditorMobileCoreToolSettingsSection(setting.settingEl, { key: row.key });
 				},
 			})),
-		] }];
+		] }, this.buildMobilePropertySettingsGroup()];
 	}
 
 	private buildSettingsSearchSettingDefinition(
@@ -2943,6 +2967,7 @@ export class OperonSettingsTab extends PluginSettingTab {
 	}
 
 	private clearNativeSettingsPage(containerEl: HTMLElement): void {
+		for (const [host, dispose] of this.tasksConversionSettings) if (containerEl.contains(host)) dispose();
 		this.disposeReminderSoundPreview();
 		closeFloatingPanelsForRoot(containerEl);
 		containerEl.empty();
@@ -3326,7 +3351,7 @@ export class OperonSettingsTab extends PluginSettingTab {
 		if (key === 'fileRepeatDestination') {
 			return text === 'custom-folder' ? 'custom-folder' : 'same-folder';
 		}
-		if (key === 'taskCreatorDefaultFileTemplateId') {
+		if (key === 'taskCreatorDefaultFileTemplateId' || key === 'defaultInlineTaskTemplateId') {
 			return text || null;
 		}
 		if (key === 'dynamicFileTaskFilterPlacement') {
@@ -3430,6 +3455,7 @@ export class OperonSettingsTab extends PluginSettingTab {
 		if (isCalendarMobileSourcePresetSettingKey(key) || key === 'calendarMobileDefaultSourcePresetId') {
 			return this.stringifySettingsSearchValue(value ?? this.settings.calendarDefaultPresetId ?? this.settings.calendarPresets[0]?.id ?? '');
 		}
+		if (key === 'defaultInlineTaskTemplateId') return this.settings.defaultInlineTaskTemplateId ?? '';
 		if (key === 'taskCreatorDefaultFileTemplateId') {
 			return this.getEffectiveDefaultFileTaskTemplateId();
 		}
@@ -3465,6 +3491,80 @@ export class OperonSettingsTab extends PluginSettingTab {
 		return file => file.extension === 'md';
 	}
 
+
+	private taskEditorSectionsSaveQueue: Promise<void> = Promise.resolve();
+	private saveTaskEditorSections(change: (current: TaskEditorSection[]) => TaskEditorSection[], refreshDefinitions = true): Promise<void> {
+		const run = this.taskEditorSectionsSaveQueue.then(async () => {
+			const current = normalizeTaskEditorSections(this.settings.taskEditorSections);
+			const before = JSON.stringify(current);
+			const next = normalizeTaskEditorSections(change(current));
+			if (before === JSON.stringify(next)) return;
+			await this.storage.updateSettings({ taskEditorSections: next });
+			this.notifySettingsChanged();
+			this.applyPendingSettingsChange();
+		}).catch((error: unknown) => {
+			new Notice(t('settings', 'taskEditorSectionsSaveFailed'));
+			throw error;
+		}).finally(() => { if (refreshDefinitions) this.updateNativeSettingsDefinitions(); });
+		this.taskEditorSectionsSaveQueue = run.catch(() => undefined);
+		return run;
+	}
+
+	private configureTaskEditorSectionRow(setting: Setting, id: TaskEditorSectionId, refresh?: () => void): void {
+		const sections = normalizeTaskEditorSections(this.settings.taskEditorSections);
+		const index = sections.findIndex(section => section.id === id);
+		const defaultName = taskEditorSectionDefaultLabel(id);
+		setting.settingEl.addClass('operon-task-editor-section-setting');
+		setting.setName(defaultName);
+		setting.addText(text => {
+			text.setValue(sections[index].name || defaultName).setPlaceholder(defaultName);
+			text.inputEl.maxLength = 80;
+			setAccessibleLabelWithoutTooltip(text.inputEl, defaultName);
+			setting.infoEl.replaceChildren(text.inputEl);
+			const saveName = (): void => {
+				const submitted = text.getValue();
+				const name = submitted.trim();
+				void this.saveTaskEditorSections(current => current.map(section => section.id === id
+					? { ...section, name: name === defaultName ? '' : name } : section), false)
+					.catch(() => undefined).finally(() => {
+						if (text.getValue() === submitted) text.setValue(this.settings.taskEditorSections.find(section => section.id === id)?.name || defaultName);
+					});
+			};
+			text.inputEl.addEventListener('change', saveName);
+			text.inputEl.addEventListener('keydown', event => {
+				if (event.key === 'Enter' && !event.isComposing) { event.preventDefault(); text.inputEl.blur(); }
+			});
+		});
+		if (id !== 'description') setting.addToggle(toggle => {
+			let changeVersion = 0;
+			toggle.setValue(sections[index].enabled !== false);
+			setAccessibleLabelWithoutTooltip(toggle.toggleEl, defaultName);
+			toggle.onChange(enabled => {
+				const version = ++changeVersion;
+				void this.saveTaskEditorSections(current => current.map(section => section.id === id
+					? { ...section, enabled } : section), false).catch(() => {
+					if (version !== changeVersion) return;
+					toggle.setValue(normalizeTaskEditorSections(this.settings.taskEditorSections).find(section => section.id === id)?.enabled !== false);
+				});
+			});
+		});
+		for (const delta of [-1, 1]) setting.addExtraButton(button => {
+			const disabled = index + delta < 0 || index + delta >= sections.length;
+			button.extraSettingsEl.toggleClass('is-section-move-disabled', disabled);
+			button.setIcon(delta < 0 ? 'arrow-up' : 'arrow-down')
+			.setTooltip(t('settings', delta < 0 ? 'taskCardMoveUp' : 'taskCardMoveDown'))
+			.setDisabled(disabled)
+			.onClick(() => {
+				if (disabled) return;
+				void this.saveTaskEditorSections(current => {
+					const from = current.findIndex(section => section.id === id);
+					const to = from + delta;
+					if (from >= 0 && to >= 0 && to < current.length) [current[from], current[to]] = [current[to], current[from]];
+					return current;
+				}).catch(() => undefined).finally(() => refresh?.());
+			});
+		});
+	}
 
  private taskCardSaveQueue: Promise<void> = Promise.resolve();
  private saveTaskCardSetting(key: keyof TaskCardSettings, value: unknown): Promise<void> {
@@ -3709,8 +3809,8 @@ export class OperonSettingsTab extends PluginSettingTab {
 				? Object.fromEntries(this.settings.calendarPresets.map(preset => [preset.id, preset.name]))
 				: { '': t('settings', 'default') };
 		}
-		if (key === 'taskCreatorDefaultFileTemplateId') {
-			return Object.fromEntries(this.getDefaultFileTaskTemplateDropdownOptions().map(option => [option.value, option.label]));
+		if (key === 'taskCreatorDefaultFileTemplateId' || key === 'defaultInlineTaskTemplateId') {
+			return Object.fromEntries(this.getDefaultFileTaskTemplateDropdownOptions(key === 'defaultInlineTaskTemplateId' ? this.settings.defaultInlineTaskTemplateId ?? '' : undefined).map(option => [option.value, option.label]));
 		}
 		if (key === 'calendarWeekStart') {
 			return {
@@ -4048,6 +4148,7 @@ export class OperonSettingsTab extends PluginSettingTab {
 	}
 
 	private renderSettingsTab(tabId: OperonSettingsTabId, contentEl: HTMLElement): void {
+		for (const dispose of this.tasksConversionSettings.values()) dispose();
 		for (const dispose of this.propertyPoolSettings.values()) dispose();
 		this.propertyPoolSettings.clear();
 		if (tabId !== 'tasksReminders') this.disposeReminderSoundPreview();
@@ -4071,6 +4172,7 @@ export class OperonSettingsTab extends PluginSettingTab {
 	}
 
 	hide(): void {
+		for (const dispose of this.tasksConversionSettings.values()) dispose();
 		this.disposeReminderSoundPreview();
 		this.clearActiveNativeSettingsPage();
 		if (this.hasPendingSettingsChange) {
@@ -4539,16 +4641,19 @@ export class OperonSettingsTab extends PluginSettingTab {
 
 	private renderInterfaceTaskEditorTab(containerEl: HTMLElement): void {
 		this.renderBoundToggleSetting(containerEl, t('settings', 'taskEditorShowLineNumbers'), t('settings', 'taskEditorShowLineNumbersDesc'), 'taskEditorShowLineNumbers');
-		const workflowPickersTitle = t('settings', 'taskEditorWorkflowPickers');
-		const sectionEl = renderNativeSettingsGroupedSection(
-			containerEl,
-			workflowPickersTitle,
-			undefined,
-			this.buildNativeSettingsDocsAction(workflowPickersTitle, 'DOCS-062 Field pickers overview'),
-		);
-		this.applyInterfaceIconListSectionStyle(sectionEl);
-		this.renderTaskEditorWorkflowPickerSettingsSection(sectionEl);
-		this.markSettingsSearchSectionTarget(sectionEl, 'ui.taskEditorWorkflowPickers');
+		this.renderBoundToggleSetting(containerEl, t('settings', 'taskEditorHighlightActiveLine'), t('settings', 'taskEditorHighlightActiveLineDesc'), 'taskEditorHighlightActiveLine');
+		const sections = renderNativeSettingsGroupedSection(containerEl, t('settings', 'taskEditorSections'), undefined,
+			this.buildNativeSettingsDocsAction(t('settings', 'taskEditorSections'), 'DOCS-021 Task Editor'));
+		sections.addClass('operon-task-editor-sections-settings');
+		const renderSections = (): void => {
+			sections.empty();
+			for (const section of normalizeTaskEditorSections(this.settings.taskEditorSections)) {
+				this.configureTaskEditorSectionRow(new Setting(sections), section.id, renderSections);
+			}
+		};
+		renderSections();
+		this.markSettingsSearchSectionTarget(sections, 'ui.taskEditorSections');
+
 	}
 
 	private renderInterfaceTweaksTab(containerEl: HTMLElement): void {
@@ -4841,6 +4946,7 @@ export class OperonSettingsTab extends PluginSettingTab {
 	}
 
 	private renderMobileTaskEditorTab(containerEl: HTMLElement): void {
+		this.renderBoundToggleSetting(containerEl, t('settings', 'taskEditorUseMobileLayout'), t('settings', 'taskEditorUseMobileLayoutDesc'), 'taskEditorUseMobileLayout');
 		const title = t('settings', 'taskEditorMobileCoreTools');
 		const sectionEl = renderNativeSettingsGroupedSection(
 			containerEl,
@@ -4851,6 +4957,16 @@ export class OperonSettingsTab extends PluginSettingTab {
 		this.applyInterfaceIconListSectionStyle(sectionEl);
 		this.renderTaskEditorMobileCoreToolSettingsSection(sectionEl);
 		this.markSettingsSearchSectionTarget(sectionEl, 'ui.taskEditorMobileCoreTools');
+		const workflowPickersTitle = t('settings', 'taskEditorWorkflowPickers');
+		const propertiesSectionEl = renderNativeSettingsGroupedSection(
+			containerEl,
+			workflowPickersTitle,
+			undefined,
+			this.buildNativeSettingsDocsAction(workflowPickersTitle, 'DOCS-062 Field pickers overview'),
+		);
+		this.applyInterfaceIconListSectionStyle(propertiesSectionEl);
+		this.renderTaskEditorWorkflowPickerSettingsSection(propertiesSectionEl);
+		this.markSettingsSearchSectionTarget(propertiesSectionEl, 'ui.taskEditorWorkflowPickers');
 	}
 
 	private renderProjectSerialSettings(containerEl: HTMLElement): void {
@@ -5822,12 +5938,29 @@ export class OperonSettingsTab extends PluginSettingTab {
 		}
 	}
 
+	private readonly tasksConversionSettings = new Map<HTMLElement, () => void>();
+
+	private renderTasksBulkConversion(containerEl: HTMLElement): () => void {
+		for (const [host, dispose] of this.tasksConversionSettings) if (host.parentElement === containerEl) dispose();
+		new Setting(containerEl).setName(t('settings', 'tasksBulkTitle')).setDesc(t('settings', 'tasksBulkHelp'));
+		if (!this.tasksConversionUi?.available()) { containerEl.createEl('p', { text: t('settings', 'tasksBulkUnavailable') }); return () => {}; }
+		const host = containerEl.createDiv();
+		const dispose = this.tasksConversionUi.mount(host);
+		const cleanup = () => { dispose(); this.tasksConversionSettings.delete(host); };
+		this.tasksConversionSettings.set(host, cleanup);
+		return cleanup;
+	}
+
 	private renderInlineConversionSettings(containerEl: HTMLElement, selectedKey?: string): void {
 		if (!selectedKey || selectedKey === 'inlineTaskShowTasksEmojiConvertIcon') {
 			this.renderBoundToggleSetting(containerEl, t('settings', 'showTasksEmojiConvertIcon'), t('settings', 'showTasksEmojiConvertIconDesc'), 'inlineTaskShowTasksEmojiConvertIcon');
 		}
 		if (!selectedKey || selectedKey === 'inlineTaskShowPlainCheckboxConvertIcon') {
 			this.renderBoundToggleSetting(containerEl, t('settings', 'showPlainCheckboxConvertIcon'), t('settings', 'showPlainCheckboxConvertIconDesc'), 'inlineTaskShowPlainCheckboxConvertIcon');
+		}
+
+		if (!selectedKey || selectedKey === 'inlineTaskOpenCreatorBeforeConversion') {
+			this.renderBoundToggleSetting(containerEl, t('settings', 'openCreatorBeforeConversion'), t('settings', 'openCreatorBeforeConversionDesc'), 'inlineTaskOpenCreatorBeforeConversion');
 		}
 
 	}
@@ -6586,9 +6719,8 @@ export class OperonSettingsTab extends PluginSettingTab {
 
 	private isCustomSurfaceMappingVisible(mapping: KeyMapping, surface: CustomSurfaceSettingsTarget): boolean {
 		if (surface === 'kanbanSwimlane') return mapping.showInKanbanSwimlane === true;
-		const entries = surface === 'editor'
-			? [...this.settings.taskEditorWorkflowPickers, ...this.settings.taskEditorMobileCoreTools]
-			: surface === 'creator'
+		if (surface === 'editor') return mapping.showInEditor !== false;
+		const entries = surface === 'creator'
 				? this.settings.taskCreatorToolbar
 				: [
 					...this.settings.inlineTaskCompactChips,
@@ -6600,7 +6732,6 @@ export class OperonSettingsTab extends PluginSettingTab {
 				];
 		const matches = entries.filter(entry => entry.key === mapping.canonicalKey);
 		if (matches.length > 0) return matches.some(entry => entry.visible);
-		if (surface === 'editor') return mapping.showInEditor !== false;
 		if (surface === 'creator') return mapping.showInCreator !== false;
 		return mapping.showInChips === true;
 	}
@@ -13097,8 +13228,7 @@ export class OperonSettingsTab extends PluginSettingTab {
 		renderPreview();
 	}
 
-	private getDefaultFileTaskTemplateDropdownOptions(): DropdownSettingOption<string>[] {
-		const currentValue = this.getEffectiveDefaultFileTaskTemplateId();
+	private getDefaultFileTaskTemplateDropdownOptions(currentValue = this.getEffectiveDefaultFileTaskTemplateId()): DropdownSettingOption<string>[] {
 		const options: DropdownSettingOption<string>[] = [
 			{ value: '', label: t('settings', 'defaultFileTaskTemplateNone') },
 			...buildFileTaskTemplateOptions(
@@ -13127,6 +13257,22 @@ export class OperonSettingsTab extends PluginSettingTab {
 		) ?? '';
 	}
 
+	private renderInlineCreationDefaultSettings(containerEl: HTMLElement, selectedKey?: string): void {
+		if (!selectedKey || selectedKey === 'defaultInlineTaskTemplateId') {
+			this.renderBoundDropdownSetting<'defaultInlineTaskTemplateId', string>(
+				containerEl, t('settings', 'defaultInlineTaskTemplate'), t('settings', 'defaultInlineTaskTemplateDesc'),
+				'defaultInlineTaskTemplateId', {
+					value: this.settings.defaultInlineTaskTemplateId ?? '',
+					dropdownOptions: this.getDefaultFileTaskTemplateDropdownOptions(this.settings.defaultInlineTaskTemplateId ?? ''),
+					normalize: value => value.trim() || null,
+				},
+			);
+		}
+		if (!selectedKey || selectedKey === 'inlineTaskUseLastTemplateAsDefault') {
+			this.renderBoundToggleSetting(containerEl, t('settings', 'useLastTemplateAsDefault'), t('settings', 'useLastTemplateAsDefaultDesc'), 'inlineTaskUseLastTemplateAsDefault');
+		}
+	}
+
 	private renderNewFileTaskCreationDefaultSettings(containerEl: HTMLElement, selectedKey?: string): void {
 		if (!selectedKey || selectedKey === 'taskCreatorDefaultToFileTask') {
 			this.renderBoundToggleSetting(
@@ -13149,6 +13295,20 @@ export class OperonSettingsTab extends PluginSettingTab {
 				},
 			);
 		}
+		if (!selectedKey || selectedKey === 'fileTaskUseLastTemplateAsDefault') {
+			this.renderBoundToggleSetting(containerEl, t('settings', 'useLastTemplateAsDefault'), t('settings', 'useLastTemplateAsDefaultDesc'), 'fileTaskUseLastTemplateAsDefault');
+		}
+	}
+
+	private renderPeriodicRoutingSettings(containerEl: HTMLElement, selectedKey?: string): void {
+		if (!selectedKey || selectedKey === 'manageDailyNotesWithOperon' || selectedKey.startsWith('dailyNote')) this.renderFileDailyNotesSettings(containerEl, selectedKey);
+		if (!selectedKey || selectedKey === 'manageWeeklyNotesWithOperon' || selectedKey.startsWith('weeklyNote')) this.renderFileWeeklyNotesSettings(containerEl, selectedKey);
+	}
+
+	private renderPeriodicFileTaskSettings(containerEl: HTMLElement, selectedKey?: string): void {
+		for (const key of ['createDailyNotesAsOperonTask', 'createWeeklyNotesAsOperonTask'] as const) {
+			if (!selectedKey || selectedKey === key) this.renderBoundToggleSetting(containerEl, t('settings', key), t('settings', `${key}Desc`), key);
+		}
 	}
 
 	private renderFileDailyNotesSettings(containerEl: HTMLElement, selectedKey?: string): void {
@@ -13158,7 +13318,6 @@ export class OperonSettingsTab extends PluginSettingTab {
 			formatKey: 'dailyNoteFormat',
 			templateKey: 'dailyNoteTemplate',
 			folderKey: 'dailyNoteFolder',
-			createAsTaskKey: 'createDailyNotesAsOperonTask',
 		}, selectedKey);
 	}
 
@@ -13169,7 +13328,6 @@ export class OperonSettingsTab extends PluginSettingTab {
 			formatKey: 'weeklyNoteFormat',
 			templateKey: 'weeklyNoteTemplate',
 			folderKey: 'weeklyNoteFolder',
-			createAsTaskKey: 'createWeeklyNotesAsOperonTask',
 		}, selectedKey);
 
 	}
@@ -13180,7 +13338,6 @@ export class OperonSettingsTab extends PluginSettingTab {
 		formatKey: 'dailyNoteFormat' | 'weeklyNoteFormat';
 		templateKey: 'dailyNoteTemplate' | 'weeklyNoteTemplate';
 		folderKey: 'dailyNoteFolder' | 'weeklyNoteFolder';
-		createAsTaskKey: 'createDailyNotesAsOperonTask' | 'createWeeklyNotesAsOperonTask';
 	}, selectedKey?: string): void {
 		const sectionEl = containerEl.createDiv();
 
@@ -13241,14 +13398,6 @@ export class OperonSettingsTab extends PluginSettingTab {
 		const managedFieldsEl = sectionEl.createDiv({ cls: `operon-file-task-${options.kind}-notes-managed-fields` });
 		renderManagedFields();
 
-		if (!selectedKey || selectedKey === options.createAsTaskKey) {
-			this.renderBoundToggleSetting(
-				sectionEl,
-				t('settings', options.createAsTaskKey),
-				t('settings', `${options.createAsTaskKey}Desc`),
-				options.createAsTaskKey,
-			);
-		}
 	}
 
 	private renderPeriodicNoteFormatSetting(

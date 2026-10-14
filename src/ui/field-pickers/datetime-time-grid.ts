@@ -9,6 +9,7 @@ export interface QuarterHourSlot {
 }
 
 export interface TimeMatchResult {
+	additionalSlots?: QuarterHourSlot[];
 	activeIndex: number | null;
 	visibleIndices: number[];
 	exact: boolean;
@@ -164,6 +165,24 @@ export function getTimeDigitsFromCanonicalTime(
 	return `${String(hour12).padStart(2, '0')}${String(minute).padStart(2, '0')}`;
 }
 
+/** Validate typed clock digits independently of the quarter-hour suggestions. */
+export function isValidTimePrefix(digits: string, timeFormat: TimeFormat, allowEndOfDay = false): boolean {
+	if (!/^\d{0,4}$/.test(digits)) return false;
+	const maxHour = timeFormat === '12h' ? 12 : allowEndOfDay ? 24 : 23;
+	if (digits.length === 1) return Number(digits) <= Math.floor(maxHour / 10);
+	if (digits.length < 2) return true;
+	const hour = Number(digits.slice(0, 2));
+	if (hour > maxHour || (timeFormat === '12h' && hour === 0)) return false;
+	if (hour === 24) return /^0*$/.test(digits.slice(2));
+	return digits.length < 3 || Number(digits[2]) <= 5;
+}
+
+export function resolveTimeInput(digits: string, timeFormat: TimeFormat, meridiem: 'am' | 'pm'): string | null {
+	if (digits.length !== 4 || !isValidTimePrefix(digits, timeFormat)) return null;
+	const hour = Number(digits.slice(0, 2));
+	return `${String(timeFormat === '12h' ? toCanonicalHour24(hour, meridiem) : hour).padStart(2, '0')}:${digits.slice(2)}`;
+}
+
 export function matchQuarterHourSlots(options: {
 	digits: string;
 	anchorIndex: number;
@@ -180,14 +199,25 @@ export function matchQuarterHourSlots(options: {
 		};
 	}
 
-	const matching = QUARTER_HOUR_SLOTS.filter(slot => getDisplayCompact(slot, options.timeFormat, options.meridiem).startsWith(digits));
-	if (matching.length === 0) {
+	// Once the minute tens digit is entered, offer only its ten-minute range.
+	if (digits.length >= 3 && isValidTimePrefix(digits, options.timeFormat)) {
+		const exactTime = resolveTimeInput(digits, options.timeFormat, options.meridiem);
+		const quarterIndex = exactTime ? getSlotIndexForCanonicalTime(exactTime) : null;
+		if (quarterIndex !== null) return { activeIndex: quarterIndex, visibleIndices: [quarterIndex], exact: true };
+		const additionalSlots = Array.from({ length: digits.length === 3 ? 10 : 1 }, (_, offset) => {
+			const canonical = exactTime ?? resolveTimeInput(`${digits}${offset}`, options.timeFormat, options.meridiem)!;
+			const [hour24, minute] = canonical.split(':').map(Number);
+			return { index: TOTAL_SLOTS + offset, hour24, minute, canonical, compact: canonical.replace(':', '') };
+		});
 		return {
-			activeIndex: null,
-			visibleIndices: [],
-			exact: false,
+			additionalSlots,
+			activeIndex: TOTAL_SLOTS,
+			visibleIndices: additionalSlots.map(slot => slot.index),
+			exact: !!exactTime,
 		};
 	}
+	const matching = QUARTER_HOUR_SLOTS.filter(slot => getDisplayCompact(slot, options.timeFormat, options.meridiem).startsWith(digits));
+	if (matching.length === 0) return { activeIndex: null, visibleIndices: [], exact: false };
 
 	const activeIndex = matching[0].index;
 	const exact = digits.length === 4 && getDisplayCompact(QUARTER_HOUR_SLOTS[activeIndex], options.timeFormat, options.meridiem) === digits;
@@ -260,4 +290,13 @@ function shiftDatePartByDays(datePart: string, deltaDays: number): string {
 		0,
 	);
 	return `${shifted.getFullYear()}-${String(shifted.getMonth() + 1).padStart(2, '0')}-${String(shifted.getDate()).padStart(2, '0')}`;
+}
+
+
+/** Move only within the currently rendered suggestions, keeping list boundaries. */
+export function moveTimeSuggestion(indices: readonly number[], active: number | null, delta: number): number | null {
+ if (!indices.length) return null;
+ const position = active === null ? -1 : indices.indexOf(active);
+ if (position < 0) return indices[delta > 0 ? 0 : indices.length - 1];
+ return indices[(position + delta + indices.length) % indices.length];
 }

@@ -7,6 +7,7 @@ import {
 	parseLocalDatetime,
 	toDatetimeLocalValue,
 } from '../systems/tracker-utils';
+import { renderCompactTaskMarkdown } from './compact-task-markdown-renderer';
 import { ConfirmActionModal } from './confirm-action-modal';
 import { asyncHandler, runAsyncAction } from '../core/async-action';
 import { getActiveWindow } from '../core/dom-compat';
@@ -127,9 +128,12 @@ export class TrackerSessionEditModal extends Modal {
 		if (this.options.contextTitle || this.options.contextMeta?.length) {
 			const contextEl = contentEl.createDiv('operon-tracker-session-modal-context');
 			if (this.options.contextTitle) {
-				contextEl.createDiv({
-					text: this.options.contextTitle,
+				const titleEl = contextEl.createDiv({
 					cls: 'operon-tracker-session-modal-context-title',
+				});
+				renderCompactTaskMarkdown(titleEl, {
+					value: this.options.contextTitle,
+					mode: 'visual-only',
 				});
 			}
 			for (const meta of this.options.contextMeta ?? []) {

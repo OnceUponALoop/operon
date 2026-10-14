@@ -121,7 +121,7 @@ function applyInheritedField(
 	}
 }
 
-export function resolveSubtaskInitialFieldsFromParentValues(
+function resolveInheritedFields(
 	parentTaskId: string | null,
 	parentFieldValues: Record<string, string> | null | undefined,
 	settings: OperonSettings,
@@ -136,6 +136,18 @@ export function resolveSubtaskInitialFieldsFromParentValues(
 	}
 
 	return inherited;
+}
+
+/** New tasks use the configured default even when priority inheritance is disabled. */
+export function resolveSubtaskInitialFieldsFromParentValues(
+	parentTaskId: string | null,
+	parentFieldValues: Record<string, string> | null | undefined,
+	settings: OperonSettings,
+	parentTags?: readonly string[] | null,
+): SubtaskInitialFields {
+	const fields = resolveInheritedFields(parentTaskId, parentFieldValues, settings, parentTags);
+	if (!fields.priority && settings.defaultPriority?.trim()) fields.priority = settings.defaultPriority.trim();
+	return fields;
 }
 
 export function getSubtaskInitialFieldKeys(inherited: SubtaskInitialFields): string[] {
@@ -159,7 +171,7 @@ export function resolveSubtaskInitialFields(
 }
 
 /** Serialize the existing list grammar without changing literal backslashes. */
-function serializeParentLinkList(items: string[]): string {
+export function serializeTaskListValue(items: string[]): string {
 	// parseListValue only recognizes backslash-semicolon, not doubled backslashes.
 	// Encode semicolons explicitly, then verify every item boundary before a write.
 	const encoded = items.map(item => Array.from(item, character => character === ';' ? '\\;' : character).join('')).join('; ');
@@ -182,7 +194,7 @@ export function resolveParentLinkInheritance(
 	if (!parentId || parentId === child.operonId || parentId === (child.fieldValues.parentTask ?? '').trim()) return {};
 	const parent = getParent(parentId);
 	if (!parent) return {};
-	const inherited = resolveSubtaskInitialFieldsFromParentValues(parentId, parent.fieldValues, settings, parent.tags);
+	const inherited = resolveInheritedFields(parentId, parent.fieldValues, settings, parent.tags);
 	const additions: Record<string, string> = {};
 	for (const [key, value] of Object.entries(inherited)) {
 		if (key === 'parentTask' || value === undefined) continue;
@@ -198,7 +210,7 @@ export function resolveParentLinkInheritance(
 				return true;
 			});
 			if (missing.length) {
-				additions[payloadKey] = serializeParentLinkList([...existing, ...missing]);
+				additions[payloadKey] = serializeTaskListValue([...existing, ...missing]);
 			}
 		} else if (!current.trim() && typeof value === 'string' && value.trim()) {
 			additions[key] = value;
@@ -235,5 +247,5 @@ export async function loadParentLinkListSource(
   if (listItems[key].some(item => item.includes(';'))) throw new Error('Parent YAML list item contains an ambiguous semicolon.');
  }
  // Use the same fresh source projection so absent/deleted lists cannot fall back to stale index values.
- return { ...parent, fieldValues: { ...parent.fieldValues, ...Object.fromEntries(keys.map(key => [key, serializeParentLinkList(listItems[key])])) } };
+ return { ...parent, fieldValues: { ...parent.fieldValues, ...Object.fromEntries(keys.map(key => [key, serializeTaskListValue(listItems[key])])) } };
 }

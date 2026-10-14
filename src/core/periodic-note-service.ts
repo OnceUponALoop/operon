@@ -3,6 +3,7 @@ import {
 	resolvePeriodicNotePathFromDateKey,
 	type PeriodicNoteKind,
 } from './periodic-note-path';
+import { isSafeVaultRelativeMarkdownPath } from './vault-path-safety';
 import type { PeriodicNoteEffectiveConfig } from './periodic-note-config';
 
 export type PeriodicNoteFileState =
@@ -22,6 +23,8 @@ export type PeriodicNoteGuardedDeleteResult =
 	| 'failed';
 
 export interface PeriodicNoteTemplateSnapshot {
+	/** Actual vault path when an Obsidian template reference was resolved. */
+	path?: string;
 	content: string;
 	revision?: string;
 }
@@ -236,7 +239,11 @@ export class PeriodicNoteService {
 			};
 		}
 
-		const templatePath = request.config.template.trim() || null;
+		const reference = request.config.template.trim();
+		let templatePath = reference ? (reference.toLowerCase().endsWith('.md') ? reference : `${reference}.md`) : null;
+		if (templatePath && !isSafeVaultRelativeMarkdownPath(templatePath)) {
+			return { status: 'error', result: this.error('invalid-target', 'The periodic note template path is invalid.', path) };
+		}
 		let template: PeriodicNoteTemplateSnapshot = { content: '' };
 		if (templatePath) {
 			try {
@@ -246,6 +253,12 @@ export class PeriodicNoteService {
 						status: 'error',
 						result: this.error('template-not-found', 'The configured periodic note template was not found.', path),
 					};
+				}
+				if (loaded.path) {
+					if (!isSafeVaultRelativeMarkdownPath(loaded.path)) {
+						return { status: 'error', result: this.error('invalid-target', 'The resolved template path is invalid.', path) };
+					}
+					templatePath = loaded.path;
 				}
 				template = loaded;
 			} catch (cause) {
@@ -334,7 +347,8 @@ export class PeriodicNoteService {
 		if (plan.templatePath && plan.templateRevision) {
 			try {
 				const currentTemplate = await this.ports.loadTemplate(plan.templatePath);
-				if (!currentTemplate || currentTemplate.revision !== plan.templateRevision) {
+				if (!currentTemplate || currentTemplate.revision !== plan.templateRevision
+					|| (currentTemplate.path !== undefined && currentTemplate.path !== plan.templatePath)) {
 					return this.error(
 						'template-read-failed',
 						'The periodic note template changed after preparation.',

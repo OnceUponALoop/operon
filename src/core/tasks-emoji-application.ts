@@ -1,4 +1,4 @@
-import { ParsedTask, OperonField } from '../types/fields';
+import { ParsedTask, OperonField, TimePrefix } from '../types/fields';
 import { CANONICAL_KEY_MAP } from '../types/keys';
 import {
 	Pipeline,
@@ -11,6 +11,8 @@ import { normalizeLegacyCreatedDatetime } from './yaml-fields';
 
 export interface ApplyTasksEmojiConversionOptions {
 	task: ParsedTask;
+	description?: string;
+	timePrefix?: TimePrefix;
 	tags: string[];
 	mappedFields: Record<string, string>;
 	leftovers: string[];
@@ -138,6 +140,10 @@ function ensureRepeatSeriesId(task: ParsedTask, factory: (() => string) | undefi
 }
 
 export function applyTasksEmojiConversionToParsedTask(options: ApplyTasksEmojiConversionOptions): ApplyTasksEmojiConversionResult {
+	if (options.description !== undefined) {
+		options.task.description = options.description;
+		options.task.timePrefix = options.timePrefix ? { ...options.timePrefix } : null;
+	} else if (options.timePrefix) options.task.timePrefix = { ...options.timePrefix };
 	options.task.tags = [...new Set(options.tags.map(tag => tag.replace(/^#/, '').trim()).filter(Boolean))];
 
 	for (const [key, value] of Object.entries(options.mappedFields)) {
@@ -158,7 +164,9 @@ export function applyTasksEmojiConversionToParsedTask(options: ApplyTasksEmojiCo
 	ensureRepeatSeriesId(options.task, options.repeatSeriesIdFactory);
 
 	if (options.leftovers.length > 0) {
-		setParsedTaskField(options.task, 'note', `Tasks syntax leftovers: ${options.leftovers.join(' | ')}`, 'text');
+		const existingNote = options.task.fields.find(field => field.key === 'note')?.value ?? '';
+		const explanation = `Tasks syntax leftovers: ${options.leftovers.join(' | ')}`;
+		setParsedTaskField(options.task, 'note', existingNote ? `${existingNote}\n${explanation}` : explanation, 'text');
 	}
 
 	return { ok: true };

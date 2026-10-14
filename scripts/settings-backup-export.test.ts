@@ -513,3 +513,23 @@ test('OperonStorage committed snapshot capture is zero-write and reports suspens
 	assert.equal(exported.json.includes(SECRET_PINNED_ID), false);
 	assert.equal(exported.json.includes(SECRET_CONSUMER_ID), false);
 });
+
+
+test('phone editor layout and independent editor preferences survive backup decoding', () => {
+ for (const enabled of [false, true]) {
+  const settings = migrateSettings({ ...clone(DEFAULT_SETTINGS), taskEditorUseMobileLayout: enabled, taskEditorWorkflowPickers: [{ key: 'tags', visible: false }] });
+  const exported = exportOperonSettingsBackupJsonV1(exportInput(settings));
+  assert.ok(exported.ok, JSON.stringify(exported.diagnostics));
+  if (!exported.ok) return;
+  const parsed = parseOperonSettingsBackupV1(exported.json);
+  assert.ok(parsed.ok);
+  if (!parsed.ok) return;
+  const decoded = validateOperonSettingsBackupGroupsV1(parsed.value.body.groups);
+  assert.ok(decoded.ok);
+  const restored = migrateSettings({ ...DEFAULT_SETTINGS, ...decoded.payloads.general });
+  assert.equal(restored.taskEditorUseMobileLayout, enabled);
+  assert.deepEqual(restored.taskEditorMobileCoreTools, settings.taskEditorMobileCoreTools);
+  assert.deepEqual(restored.taskEditorSections, settings.taskEditorSections);
+  assert.equal(restored.taskEditorWorkflowPickers.find(item => item.key === 'tags')?.visible, false);
+ }
+});

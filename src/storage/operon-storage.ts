@@ -1,3 +1,4 @@
+import { cloneInlinePropertyDefinitions, reconcileInlinePropertyDefinitions, retainInlinePropertyDefinition, type InlinePropertyDefinition, type InlinePropertyDefinitions } from '../core/inline-property-definitions';
 import { workflowColor, workflowColorDefinition, workflowColorKey, type WorkflowColorChange } from '../core/workflow-color';
 import { editPropertyPoolPreferences, resolvePropertyPoolFavorite, type PropertyPoolEdit } from '../core/property-value-pool';
 /**
@@ -8,7 +9,7 @@ import { editPropertyPoolPreferences, resolvePropertyPoolFavorite, type Property
 
 import { App } from 'obsidian';
 import type { LocationPickerDefaultChange } from '../core/location-picker-defaults';
-import { OperonSettings, DEFAULT_SETTINGS, migrateSettings } from '../types/settings';
+import { OperonSettings, DEFAULT_SETTINGS, migrateSettings, type KeyMapping } from '../types/settings';
 import { WriteQueue } from './write-queue';
 import { PinnedCache } from './pinned-cache';
 import { RepeatSeriesStore } from './repeat-series-store';
@@ -273,8 +274,11 @@ function pickContextualMenuStoreSettings(settings: OperonSettings): ContextualMe
 function pickTaskUiPreferenceStoreSettings(settings: OperonSettings): TaskUiPreferenceStoreSettings {
 	return {
 		taskCreatorToolbar: settings.taskCreatorToolbar,
+		taskEditorSections: settings.taskEditorSections,
 		taskEditorShowLineNumbers: settings.taskEditorShowLineNumbers,
+		taskEditorHighlightActiveLine: settings.taskEditorHighlightActiveLine,
 		taskEditorWorkflowPickers: settings.taskEditorWorkflowPickers,
+		taskEditorUseMobileLayout: settings.taskEditorUseMobileLayout,
 		taskEditorMobileCoreTools: settings.taskEditorMobileCoreTools,
 		inlineExpandedTaskChips: settings.inlineExpandedTaskChips,
 		inlineTaskCompactChips: settings.inlineTaskCompactChips,
@@ -337,6 +341,10 @@ function pickTaskCreationProfileStoreSettings(settings: OperonSettings): TaskCre
 		childTaskInheritanceStatusPipelineSource: settings.childTaskInheritanceStatusPipelineSource,
 		taskCreatorDefaultToFileTask: settings.taskCreatorDefaultToFileTask,
 		taskCreatorDefaultFileTemplateId: settings.taskCreatorDefaultFileTemplateId,
+		defaultInlineTaskTemplateId: settings.defaultInlineTaskTemplateId,
+		inlineTaskUseLastTemplateAsDefault: settings.inlineTaskUseLastTemplateAsDefault,
+		fileTaskUseLastTemplateAsDefault: settings.fileTaskUseLastTemplateAsDefault,
+
 		fileTaskTemplateFolder: settings.fileTaskTemplateFolder,
 		manageDailyNotesWithOperon: settings.manageDailyNotesWithOperon,
 		dailyNoteFormat: settings.dailyNoteFormat,
@@ -592,8 +600,7 @@ export class OperonStorage {
 			await this.saveSettings();
 		});
 		this.keyMappingStore.setPackagePersistence(async (keyMappings) => {
-			this.settings.keyMappings = keyMappings;
-			await this.saveSettings();
+			await this.enqueueSettingsTransaction(() => this.persistSettings({ forceRecoveredWrite: true }, [], keyMappings));
 		});
 		this.pipelineStore.setPackagePersistence(async (settings) => {
 			await this.updateSettings(settings);
@@ -709,6 +716,37 @@ export class OperonStorage {
 		await run;
 	}
 
+	/** Persist source interpretation before the caller writes a typed inline value. */
+	async ensureInlinePropertyDefinitions(entries: readonly InlinePropertyDefinition[], canCommit: () => boolean = () => true): Promise<InlinePropertyDefinitions> {
+		return this.enqueueSettingsTransaction(async () => {
+			await this.persistSettings({ forceRecoveredWrite: true }, entries, undefined, false, {}, canCommit);
+			const definitions = this.getCommittedInlinePropertyDefinitions();
+			if (!definitions) throw new Error('Missing property definitions');
+			return definitions;
+		});
+	}
+
+	/** Record only verified Creator success, preserving preferences changed during submission. */
+	async saveTaskCreatorTemplateUsage(change: { createType: 'inline' | 'file'; templateId: string; enabledAtSubmit: boolean; expectedDefaultId: string | null }): Promise<void> {
+		await this.enqueueSettingsTransaction(async () => {
+			const defaultKey = change.createType === 'inline' ? 'defaultInlineTaskTemplateId' : 'taskCreatorDefaultFileTemplateId';
+			const toggleKey = change.createType === 'inline' ? 'inlineTaskUseLastTemplateAsDefault' : 'fileTaskUseLastTemplateAsDefault';
+			const eligible = () => change.enabledAtSubmit && this.settings[toggleKey] && this.settings[defaultKey] === change.expectedDefaultId;
+			const learn = eligible() && this.settings[defaultKey] !== change.templateId;
+			const patch: Partial<OperonSettings> = {};
+			if (this.settings.lastUsedFileTaskTemplateId !== change.templateId) patch.lastUsedFileTaskTemplateId = change.templateId;
+			if (learn) Object.assign(patch, { [defaultKey]: change.templateId });
+			if (!Object.keys(patch).length) return;
+			const canCommit = () => !learn || eligible();
+			try {
+				await this.persistSettings({ forceRecoveredWrite: true }, [], undefined, false, patch, canCommit);
+			} catch (error) {
+				if (!canCommit()) return;
+				throw error;
+			}
+		});
+	}
+
 	async saveLocationPickerDefault(change: LocationPickerDefaultChange): Promise<void> {
 		// Menu coordinates are normalized at its boundary; Settings retains its existing text rules.
 		await this.enqueueSettingsTransaction(async () => {
@@ -736,10 +774,8 @@ export class OperonStorage {
 				tablePresetFileBindings: this.settings.tablePresetFileBindings.map(binding => ({ ...binding })),
 				tablePresetFileInitialized: this.settings.tablePresetFileInitialized,
 				tableDefaultPresetId: this.settings.tableDefaultPresetId,
-				presetFavorites: clonePresetFavorites(this.settings.presetFavorites),
 			};
 			const presetsById = new Map(availablePresets.map(preset => [preset.id, preset]));
-			const validIds = new Set(authority.presetIds);
 			this.settings.tablePresets = authority.presetIds.flatMap(id => {
 				const preset = presetsById.get(id);
 				return preset ? [cloneTablePreset(preset)] : [];
@@ -748,17 +784,14 @@ export class OperonStorage {
 			this.settings.tablePresetFileBindings = authority.fileBindings.map(binding => ({ ...binding }));
 			this.settings.tablePresetFileInitialized = authority.initialized;
 			this.settings.tableDefaultPresetId = authority.tableDefaultPresetId;
-			this.settings.presetFavorites = {
-				...clonePresetFavorites(this.settings.presetFavorites),
-				table: this.settings.presetFavorites.table.filter(id => validIds.has(id)),
-			};
+			// Discovery is not a user deletion. Favorites survive unavailable files;
+			// explicit preset deletion already removes its own favorite.
 
 			try {
 				await this.dataPackageStore.updateDataPackageCas(currentPackage => buildTablePresetAuthorityDataPackage(
 					currentPackage,
 					authority,
 					this.settings,
-					this.settings.presetFavorites,
 				));
 			} catch (error) {
 				this.settings.tablePresets = previous.tablePresets.map(cloneTablePreset);
@@ -766,7 +799,6 @@ export class OperonStorage {
 				this.settings.tablePresetFileBindings = previous.tablePresetFileBindings.map(binding => ({ ...binding }));
 				this.settings.tablePresetFileInitialized = previous.tablePresetFileInitialized;
 				this.settings.tableDefaultPresetId = previous.tableDefaultPresetId;
-				this.settings.presetFavorites = clonePresetFavorites(previous.presetFavorites);
 				throw error;
 			}
 			this.tablePresetRecovery = {
@@ -780,9 +812,14 @@ export class OperonStorage {
 		});
 	}
 
-	private enqueueSettingsTransaction<T>(operation: () => Promise<T>): Promise<T> {
+	private enqueueSettingsTransaction<T>(operation: () => Promise<T>, coordinateMappings = false): Promise<T> {
 		const run = this.settingsSaveQueue.then(async () => {
-			const result = await operation();
+			const result = await (coordinateMappings ? this.mappingMutationCoordinator(async () => {
+				const result = await operation();
+				const mappings = this.dataPackageStore.getDataPackage().taxonomy.keyMappings;
+				this.publishCommittedMappings([...mappings.system, ...mappings.custom]);
+				return result;
+			}) : operation());
 			this.notifyPropertyPoolChange();
 			return result;
 		});
@@ -994,7 +1031,26 @@ export class OperonStorage {
 		});
 	}
 
-	private async persistSettings(_options: RecoveredStoreWriteOptions): Promise<void> {
+	getCommittedInlinePropertyDefinitions(): InlinePropertyDefinitions | undefined {
+		return cloneInlinePropertyDefinitions(this.dataPackageStore.getDataPackage().taxonomy.inlinePropertyDefinitions);
+	}
+
+	private mappingMutationCoordinator: <T>(operation: () => Promise<T>) => Promise<T> = operation => operation();
+	private publishCommittedMappings: (mappings: KeyMapping[]) => void = () => {};
+
+	setMappingMutationCoordinator(run: <T>(operation: () => Promise<T>) => Promise<T>, publish: (mappings: KeyMapping[]) => void): void {
+		this.mappingMutationCoordinator = run;
+		this.publishCommittedMappings = publish;
+	}
+
+	private async persistSettings(_options: RecoveredStoreWriteOptions, entries: readonly InlinePropertyDefinition[] = [], mappings?: KeyMapping[], coordinated = false, patch: Partial<OperonSettings> = {}, canCommit: () => boolean = () => true): Promise<void> {
+		if (!canCommit()) throw new Error('Settings operation cancelled');
+		mappings ??= patch.keyMappings;
+		const currentMappings = this.dataPackageStore.getDataPackage().taxonomy.keyMappings;
+		const mappingsChanged = JSON.stringify([...currentMappings.system, ...currentMappings.custom]) !== JSON.stringify(mappings ?? this.settings.keyMappings);
+		if (mappingsChanged && !coordinated) {
+			return this.mappingMutationCoordinator(() => this.persistSettings(_options, entries, mappings, true, patch, canCommit));
+		}
 		if (!this.dataPackageStore.canPersist()) {
 			if (_options.forceRecoveredWrite === false) return;
 			throw new Error(`Operon settings writes are suspended: ${this.dataPackageStore.getWriteSuspensionReason() ?? 'data.json could not be preserved safely'}`);
@@ -1003,9 +1059,16 @@ export class OperonStorage {
 			throw new Error('Operon requires at least one configured pipeline');
 		}
 		this.settings.filterSets = this.filterStore.getAll();
-		const normalized = migrateSettings(this.settings);
-		this.applySettingsInPlace(normalized);
-		const dataPackage = buildOperonDataPackageFromSettings(this.settings, {
+		const committedPropertyPackage = this.dataPackageStore.getDataPackage();
+		let definitions = cloneInlinePropertyDefinitions(committedPropertyPackage.taxonomy.inlinePropertyDefinitions);
+		for (const entry of (patch.inlinePropertyDefinitions ?? this.settings.inlinePropertyDefinitions)?.entries ?? []) definitions = retainInlinePropertyDefinition(definitions, entry);
+		definitions = reconcileInlinePropertyDefinitions(
+			[...committedPropertyPackage.taxonomy.keyMappings.system, ...committedPropertyPackage.taxonomy.keyMappings.custom],
+			mappings ?? this.settings.keyMappings, definitions);
+		for (const entry of entries) definitions = retainInlinePropertyDefinition(definitions, entry);
+		const submitted = { ...this.settings };
+		const normalized = migrateSettings({ ...submitted, ...patch, keyMappings: mappings ?? submitted.keyMappings, inlinePropertyDefinitions: definitions });
+		const dataPackage = buildOperonDataPackageFromSettings(normalized, {
 			filterSets: this.filterStore.getAll(),
 			kanbanOrderBoards: this.kanbanOrderStore.toPackage().boards,
 			pinnedTasks: this.pinnedCache.toPackage(),
@@ -1106,10 +1169,12 @@ export class OperonStorage {
 				? overlayKnownDataPackageFieldsPreservingUnknownV1(currentPackage, nextPackage)
 				: nextPackage;
 		};
-		if (this.tablePresetRecovery.health === 'degraded') {
-			await this.dataPackageStore.updateDataPackageCas(updateDataPackage);
-		} else {
-			await this.dataPackageStore.updateDataPackage(updateDataPackage);
+		if (this.tablePresetRecovery.health === 'degraded') await this.dataPackageStore.updateDataPackageCas(updateDataPackage, canCommit);
+        else await this.dataPackageStore.updateDataPackage(updateDataPackage, canCommit);
+		if (mappingsChanged) this.publishCommittedMappings(normalized.keyMappings);
+		// Publish committed values only; edits made during the save remain pending.
+		for (const key of Object.keys(normalized) as (keyof OperonSettings)[]) {
+			if (this.settings[key] === submitted[key]) Object.assign(this.settings, { [key]: normalized[key] });
 		}
 		this.hydratePackageBackedSettingStores();
 		this.notifyPropertyPoolChange();
@@ -1118,7 +1183,11 @@ export class OperonStorage {
 	/**
 	 * Get current settings (in-memory).
 	 */
-	getSettings(): OperonSettings {
+	getSettings(options?: { committedMappings?: boolean }): OperonSettings {
+		if (options?.committedMappings) {
+			const taxonomy = this.dataPackageStore.getDataPackage().taxonomy;
+			return { ...this.settings, keyMappings: structuredClone([...taxonomy.keyMappings.system, ...taxonomy.keyMappings.custom]), inlinePropertyDefinitions: cloneInlinePropertyDefinitions(taxonomy.inlinePropertyDefinitions) };
+		}
 		return this.settings;
 	}
 
@@ -1347,7 +1416,7 @@ export class OperonStorage {
 				};
 			}
 			return successfulSettingsBackupApply(receipt);
-		});
+		}, true);
 	}
 
 	discardSettingsBackupUndo(undoTokenId: string, expectedReceiptId: string): boolean {
@@ -1435,7 +1504,7 @@ export class OperonStorage {
 			}
 			this.settingsBackupUndoEntries.delete(undoTokenId);
 			return { status: 'success', receiptId, blockedReason: null };
-		});
+		}, true);
 	}
 
 	/**
@@ -1448,36 +1517,27 @@ export class OperonStorage {
 		}
 		// Apply the patch only after earlier saves or reloads commit, so it rebases on their latest state.
 		const run = this.settingsSaveQueue.then(async () => {
-			const previousSettings = this.getCommittedSettingsSnapshot();
-			Object.assign(this.settings, pendingUpdate);
-			try {
-				await this.persistSettings({ forceRecoveredWrite: true });
-			} catch (error) {
-				this.applySettingsInPlace(previousSettings);
-				this.hydratePackageBackedSettingStores();
-				throw error;
-			}
+			await this.persistSettings({ forceRecoveredWrite: true }, [], undefined, false, pendingUpdate);
 		});
 		this.settingsSaveQueue = run.then(() => undefined, () => undefined);
 		await run;
 	}
 
 	async reloadCanonicalSettingsPackage(): Promise<OperonStorageReloadSettingsResult> {
-		// Reload occupies the settings mutex so a later save cannot build from a half-staged package.
-		const run = this.settingsSaveQueue.then(async () => {
+		// Reload shares both settings and task mutation coordination with mapping saves.
+		const run = this.enqueueSettingsTransaction(async () => {
 			const result = await this.dataPackageStore.reloadCanonicalDataPackage(DEFAULT_SETTINGS, {
 				stage: async dataPackage => this.stageCanonicalDataPackageReload(dataPackage),
 			});
 			if (!result.dataPackage.ui.presetFavorites) {
-				await this.persistSettings({ forceRecoveredWrite: true });
+				await this.persistSettings({ forceRecoveredWrite: true }, [], undefined, true);
 			}
 			this.notifyPropertyPoolChange();
 			return {
 				changed: result.changed,
 				diagnostics: result.diagnostics,
 			};
-		});
-		this.settingsSaveQueue = run.then(() => undefined, () => undefined);
+		}, true);
 		return run;
 	}
 

@@ -1,6 +1,8 @@
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import test from 'node:test';
+import { runInNewContext } from 'node:vm';
+import { transformSync } from 'esbuild';
 
 const read = path => readFileSync(new URL(`../${path}`, import.meta.url), 'utf8');
 const modalSource = read('src/ui/filter-set-modal.ts');
@@ -73,4 +75,53 @@ test('group footer wraps icon actions on narrow surfaces', () => {
 		styles,
 		/@media \(max-width: 520px\) \{[\s\S]*?\.operon-filter-group-header \{\s*flex-wrap: wrap;[\s\S]*?\.operon-filter-group-heading \{[\s\S]*?flex-wrap: wrap;/u,
 	);
+});
+
+// Exercise the renderer's actual numbering method without constructing an Obsidian modal.
+const numberingStart = modalSource.indexOf('\tprivate buildFilterGroupNumberMap(');
+const numberingEnd = modalSource.indexOf('\n\tprivate addClasses(', numberingStart);
+const predicateStart = modalSource.indexOf('function isFilterGroupNode(');
+const predicateEnd = modalSource.indexOf('\n}', predicateStart) + 2;
+assert.ok(numberingStart >= 0 && numberingEnd > numberingStart);
+assert.ok(predicateStart >= 0 && predicateEnd > predicateStart);
+const numbering = runInNewContext(transformSync(`
+${modalSource.slice(predicateStart, predicateEnd)}
+class Numbering { ${modalSource.slice(numberingStart, numberingEnd)} }
+new Numbering();
+`, { loader: 'ts', target: 'es2022' }).code);
+const condition = () => ({ key: 'status', operator: 'is', value: 'open' });
+const group = (id, children = []) => ({ id, logic: 'all', children });
+
+test('group labels describe ancestry and count sibling groups only, without changing saved data', () => {
+	const deep = group('deep');
+	const firstChild = group('first-child', [condition(), deep]);
+	const secondChild = group('second-child');
+	const first = group('first', [condition(), firstChild, condition(), secondChild]);
+	const second = group('second');
+	const root = group('root', [condition(), first, condition(), second]);
+	const before = JSON.stringify(root);
+	const numbers = numbering.buildFilterGroupNumberMap(root);
+	assert.equal(numbers.get(root), undefined);
+	assert.deepEqual([first, firstChild, deep, secondChild, second].map(g => numbers.get(g)),
+		['1', '1.1', '1.1.1', '1.2', '2']);
+	assert.equal(numbers.get(root.children[0]), undefined);
+	assert.equal(JSON.stringify(root), before);
+});
+
+test('group labels recalculate after reorder, removal and pasted subtrees', () => {
+	const child = group('child');
+	const first = group('first', [child]);
+	const second = group('second');
+	const root = group('root', [first, second]);
+	root.children.reverse();
+	let numbers = numbering.buildFilterGroupNumberMap(root);
+	assert.deepEqual([second, first, child].map(g => numbers.get(g)), ['1', '2', '2.1']);
+	root.children.splice(0, 1);
+	const pasted = structuredClone(first);
+	pasted.id = 'pasted';
+	root.children.push(condition(), pasted);
+	numbers = numbering.buildFilterGroupNumberMap(root);
+	assert.deepEqual([first, child, pasted, pasted.children[0]].map(g => numbers.get(g)),
+		['1', '1.1', '2', '2.1']);
+	assert.equal(numbers.get(second), undefined);
 });

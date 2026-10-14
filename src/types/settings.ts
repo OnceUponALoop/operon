@@ -1,3 +1,5 @@
+import { cloneInlinePropertyDefinitions, validateInlinePropertyDefinitions } from '../core/inline-property-definitions';
+import { normalizeTaskEditorSections, type TaskEditorSection } from './task-editor-sections';
 import { DEFAULT_TASK_CARD_SETTINGS, normalizeTaskCardSettings, type TaskCardSettings } from './task-card';
 /**
  * Operon plugin settings with versioned schema and migration.
@@ -1308,6 +1310,44 @@ function buildDefaultTaskWikilinkOverlayCompactChipItems(): InlineTaskCompactChi
 	];
 }
 
+/**
+ * Chip profile for verified first installations and explicit settings resets.
+ * Keep compatibility defaults unchanged for existing packages and partial preferences.
+ */
+export function buildDefaultTaskChipSettings(defaults: OperonSettings): OperonSettings {
+	const compact = (
+		items: readonly InlineTaskCompactChipItem[],
+		visibleKeys: readonly string[],
+	): InlineTaskCompactChipItem[] => items.map(item => ({
+		...item,
+		visible: visibleKeys.includes(item.key),
+		iconOnly: item.key === 'status' && visibleKeys.includes('status'),
+	}));
+	const creatorKeys = ['taskIcon', 'taskColor', 'taskType', 'priority', 'status', 'note'];
+	return {
+		...defaults,
+		taskCreatorToolbar: defaults.taskCreatorToolbar.map(item => ({
+			...item, visible: creatorKeys.includes(item.key),
+		})),
+		inlineTaskCompactChips: compact(defaults.inlineTaskCompactChips,
+			['priority', 'status', 'parentTask', 'dateScheduled', 'dateDue', 'repeat', 'tags']),
+		taskFinderCompactChips: compact(defaults.taskFinderCompactChips,
+			['taskType', 'priority', 'parentTask', 'assignees']),
+		filterTaskCompactChips: compact(defaults.filterTaskCompactChips,
+			['priority', 'status', 'parentTask', 'dateScheduled', 'dateDue', 'repeat', 'tags', 'assignees']),
+		kanbanTaskCompactChips: compact(defaults.kanbanTaskCompactChips,
+			['taskImage', 'priority', 'dateScheduled', 'dateDue', 'assignees']),
+		taskWikilinkOverlayCompactChips: compact(defaults.taskWikilinkOverlayCompactChips,
+			['priority', 'dateDue', 'assignees']),
+		taskCardCompactChips: compact(defaults.taskCardCompactChips,
+			['taskImage', 'priority', 'status', 'dateScheduled', 'dateDue', 'assignees']),
+		inlineTaskShowPlayAction: false,
+		inlineTaskShowSubtaskAction: false,
+		filterTaskShowPlayAction: false,
+		filterTaskShowSubtaskAction: false,
+	};
+}
+
 function buildDefaultTaskFinderDefaultScopeItems(): TaskFinderDefaultScopeItem[] {
 	return TASK_FINDER_DEFAULT_SCOPE_ORDER.map(key => ({
 		key,
@@ -1542,6 +1582,8 @@ function buildDefaultKeyMappings(): KeyMapping[] {
 
 /** Complete Operon settings interface (v1) */
 export interface OperonSettings extends TaskCardSettings {
+	/** Internal source interpretation metadata; not a user-facing preference. */
+	inlinePropertyDefinitions?: import('../core/inline-property-definitions').InlinePropertyDefinitions;
 	/** Raw optional UI preferences; preserve unknown/future content without repair. */
 	propertyValuePool?: unknown;
 	settingsVersion: number;
@@ -1660,10 +1702,16 @@ export interface OperonSettings extends TaskCardSettings {
 	estimateAutoReallocation: boolean;
 	/** Ordered, user-customizable visual controls for the New Operon Task toolbar. */
 	taskCreatorToolbar: TaskCreatorToolbarItem[];
+	/** Desktop Task Editor section order and optional custom titles. */
+	taskEditorSections: TaskEditorSection[];
 	/** If true, the Task Editor file body source panel shows source line numbers. */
 	taskEditorShowLineNumbers: boolean;
+	/** If true, highlight the current source line in the Task Editor file body. */
+	taskEditorHighlightActiveLine: boolean;
 	/** Ordered, user-customizable picker rows shown in the Task Editor workflow area. */
 	taskEditorWorkflowPickers: TaskEditorWorkflowPickerItem[];
+	/** Use the legacy mobile layout on phones; captured when Task Editor opens. */
+	taskEditorUseMobileLayout: boolean;
 	/** Ordered, phone-only core action icons shown in the Task Editor compact toolbar. */
 	taskEditorMobileCoreTools: TaskEditorMobileCoreToolItem[];
 	/** Ordered, user-customizable compact inline-task chips used in live preview conceal and reading view. */
@@ -1730,6 +1778,8 @@ export interface OperonSettings extends TaskCardSettings {
 	inlineTaskShowTasksEmojiConvertIcon: boolean;
 	/** Whether plain checkbox lines show a hover-only convert icon in Live Preview. */
 	inlineTaskShowPlainCheckboxConvertIcon: boolean;
+	/** Review single-line icon conversions in Task Creator before replacing the source. */
+	inlineTaskOpenCreatorBeforeConversion: boolean;
 	/** Whether filter rows show the right-side timer action when the task is actionable. */
 	filterTaskShowPlayAction: boolean;
 	/** Whether filter rows show the right-side pin action when the task is actionable. */
@@ -1930,6 +1980,10 @@ export interface OperonSettings extends TaskCardSettings {
 	taskCreatorDefaultToFileTask: boolean;
 	/** Optional default template applied when Task Creator enters File Task mode. */
 	taskCreatorDefaultFileTemplateId: string | null;
+	defaultInlineTaskTemplateId: string | null;
+	inlineTaskUseLastTemplateAsDefault: boolean;
+	fileTaskUseLastTemplateAsDefault: boolean;
+
 	/** Folder whose top-level markdown files are offered in the file-task template picker. */
 	fileTaskTemplateFolder: string;
 	/** Additional vault folders excluded from Operon's global task index. */
@@ -2229,8 +2283,11 @@ export const DEFAULT_SETTINGS: OperonSettings = {
 	projectSerialScopes: [],
 	estimateAutoReallocation: false,
 	taskCreatorToolbar: buildDefaultTaskCreatorToolbarItems(),
+	taskEditorSections: normalizeTaskEditorSections(undefined),
 	taskEditorShowLineNumbers: false,
+	taskEditorHighlightActiveLine: true,
 	taskEditorWorkflowPickers: buildDefaultTaskEditorWorkflowPickerItems(),
+	taskEditorUseMobileLayout: false,
 	taskEditorMobileCoreTools: buildDefaultTaskEditorMobileCoreToolItems(),
 	inlineTaskCompactChips: buildDefaultInlineTaskCompactChipItems(),
 	filterTaskCompactChips: buildDefaultFilterTaskCompactChipItems(),
@@ -2267,6 +2324,7 @@ export const DEFAULT_SETTINGS: OperonSettings = {
 	inlineTaskShowSubtaskAction: true,
 	inlineTaskShowTasksEmojiConvertIcon: true,
 	inlineTaskShowPlainCheckboxConvertIcon: true,
+	inlineTaskOpenCreatorBeforeConversion: false,
 	filterTaskShowPlayAction: true,
 	filterTaskShowPinAction: false,
 	filterTaskShowNoteAction: true,
@@ -2443,6 +2501,10 @@ export const DEFAULT_SETTINGS: OperonSettings = {
 
 	taskCreatorDefaultToFileTask: false,
 	taskCreatorDefaultFileTemplateId: null,
+	defaultInlineTaskTemplateId: null,
+	inlineTaskUseLastTemplateAsDefault: false,
+	fileTaskUseLastTemplateAsDefault: false,
+
 	fileTaskTemplateFolder: '',
 	excludedFolders: [],
 	manageDailyNotesWithOperon: false,
@@ -3975,6 +4037,10 @@ export function migrateSettings(raw: unknown): OperonSettings {
 		? Math.floor(src.settingsVersion)
 		: 0;
 	const out = { ...DEFAULT_SETTINGS };
+	if (src.inlinePropertyDefinitions !== undefined) {
+		validateInlinePropertyDefinitions(src.inlinePropertyDefinitions);
+		out.inlinePropertyDefinitions = cloneInlinePropertyDefinitions(src.inlinePropertyDefinitions);
+	}
 	if (src.propertyValuePool !== undefined) out.propertyValuePool = JSON.parse(JSON.stringify(src.propertyValuePool)) as unknown;
 	const tablePresetsSource = sourceSettingsVersion < TASK_DATA_TYPE_SETTINGS_VERSION
 		? migrateLegacyTablePresetDataTypeReferences(src.tablePresets)
@@ -4309,17 +4375,22 @@ export function migrateSettings(raw: unknown): OperonSettings {
 		? src.inlineTaskDailyNoteAddScheduledDate
 		: DEFAULT_SETTINGS.inlineTaskDailyNoteAddScheduledDate;
 	out.taskCreatorToolbar = normalizeTaskCreatorToolbar(src.taskCreatorToolbar);
+	out.taskEditorSections = normalizeTaskEditorSections(src.taskEditorSections);
 	out.taskEditorShowLineNumbers = typeof src.taskEditorShowLineNumbers === 'boolean'
 		? src.taskEditorShowLineNumbers
 		: Object.keys(src).length === 0
 			? DEFAULT_SETTINGS.taskEditorShowLineNumbers
 			: true;
+	out.taskEditorHighlightActiveLine = typeof src.taskEditorHighlightActiveLine === 'boolean'
+		? src.taskEditorHighlightActiveLine
+		: DEFAULT_SETTINGS.taskEditorHighlightActiveLine;
 	out.taskEditorWorkflowPickers = normalizeTaskEditorWorkflowPickers(
 		src.taskEditorWorkflowPickers,
 		'taskEditorWorkflowPickers' in src || Object.keys(src).length === 0
 			? DEFAULT_SETTINGS.taskEditorWorkflowPickers
 			: buildCompatibilityTaskEditorWorkflowPickerItems(),
 	);
+	out.taskEditorUseMobileLayout = src.taskEditorUseMobileLayout === true;
 	out.taskEditorMobileCoreTools = normalizeTaskEditorMobileCoreTools(src.taskEditorMobileCoreTools);
 	out.inlineTaskCompactChips = normalizeInlineTaskCompactChips(src.inlineTaskCompactChips);
 	out.filterTaskCompactChips = normalizeFilterTaskCompactChips(src);
@@ -4403,6 +4474,7 @@ export function migrateSettings(raw: unknown): OperonSettings {
 	out.inlineTaskShowTasksEmojiConvertIcon = typeof src.inlineTaskShowTasksEmojiConvertIcon === 'boolean'
 		? src.inlineTaskShowTasksEmojiConvertIcon
 		: DEFAULT_SETTINGS.inlineTaskShowTasksEmojiConvertIcon;
+	out.inlineTaskOpenCreatorBeforeConversion = src.inlineTaskOpenCreatorBeforeConversion === true;
 	out.inlineTaskShowPlainCheckboxConvertIcon = typeof src.inlineTaskShowPlainCheckboxConvertIcon === 'boolean'
 		? src.inlineTaskShowPlainCheckboxConvertIcon
 		: DEFAULT_SETTINGS.inlineTaskShowPlainCheckboxConvertIcon;
@@ -4873,6 +4945,9 @@ export function migrateSettings(raw: unknown): OperonSettings {
 	out.fileTaskAutoArchiveEnabled = hasEffectiveFileTaskArchiveTarget(out);
 	out.fileTaskArchiveDelaySeconds = FILE_TASK_ARCHIVE_DELAY_SECONDS;
 	out.fileTaskArchiveOnlyFromFileTasksFolder = false;
+	out.inlineTaskUseLastTemplateAsDefault = src.inlineTaskUseLastTemplateAsDefault === true;
+	out.fileTaskUseLastTemplateAsDefault = src.fileTaskUseLastTemplateAsDefault === true;
+	out.defaultInlineTaskTemplateId = normalizeOptionalString(src.defaultInlineTaskTemplateId) ?? null;
 	out.taskCreatorDefaultFileTemplateId = normalizeStoredFileTaskTemplateId(
 		src.taskCreatorDefaultFileTemplateId,
 		out.pipelines,
@@ -5008,6 +5083,7 @@ function normalizeSurfaceOrderingSettings(out: OperonSettings, src: Record<strin
 			: buildCompatibilityTaskEditorWorkflowPickerItems(),
 		out.keyMappings,
 	);
+	out.taskEditorUseMobileLayout = src.taskEditorUseMobileLayout === true;
 	out.taskEditorMobileCoreTools = normalizeTaskEditorMobileCoreTools(
 		src.taskEditorMobileCoreTools,
 		DEFAULT_SETTINGS.taskEditorMobileCoreTools,

@@ -143,7 +143,7 @@ function isEditablePanelFocus(element: Element | null, panel: HTMLElement): bool
 }
 
 function getTaskEditorMobileRoot(anchorEl: HTMLElement | null): HTMLElement | null {
-	return asHTMLElement(anchorEl?.closest('.operon-task-editor-mobile') ?? null, anchorEl);
+	return asHTMLElement(anchorEl?.closest('.operon-task-editor-mobile, .operon-task-editor-phone-desktop, .operon-task-editor-touch-desktop') ?? null, anchorEl);
 }
 
 function shouldUseTaskEditorMobileSurface(anchorEl: HTMLElement | null, options: FloatingHostOptions = {}): boolean {
@@ -176,7 +176,9 @@ function getMobilePickerSurfaceContext(
 			kind: 'task-editor',
 			root,
 			panelHost: getTaskEditorMobilePanelHost(root, fallbackHost),
-			surfaceClass: 'operon-task-editor-mobile-picker-surface',
+			surfaceClass: root.matches('.operon-task-editor-phone-desktop, .operon-task-editor-touch-desktop')
+				? 'operon-task-editor-phone-desktop-picker-surface'
+				: 'operon-task-editor-mobile-picker-surface',
 			openEvents: [MOBILE_PICKER_OPEN_EVENT, TASK_EDITOR_MOBILE_PICKER_OPEN_EVENT],
 			closeEvents: [MOBILE_PICKER_CLOSE_EVENT, TASK_EDITOR_MOBILE_PICKER_CLOSE_EVENT],
 		};
@@ -346,7 +348,11 @@ export function positionFloatingElement(
 	const mobileSurfaceContext = getMobilePickerSurfaceContext(anchorEl, options, host);
 	if (useHostBounds && mobileSurfaceContext) {
 		if (mobileSurfaceContext.kind === 'task-editor') {
-			positionTaskEditorMobileSurface(panel, host, hostWindow, margin);
+			if (mobileSurfaceContext.root.matches('.operon-task-editor-phone-desktop, .operon-task-editor-touch-desktop')) {
+				positionTaskEditorPhoneDesktopSurface(panel, mobileSurfaceContext.panelHost, hostWindow, margin, mobileSurfaceContext.root, anchorEl);
+			} else {
+				positionTaskEditorMobileSurface(panel, host, hostWindow, margin);
+			}
 		} else {
 			positionTaskCreatorMobileSurface(panel, mobileSurfaceContext.root, hostWindow, margin);
 		}
@@ -400,6 +406,41 @@ export function positionFloatingElement(
 
 	panel.style.top = `${Math.round(top)}px`;
 	panel.style.left = `${Math.round(left)}px`;
+}
+
+// The desktop layout on phones uses the visible modal, not the legacy toolbar geometry.
+function positionTaskEditorPhoneDesktopSurface(
+	panel: HTMLElement,
+	host: HTMLElement,
+	hostWindow: Window,
+	margin: number,
+	root: HTMLElement,
+	anchor: HTMLElement | null,
+): void {
+	const rect = host.getBoundingClientRect();
+	const viewport = hostWindow.visualViewport;
+	const viewportLeft = viewport?.offsetLeft ?? 0;
+	const viewportTop = viewport?.offsetTop ?? 0;
+	const left = Math.max(rect.left, viewportLeft) + margin;
+	const top = Math.max(rect.top, viewportTop) + margin;
+	const right = Math.min(rect.right, viewportLeft + (viewport?.width ?? hostWindow.innerWidth)) - margin;
+	const bottom = Math.min(rect.bottom, viewportTop + (viewport?.height ?? hostWindow.innerHeight)) - margin;
+	panel.style.left = `${Math.round(left)}px`;
+	panel.style.top = `${Math.round(top)}px`;
+	panel.style.width = `${Math.max(1, Math.floor(right - left))}px`;
+	panel.style.maxWidth = panel.style.width;
+	panel.style.maxHeight = `${Math.max(1, Math.floor(bottom - top))}px`;
+	const mainPanel = anchor?.closest<HTMLElement>('.operon-task-editor-main-panel');
+	if (!root.matches('.operon-task-editor-phone-desktop') && mainPanel && mainPanel.clientWidth > 420 && anchor) {
+		panel.style.removeProperty('width');
+		const width = Math.min(panel.offsetWidth, Math.max(1, right - left));
+		const height = Math.min(panel.offsetHeight, Math.max(1, bottom - top));
+		const anchorRect = anchor.getBoundingClientRect();
+		const preferredTop = bottom - anchorRect.bottom >= height ? anchorRect.bottom + 6 : anchorRect.top - height - 6;
+		panel.style.left = `${Math.round(Math.max(left, Math.min(anchorRect.left, right - width)))}px`;
+		panel.style.top = `${Math.round(Math.max(top, Math.min(preferredTop, bottom - height)))}px`;
+	}
+
 }
 
 function positionTaskEditorMobileSurface(
@@ -519,6 +560,7 @@ export function createFloatingPanel(
 	setSettingsScope(panel, isSettingsScope(anchorEl ?? rectAnchorOwnerEl));
 	if (mobileSurfaceContext) {
 		panel.classList.add('operon-mobile-picker-surface', mobileSurfaceContext.surfaceClass);
+		if (mobileSurfaceContext.root.matches('.operon-task-editor-touch-desktop')) panel.classList.add('operon-task-editor-touch-picker');
 	}
 	const positionOptions: FloatingPositionOptions = {
 		floatingHost: options.floatingHost,
@@ -526,6 +568,7 @@ export function createFloatingPanel(
 		constrainToFloatingHost: options.constrainToFloatingHost,
 		matchWidth: options.matchWidth,
 	};
+	const restoreKeyboardFocus = mobileSurfaceContext?.root.matches('.operon-task-editor-touch-desktop') && mobileSurfaceContext.root.dataset.editorInput === 'keyboard';
 	const hostDocument = getOwnerDocument(host);
 	const hostWindow = getOwnerWindow(host);
 	const visualViewport = mobileSurfaceContext || groupHost ? hostWindow.visualViewport : null;
@@ -611,6 +654,7 @@ export function createFloatingPanel(
 		}
 		sizeObserver?.disconnect();
   stopCardAnchor?.(); stopCardAnchor = null;
+		const restoreFocus = restoreKeyboardFocus && anchorEl?.isConnected && mobileSurfaceContext?.root.isConnected && (panel.contains(hostDocument.activeElement) || hostDocument.activeElement === hostDocument.body);
 		panel.remove();
 		activeFloatingPanels.delete(record);
 		panel.removeEventListener('focusin', onPanelFocusIn);
@@ -624,6 +668,7 @@ export function createFloatingPanel(
 		hostWindow.removeEventListener('blur', onHostWindowBlur);
 		onClose?.();
 		dispatchMobilePickerEvent(mobileSurfaceContext, mobileSurfaceContext?.closeEvents ?? []);
+		if (restoreFocus && anchorEl?.isConnected && (hostDocument.activeElement === hostDocument.body || panel.contains(hostDocument.activeElement))) anchorEl.focus({ preventScroll: true });
 	};
  record.reanchor = next => {
   const nextOwner = asHTMLElement(next) ?? getFloatingRectAnchorOwner(next);

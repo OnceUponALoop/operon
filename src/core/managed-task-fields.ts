@@ -316,10 +316,10 @@ function getActiveCustomFieldSurfaceKeys(
 ): CustomFieldUsageSurfaceKey[] {
 	if (!isManagedCustomFieldOptionType(mapping)) return [];
 	const activeSurfaces: CustomFieldUsageSurfaceKey[] = [];
-	if (isSurfaceVisible(
+	if (mapping.showInEditor !== false || isSurfaceVisible(
 		mapping,
 		[surfaces?.taskEditorWorkflowPickers, surfaces?.taskEditorMobileCoreTools],
-		mapping.showInEditor !== false,
+		false,
 	)) activeSurfaces.push('editor');
 	if (isSurfaceVisible(
 		mapping,

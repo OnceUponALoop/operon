@@ -23,7 +23,7 @@ import { createProjectSerialScopeFilterResolver, type ProjectSerialDisplay } fro
 import { cloneFilterSet, FilterSet, FilterSortSpec, OperonSettings } from '../types/settings';
 import { Pipeline, resolveWorkflowStatus } from '../types/pipeline';
 import { PriorityDefinition } from '../types/priority';
-import { t } from '../core/i18n';
+import { getCurrentLang, t } from '../core/i18n';
 import {
 	evaluateFilterSet,
 	evaluateFilterSetGrouped,
@@ -342,6 +342,9 @@ export function renderFilterSurface(
 		{ keyMappings: deps.getSettings().keyMappings },
 	);
 	const renderSignature = [localToday(),
+        getCurrentLang(),
+        deps.getSettings().timeFormat,
+        deps.getSettings().assigneeImageProperty,
         deps.indexer.getGeneration(),
         deps.pinnedCache?.getGeneration() ?? 0,
         deps.getTrackingSignature?.() ?? '',
@@ -367,11 +370,7 @@ export function renderFilterSurface(
         buildWorkflowStatusOrderSignature(deps.getPipelines()),
         buildWorkflowStatusSemanticsSignature(deps.getPipelines()),
         includeLocationIndexSignature ? getLocationPlaceIndex(deps.app, deps.settings).getSignature() : '',
-        JSON.stringify(deps.settings.keyMappings.map(mapping => [
-            mapping.canonicalKey,
-            mapping.visiblePropertyName,
-            mapping.icon ?? '',
-        ])),
+        JSON.stringify(deps.settings.keyMappings),
     ].join('|');
     if (instance.lastRenderSignature === renderSignature) return;
     const paginationSignature = JSON.stringify([filterSet, instance.searchQuery, options]);

@@ -1,7 +1,8 @@
 import type { App } from 'obsidian';
 import { t } from '../core/i18n';
 import { getAppLocale } from '../core/obsidian-app';
-import { toLocalDate, toLocalDatetime } from '../core/local-time';
+import { formatUiDate } from '../core/ui-date-format';
+import { toLocalDate } from '../core/local-time';
 import {
 	parseAbsoluteReminder,
 	resolveReminderRule,
@@ -24,7 +25,7 @@ export interface ReminderDisplayItem {
 
 export interface FormatReminderDisplayItemInput {
 	app?: App | null;
-	settings: Pick<OperonSettings, 'timeFormat' | 'keyMappings'>;
+	settings: Pick<OperonSettings, 'timeFormat' | 'keyMappings'> & Partial<Pick<OperonSettings, 'dateDisplayFormat'>>;
 	fieldKey: ReminderPickerFieldKey;
 	rawValue: string;
 	fieldValues: Readonly<Record<string, string | undefined>>;
@@ -47,20 +48,17 @@ function formatAbsoluteReminder(input: FormatReminderDisplayItemInput): Reminder
 	const state: ReminderDisplayState = parsed.value.epochMs <= nowEpochMs ? 'past' : 'normal';
 	const statusText = state === 'past' ? t('reminders', 'pastReminder') : undefined;
 	const date = new Date(parsed.value.epochMs);
-	const time = new Intl.DateTimeFormat(getAppLocale(input.app), {
-		hour: 'numeric',
-		minute: '2-digit',
-		hour12: input.settings.timeFormat === '12h',
-	}).format(date);
+	const time = formatReminderTime(date, input);
 	const dateKey = parsed.value.localDatetime.slice(0, 10);
-	const standardTime = parsed.value.localDatetime.slice(11, 16);
-	const text = dateKey === toLocalDate(new Date(nowEpochMs)) ? time : `${dateKey} - ${standardTime}`;
+	const text = dateKey === toLocalDate(new Date(nowEpochMs))
+		? time
+		: formatResolvedReminderTooltip(parsed.value.epochMs, undefined, input);
 	return buildDisplayItem(
 		text,
 		state,
 		statusText,
 		t('reminders', 'editAbsoluteReminder'),
-		formatResolvedReminderTooltip(parsed.value.epochMs, statusText),
+		formatResolvedReminderTooltip(parsed.value.epochMs, statusText, input),
 	);
 }
 
@@ -85,6 +83,7 @@ function formatRuleReminder(input: FormatReminderDisplayItemInput): ReminderDisp
 		formatResolvedReminderTooltip(
 			resolution.epochMs,
 			state === 'past' ? t('reminders', 'pastReminder') : undefined,
+			input,
 		),
 	);
 }
@@ -92,9 +91,20 @@ function formatRuleReminder(input: FormatReminderDisplayItemInput): ReminderDisp
 function formatResolvedReminderTooltip(
 	epochMs: number,
 	statusText: string | undefined,
+	input: FormatReminderDisplayItemInput,
 ): string {
-	const dateTime = toLocalDatetime(new Date(epochMs)).slice(0, 16).replace('T', ' - ');
+	const date = new Date(epochMs);
+	const dateText = formatUiDate(toLocalDate(date), { dateDisplayFormat: input.settings.dateDisplayFormat ?? 'YYYY-MM-DD' });
+	const dateTime = `${dateText} - ${formatReminderTime(date, input)}`;
 	return statusText ? `${statusText}\n${dateTime}` : dateTime;
+}
+
+function formatReminderTime(date: Date, input: FormatReminderDisplayItemInput): string {
+	return new Intl.DateTimeFormat(getAppLocale(input.app), {
+		hour: 'numeric',
+		minute: '2-digit',
+		hour12: input.settings.timeFormat === '12h',
+	}).format(date);
 }
 
 function formatRuleText(rule: ParsedReminderRule, input: FormatReminderDisplayItemInput): string {

@@ -70,6 +70,7 @@ interface EmbeddedMarkdownEditView {
 	onUpdate(update: unknown, changed: boolean): void;
 	buildLocalExtensions(): unknown[];
 	refreshLayout(): void;
+	setFilePanelLineNumbers(visible: boolean): void;
 	destroy(): void;
 	unload(): void;
 }
@@ -355,6 +356,7 @@ function resolveEmbeddedMarkdownViewClass(app: App): OperonEmbeddedMarkdownViewC
 				);
 			}
 			if (this.isFilePanelSourceEditor()) {
+				this.editorEl.toggleClass('is-active-line-disabled', options.showActiveLine === false);
 				if (this.shouldShowLineNumbers()) {
 					this.installFilePanelLineNumberRail();
 				} else {
@@ -514,6 +516,16 @@ function resolveEmbeddedMarkdownViewClass(app: App): OperonEmbeddedMarkdownViewC
 			this.queueFilePanelLineNumberRefresh();
 		}
 
+		setFilePanelLineNumbers(visible: boolean): void {
+			if (!this.isFilePanelSourceEditor() || this.shouldShowLineNumbers() === visible) return;
+			this.options.showLineNumbers = visible;
+			if (visible && !this.filePanelLineNumberRail) this.installFilePanelLineNumberRail();
+			if (!visible && !this.filePanelLineNumberSpacer) this.installFilePanelLineNumberSpacer();
+			this.filePanelLineNumberRail?.setCssProps({ display: visible ? '' : 'none' });
+			this.filePanelLineNumberSpacer?.setCssProps({ display: visible ? 'none' : '' });
+			this.refreshLayout();
+		}
+
 		private installFilePanelLineNumberRail(): void {
 			if (!this.isFilePanelSourceEditor()) return;
 			const rail = createOwnerElement(this.containerEl, 'div');
@@ -551,7 +563,7 @@ function resolveEmbeddedMarkdownViewClass(app: App): OperonEmbeddedMarkdownViewC
 		}
 
 		private queueFilePanelLineNumberRefresh(): void {
-			if (!this.filePanelLineNumberRail || !this.filePanelLineNumberLayer) return;
+			if (!this.shouldShowLineNumbers() || !this.filePanelLineNumberRail || !this.filePanelLineNumberLayer) return;
 			if (this.filePanelLineNumberRefreshFrame != null) return;
 			this.filePanelLineNumberRefreshFrame = getOwnerWindow(this.editor.cm.dom).requestAnimationFrame(() => {
 				this.filePanelLineNumberRefreshFrame = null;
@@ -802,6 +814,10 @@ export class EmbeddedMarkdownSourceEditor {
 
 	refreshLayout(): void {
 		this.view?.refreshLayout();
+	}
+
+	setFilePanelLineNumbers(visible: boolean): void {
+		this.view?.setFilePanelLineNumbers(visible);
 	}
 
 	indentCurrentLine(outdent: boolean): void {

@@ -19,6 +19,7 @@ import { normalizeTaskMediaReferenceList } from './task-media-reference';
 import { decodeTaskDataInlineValue } from './task-data-inline-codec';
 import {
 	collectMarkdownProtectedRanges,
+	normalizeMarkdownProseWhitespace,
 	findMarkdownProtectedRangeAt,
 } from './markdown-protected-ranges';
 
@@ -66,7 +67,7 @@ interface TextPart {
 
 function extractTags(parts: TextPart[]): ParsedTagToken[] {
 	const tags: ParsedTagToken[] = [];
-	const tagRegex = /#([a-zA-Z0-9_\-/]+)/g;
+	const tagRegex = /#([\p{L}\p{N}\p{M}_\-/]+)/gu;
 	for (const part of parts) {
 		const protectedRanges = collectMarkdownProtectedRanges(part.text);
 		tagRegex.lastIndex = 0;
@@ -105,7 +106,7 @@ function buildDescription(parts: TextPart[], tagTokens: ParsedTagToken[]): strin
 		text += part.text.slice(cursor);
 		return text;
 	}).join('');
-	return withoutTags.replace(/\s+/g, ' ').trim();
+	return normalizeMarkdownProseWhitespace(withoutTags);
 }
 
 /**
@@ -323,6 +324,8 @@ function parseFieldContent(
 		value = normalizeTaskIconValue(value);
 	}
 	return {
+		sourceValue: value,
+		sourceToken: '{{' + content + '}}',
 		sourceKey,
 		key,
 		value,

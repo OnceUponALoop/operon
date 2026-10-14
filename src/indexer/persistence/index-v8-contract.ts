@@ -1,11 +1,12 @@
+import type { PersistedNativePropertySource } from '../native-property-persistence';
 import type { CheckboxState } from '../../types/keys';
 import type { PlainCheckboxProgress } from '../../types/fields';
 
 export const INDEX_V8_SCHEMA_VERSION = 8 as const;
-export const INDEX_V8_LAYOUT_VERSION = 1 as const;
+export const INDEX_V8_LAYOUT_VERSION = 2 as const;
 export const INDEX_V8_SHARD_COUNT = 32 as const;
 export const INDEX_V8_MAX_MANIFEST_BYTES = 256_000 as const;
-export const INDEX_V8_MAX_SHARD_BYTES = 4_000_000 as const;
+export const INDEX_V8_MAX_SHARD_BYTES = 5_000_000 as const;
 export const INDEX_V8_PARTITION_ALGORITHM = 'fnv1a32-utf8-nfc-v1' as const;
 export const INDEX_V8_PARTITION_KEY = 'normalized-source-path' as const;
 
@@ -38,6 +39,7 @@ export interface IndexSourceRecordV8 {
 	mtimeMs: number;
 	sizeBytes: number;
 	instances: PersistedTaskInstanceV8[];
+	native: PersistedNativePropertySource;
 }
 
 export interface IndexShardV8 {

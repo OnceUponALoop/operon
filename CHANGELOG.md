@@ -7,7 +7,84 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### New
+
+- Added **Obsidian’s six highlight colors** across task views, Edit session, and Session History descriptions, with native color selection in Task Editor, Task Creator, and Markdown text popovers.
+- Added **Vault Properties** to the desktop Task Editor and main and embedded Tables for both File and Inline Tasks, with editors for Text, List, Number, Checkbox, Date, and Date & time values.
+- Added **Inline Task templates** in Task Creator using the same template picker as File Tasks. Inline Tasks use supported template properties without copying the template body.
+- Added **Default Inline Task Template** in Inline Tasks settings, including None and minimal pipeline templates, for Task Creator, quick creation, and supported checkbox and selection conversions.
+- Added independent **Use last used template as default** options for File and Inline Tasks, both off by default. Successful creation through Task Creator can remember the template for subsequent creation and conversion; cancelling or failed creation leaves the default unchanged.
+- Added an optional **Task Creator review step for checkbox conversion icons**, off by default, so users can review the source task and change its template or properties before converting.
+- Added a **quick finish action** to Task Editor with the current status icon. It completes the task in one click and leaves already completed tasks unchanged.
+- Added **Use mobile Task Editor on phones**, off by default. Phones use the desktop layout and its settings unless enabled; the existing mobile layout and its separate preferences remain available.
+- Added desktop **Task Editor section customization** to rename, reorder, and hide sections while keeping Description available and mobile preferences separate.
+- Added **active-line highlighting** for the Task Editor File Body, with editor commands for line numbers and workspace scrollbar visibility.
+
+- Added **Tasks bulk conversion** in Settings → Tasks → Inline tasks: select files or folders, scan, and convert eligible Tasks emoji tasks with an inline confirmation. Progress, cancellation, results, and interrupted-conversion recovery stay in Settings. Template and excluded folders are skipped before reading their contents, and information preserved in task notes is distinguished from warnings and errors.
+
+### Improved
+
+- Made **nested filters** easier to scan with hierarchical group numbers, clearer scope lines, and quieter controls.
+
+- Reorganized the desktop **Task Editor** into compact property groups with consistent task colors, expandable description and notes, clearer identity actions, and stable split-panel sizing.
+- Unified custom and vault properties in **Additional**. Existing empty properties appear as header shortcuts.
+- Made **Automatic and incompatible property warnings** clearer in Task Editor and Tables, including empty cells. Automatic properties remain selectable in Task Editor with a red shield icon and an explanation of why editing is unavailable. Read-only explanations take precedence over truncated-value tooltips.
+- Included **Vault Properties in the persistent task index**, so tasks and their properties load together on subsequent launches. The first launch after upgrading automatically builds the new index; no manual reindex is required.
+- Improved **Table preset switching** by reusing valid Vault Property snapshots when returning from a preset without Vault Properties, reducing repeated property preparation in standalone and embedded Tables.
+- Improved **Table property updates** in standalone and embedded Tables by preserving unchanged rows without dimming the whole table; rows awaiting verified data remain temporarily unavailable for editing.
+- Made **Task Creator** show the combined user, parent, surface, and template values before creation. Relevant hidden properties appear temporarily, and empty template fields remain available to fill. User edits and removals are preserved through template changes, File/Inline switches, and template-based creation and conversion. Previewed template dates remain fixed when saved.
+- Reduced **Task Creator** visual clutter with compact spacing and one line per property icon when the controls are inactive. Icons expand during property interaction, and typing Template in the description offers a shortcut to the template picker.
+- Made **Task Creator tooltips and property indicators** follow the current task color, falling back to the accent color and updating when templates or task modes change. Warning indicators retain their warning color.
+- Made **prefilled Task Creator descriptions** place the cursor at the end on first opening across integrations, while preserving subsequent user cursor placement.
+- Made **Task Creator discard confirmation** reflect user edits rather than automatically loaded defaults or File/Inline mode changes. Editing descriptions, notes, properties, or manually changing templates remains protected.
+- Made **checkbox property icons** reflect their values in Task Editor and Task Creator, including existing custom-property chips in Task Editor: checked for true and an empty box for false. The default property-type icon is a dashed square; configured type icons remain unchanged.
+- Made **Session durations** clickable in Task Editor, opening the same edit window as the pencil action.
+- Adapted the **desktop Task Editor layout on phones and tablets** with larger touch targets, visible actions, wrapping values, and stacked property names in narrow panels. Tablet controls keep their size when switching between touch and trackpad input, and pickers follow the visible viewport.
+- Made **Stats and Sessions** more compact and easier to scan, with time summaries, subtask counters, collapsible session lists, and clearer duration and weekday hints. Empty Stats sections stay hidden.
+- Improved **File Body** source focus, cursor placement, and line-number background, alongside more consistent hover controls, date pickers, truncated-text hints, and theme compatibility.
+- Made **template-based creation and conversion** preserve native value types, repeated list members, and source priorities. Bulk selection conversions within notes reuse template content and keep existing Operon tasks unchanged. Destination inheritance is applied in the same submission without an extra review step.
+
+- Expanded **Tasks emoji conversion** with dependency linking within the conversion set and support for more recurrence patterns, preserving unsupported metadata in task notes. Tasks converted through Settings use the default Inline Task template while remaining independent, without inferred parent links or inherited parent fields; source emoji fields follow the configured conversion options.
+
+- Improved **Live Preview and Reading Mode** responsiveness in notes with many inline tasks by reusing shared preparation, retaining unchanged rows and filters, and preparing note tooltips when opened. Hidden metadata and the top task filter now participate in editor height calculations for more stable scrolling.
+
+- **Date/time and time-only pickers** now accept any minute while keeping quarter-hour suggestions initially. Typing a minute prefix offers matching minute choices, with keyboard navigation and highlighting following the visible suggestions.
+
+- Opening an empty **Starts at** picker in Task Editor now fills in the task’s scheduled date and focuses the time field; the date remains editable.
+
+### Changed
+
+- Moved **Daily and Weekly Notes** management to Task Router; options to create these notes as File Tasks remain in File Tasks.
+- Simplified **default task chips** for new installations and explicit settings resets, while preserving existing users’ preferences.
+
+- Switching between **File and Inline** in Task Creator now loads the destination mode's default template. Manual template selection or clearing remains in effect until the mode changes.
+- The **template shortcut suggestion** now always reads “Pick a Template”, while the bottom template control continues to show the selected template name.
+- Renamed **Task Creator Toolbar** to **Task Creator Chips** in Settings to match the other Task Chips sections.
+- **File Body** is unavailable in both phone Task Editor layouts; tablet and desktop access is preserved.
+- **Inline template creation** omits empty property values and empty lists while preserving `0`, `false`, and lists containing an empty string. File Task template fields keep their existing behavior.
+- Inline template creation skips **Automatic, Templater, nested unsupported, and file-only fields**, then reports skipped fields together after successful creation. Invalid template YAML stops creation without changing the task source.
+
+### Fixed
+
+- Fixed **date/time and time-only input editing** across deletion, text selection, pasting, and mobile keyboards, so time values can be edited consistently in both pickers.
+
+- Fixed **Tasks emoji time conversion** adding a default duration when only a start time was specified. Supported time ranges now preserve their start, end, and duration across midnight, while invalid or ambiguous expressions are retained in task notes.
+
+- Fixed **multilingual tags and protected Markdown text** losing characters or spacing during parsing and conversion, and kept code, frontmatter, and comments protected across task conversion commands.
+
+- Fixed newly created subtasks ignoring the selected **default priority** when priority inheritance is disabled, while preserving the choice to use no default priority.
+
+- Fixed desktop **Kanban without swimlanes** leaving unused space below its columns. Columns now fill the available panel height and scroll internally, while swimlane task limits remain unchanged.
+
+- Fixed **Calendar week → 1 Day** preset changes retaining the previous weekly range until the view was reopened.
+
+### Security
+
+- Updated development-tool dependencies to address known security vulnerabilities.
+
 ### Validation
+
+- Full local Plugin checks, production build, release guard, and code review passed, along with **4,960/4,960** local regression tests.
 
 ## [3.12.0] - 2026-10-06
 

@@ -1,4 +1,5 @@
 import type { IndexedTaskInstance, IndexData } from '../../types/fields';
+import type { PersistedNativePropertySource } from '../native-property-persistence';
 import {
 	buildIndexV8Manifest,
 	buildIndexV8Snapshot,
@@ -47,6 +48,7 @@ export interface CompileIndexV8IncrementalInput {
 	baseManifestPayload?: string;
 	indexData: Readonly<IndexData>;
 	sourceStats: ReadonlyMap<string, IndexV8SourceStat>;
+	nativeSources?: ReadonlyMap<string, PersistedNativePropertySource>;
 	sourceIndexes?: IndexV8RamSourceIndexes;
 	baseMembership?: IndexV8BaselineMembership;
 	dirtyBatch: IndexV8DirtyBatch;
@@ -229,6 +231,7 @@ export async function compileIndexV8Incremental(
 	for (const shardId of dirtyShardIds) {
 		const records = Array.from(indexes.sourcePathsByShard.get(shardId) ?? [], path => {
 			const source = buildSourceInput(path, indexes, getAuthorityInstance, normalizedStats);
+			source.native = input.nativeSources?.get(path);
 			return projectIndexV8Source(source, canonicalInstanceKeys);
 		});
 		const encoded = await encodeIndexV8Shard(shardId, records);
@@ -280,7 +283,7 @@ async function compileFull(
 	baseManifest: IndexManifestV8 | null,
 	canonicalInstanceKeys: ReadonlySet<string>,
 ): Promise<IndexV8IncrementalCompileResult> {
-	const sources = projectIndexDataToV8Sources(input.indexData, input.sourceStats);
+	const sources = projectIndexDataToV8Sources(input.indexData, input.sourceStats, input.nativeSources);
 	if (input.coherenceBasis === 'verified-full-scan'
 		&& sources.some(source => source.mtimeMs <= 0 || source.sizeBytes <= 0)) {
 		throw new IndexV8CodecError('Verified full-scan source metadata is incomplete');

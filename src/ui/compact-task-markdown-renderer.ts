@@ -9,7 +9,8 @@ export type CompactTaskMarkdownInteractionMode = 'interactive' | 'visual-only' |
 export type CompactTaskMarkdownNode =
 	| { type: 'text'; value: string }
 	| { type: 'code'; value: string }
-	| { type: 'strong' | 'emphasis' | 'strikethrough' | 'underline' | 'highlight'; children: CompactTaskMarkdownNode[] }
+	| { type: 'strong' | 'emphasis' | 'strikethrough' | 'underline'; children: CompactTaskMarkdownNode[] }
+	| { type: 'highlight'; color?: string; children: CompactTaskMarkdownNode[] }
 	| { type: 'wikilink'; target: string; label: string }
 	| { type: 'markdown-link'; destination: string; label: string; external: boolean };
 
@@ -33,6 +34,11 @@ interface MarkdownLinkMatch {
 	destination: string;
 	external: boolean;
 }
+
+const HIGHLIGHT_COLORS: Readonly<Record<string, string>> = {
+	'🔴': 'red', '🟠': 'orange', '🟡': 'yellow',
+	'🟢': 'green', '🔵': 'blue', '🟣': 'purple',
+};
 
 const ESCAPABLE_PUNCTUATION = /[!-/:-@[-`{-~]/u;
 const URI_SCHEME = /^[a-z][a-z0-9+.-]*:/iu;
@@ -155,10 +161,11 @@ function parseInline(value: string): CompactTaskMarkdownNode[] {
 		const format = findFormat(value, cursor, protectedRanges);
 		if (format) {
 			flushText(cursor);
-			nodes.push({
-				type: format.type,
-				children: parseInline(value.slice(format.contentStart, format.contentEnd)),
-			});
+			const content = value.slice(format.contentStart, format.contentEnd);
+			const color = format.type === 'highlight' ? HIGHLIGHT_COLORS[content.slice(0, 2)] : undefined;
+			nodes.push(color
+				? { type: 'highlight', color, children: parseInline(content.slice(2)) }
+				: { type: format.type, children: parseInline(content) });
 			cursor = format.end;
 			textStart = cursor;
 			continue;
@@ -417,6 +424,7 @@ function appendNodes(
 		const className = `operon-compact-task-markdown-${node.type}`;
 		const element = createOwnerElement(container, tagName);
 		element.className = className;
+		if (node.type === 'highlight' && node.color) element.setAttribute('data-highlight', node.color);
 		container.appendChild(element);
 		appendNodes(element, node.children, options);
 	}

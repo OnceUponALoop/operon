@@ -8,11 +8,10 @@ import {
 	DecorationSet,
 	EditorView,
 	ViewPlugin,
-	ViewUpdate,
 	WidgetType,
 } from '@codemirror/view';
-import { Extension, RangeSetBuilder, StateEffect } from '@codemirror/state';
-import { App, editorLivePreviewField, setIcon } from 'obsidian';
+import { EditorState, Extension, RangeSetBuilder, StateEffect, StateField } from '@codemirror/state';
+import { App, editorInfoField, editorLivePreviewField, setIcon } from 'obsidian';
 import { createOwnerElement, getOwnerWindow } from '../core/dom-compat';
 import { parseTaskLine } from '../core/parser';
 import { IndexedTask, ParsedTask } from '../types/fields';
@@ -28,6 +27,8 @@ import { showPriorityPicker } from './field-pickers/priority-picker';
 import { showEstimatePicker } from './field-pickers/estimate-picker';
 import {
 	buildInlineTaskCompactChipEntries,
+	createCompactTaskRenderContext,
+	type CompactTaskRenderContext,
 	createInlineTaskCompactChipElement,
 	InlineTaskCompactChipEntry,
 	isCompactTaskMediaChipKey,
@@ -48,7 +49,7 @@ import { bindExternalLinkContextMenu, openExternalUrl } from './external-link-ac
 import { showLocationMapPreview } from './location-map-preview';
 import { resolveTaskStatusIconColor } from '../core/task-color-source';
 import { createProjectSerialChipElement } from './project-serial-chip';
-import { allowsOperonDocumentAugmentations } from './editor-augmentation-scope';
+import { operonEditorSurfaceScopeFacet } from './editor-augmentation-scope';
 import {
 	bindAdaptiveIconOnlyExpansion,
 	bindIconOnlyChipPreview,
@@ -378,6 +379,8 @@ export class MetadataTailWidget extends WidgetType {
 		private readonly pipelines: Pipeline[],
 		private readonly workflowStatusIdentityIndex: WorkflowStatusIdentityIndex,
 		private readonly revealSource: () => void,
+		private renderContext: CompactTaskRenderContext | undefined = createCompactTaskRenderContext(callbacks.getAllTasks),
+		settingsSignature = buildMetadataTailSettingsSignature(callbacks.getSettings()),
 	) {
 		super();
 		this.task = { ...task, fields: task.fields.map(field => ({ ...field })) };
@@ -392,6 +395,8 @@ export class MetadataTailWidget extends WidgetType {
 			false,
 			false,
 			workflowStatusIdentityIndex,
+			this.renderContext,
+			settingsSignature,
 		);
 	}
 
@@ -438,7 +443,8 @@ export class MetadataTailWidget extends WidgetType {
 
 		const fieldValues = getFieldValues(this.task, this.indexedTask);
 		const operonId = this.task.operonId;
-		const tasks = this.callbacks.getAllTasks();
+		const renderContext = this.renderContext ??= createCompactTaskRenderContext(this.callbacks.getAllTasks);
+		const tasks = renderContext.tasks;
 		const taskColor = normalizeTaskColor(fieldValues['taskColor']);
 		if (taskColor) tailWrap.setCssProps({
 			'--operon-live-hover-border': taskColor,
@@ -478,6 +484,7 @@ export class MetadataTailWidget extends WidgetType {
 				app: this.callbacks.app,
 				repeatSkipDateResolver: this.callbacks.getRepeatSkipDates,
 				workflowStatusIdentityIndex: this.workflowStatusIdentityIndex,
+				taskLookup: renderContext.taskLookup,
 			},
 		);
 		for (const entry of entries) {
@@ -717,6 +724,9 @@ export class MetadataTailWidget extends WidgetType {
 	}
 
 	destroy(dom: HTMLElement): void {
+		this.renderContext = undefined;
+		const owner = MetadataTailWidget.owners.get(dom);
+		if (owner) owner.renderContext = undefined;
 		cleanupOperonRenderRoot(dom);
 	}
 
@@ -737,6 +747,7 @@ export class MetadataTailWidget extends WidgetType {
 			const fresh = this.toDOM(view);
 			reconcileInlineTaskDom(dom, fresh);
 			MetadataTailWidget.owners.set(dom, this);
+			if (previous !== this) previous.renderContext = undefined;
 			return true;
 		}
 		const updateAction = (selector: string, active: boolean, icon: string, label: string): void => {
@@ -751,6 +762,8 @@ export class MetadataTailWidget extends WidgetType {
 		};
 		updateAction('.operon-task-timer-action', this.trackingSnapshot, this.trackingSnapshot ? 'square' : 'play', t('tooltips', this.trackingSnapshot ? 'stopTimer' : 'startTimer'));
 		updateAction('[data-inline-action="pin"]', this.pinnedSnapshot, this.pinnedSnapshot ? 'pin-off' : 'pin', t('contextMenu', this.pinnedSnapshot ? 'unpinTask' : 'pinTask'));
+		// Retained handlers may own old widgets; only current decorations need the full render snapshot.
+		if (previous !== this) previous.renderContext = undefined;
 		return true;
 	}
 
@@ -763,271 +776,269 @@ export class MetadataTailWidget extends WidgetType {
 export function operonLivePreviewConcealExtension(callbacks: LivePreviewCallbacks): Extension {
 	const underlineMark = Decoration.mark({ class: 'operon-compact-markdown-underline' });
 	const hiddenUnderlineMarker = Decoration.replace({});
-	const plugin = ViewPlugin.fromClass(
-		class {
-			decorations: DecorationSet = Decoration.none;
-			atomicRanges: DecorationSet = Decoration.none;
-			private explicitRevealTaskId: string | null = null;
-			private lastLivePreview = false;
-			private lastSelectionRevealSignature = '';
-			private suppressSelectionRevealOnce = false;
+	const sourceContextEffect = StateEffect.define<string>();
 
-			constructor(view: EditorView) {
-				this.lastLivePreview = this.isLivePreview(view);
-				this.lastSelectionRevealSignature = this.getSelectionRevealSignature(view);
-				this.rebuild(view);
+	function stateFilePath(state: EditorState): string | undefined {
+		return state.field(editorInfoField, false)?.file?.path;
+	}
+
+	function isLivePreview(state: EditorState): boolean {
+		return state.facet(operonEditorSurfaceScopeFacet) === 'document'
+			&& state.field(editorLivePreviewField, false) === true;
+	}
+
+	function buildDecorations(state: EditorState, filePath: string, suppressSelectionReveal: boolean): DecorationSet {
+		if (!isLivePreview(state)) return Decoration.none;
+		const decorations = new RangeSetBuilder<Decoration>();
+		const pipelines = callbacks.getPipelines();
+		const workflowStatusIdentityIndex = buildWorkflowStatusIdentityIndex(pipelines);
+		const renderContext = createCompactTaskRenderContext(callbacks.getAllTasks);
+		let settingsSignature: string | undefined;
+
+		let inFencedCodeBlock = false;
+		for (let lineNumber = 1; lineNumber <= state.doc.lines; lineNumber++) {
+			const line = state.doc.line(lineNumber);
+			if (isMarkdownFenceLine(line.text)) {
+				inFencedCodeBlock = !inFencedCodeBlock;
+				continue;
+			}
+			if (inFencedCodeBlock) continue;
+			if (!line.text.includes('- [')) continue;
+
+			const parsed = parseTaskLine(line.text, lineNumber - 1, filePath, callbacks.getSettings().keyMappings);
+			if (!parsed || (!parsed.operonId && parsed.fields.length === 0)) continue;
+
+			const indexed = parsed.operonId ? callbacks.getIndexedTask(parsed.operonId) : undefined;
+			const fieldValues = getFieldValues(parsed, indexed);
+			const terminalVisualState = resolveTerminalVisualState(
+				parsed,
+				fieldValues,
+				pipelines,
+				workflowStatusIdentityIndex,
+			);
+			const selectionHead = state.selection.main.head - line.from;
+			const isEditingTail = !!parsed.metadataTailRange
+				&& selectionHead >= parsed.metadataTailRange.from
+				&& selectionHead <= parsed.metadataTailRange.to;
+			const revealTail = !!parsed.metadataTailRange && isEditingTail && !suppressSelectionReveal;
+
+			if (terminalVisualState) {
+				decorations.add(
+					line.from,
+					line.from,
+					Decoration.line({
+						class: terminalVisualState === 'done'
+							? 'operon-inline-row-done'
+							: 'operon-inline-row-cancelled',
+					}),
+				);
 			}
 
-			update(update: ViewUpdate) {
-				const hasIndexRefresh = update.transactions.some(transaction =>
-					transaction.effects.some(effect => effect.is(operonIndexRefreshEffect))
-				);
-				const hasEditorCloseRefresh = update.transactions.some(transaction =>
-					transaction.effects.some(effect => effect.is(operonEditorCloseRefreshEffect))
-				);
-				const hasRefresh = hasIndexRefresh || hasEditorCloseRefresh;
-				if (hasEditorCloseRefresh) {
-					this.suppressSelectionRevealOnce = true;
-				}
-				const nowLive = this.isLivePreview(update.view);
-				const modeChanged = nowLive !== this.lastLivePreview;
-				this.lastLivePreview = nowLive;
-
-				let explicitRevealChanged = false;
-				if (hasEditorCloseRefresh && this.explicitRevealTaskId) {
-					this.explicitRevealTaskId = null;
-					explicitRevealChanged = true;
-				}
-				if (update.selectionSet && this.explicitRevealTaskId) {
-					const selectedTask = this.getSelectedTaskId(update.view);
-					if (selectedTask !== this.explicitRevealTaskId) {
-						this.explicitRevealTaskId = null;
-						explicitRevealChanged = true;
-					}
-				}
-
-				const selectionRevealChanged = update.selectionSet || hasEditorCloseRefresh
-					? this.updateSelectionRevealSignature(update.view)
-					: false;
-
-				if (modeChanged || hasRefresh || update.docChanged || explicitRevealChanged || selectionRevealChanged) {
-					this.rebuild(update.view);
-				}
+			if (parsed.checkboxRange.to > parsed.checkboxRange.from) {
+				const checkboxWidget = Decoration.replace({
+					widget: new HiddenCheckboxWidget(),
+				});
+				decorations.add(line.from + parsed.checkboxRange.from, line.from + parsed.checkboxRange.to, checkboxWidget);
 			}
 
-			private rebuild(view: EditorView): void {
-				const decorations = new RangeSetBuilder<Decoration>();
-				const atomic = new RangeSetBuilder<Decoration>();
-				const suppressSelectionReveal = this.suppressSelectionRevealOnce;
-				this.suppressSelectionRevealOnce = false;
-
-				if (!this.isLivePreview(view)) {
-					this.decorations = Decoration.none;
-					this.atomicRanges = Decoration.none;
-					return;
-				}
-				const pipelines = callbacks.getPipelines();
-				const workflowStatusIdentityIndex = buildWorkflowStatusIdentityIndex(pipelines);
-
-				let inFencedCodeBlock = false;
-				for (let lineNumber = 1; lineNumber <= view.state.doc.lines; lineNumber++) {
-					const line = view.state.doc.line(lineNumber);
-					if (isMarkdownFenceLine(line.text)) {
-						inFencedCodeBlock = !inFencedCodeBlock;
-						continue;
-					}
-					if (inFencedCodeBlock) continue;
-					if (!line.text.includes('- [')) continue;
-
-					const parsed = parseTaskLine(line.text, lineNumber - 1, callbacks.getFilePath(view), callbacks.getSettings().keyMappings);
-					if (!parsed || (!parsed.operonId && parsed.fields.length === 0)) continue;
-
-					const indexed = parsed.operonId ? callbacks.getIndexedTask(parsed.operonId) : undefined;
-					const fieldValues = getFieldValues(parsed, indexed);
-					const terminalVisualState = resolveTerminalVisualState(
-						parsed,
-						fieldValues,
-						pipelines,
-						workflowStatusIdentityIndex,
-					);
-					const isExplicitReveal = !!parsed.operonId && this.explicitRevealTaskId === parsed.operonId;
-					const selectionHead = view.state.selection.main.head - line.from;
-					const isEditingTail = !!parsed.metadataTailRange
-						&& selectionHead >= parsed.metadataTailRange.from
-						&& selectionHead <= parsed.metadataTailRange.to;
-					const revealTail = !!parsed.metadataTailRange && (isExplicitReveal || (isEditingTail && !suppressSelectionReveal));
-
-					if (terminalVisualState) {
-						decorations.add(
-							line.from,
-							line.from,
-							Decoration.line({
-								class: terminalVisualState === 'done'
-									? 'operon-inline-row-done'
-									: 'operon-inline-row-cancelled',
-							}),
-						);
-					}
-
-					if (parsed.checkboxRange.to > parsed.checkboxRange.from) {
-						const checkboxWidget = Decoration.replace({
-							widget: new HiddenCheckboxWidget(),
-						});
-						decorations.add(line.from + parsed.checkboxRange.from, line.from + parsed.checkboxRange.to, checkboxWidget);
-					}
-
-					if (parsed.descriptionRange.from >= parsed.checkboxRange.to) {
-						decorations.add(
-							line.from + parsed.descriptionRange.from,
-							line.from + parsed.descriptionRange.from,
-							Decoration.widget({
-								widget: new TaskIconWidget(
-									parsed,
-									indexed,
-									callbacks,
-									workflowStatusIdentityIndex,
-								),
-								side: -1,
-							}),
-						);
-					}
-
-					const description = line.text.slice(
-						parsed.descriptionRange.from,
-						parsed.descriptionRange.to,
-					);
-					for (const token of findCompactMarkdownUnderlineTokens(description)) {
-						const absoluteToken = {
-							from: line.from + parsed.descriptionRange.from + token.from,
-							contentFrom: line.from + parsed.descriptionRange.from + token.contentFrom,
-							contentTo: line.from + parsed.descriptionRange.from + token.contentTo,
-							to: line.from + parsed.descriptionRange.from + token.to,
-						};
-						const active = isCompactMarkdownUnderlineTokenActive(
-							absoluteToken,
-							view.state.selection.ranges,
-						);
-						if (!active) {
-							decorations.add(
-								absoluteToken.from,
-								absoluteToken.contentFrom,
-								hiddenUnderlineMarker,
-							);
-						}
-						decorations.add(
-							absoluteToken.contentFrom,
-							absoluteToken.contentTo,
-							underlineMark,
-						);
-						if (!active) {
-							decorations.add(
-								absoluteToken.contentTo,
-								absoluteToken.to,
-								hiddenUnderlineMarker,
-							);
-						}
-					}
-
-					if (parsed.metadataTailRange && !revealTail) {
-						const tailWidget = new MetadataTailWidget(
+			if (parsed.descriptionRange.from >= parsed.checkboxRange.to) {
+				decorations.add(
+					line.from + parsed.descriptionRange.from,
+					line.from + parsed.descriptionRange.from,
+					Decoration.widget({
+						widget: new TaskIconWidget(
 							parsed,
 							indexed,
 							callbacks,
-							pipelines,
 							workflowStatusIdentityIndex,
-							() => {
-								this.explicitRevealTaskId = parsed.operonId ?? null;
-								view.dispatch({ effects: operonIndexRefreshEffect.of() });
-							},
-						);
+						),
+						side: -1,
+					}),
+				);
+			}
 
-						decorations.add(
-							line.from + parsed.metadataTailRange.from,
-							line.from + parsed.metadataTailRange.to,
-							Decoration.replace({ widget: tailWidget }),
-						);
-					}
+			const description = line.text.slice(
+				parsed.descriptionRange.from,
+				parsed.descriptionRange.to,
+			);
+			for (const token of findCompactMarkdownUnderlineTokens(description)) {
+				const absoluteToken = {
+					from: line.from + parsed.descriptionRange.from + token.from,
+					contentFrom: line.from + parsed.descriptionRange.from + token.contentFrom,
+					contentTo: line.from + parsed.descriptionRange.from + token.contentTo,
+					to: line.from + parsed.descriptionRange.from + token.to,
+				};
+				const active = isCompactMarkdownUnderlineTokenActive(
+					absoluteToken,
+					state.selection.ranges,
+				);
+				if (!active) {
+					decorations.add(
+						absoluteToken.from,
+						absoluteToken.contentFrom,
+						hiddenUnderlineMarker,
+					);
 				}
-
-				this.decorations = decorations.finish();
-				this.atomicRanges = atomic.finish();
-			}
-
-			private getSelectedTaskId(view: EditorView): string | null {
-				const head = view.state.selection.main.head;
-				const line = view.state.doc.lineAt(head);
-				const parsed = parseTaskLine(line.text, line.number - 1, callbacks.getFilePath(view), callbacks.getSettings().keyMappings);
-				return parsed?.operonId ?? null;
-			}
-
-			private updateSelectionRevealSignature(view: EditorView): boolean {
-				const next = this.getSelectionRevealSignature(view);
-				if (next === this.lastSelectionRevealSignature) return false;
-				this.lastSelectionRevealSignature = next;
-				return true;
-			}
-
-			private getSelectionRevealSignature(view: EditorView): string {
-				const head = view.state.selection.main.head;
-				const line = view.state.doc.lineAt(head);
-				const parsed = parseTaskLine(line.text, line.number - 1, callbacks.getFilePath(view), callbacks.getSettings().keyMappings);
-				const offset = head - line.from;
-				const tailSignature = parsed?.metadataTailRange
-					&& offset >= parsed.metadataTailRange.from
-					&& offset <= parsed.metadataTailRange.to
-					? `${parsed.operonId ?? line.number}:${parsed.metadataTailRange.from}:${parsed.metadataTailRange.to}`
-					: '';
-				return `${tailSignature}|${this.getUnderlineSelectionSignature(view)}`;
-			}
-
-			private getUnderlineSelectionSignature(view: EditorView): string {
-				const signatures: string[] = [];
-				for (const range of view.state.selection.ranges) {
-					const firstLine = view.state.doc.lineAt(range.from).number;
-					const lastLine = view.state.doc.lineAt(range.to).number;
-					for (let lineNumber = firstLine; lineNumber <= lastLine; lineNumber++) {
-						const line = view.state.doc.line(lineNumber);
-						if (!line.text.includes('- [')) continue;
-						const parsed = parseTaskLine(
-							line.text,
-							lineNumber - 1,
-							callbacks.getFilePath(view),
-							callbacks.getSettings().keyMappings,
-						);
-						if (!parsed || (!parsed.operonId && parsed.fields.length === 0)) continue;
-						const description = line.text.slice(
-							parsed.descriptionRange.from,
-							parsed.descriptionRange.to,
-						);
-						for (const token of findCompactMarkdownUnderlineTokens(description)) {
-							const from = line.from + parsed.descriptionRange.from + token.from;
-							const to = line.from + parsed.descriptionRange.from + token.to;
-							const intersects = range.from === range.to
-								? range.from >= from && range.from < to
-								: range.from < to && range.to > from;
-							if (intersects) signatures.push(`${lineNumber}:${token.from}:${token.to}`);
-						}
-					}
-				}
-				return signatures.join(',');
-			}
-
-			private isLivePreview(view: EditorView): boolean {
-				if (!allowsOperonDocumentAugmentations(view)) return false;
-				try {
-					return view.state.field(editorLivePreviewField);
-				} catch {
-					return false;
+				decorations.add(
+					absoluteToken.contentFrom,
+					absoluteToken.contentTo,
+					underlineMark,
+				);
+				if (!active) {
+					decorations.add(
+						absoluteToken.contentTo,
+						absoluteToken.to,
+						hiddenUnderlineMarker,
+					);
 				}
 			}
+
+			if (parsed.metadataTailRange && !revealTail) {
+				const tailWidget = new MetadataTailWidget(
+					parsed,
+					indexed,
+					callbacks,
+					pipelines,
+					workflowStatusIdentityIndex,
+					() => {},
+					renderContext,
+					settingsSignature ??= buildMetadataTailSettingsSignature(callbacks.getSettings()),
+				);
+
+				decorations.add(
+					line.from + parsed.metadataTailRange.from,
+					line.from + parsed.metadataTailRange.to,
+					Decoration.replace({ widget: tailWidget }),
+				);
+			}
+		}
+		return decorations.finish();
+	}
+
+	function getSelectionRevealSignature(state: EditorState, filePath: string): string {
+		const head = state.selection.main.head;
+		const line = state.doc.lineAt(head);
+		const parsed = parseTaskLine(line.text, line.number - 1, filePath, callbacks.getSettings().keyMappings);
+		const offset = head - line.from;
+		const tailSignature = parsed?.metadataTailRange
+			&& offset >= parsed.metadataTailRange.from
+			&& offset <= parsed.metadataTailRange.to
+			? `${parsed.operonId ?? line.number}:${parsed.metadataTailRange.from}:${parsed.metadataTailRange.to}`
+			: '';
+		return `${tailSignature}|${getUnderlineSelectionSignature(state, filePath)}`;
+	}
+
+	function getUnderlineSelectionSignature(state: EditorState, filePath: string): string {
+		const signatures: string[] = [];
+		for (const range of state.selection.ranges) {
+			const firstLine = state.doc.lineAt(range.from).number;
+			const lastLine = state.doc.lineAt(range.to).number;
+			for (let lineNumber = firstLine; lineNumber <= lastLine; lineNumber++) {
+				const line = state.doc.line(lineNumber);
+				if (!line.text.includes('- [')) continue;
+				const parsed = parseTaskLine(
+					line.text,
+					lineNumber - 1,
+					filePath,
+					callbacks.getSettings().keyMappings,
+				);
+				if (!parsed || (!parsed.operonId && parsed.fields.length === 0)) continue;
+				const description = line.text.slice(
+					parsed.descriptionRange.from,
+					parsed.descriptionRange.to,
+				);
+				for (const token of findCompactMarkdownUnderlineTokens(description)) {
+					const from = line.from + parsed.descriptionRange.from + token.from;
+					const to = line.from + parsed.descriptionRange.from + token.to;
+					const intersects = range.from === range.to
+						? range.from >= from && range.from < to
+						: range.from < to && range.to > from;
+					if (intersects) signatures.push(`${lineNumber}:${token.from}:${token.to}`);
+				}
+			}
+		}
+		return signatures.join(',');
+	}
+
+	const field = StateField.define<{
+		decorations: DecorationSet;
+		filePath: string;
+		fallbackPath: string;
+		livePreview: boolean;
+		selectionSignature: string;
+	}>({
+		create(state) {
+			const filePath = stateFilePath(state) ?? '';
+			return {
+				decorations: buildDecorations(state, filePath, false),
+				filePath,
+				fallbackPath: '',
+				livePreview: isLivePreview(state),
+				selectionSignature: getSelectionRevealSignature(state, filePath),
+			};
 		},
-		{
-			decorations: pluginValue => pluginValue.decorations,
-			provide: pluginType => EditorView.atomicRanges.of(view => view.plugin(pluginType)?.atomicRanges ?? Decoration.none),
+		update(value, transaction) {
+			let fallbackPath = value.fallbackPath;
+			let refresh = false;
+			let suppressSelectionReveal = false;
+			for (const effect of transaction.effects) {
+				if (effect.is(sourceContextEffect)) fallbackPath = effect.value;
+				if (effect.is(operonIndexRefreshEffect)) refresh = true;
+				if (effect.is(operonEditorCloseRefreshEffect)) suppressSelectionReveal = true;
+			}
+			const state = transaction.state;
+			const filePath = stateFilePath(state) ?? fallbackPath;
+			const livePreview = isLivePreview(state);
+			const contextChanged = filePath !== value.filePath || livePreview !== value.livePreview;
+			const selectionSignature = transaction.selection || transaction.docChanged || contextChanged || suppressSelectionReveal
+				? getSelectionRevealSignature(state, filePath)
+				: value.selectionSignature;
+			if (!transaction.docChanged && !refresh && !suppressSelectionReveal && !contextChanged
+				&& selectionSignature === value.selectionSignature && fallbackPath === value.fallbackPath) return value;
+			return {
+				decorations: buildDecorations(state, filePath, suppressSelectionReveal),
+				filePath,
+				fallbackPath,
+				livePreview,
+				selectionSignature,
+			};
 		},
-	);
+		provide: field => EditorView.decorations.from(field, value => value.decorations),
+	});
 
-	return plugin;
+	// Legacy/embedded editors may expose their source only through the view registry.
+	// Resolve the current view at delivery time, never replay a captured file or document.
+	const contextBridge = ViewPlugin.fromClass(class {
+		private pending = false;
+		private destroyed = false;
+
+		constructor(private readonly view: EditorView) {
+			this.syncContext();
+		}
+
+		update(update: { state: EditorState; startState: EditorState }): void {
+			if (update.state !== update.startState) this.syncContext();
+		}
+
+		private syncContext(): void {
+			if (this.pending || stateFilePath(this.view.state) !== undefined
+				|| this.view.state.facet(operonEditorSurfaceScopeFacet) !== 'document') return;
+			this.pending = true;
+			queueMicrotask(() => {
+				this.pending = false;
+				if (this.destroyed || stateFilePath(this.view.state) !== undefined) return;
+				const value = this.view.state.field(field, false);
+				if (!value || this.view.state.facet(operonEditorSurfaceScopeFacet) !== 'document') return;
+				const path = callbacks.getFilePath(this.view);
+				if (path !== value.fallbackPath) this.view.dispatch({ effects: sourceContextEffect.of(path) });
+			});
+		}
+
+		destroy(): void {
+			this.destroyed = true;
+		}
+	});
+	return [field, contextBridge];
 }
 
 function isMarkdownFenceLine(line: string): boolean {
@@ -1072,11 +1083,13 @@ export function buildMetadataTailRenderSignature(
 	pinnedSnapshot: boolean,
 	trackingSnapshot: boolean,
 	workflowStatusIdentityIndex?: WorkflowStatusIdentityIndex,
+	renderContext?: CompactTaskRenderContext,
+	settingsSignature = buildMetadataTailSettingsSignature(callbacks.getSettings()),
 ): string {
 	const fieldValues = getFieldValues(task, indexedTask);
 	const tags = indexedTask?.tags ?? task.tags;
 	const settings = callbacks.getSettings();
-	const tasks = callbacks.getAllTasks();
+	const tasks = renderContext?.tasks ?? callbacks.getAllTasks();
 	const projectSerialDisplay = task.operonId ? callbacks.getProjectSerialDisplay?.(task.operonId) ?? null : null;
 	const locationIndex = shouldResolveLocationCompactChips(settings)
 		? getLocationPlaceIndex(callbacks.app, settings)
@@ -1086,6 +1099,7 @@ export function buildMetadataTailRenderSignature(
 		app: callbacks.app,
 		repeatSkipDateResolver: callbacks.getRepeatSkipDates,
 		workflowStatusIdentityIndex,
+		taskLookup: renderContext?.taskLookup,
 	})
 		.map(entry => [
 			entry.key,
@@ -1113,7 +1127,7 @@ export function buildMetadataTailRenderSignature(
 			entry.tooltipContent ?? '',
 		]);
 
-	return stableStringify({
+	return settingsSignature + stableStringify({
 		checkbox: indexedTask?.checkbox ?? task.checkbox,
 		fieldValues: Object.fromEntries(Object.entries(fieldValues).filter(([key]) => key !== 'datetimeModified' && key !== 'dateModified')),
 		tags,
@@ -1131,10 +1145,15 @@ export function buildMetadataTailRenderSignature(
 		inlineTaskShowPinAction: settings.inlineTaskShowPinAction,
 		inlineTaskShowNoteAction: settings.inlineTaskShowNoteAction,
 		inlineTaskShowSubtaskAction: settings.inlineTaskShowSubtaskAction,
+		noteIcon: getConfiguredKeyMappingIcon('note', settings.keyMappings) || 'notebook-pen',
+	});
+}
+
+function buildMetadataTailSettingsSignature(settings: OperonSettings): string {
+	return stableStringify({
 		keyMappings: settings.keyMappings,
 		pipelines: settings.pipelines,
 		priorities: settings.priorities,
-		noteIcon: getConfiguredKeyMappingIcon('note', settings.keyMappings) || 'notebook-pen',
 	});
 }
 

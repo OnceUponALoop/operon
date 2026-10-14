@@ -1,4 +1,3 @@
-import type { PresetFavorites } from '../core/preset-favorites';
 import type { TablePresetProjectionSettings } from '../types/table';
 import type { OperonDataPackageV1 } from './operon-data-package';
 import {
@@ -35,7 +34,6 @@ export function buildTablePresetAuthorityDataPackage(
 	currentPackage: OperonDataPackageV1,
 	authority: ReconciledTablePresetFileAuthority,
 	settings: TablePresetAuthorityPackageSettings,
-	favorites: PresetFavorites,
 ): OperonDataPackageV1 {
 	const rootSettings = { ...currentPackage.settings };
 	const rootSettingsRecord = rootSettings as unknown as Record<string, unknown>;
@@ -57,14 +55,6 @@ export function buildTablePresetAuthorityDataPackage(
 				tableShowLineNumbers: settings.tableShowLineNumbers,
 				tableShowTaskIcon: settings.tableShowTaskIcon,
 				tableShowTaskDataTypeIcon: settings.tableShowTaskDataTypeIcon,
-			},
-		},
-		ui: {
-			...currentPackage.ui,
-			presetFavorites: {
-				...(currentPackage.ui.presetFavorites ?? { version: 1, ...favorites }),
-				version: 1,
-				table: [...favorites.table],
 			},
 		},
 	};

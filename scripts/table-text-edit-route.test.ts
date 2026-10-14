@@ -186,8 +186,9 @@ async function run(): Promise<void> {
 	ok(embedSource.includes('openEmbedTableInlineTextPopover(activeInstance, deps, cell, task, key, value, fieldLabel, cellKey, key, true)'));
 	ok(workspaceSource.includes('? renderState.getContextFilePropertyCandidates(column.key)'));
 	ok(embedSource.includes('? renderState.getContextFilePropertyCandidates(column.key)'));
-	ok(workspaceSource.includes('expected,\n\t\t\t\tmutation,'));
-	ok(embedSource.includes('propertyName: field.propertyName, expected, mutation,'));
+	ok(workspaceSource.includes('tablePropertyUpdateRequest(task, field, cellValue, mutation)'));
+	ok(embedSource.includes('tablePropertyUpdateRequest(task, field, cellValue, mutation)'));
+	ok(editorSource.includes('propertyName: cell.sourceName ?? field.propertyName, expected, mutation,'));
 
 	ok(editorSource.includes("resolveTableTextEditRoute(normalizedValue, true) === 'popover'"));
 	ok(editorSource.includes('allowEmptyCommit: true'));

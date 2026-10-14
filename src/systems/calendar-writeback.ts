@@ -320,39 +320,7 @@ export function formatCalendarSlotSelectionLabel(selection: CalendarSlotSelectio
 		: `${selection.startDate} ${startTime} -> ${selection.endDate} ${endTime}`;
 }
 
-export function insertInlineTaskUnderHeading(
-	content: string,
-	heading: string,
-	taskLine: string,
-): InlineHeadingInsertionResult {
-	const lines = splitPreservingEmptyTrailingLine(content);
-	const normalizedHeading = heading.trim();
-	const headingIndex = lines.findIndex(line => line.trim() === normalizedHeading);
-
-	if (headingIndex >= 0) {
-		const insertIndex = headingIndex + 1;
-		lines.splice(insertIndex, 0, taskLine);
-		return {
-			content: lines.join('\n'),
-			insertedLineNumber: insertIndex,
-		};
-	}
-
-	const nextLines = [...lines];
-	while (nextLines.length > 0 && !nextLines[nextLines.length - 1].trim()) {
-		nextLines.pop();
-	}
-	if (nextLines.length > 0) {
-		nextLines.push('');
-	}
-	nextLines.push(normalizedHeading);
-	nextLines.push(taskLine);
-
-	return {
-		content: nextLines.join('\n'),
-		insertedLineNumber: nextLines.length - 1,
-	};
-}
+export { insertInlineTaskUnderHeading } from '../core/markdown-heading-insertion';
 
 export function snapCalendarMinute(minuteOfDay: number, snapMinutes = CALENDAR_TIMED_SNAP_MINUTES): number {
 	const safeSnapMinutes = Math.max(1, Math.round(snapMinutes || CALENDAR_TIMED_SNAP_MINUTES));
@@ -438,9 +406,4 @@ function parseSelectionDateTime(value: string): Date | null {
 	if ([year, month, day, hours, minutes, seconds].some(part => !Number.isFinite(part))) return null;
 
 	return new Date(year, month - 1, day, hours, minutes, seconds, 0);
-}
-
-function splitPreservingEmptyTrailingLine(content: string): string[] {
-	if (!content.length) return [];
-	return content.split('\n');
 }

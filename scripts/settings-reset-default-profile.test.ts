@@ -22,6 +22,7 @@ import {
 } from '../src/core/settings-reset-default-profile';
 import {
 	buildOperonDataPackageFromSettings,
+	composeOperonSettingsFromDataPackage,
 	OPERON_DATA_PACKAGE_SCHEMA_VERSION,
 } from '../src/storage/operon-data-package';
 import {
@@ -92,6 +93,7 @@ function changedTarget(): OperonSettings {
 		operonDocsFolder: 'Private/Docs',
 		fileTasksFolder: 'Private/Tasks',
 		inlineTaskTargetFile: 'Private/Inbox.md',
+		defaultInlineTaskTemplateId: 'folder-file-task-template:Templates/Inline.md',
 		externalCalendars: [{
 			id: 'private-calendar',
 			name: 'Private calendar',
@@ -227,4 +229,56 @@ test('existing JSON projection retains protected package authority for a reset c
 		),
 		defaultDynamicTemplatePreferences(),
 	);
+});
+
+
+test('explicit defaults reset disables phone mobile layout and restores existing defaults', () => {
+ const target = migrateSettings({ ...DEFAULT_SETTINGS, taskEditorUseMobileLayout: true });
+ const result = preflightOperonSettingsResetDefaultsV1({ source: SOURCE, createdAt: CREATED_AT, targetSnapshot: {
+  settings: target, dataPackageSchemaVersion: OPERON_DATA_PACKAGE_SCHEMA_VERSION, settingsVersion: CURRENT_SETTINGS_VERSION,
+  canonicalWritesSuspended: false, canonicalWriteSuspensionReason: null,
+ } });
+ assert.ok(result.preflight?.restorePlan);
+ assert.equal(result.preflight.restorePlan.candidateSettings.taskEditorUseMobileLayout, false);
+ assert.deepEqual(result.preflight.restorePlan.candidateSettings.taskEditorMobileCoreTools, DEFAULT_SETTINGS.taskEditorMobileCoreTools);
+ assert.deepEqual(result.preflight.restorePlan.candidateSettings.taskEditorSections, DEFAULT_SETTINGS.taskEditorSections);
+});
+
+
+test('explicit reset uses the agreed first-install chips without mutating the existing target', () => {
+ const target = changedTarget();
+ const before = structuredClone(target);
+ const result = preflightOperonSettingsResetDefaultsV1({ source: SOURCE, createdAt: CREATED_AT, targetSnapshot: {
+  settings: target, dataPackageSchemaVersion: OPERON_DATA_PACKAGE_SCHEMA_VERSION, settingsVersion: CURRENT_SETTINGS_VERSION,
+  canonicalWritesSuspended: false, canonicalWriteSuspensionReason: null,
+ } });
+ assert.ok(result.preflight?.restorePlan);
+ const reset = result.preflight.restorePlan.candidateSettings;
+ const reloaded = composeOperonSettingsFromDataPackage(
+  JSON.parse(JSON.stringify(projectOperonSettingsBackupApplyDataPackageV1(buildOperonDataPackageFromSettings(target), reset))),
+  DEFAULT_SETTINGS,
+ );
+ const expected = {
+  taskCreatorToolbar: ['taskIcon', 'taskColor', 'taskType', 'priority', 'status', 'note'],
+  inlineTaskCompactChips: ['priority', 'status', 'parentTask', 'dateScheduled', 'dateDue', 'repeat', 'tags'],
+  taskFinderCompactChips: ['taskType', 'priority', 'parentTask', 'assignees'],
+  filterTaskCompactChips: ['priority', 'status', 'parentTask', 'dateScheduled', 'dateDue', 'repeat', 'tags', 'assignees'],
+  kanbanTaskCompactChips: ['taskImage', 'priority', 'dateScheduled', 'dateDue', 'assignees'],
+  taskWikilinkOverlayCompactChips: ['priority', 'dateDue', 'assignees'],
+  taskCardCompactChips: ['taskImage', 'priority', 'status', 'dateScheduled', 'dateDue', 'assignees'],
+ };
+ for (const key of Object.keys(expected) as (keyof typeof expected)[]) {
+  assert.deepEqual(reset[key].filter(item => item.visible).map(item => item.key).sort(), expected[key].sort(), key);
+  assert.deepEqual(reloaded[key], reset[key], `${key} must survive package serialization and reload`);
+  assert.deepEqual(reset[key].map(item => item.key), DEFAULT_SETTINGS[key].map(item => item.key), `${key} order/options`);
+  if (key !== 'taskCreatorToolbar') assert.deepEqual(reset[key].filter(item => item.iconOnly).map(item => item.key),
+   ['inlineTaskCompactChips', 'filterTaskCompactChips', 'taskCardCompactChips'].includes(key) ? ['status'] : [], key);
+ }
+ for (const prefix of ['inlineTask', 'filterTask', 'kanbanTask', 'taskWikilinkOverlay', 'taskCard'] as const) {
+  assert.equal(reset[`${prefix}ShowPlayAction`], false);
+  assert.equal(reset[`${prefix}ShowSubtaskAction`], false);
+  assert.equal(reset[`${prefix}ShowPinAction`], false);
+  assert.equal(reset[`${prefix}ShowNoteAction`], true);
+ }
+ assert.deepEqual(target, before, 'Previewing Reset must leave existing preferences intact');
 });

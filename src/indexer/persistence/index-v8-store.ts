@@ -273,7 +273,7 @@ export class IndexV8Store {
 		this.ioConcurrency = options.ioConcurrency ?? DEFAULT_IO_CONCURRENCY;
 		this.collectLoadMetrics = options.collectLoadMetrics;
 		const runtimeRoot = this.paths.rootPath.slice(0, this.paths.rootPath.lastIndexOf('/'));
-		this.recoveryRequiredPath = options.recoveryRequiredPath ?? `${runtimeRoot}/index-v8-recovery-required.json`;
+		this.recoveryRequiredPath = options.recoveryRequiredPath ?? `${runtimeRoot}/index-v8-layout-2-recovery-required.json`;
 		if (!Number.isInteger(this.ioConcurrency) || this.ioConcurrency < 1 || this.ioConcurrency > MAX_IO_CONCURRENCY) {
 			throw new RangeError(`ioConcurrency must be an integer from 1 to ${MAX_IO_CONCURRENCY}`);
 		}

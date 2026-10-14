@@ -297,6 +297,11 @@ async function run(): Promise<void> {
 	), true);
 	pointerHarness.listeners.get('pointerup')?.(pointerEvent(2, 70));
 	equal(markerActivations, 1, 'A marker pointer sequence below the drag threshold still opens its picker once');
+	equal(markerController.beginDateMarkerPointerSession(pointerEvent(3, 70), markerTask, 'dateStarted', pointerHarness.anchor), true);
+	markerController.suspend();
+	pointerHarness.listeners.get('pointerup')?.(pointerEvent(3, 50));
+	equal(markerCommits.length, 1, 'Suspending a pending table cancels an unfinished gesture without committing');
+	equal(markerController.beginDateMarkerPointerSession(pointerEvent(4, 70), markerTask, 'dateStarted', pointerHarness.anchor), false, 'Suspended context cannot start stale edits');
 	markerController.destroy();
 	deepEqual(buildTableGanttEditPlan({
 		task: scheduled,

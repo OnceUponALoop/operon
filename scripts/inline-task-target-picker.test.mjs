@@ -11,7 +11,7 @@ try {
  const source = ts.createSourceFile('main.ts', await readFile('main.ts', 'utf8'), ts.ScriptTarget.Latest, true);
  const cls = source.statements.find(n => ts.isClassDeclaration(n) && n.name?.text === 'OperonPlugin');
  const method = name => cls.members.find(n => n.name?.getText(source) === name).getText(source);
- const methods = ['isExcalidrawTaskSource', 'recordInlineTaskCreationTarget', 'recordInlineTaskCreationFromEditor', 'insertTaskCreatorInlineTaskAtChosenTarget', 'insertTaskCreatorInlineTaskWithResolvedTarget', 'insertTaskCreatorInlineTaskUsingDefaultTarget', 'createInlineTaskFromCreatorDraftResult', 'openTaskCreator', 'createCalendarInlineTaskFromCreatorDraft', 'createKanbanInlineTaskFromCreatorDraft', 'createInlineSubtaskFromFlexibleCreatorDraft', 'insertTaskCreatorInlineTaskBelowInlineParent', 'insertTaskCreatorInlineTaskInsideFileParent'];
+ const methods = ['isExcalidrawTaskSource', 'recordInlineTaskCreationTarget', 'recordInlineTaskCreationFromEditor', 'insertTaskCreatorInlineTaskAtChosenTarget', 'insertTaskCreatorInlineTaskWithResolvedTarget', 'insertTaskCreatorInlineTaskUsingDefaultTarget', 'createInlineTaskFromCreatorDraftResult', 'openTaskCreator', 'prepareTaskCreator', 'writePreparedCreatorInline', 'createCalendarInlineTaskFromCreatorDraft', 'createKanbanInlineTaskFromCreatorDraft', 'createInlineSubtaskFromFlexibleCreatorDraft', 'insertTaskCreatorInlineTaskBelowInlineParent', 'insertTaskCreatorInlineTaskInsideFileParent'];
  const stub = path.join(dir, 'obsidian.ts');
  await writeFile(stub, `
 export const notices:string[]=[];
@@ -36,7 +36,13 @@ import { DEFAULT_SETTINGS, normalizeInlineTaskHeadingKeyword, normalizeInlineTas
 import { indentNewInlineSubtask, resolveInlineParentCheckboxPlacement, resolveTaskCreatorInlinePlacement } from './src/core/task-creator-target-resolver';
 import { Notice } from 'obsidian';
 import { ExcalidrawSourceError } from './src/ui/excalidraw-markdown-source';
+import { CreationDraftProperties } from './src/core/task-creation-draft-properties';
+import { decodeVaultPropertyValue } from './src/core/vault-property-codec';
 import { insertInlineTaskUnderFirstHeadingKeyword } from './src/core/markdown-heading-insertion';
+const getNativePropertyIndex=()=>({ensure:async()=>{},typesAvailable:()=>true,getTypes:()=>({}),getTask:()=>({available:true,properties:new Map(),revision:1})});
+const createCachedTableFilePropertyTypeResolver=()=>()=>null;
+const createVaultFilePropertySnapshot=()=>({fields:[],getCandidates:()=>[]});
+const resolveDefaultFileTaskStatus=()=> 'Project.Planned';
 const localNow=()=> '2026-09-28T12:00';
 const t=(_group:string,key:string)=>key;
 const isTaskCreatorFieldExplicitlyCleared=(draft:any,key:string)=>draft.explicitEmptyFieldKeys?.includes(key);
@@ -45,7 +51,7 @@ let chosen:any=null, received:any;
 const promptInlineTaskTarget=async (targets:any)=>{received=targets;return typeof chosen==='function'?chosen():chosen;};
 class TaskCreatorModal { options:any;onClose:any;constructor(_app:any,options:any){this.options=options;}open(){}close(){this.onClose?.();} }
 class Harness {
- recordedInlineCreationIds=new Set();inlineCreatorActiveFiles=new WeakMap();
+ recordedInlineCreationIds=new Set();inlineCreatorActiveFiles=new WeakMap();preparedCreatorCommits=new WeakMap();creatorOpenGeneration=0;
  ${methods.map(method).join('\n')}
 }
 class Element {
@@ -74,7 +80,7 @@ function setup(){
  const files=new Map(['Active.md','Parent.md','Other.md'].map(p=>[p,new TFile(p)]));
  const contents=new Map([['Parent.md','---\\noperonId: p\\n---\\n'],['Other.md','']]);
  h.app={metadataCache:{getFileCache:()=>({})},vault:{getMarkdownFiles:()=>[...files.values()],getAbstractFileByPath:(p:string)=>files.get(p),read:async(f:any)=>contents.get(f.path)??''}};
- h.settings={inlineTaskHeading:'Tasks',inlineTaskParentFileHeadingKeyword:'Backlog',inlineTaskParentInlineTargetMode:'below-parent',inlineTaskParentFileTargetMode:'inside-parent-file'};
+ h.settings={...structuredClone(DEFAULT_SETTINGS),inlineTaskHeading:'Tasks',inlineTaskParentFileHeadingKeyword:'Backlog',inlineTaskParentInlineTargetMode:'below-parent',inlineTaskParentFileTargetMode:'inside-parent-file'};
  const parent={operonId:'p',primary:{format:'yaml',filePath:'Parent.md'}};
  h.indexer={getTask:(id:string)=>id==='p'?parent:null,hasDuplicateOperonIdConflict:()=>false,reindexFilePath:async()=>{},getAllTasks:()=>[],subscribeIndexUpdates:()=>()=>{}};
  h.resolveEffectiveInlineTaskSaveMode=()=> 'ask-every-time';h.inlineTargetHistory={getEntries:()=>[],recordSuccess:async()=>{h.records++;}};h.records=0;
@@ -85,7 +91,7 @@ function setup(){
  h.writes=[];h.showTaskNotice=()=>{};h.finalizeTaskCreatorCreatedTask=async()=>{};h.refreshViews=()=>{};h.refreshMarkdownAfterInlineAuthoring=()=>{};
  return {h,files,contents,parent};
 }
-const draft=()=>({description:'New',fieldValues:{parentTask:'p'},explicitFieldKeys:['parentTask'],tags:[],subtaskIds:[]});
+const draft=()=>({description:'New',fieldValues:{parentTask:'p'},explicitFieldKeys:['parentTask'],inheritedFieldKeys:[],inheritedTags:[],tags:[],subtaskIds:[]});
 test('drawing parent writes require the coordinated source adapter',async()=>{
  for(const format of ['inline','yaml']){
   const {h,files,parent}=setup();parent.primary.format=format;parent.primary.filePath='Parent.excalidraw.md';files.set(parent.primary.filePath,new TFile(parent.primary.filePath));
@@ -158,8 +164,8 @@ test('editor history waits for captured view persistence and confirmed task iden
  const old=console.error;console.error=()=>{};try{h.persistMarkdownViewBuffer=async()=>{throw Error('save failed');};await h.recordInlineTaskCreationFromEditor(view,'second','Other.md');}finally{console.error=old;}assert.equal(h.records,1);
 });
 test('creator captures active file before focus changes and preserves snapshot on cancel',async()=>{
- const {h}=setup();h.storage={repeatSeries:{getAllSeriesIds:()=>[]}};h.getFileTaskTemplateOptionsForPicker=()=>[];h.getAvailableTaskCreatorDefaultFileTemplateId=()=>'';h.createInlineTaskFromCreatorDraft=async()=>false;
- h.openTaskCreator(draft(),{});const options=h.taskCreatorModal.options;h.getActiveMarkdownFile=()=>new TFile('Other.md');const snapshot=draft();await options.onSubmitInline(snapshot);assert.equal(h.inlineCreatorActiveFiles.get(snapshot),'Active.md');h.taskCreatorModal=null;options.onSubmitFailure(snapshot,'inline');const retry=h.taskCreatorModal.options;await retry.onSubmitInline(snapshot);assert.equal(h.inlineCreatorActiveFiles.get(snapshot),'Active.md');
+ const {h}=setup();h.storage={getCommittedInlinePropertyDefinitions:()=>undefined,repeatSeries:{getAllSeriesIds:()=>[]}};h.getFileTaskTemplateOptionsForPicker=()=>[];h.getAvailableTaskCreatorDefaultFileTemplateId=()=>'';h.createInlineTaskFromCreatorDraft=async()=>false;
+ await h.prepareTaskCreator(draft(),{});const options=h.taskCreatorModal.options;h.getActiveMarkdownFile=()=>new TFile('Other.md');const snapshot=draft();await options.onSubmitInline(snapshot);assert.equal(h.inlineCreatorActiveFiles.get(snapshot),'Active.md');h.taskCreatorModal=null;options.onSubmitFailure(snapshot,'inline');await Promise.resolve();await Promise.resolve();const retry=h.taskCreatorModal.options;await retry.onSubmitInline(snapshot);assert.equal(h.inlineCreatorActiveFiles.get(snapshot),'Active.md');
 });
 `;
  const outfile = path.join(dir, 'test.cjs');

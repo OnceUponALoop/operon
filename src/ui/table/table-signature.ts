@@ -1,3 +1,4 @@
+import type { TableTaskField } from './table-field-catalog';
 import { localToday } from '../../core/local-time';
 import type { OperonSettings } from '../../types/settings';
 import { buildTaskStatusIconRenderSettingsSignature } from '../task-status-icon-signature';
@@ -42,4 +43,11 @@ export function buildTableRelevantSettingsSignature(settings: TableRelevantSetti
 		tableGanttBarRightClickAction: settings.tableGanttBarRightClickAction,
 		taskStatusIconRender: buildTaskStatusIconRenderSettingsSignature(settings),
 	});
+}
+
+/** Property presence/counts affect data, not the table shell or header geometry. */
+export function buildTableFieldLayoutSignature(fields: readonly TableTaskField[]): string {
+ return JSON.stringify(fields.map(field => [field.key, field.label, field.type, field.group, field.icon,
+  field.readonly, field.sourceLabel, field.unavailable, field.readOnlyReason])
+  .sort((left, right) => String(left[0]).localeCompare(String(right[0]))));
 }

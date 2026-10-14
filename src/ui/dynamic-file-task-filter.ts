@@ -1,6 +1,6 @@
-import { Extension } from '@codemirror/state';
-import { EditorView, ViewPlugin, ViewUpdate } from '@codemirror/view';
-import { editorLivePreviewField } from 'obsidian';
+import { EditorState, Extension, StateEffect, StateField } from '@codemirror/state';
+import { Decoration, DecorationSet, EditorView, ViewPlugin, ViewUpdate, WidgetType } from '@codemirror/view';
+import { editorInfoField, editorLivePreviewField } from 'obsidian';
 import {
 	DYNAMIC_FILE_TASK_FILTER_ID,
 	DYNAMIC_SUBTASKS_FILTER_ID,
@@ -9,7 +9,7 @@ import {
 	normalizeDynamicFileTaskFilterSet,
 	normalizeDynamicSubtasksFilterSet,
 } from '../core/dynamic-file-task-filter';
-import { createOwnerElement } from '../core/dom-compat';
+import { createOwnerElement, getOwnerWindow } from '../core/dom-compat';
 import { resolveFileTaskAutoParentOperonId } from '../core/file-task-auto-parent';
 import type { IndexedTask } from '../types/fields';
 import type { FilterSet, OperonSettings } from '../types/settings';
@@ -28,7 +28,7 @@ import {
 } from './embed-filter-processor';
 import { operonIndexRefreshEffect } from './live-preview-conceal';
 import { isPlainCheckboxPopoverEditorElement } from './plain-checkbox-popover-scope';
-import { allowsOperonDocumentAugmentations } from './editor-augmentation-scope';
+import { allowsOperonDocumentAugmentations, operonEditorSurfaceScopeFacet } from './editor-augmentation-scope';
 
 export const DYNAMIC_FILE_TASK_FILTER_HOST_CLASS = 'operon-dynamic-file-task-filter-host';
 const DYNAMIC_FILE_TASK_FILTER_PLACEMENT_CLASSES = [
@@ -278,8 +278,11 @@ export function applyDynamicFileTaskFilterHostPlacement(
 	host: HTMLElement,
 	placement: OperonSettings['dynamicFileTaskFilterPlacement'],
 ): void {
-	host.removeClasses(DYNAMIC_FILE_TASK_FILTER_PLACEMENT_CLASSES);
-	host.addClass(`${DYNAMIC_FILE_TASK_FILTER_HOST_CLASS}--${placement}`);
+	const selected = `${DYNAMIC_FILE_TASK_FILTER_HOST_CLASS}--${placement}`;
+	for (const name of DYNAMIC_FILE_TASK_FILTER_PLACEMENT_CLASSES) {
+		if (name !== selected && host.classList.contains(name)) host.classList.remove(name);
+	}
+	if (!host.classList.contains(selected)) host.classList.add(selected);
 }
 
 export function resolveDynamicFileTaskFilterInsertLine(
@@ -302,6 +305,66 @@ export interface DynamicFileTaskFilterLivePreviewCallbacks {
 export function operonDynamicFileTaskFilterLivePreviewExtension(
 	callbacks: DynamicFileTaskFilterLivePreviewCallbacks,
 ): Extension {
+	const sourceContextEffect = StateEffect.define<string>();
+	const measuredHeightEffect = StateEffect.define<{ filePath: string; height: number }>();
+	class TopFilterWidget extends WidgetType {
+		constructor(readonly filePath: string, readonly height: number) { super(); }
+		eq(other: TopFilterWidget): boolean { return this.filePath === other.filePath && this.height === other.height; }
+		get estimatedHeight(): number { return this.height; }
+		toDOM(view: EditorView): HTMLElement {
+			const owner = view.plugin(plugin);
+			if (!owner) throw new Error('Dynamic filter view owner is unavailable');
+			return owner.mountTop(view, this.filePath);
+		}
+		updateDOM(dom: HTMLElement, view: EditorView): boolean {
+			return view.plugin(plugin)?.ownsTop(dom, this.filePath) ?? false;
+		}
+	}
+	type TopState = {
+		decorations: DecorationSet;
+		filePath: string;
+		fallbackPath: string;
+		live: boolean;
+		placement: OperonSettings['dynamicFileTaskFilterPlacement'];
+		enabled: boolean;
+		height: number;
+	};
+	function buildTopState(state: EditorState, fallbackPath: string, height: number): TopState {
+		const filePath = state.field(editorInfoField, false)?.file?.path ?? fallbackPath;
+		const live = state.facet(operonEditorSurfaceScopeFacet) === 'document' && state.field(editorLivePreviewField, false) === true;
+		const deps = callbacks.getFilterDeps();
+		const { dynamicFileTaskFilterPlacement: placement, dynamicFileTaskFilterEnabled: enabled } = deps.getSettings();
+		let decorations = Decoration.none;
+		if (live && enabled && placement === 'body-top' && resolveDynamicFileTaskFilterContext(filePath, deps)) {
+			const line = resolveDynamicFileTaskFilterInsertLine(state.doc.toString(), deps.getSettings());
+			const position = line <= state.doc.lines ? state.doc.line(line).from : state.doc.length;
+			decorations = Decoration.set([Decoration.widget({ block: true, side: -1, widget: new TopFilterWidget(filePath, height) }).range(position)]);
+		}
+		return { decorations, filePath, fallbackPath, live, placement, enabled, height };
+	}
+	const topField = StateField.define<TopState>({
+		create: state => buildTopState(state, '', -1),
+		update(value, transaction) {
+			const state = transaction.state;
+			let fallbackPath = value.fallbackPath;
+			let height = value.height;
+			let refresh = false;
+			for (const effect of transaction.effects) {
+				if (effect.is(sourceContextEffect)) fallbackPath = effect.value;
+				if (effect.is(operonIndexRefreshEffect)) refresh = true;
+				if (effect.is(measuredHeightEffect) && effect.value.filePath === value.filePath) height = effect.value.height;
+			}
+			const filePath = state.field(editorInfoField, false)?.file?.path ?? fallbackPath;
+			const settings = callbacks.getFilterDeps().getSettings();
+			const live = state.facet(operonEditorSurfaceScopeFacet) === 'document' && state.field(editorLivePreviewField, false) === true;
+			const contextChanged = filePath !== value.filePath || live !== value.live
+				|| settings.dynamicFileTaskFilterPlacement !== value.placement || settings.dynamicFileTaskFilterEnabled !== value.enabled;
+			if (contextChanged) height = -1;
+			if (!transaction.docChanged && !refresh && !contextChanged && height === value.height && fallbackPath === value.fallbackPath) return value;
+			return buildTopState(state, fallbackPath, height);
+		},
+		provide: field => EditorView.decorations.from(field, value => value.decorations),
+	});
 	const plugin = ViewPlugin.fromClass(
 		class {
 			private lastLivePreview = false;
@@ -311,6 +374,12 @@ export function operonDynamicFileTaskFilterLivePreviewExtension(
 			private syncTimer: number | null = null;
 			private hostEl: HTMLElement | null = null;
 			private instance: FilterSurfaceInstance | null = null;
+			private contentDirty = false;
+			private frameDirty = false;
+			private measureRevision = 0;
+			private topObserver: ResizeObserver | null = null;
+			private topMeasurePending = false;
+			private destroyed = false;
 
 			constructor(view: EditorView) {
 				this.lastLivePreview = this.isLivePreview(view);
@@ -324,25 +393,30 @@ export function operonDynamicFileTaskFilterLivePreviewExtension(
 				);
 				const nowLive = this.isLivePreview(update.view);
 				const modeChanged = nowLive !== this.lastLivePreview;
-				const filePath = nowLive ? callbacks.getFilePath(update.view) : '';
+				const filePath = nowLive ? update.state.field(editorInfoField, false)?.file?.path ?? callbacks.getFilePath(update.view) : '';
 				const filePathChanged = filePath !== this.lastFilePath;
 				const placement = nowLive
 					? callbacks.getFilterDeps().getSettings().dynamicFileTaskFilterPlacement
 					: null;
 				const placementChanged = placement !== this.lastPlacement;
-				const hostMissing = !this.hostEl || !this.hostEl.isConnected;
+				const hostMissing = !this.hostEl || (placement === 'body-bottom' && !this.hostEl.isConnected);
 				this.lastLivePreview = nowLive;
+				if (modeChanged || filePathChanged || placementChanged) {
+					this.measureRevision++;
+					this.topMeasurePending = false;
+				}
 
 				if (modeChanged || hasRefresh || update.docChanged || filePathChanged || placementChanged) {
 					this.scheduleSync(update.view, 0);
 				} else if (nowLive && hostMissing && (update.viewportChanged || update.geometryChanged || update.focusChanged)) {
 					this.scheduleSync(update.view, 0);
-				} else if (nowLive && this.hostEl && (update.viewportChanged || update.geometryChanged)) {
-					this.scheduleSync(update.view, 0);
+				} else if (nowLive && this.hostEl && (update.geometryChanged || (update.viewportChanged && placement === 'body-bottom'))) {
+					this.scheduleSync(update.view, 0, false, update.geometryChanged || placement === 'body-bottom');
 				}
 			}
 
 			destroy(): void {
+				this.destroyed = true;
 				if (this.syncTimer !== null) {
 					window.clearTimeout(this.syncTimer);
 					this.syncTimer = null;
@@ -361,16 +435,21 @@ export function operonDynamicFileTaskFilterLivePreviewExtension(
 				}
 			}
 
-			private scheduleSync(view: EditorView, delayMs: number): void {
+			private scheduleSync(view: EditorView, delayMs: number, contentDirty = true, frameDirty = true): void {
+				this.contentDirty ||= contentDirty;
+				this.frameDirty ||= frameDirty;
 				this.cancelSyncTimer();
 				this.syncTimer = window.setTimeout(() => {
 					this.syncTimer = null;
-					if (!view.dom.isConnected) return;
-					this.sync(view);
+					if (this.destroyed || !view.dom.isConnected) return;
+					const contentDirty = this.contentDirty;
+					const frameDirty = this.frameDirty;
+					this.contentDirty = this.frameDirty = false;
+					this.sync(view, contentDirty, frameDirty);
 				}, delayMs);
 			}
 
-			private sync(view: EditorView): void {
+			private sync(view: EditorView, contentDirty: boolean, frameDirty: boolean, renderFilePath?: string): void {
 				if (isPlainCheckboxPopoverEditorElement(view.dom)) {
 					this.lastFilePath = '';
 					this.lastPlacement = null;
@@ -385,39 +464,106 @@ export function operonDynamicFileTaskFilterLivePreviewExtension(
 				}
 
 				const deps = callbacks.getFilterDeps();
-				const filePath = callbacks.getFilePath(view);
+				const filePath = renderFilePath ?? view.state.field(editorInfoField, false)?.file?.path ?? callbacks.getFilePath(view);
+				if (view.state.field(topField).filePath !== filePath) {
+					view.dispatch({ effects: sourceContextEffect.of(filePath) });
+					return;
+				}
 				const filePathChanged = filePath !== this.lastFilePath;
 				this.lastFilePath = filePath;
 				const settings = deps.getSettings();
 				this.lastPlacement = settings.dynamicFileTaskFilterPlacement;
-				const context = resolveDynamicFileTaskFilterContext(filePath, deps);
-				if (!context) {
+				if ((contentDirty || filePathChanged || !this.instance) && !resolveDynamicFileTaskFilterContext(filePath, deps)) {
 					this.destroyHost();
 					return;
 				}
-
-				const container = findLivePreviewSizer(view);
-				if (!container) {
+				const top = settings.dynamicFileTaskFilterPlacement === 'body-top';
+				const container = top ? null : findLivePreviewSizer(view);
+				if (!top && !container) {
 					this.destroyHost();
 					return;
 				}
 
 				const host = this.ensureHost(view);
-				insertLivePreviewHost(container, host, settings);
-				refreshLivePreviewHostFrame(container, host);
+				if (top) {
+					applyDynamicFileTaskFilterHostPlacement(host, 'body-top');
+					host.classList.add('operon-dynamic-file-task-filter-host--block');
+					for (const name of ['width', 'inline-start', 'inline-end', 'margin-top']) setHostProperty(host, `--operon-dynamic-file-task-filter-${name}`, null);
+				} else if (container) {
+					this.topObserver?.disconnect();
+					this.topObserver = null;
+					host.classList.remove('operon-dynamic-file-task-filter-host--block');
+					insertLivePreviewHost(container, host, settings);
+				}
 				if (filePathChanged && this.instance) {
 					destroyFilterSurfaceInstance(this.instance);
 					this.instance = null;
 				}
-				if (!this.instance) {
-					this.instance = createFilterSurfaceInstance(host);
+				const needsRender = contentDirty || filePathChanged || !this.instance;
+				if (!this.instance) this.instance = createFilterSurfaceInstance(host);
+				if (needsRender && !renderDynamicFileTaskFilterSurface(
+					this.instance, filePath, deps, callbacks.openDynamicFilterSettings,
+				)) {
+					this.destroyHost();
+					return;
 				}
-				renderDynamicFileTaskFilterSurface(
-					this.instance,
-					filePath,
-					deps,
-					callbacks.openDynamicFilterSettings,
-				);
+				if (top) {
+					if (!this.topObserver) {
+						const Observer = (getOwnerWindow(host) as Window & { ResizeObserver?: typeof ResizeObserver }).ResizeObserver;
+						if (Observer) {
+							const observer = new Observer(() => this.measureTop(view, host));
+							this.topObserver = observer;
+							observer.observe(host);
+						}
+					}
+					if (frameDirty || needsRender) this.measureTop(view, host);
+				} else if (container && (frameDirty || needsRender)) this.measureFrame(view, container, host, settings.dynamicFileTaskFilterPlacement);
+			}
+
+			mountTop(view: EditorView, filePath: string): HTMLElement {
+				if (view.state.field(topField).filePath !== filePath) throw new Error('Stale dynamic filter widget');
+				this.sync(view, this.contentDirty || !this.instance || this.lastFilePath !== filePath, true, filePath);
+				this.contentDirty = false;
+				return this.ensureHost(view);
+			}
+
+			ownsTop(dom: HTMLElement, filePath: string): boolean {
+				return this.hostEl === dom && this.lastFilePath === filePath;
+			}
+
+			private measureTop(view: EditorView, host: HTMLElement): void {
+				if (this.topMeasurePending || this.destroyed || this.hostEl !== host || this.lastPlacement !== 'body-top') return;
+				this.topMeasurePending = true;
+				const revision = this.measureRevision;
+				const filePath = this.lastFilePath;
+				const current = () => !this.destroyed && this.measureRevision === revision && this.hostEl === host
+					&& this.lastPlacement === 'body-top' && this.lastFilePath === filePath && host.isConnected;
+				view.requestMeasure({
+					key: this,
+					read: () => current() ? host.getBoundingClientRect().height : null,
+					write: height => {
+						if (revision === this.measureRevision) this.topMeasurePending = false;
+						if (height === null || !current() || height <= 0 || view.state.field(topField).height === height) return;
+						queueMicrotask(() => {
+							if (current() && view.state.field(topField, false)?.filePath === filePath) {
+								view.dispatch({ effects: measuredHeightEffect.of({ filePath, height }) });
+							}
+						});
+					},
+				});
+			}
+
+			private measureFrame(view: EditorView, container: HTMLElement, host: HTMLElement, placement: OperonSettings['dynamicFileTaskFilterPlacement']): void {
+				const revision = ++this.measureRevision;
+				const current = () => this.hostEl === host && this.measureRevision === revision && view.dom.isConnected && host.isConnected;
+				view.requestMeasure({
+					key: this,
+					read: () => current() ? readLivePreviewHostFrame(container, placement) : null,
+					write: frame => {
+						if (!frame || !current()) return;
+						for (const [name, value] of Object.entries(frame)) setHostProperty(host, name, value);
+					},
+				});
 			}
 
 			private isLivePreview(view: EditorView): boolean {
@@ -437,6 +583,10 @@ export function operonDynamicFileTaskFilterLivePreviewExtension(
 			}
 
 			private destroyHost(): void {
+				this.measureRevision++;
+				this.topMeasurePending = false;
+				this.topObserver?.disconnect();
+				this.topObserver = null;
 				if (this.instance) {
 					destroyFilterSurfaceInstance(this.instance);
 					this.instance = null;
@@ -449,7 +599,7 @@ export function operonDynamicFileTaskFilterLivePreviewExtension(
 				if (!this.isLivePreview(view)) return;
 				this.retryTimer = window.setTimeout(() => {
 					this.retryTimer = null;
-					if (!view.dom.isConnected) return;
+					if (this.destroyed || !view.dom.isConnected) return;
 					try {
 						view.dispatch({ effects: operonIndexRefreshEffect.of() });
 					} catch {
@@ -460,7 +610,7 @@ export function operonDynamicFileTaskFilterLivePreviewExtension(
 		},
 	);
 
-	return plugin;
+	return [topField, plugin];
 }
 
 function getDynamicFileTaskFilterTemplate(settings: OperonSettings): FilterSet {
@@ -492,72 +642,58 @@ function findLivePreviewSizer(view: EditorView): HTMLElement | null {
 }
 
 function insertLivePreviewHost(container: HTMLElement, host: HTMLElement, settings: OperonSettings): void {
-	const placement = settings.dynamicFileTaskFilterPlacement;
-	applyDynamicFileTaskFilterHostPlacement(host, placement);
-	if (placement === 'body-bottom') {
-		insertLivePreviewHostAtBottom(container, host);
-		return;
-	}
-	host.style.removeProperty('--operon-dynamic-file-task-filter-margin-top');
-	insertLivePreviewHostAtBodyTop(container, host);
+	applyDynamicFileTaskFilterHostPlacement(host, settings.dynamicFileTaskFilterPlacement);
+	insertLivePreviewHostAtBottom(container, host);
 }
 
-function refreshLivePreviewHostFrame(container: HTMLElement, host: HTMLElement): void {
-	host.style.removeProperty('--operon-dynamic-file-task-filter-width');
-	host.style.removeProperty('--operon-dynamic-file-task-filter-inline-start');
-	host.style.removeProperty('--operon-dynamic-file-task-filter-inline-end');
+function setHostProperty(host: HTMLElement, name: string, value: string | null): void {
+	if (host.style.getPropertyValue(name) === (value ?? '')) return;
+	if (value === null) host.style.removeProperty(name);
+	else host.style.setProperty(name, value);
+}
 
+function readLivePreviewHostFrame(container: HTMLElement, placement: OperonSettings['dynamicFileTaskFilterPlacement']): Record<string, string | null> {
+	const frame: Record<string, string | null> = {
+		'--operon-dynamic-file-task-filter-width': null,
+		'--operon-dynamic-file-task-filter-inline-start': null,
+		'--operon-dynamic-file-task-filter-inline-end': null,
+		'--operon-dynamic-file-task-filter-margin-top': placement === 'body-bottom' ? readLivePreviewBottomOffset(container) : null,
+	};
 	const reference = findLivePreviewLineWidthReference(container);
-	if (!reference) return;
-
+	if (!reference) return frame;
 	const containerRect = container.getBoundingClientRect();
 	const referenceRect = reference.getBoundingClientRect();
-	if (containerRect.width <= 0 || referenceRect.width <= 0) return;
-
-	const inlineStart = Math.max(0, Math.round(referenceRect.left - containerRect.left));
-	const inlineEnd = Math.max(0, Math.round(containerRect.right - referenceRect.right));
-	host.style.setProperty('--operon-dynamic-file-task-filter-width', `${Math.round(referenceRect.width)}px`);
-	host.style.setProperty('--operon-dynamic-file-task-filter-inline-start', `${inlineStart}px`);
-	host.style.setProperty('--operon-dynamic-file-task-filter-inline-end', `${inlineEnd}px`);
+	if (containerRect.width <= 0 || referenceRect.width <= 0) return frame;
+	frame['--operon-dynamic-file-task-filter-width'] = `${Math.round(referenceRect.width)}px`;
+	frame['--operon-dynamic-file-task-filter-inline-start'] = `${Math.max(0, Math.round(referenceRect.left - containerRect.left))}px`;
+	frame['--operon-dynamic-file-task-filter-inline-end'] = `${Math.max(0, Math.round(containerRect.right - referenceRect.right))}px`;
+	return frame;
 }
 
-function insertLivePreviewHostAtBodyTop(container: HTMLElement, host: HTMLElement): void {
-	container.insertBefore(host, findLivePreviewBodyTopReference(container));
-}
 
 function insertLivePreviewHostAtBottom(container: HTMLElement, host: HTMLElement): void {
 	const contentContainer = findLivePreviewContentContainer(container);
 	if (contentContainer?.parentNode) {
-		contentContainer.parentNode.insertBefore(host, contentContainer.nextSibling);
-		refreshLivePreviewBottomOffset(container, host);
+		if (contentContainer.nextSibling !== host) contentContainer.parentNode.insertBefore(host, contentContainer.nextSibling);
 		return;
 	}
-	container.appendChild(host);
-	refreshLivePreviewBottomOffset(container, host);
+	if (host.parentNode !== container || host.nextSibling) container.appendChild(host);
 }
 
-function refreshLivePreviewBottomOffset(container: HTMLElement, host: HTMLElement): void {
-	host.style.removeProperty('--operon-dynamic-file-task-filter-margin-top');
+function readLivePreviewBottomOffset(container: HTMLElement): string | null {
 	const content = container.querySelector<HTMLElement>('.cm-content');
 	const contentContainer = content?.closest<HTMLElement>('.cm-contentContainer') ?? null;
-	if (!content || !contentContainer) return;
-
+	if (!content || !contentContainer) return null;
 	const lineBottom = getMaxElementBottom(
 		Array.from(content.children).filter((child): child is HTMLElement =>
 			child.instanceOf(HTMLElement) && child.classList.contains('cm-line')
 		),
 	);
 	const contentContainerBottom = getElementBottom(contentContainer);
-	if (lineBottom === null || contentContainerBottom === null) return;
-
+	if (lineBottom === null || contentContainerBottom === null) return null;
 	const virtualGap = Math.max(0, Math.round(contentContainerBottom - lineBottom));
-	if (virtualGap <= 0) return;
-
-	const baseMargin = parseCssPx(host.ownerDocument.defaultView?.getComputedStyle(host).marginTop ?? '') ?? 8;
-	host.style.setProperty(
-		'--operon-dynamic-file-task-filter-margin-top',
-		`${Math.round(baseMargin - virtualGap)}px`,
-	);
+	// Keep the existing theme spacing live without clearing an override to measure it.
+	return virtualGap > 0 ? `calc(var(--operon-dynamic-file-task-filter-spacing, 8px) - ${virtualGap}px)` : null;
 }
 
 function getElementBottom(element: HTMLElement): number | null {
@@ -588,41 +724,6 @@ function getMaxElementBottom(elements: HTMLElement[]): number | null {
 	return bottom;
 }
 
-function parseCssPx(value: string): number | null {
-	const parsed = Number.parseFloat(value);
-	return Number.isFinite(parsed) ? parsed : null;
-}
-
-function findLivePreviewBodyTopReference(container: HTMLElement): ChildNode | null {
-	const metadata = container.querySelector<HTMLElement>('.metadata-container, .frontmatter-container');
-	if (metadata) {
-		const directChild = findDirectChild(container, metadata);
-		return directChild?.nextSibling ?? null;
-	}
-	const header = Array.from(container.children).find((child): child is HTMLElement =>
-		child.instanceOf(HTMLElement)
-		&& child.classList.contains('mod-header')
-		&& child.classList.contains('mod-ui')
-	);
-	if (header) return header.nextSibling;
-	const pusher = findDirectChildByClass(container, 'markdown-preview-pusher');
-	return pusher?.nextSibling ?? container.firstChild;
-}
-
-function findDirectChild(container: HTMLElement, descendant: HTMLElement): HTMLElement | null {
-	let current: HTMLElement | null = descendant;
-	while (current?.parentElement && current.parentElement !== container) {
-		current = current.parentElement;
-	}
-	return current?.parentElement === container ? current : null;
-}
-
-function findDirectChildByClass(container: HTMLElement, className: string): HTMLElement | null {
-	for (const child of Array.from(container.children)) {
-		if (child.instanceOf(HTMLElement) && child.classList.contains(className)) return child;
-	}
-	return null;
-}
 
 function findLivePreviewContentContainer(container: HTMLElement): HTMLElement | null {
 	const content = container.querySelector<HTMLElement>('.cm-content');

@@ -282,3 +282,14 @@ function findUnescapedCharacter(text: string, from: number, target: string): num
 	}
 	return -1;
 }
+
+/** Normalize prose spacing without changing code, links or escaped literals. */
+export function normalizeMarkdownProseWhitespace(text: string): string {
+	const ranges = collectMarkdownProtectedRanges(text);
+	let cursor = 0, output = '';
+	for (const range of ranges) {
+		output += text.slice(cursor, range.from).replace(/\s+/gu, ' ') + text.slice(range.from, range.to);
+		cursor = range.to;
+	}
+	return (output + text.slice(cursor).replace(/\s+/gu, ' ')).trim();
+}

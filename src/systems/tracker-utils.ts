@@ -243,11 +243,16 @@ export function formatDurationClock(seconds: number): string {
 	return `${hours}:${String(minutes).padStart(2, '0')}:${String(secs).padStart(2, '0')}`;
 }
 
-export function formatDurationHuman(seconds: number): string {
+export function formatDurationHuman(seconds: number, precision: 'seconds' | 'minutes' = 'seconds'): string {
 	const total = Math.max(0, Math.floor(seconds));
 	const hours = Math.floor(total / 3600);
 	const minutes = Math.floor((total % 3600) / 60);
 	const secs = total % 60;
+
+	if (precision === 'minutes') {
+		if (hours > 0) return `${hours}h ${minutes}m`;
+		return total > 0 && minutes === 0 ? '<1m' : `${minutes}m`;
+	}
 
 	if (hours > 0) return `${hours}h ${minutes}m ${secs}s`;
 	if (minutes > 0) return `${minutes}m ${secs}s`;

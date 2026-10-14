@@ -10,11 +10,13 @@ import {
 } from './index-v8-codec';
 import type { IndexV8Snapshot } from './index-v8-contract';
 import { normalizeIndexV8SourcePath } from './index-v8-partition';
+import { NATIVE_SOURCE_RESCAN, type PersistedNativePropertySource } from '../native-property-persistence';
 
 export type IndexV8ParityDimension =
 	| 'manifest-totals'
 	| 'source-membership'
 	| 'source-metadata'
+	| 'native-properties'
 	| 'task-instances'
 	| 'operon-id-membership'
 	| 'duplicate-membership'
@@ -147,6 +149,7 @@ export async function compareIndexV8Parity(
 	snapshot: IndexV8Snapshot,
 	nowMs: number = Date.now(),
 	sourceStats: ReadonlyMap<string, IndexV8SourceStat> = new Map(),
+	nativeSources?: ReadonlyMap<string, PersistedNativePropertySource>,
 ): Promise<IndexV8ParityResult> {
 	const validated = await validateIndexV8Snapshot(snapshot.manifestPayload, snapshot.shardPayloads);
 	const hydrated = hydrateIndexV8Shards(validated.shards, nowMs);
@@ -198,9 +201,22 @@ export async function compareIndexV8Parity(
 	];
 	const mismatches = (await Promise.all(projections.map(compareProjection)))
 		.filter((result): result is IndexV8ParityMismatch => result !== null);
+	if (nativeSources) {
+		const actual = new Map(validated.shards.flatMap(shard => shard.sources.map(source => [source.path, source.native] as const)));
+		// Compare one source at a time instead of allocating two whole-vault native
+		// JSON projections alongside the canonical parity projections.
+		for (const path of left.sourceMembership) {
+			const expected = nativeSources.get(path) ?? NATIVE_SOURCE_RESCAN;
+			if (stableCompactStringify(expected) === stableCompactStringify(actual.get(path) ?? null)) continue;
+			const mismatch = await compareProjection(projection('native-properties', [path, expected], [path, actual.get(path) ?? null]));
+			if (mismatch) mismatches.push(mismatch);
+			break;
+		}
+	}
+	const checkedDimensions = projections.length + (nativeSources ? 1 : 0);
 	return mismatches.length === 0
-		? { ok: true, checkedDimensions: projections.length, mismatches: [] }
-		: { ok: false, checkedDimensions: projections.length, mismatches };
+		? { ok: true, checkedDimensions, mismatches: [] }
+		: { ok: false, checkedDimensions, mismatches };
 }
 
 export async function assertIndexV8Parity(
@@ -208,8 +224,9 @@ export async function assertIndexV8Parity(
 	snapshot: IndexV8Snapshot,
 	nowMs: number = Date.now(),
 	sourceStats: ReadonlyMap<string, IndexV8SourceStat> = new Map(),
+	nativeSources?: ReadonlyMap<string, PersistedNativePropertySource>,
 ): Promise<void> {
-	const result = await compareIndexV8Parity(authority, snapshot, nowMs, sourceStats);
+	const result = await compareIndexV8Parity(authority, snapshot, nowMs, sourceStats, nativeSources);
 	if (!result.ok) throw new IndexV8ParityError('PARITY_MISMATCH', result.mismatches);
 }
 

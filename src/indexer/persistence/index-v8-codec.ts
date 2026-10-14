@@ -21,12 +21,14 @@ import {
 	normalizeIndexV8SourcePath,
 } from './index-v8-partition';
 import { computeIndexTier } from '../index-tier';
+import { isPersistedNativePropertySource, NATIVE_SOURCE_RESCAN, type PersistedNativePropertySource } from '../native-property-persistence';
 
 export interface IndexV8SourceInput {
 	path: string;
 	mtimeMs: number;
 	sizeBytes: number;
 	instances: IndexedTaskInstance[];
+	native?: PersistedNativePropertySource;
 }
 
 export interface IndexV8SourceStat {
@@ -117,6 +119,7 @@ export async function sha256HexBytes(value: ArrayBuffer): Promise<string> {
 export function projectIndexDataToV8Sources(
 	data: IndexData,
 	sourceStats: ReadonlyMap<string, IndexV8SourceStat> = new Map(),
+	nativeSources: ReadonlyMap<string, PersistedNativePropertySource> = new Map(),
 ): IndexV8SourceInput[] {
 	const normalizedStats = new Map<string, IndexV8SourceStat>();
 	for (const [path, stat] of sourceStats) {
@@ -142,6 +145,7 @@ export function projectIndexDataToV8Sources(
 			mtimeMs: stat?.mtimeMs ?? 0,
 			sizeBytes: stat?.sizeBytes ?? 0,
 			instances,
+			native: nativeSources.get(path) ?? NATIVE_SOURCE_RESCAN,
 		};
 	});
 }
@@ -551,7 +555,7 @@ function projectSource(
 	if (!Number.isInteger(input.sizeBytes) || input.sizeBytes < 0) throw new IndexV8CodecError(`Invalid size for source: ${path}`);
 	const instances = input.instances.map(instance => projectInstance(path, instance, canonicalInstanceKeys));
 	instances.sort(comparePersistedInstances);
-	return { path, mtimeMs: input.mtimeMs, sizeBytes: input.sizeBytes, instances };
+	return { path, mtimeMs: input.mtimeMs, sizeBytes: input.sizeBytes, instances, native: input.native ?? NATIVE_SOURCE_RESCAN };
 }
 
 function projectInstance(
@@ -691,7 +695,14 @@ function isSourceRecord(value: unknown): value is IndexSourceRecordV8 {
 	if ('filePath' in value || 'tasks' in value || 'taskInstances' in value || 'pinned' in value) return false;
 	if (typeof value.path !== 'string' || !isNonNegativeFiniteNumber(value.mtimeMs) || !isNonNegativeInteger(value.sizeBytes)) return false;
 	if (!Array.isArray(value.instances)) return false;
-	return value.instances.every(isPersistedInstance);
+	if (!isPersistedNativePropertySource(value.native)) return false;
+	if (!value.instances.every(isPersistedInstance)) return false;
+	if (!('rescan' in value.native)) {
+		const inline = new Map(value.instances.filter(instance => instance.location.format === 'inline')
+			.map(instance => [instance.location.lineNumber, instance.operonId]));
+		if (inline.size !== value.native.inline.length || value.native.inline.some(([line, id]) => inline.get(line) !== id)) return false;
+	}
+	return true;
 }
 
 function isPersistedInstance(value: unknown): value is PersistedTaskInstanceV8 {

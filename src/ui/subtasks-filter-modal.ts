@@ -1,5 +1,7 @@
 import { App, Modal, Platform } from 'obsidian';
+import { createFloatingPanel, closeFloatingPanelsForRoot, requestFloatingInputFocus } from './field-pickers/common';
 import { t } from '../core/i18n';
+import { setAccessibleLabelWithoutTooltip } from './accessibility-label';
 import type { FilterSet } from '../types/settings';
 import type { EmbedFilterDeps, FilterSurfaceInstance } from './embed-filter-processor';
 import {
@@ -87,4 +89,45 @@ export class SubtasksFilterModal extends Modal {
 			this.containerEl.style.setProperty('--operon-subtasks-filter-mobile-viewport-height', `${Math.round(viewportHeight)}px`);
 		}
 	}
+}
+
+/** Show the existing dynamic filter in the Task Editor's owned floating host. */
+export function showSubtasksFilterPopover(anchor: HTMLElement, options: SubtasksFilterModalOptions): () => void {
+	let instance: FilterSurfaceInstance | null = null;
+	let unsubscribe: (() => void) | null = null;
+	let closed = false;
+	let restoreFocus = false;
+	const { panel, close } = createFloatingPanel(anchor, 'operon-floating-panel operon-subtasks-filter-popover', () => {
+		closed = true;
+		unsubscribe?.();
+		unsubscribe = null;
+		closeFloatingPanelsForRoot(panel);
+		if (instance) destroyFilterSurfaceInstance(instance);
+		instance = null;
+		if (restoreFocus && anchor.isConnected) requestFloatingInputFocus(anchor);
+		options.onClose?.();
+	}, {
+		closeOnWindowResize: false,
+		shouldClose: reason => { restoreFocus = reason === 'escape'; return true; },
+		outsideClickExclusions: () => Array.from(panel.parentElement?.querySelectorAll<HTMLElement>('.operon-floating-panel') ?? []).filter(candidate => candidate !== panel),
+	});
+	panel.tabIndex = -1;
+	panel.setAttribute('role', 'dialog');
+	setAccessibleLabelWithoutTooltip(panel, t('filterSets', 'dynamicSubtasksFilterTitle'));
+	instance = createFilterSurfaceInstance(panel.createDiv('operon-subtasks-filter'));
+	const refresh = () => {
+		if (closed || !instance) return;
+		if (!renderSubtasksFilterSurface(instance, options.parentTaskId, options.deps, options.onEditFilter)) close();
+	};
+	try {
+		refresh();
+		if (!closed) {
+			unsubscribe = options.deps.indexer.subscribeIndexUpdates(refresh);
+			requestFloatingInputFocus(panel);
+		}
+	} catch (error) {
+		close();
+		throw error;
+	}
+	return close;
 }

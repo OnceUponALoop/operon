@@ -201,6 +201,75 @@ export function validateDependencyEdge(
 	};
 }
 
+export interface DependencyEdgeRejection {
+	fromId: string;
+	toId: string;
+	reason: 'self' | 'cycle';
+}
+
+/** Validates a complete projected edge set in linear time, without choosing an arbitrary cycle break. */
+export function validateDependencyEdgeSet(
+	edges: Iterable<{ fromId: string; toId: string }>,
+	tasks: Iterable<DependencyGraphTask>,
+): DependencyEdgeRejection[] {
+	const adjacency = buildDependencyAdjacency(tasks);
+	const reverse = new Map<string, Set<string>>();
+	for (const [from, targets] of adjacency) {
+		if (!reverse.has(from)) reverse.set(from, new Set());
+		for (const to of targets) {
+			const sources = reverse.get(to) ?? new Set<string>();
+			sources.add(from);
+			reverse.set(to, sources);
+		}
+	}
+	// Iterative Kosaraju traversal also handles long chains without recursion-stack limits.
+	const visited = new Set<string>();
+	const finished: string[] = [];
+	for (const start of adjacency.keys()) {
+		if (visited.has(start)) continue;
+		const stack: Array<{ id: string; exit: boolean }> = [{ id: start, exit: false }];
+		while (stack.length) {
+			const frame = stack.pop()!;
+			if (frame.exit) {
+				finished.push(frame.id);
+				continue;
+			}
+			if (visited.has(frame.id)) continue;
+			visited.add(frame.id);
+			stack.push({ id: frame.id, exit: true });
+			for (const id of adjacency.get(frame.id) ?? []) {
+				if (!visited.has(id)) stack.push({ id, exit: false });
+			}
+		}
+	}
+	const components = new Map<string, number>();
+	let component = 0;
+	for (const start of finished.reverse()) {
+		if (components.has(start)) continue;
+		const stack = [start];
+		while (stack.length) {
+			const id = stack.pop()!;
+			if (components.has(id)) continue;
+			components.set(id, component);
+			for (const source of reverse.get(id) ?? []) {
+				if (!components.has(source)) stack.push(source);
+			}
+		}
+		component++;
+	}
+	const rejected: DependencyEdgeRejection[] = [];
+	for (const edge of edges) {
+		const fromId = edge.fromId.trim();
+		const toId = edge.toId.trim();
+		if (!fromId || !toId) continue;
+		if (fromId === toId) rejected.push({ fromId, toId, reason: 'self' });
+		else if (components.has(fromId) && components.get(fromId) === components.get(toId)) {
+			rejected.push({ fromId, toId, reason: 'cycle' });
+		}
+	}
+	return rejected;
+}
+
 function normalizeTaskId(value: string): string {
 	return value.trim();
 }

@@ -145,6 +145,7 @@ async function run(): Promise<void> {
 		),
 		{
 			parentTask: 'parent-001',
+			priority: DEFAULT_SETTINGS.defaultPriority,
 			taskType: 'Project',
 			taskImage: 'Assets/cover.png',
 			taskGallery: 'Assets/one.png; Assets/two.png',

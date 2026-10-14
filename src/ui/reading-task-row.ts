@@ -1,4 +1,4 @@
-import { replaceTaskTimeScope } from '../core/time-scope-values';
+import { getTimeScopeSignature, replaceTaskTimeScope } from '../core/time-scope-values';
 import { bindLinksChipKeyboard, handleLinksChipClick } from './links-chip-action';
 import { identifyInlineTaskPart, registerInlineTaskDomRefresh, rememberInlineTaskDom, reconcileInlineTaskDom } from './inline-retained-dom';
 import { bindAssigneeChipImage } from './assignee-chip-image';
@@ -17,6 +17,7 @@ import {
 import { PriorityDefinition } from '../types/priority';
 import {
 	buildInlineTaskCompactChipEntries,
+	type CompactTaskRenderContext,
 	createInlineTaskCompactChipElement,
 	InlineTaskCompactChipEntry,
 	isCompactTaskMediaChipKey,
@@ -136,6 +137,10 @@ export function guardReadingTaskRowActions(
 }
 
 export interface ReadingTaskRowOptions {
+	/** Opt-in refresh inputs for retained inline rows; shared once per section. */
+	refreshSignature?: string;
+	preparedEntries?: InlineTaskCompactChipEntry[];
+	renderContext?: CompactTaskRenderContext;
  retainDom?: boolean;
 	owner?: Node | null;
 	workflowStatusIdentityIndex?: WorkflowStatusIdentityIndex;
@@ -162,19 +167,19 @@ export interface ReadingTaskRowOptions {
 	}) => void;
 }
 
-const retainedInlineRows = new WeakMap<HTMLElement, { task: IndexedTask; callbacks: ReadingTaskRowCallbacks; readOnly: boolean }>();
+const retainedInlineRows = new WeakMap<HTMLElement, { task: IndexedTask; callbacks: ReadingTaskRowCallbacks; readOnly: boolean; blocked: boolean; signature?: string; refreshSignature?: string }>();
 
 /** Opt-in for Reading inline tasks only; other row consumers keep their existing renderer. */
 export function updateReadingInlineTaskRow(
  previous: HTMLElement | null,
  source: IndexedTask,
  callbacks: ReadingTaskRowCallbacks,
- renderedDescription: HTMLElement,
+ renderedDescription: HTMLElement | (() => HTMLElement),
  options: ReadingTaskRowOptions,
 ): HTMLElement {
  const state = previous ? retainedInlineRows.get(previous) : undefined;
  const canRetain = state && state.task.operonId === source.operonId && state.task.primary.filePath === source.primary.filePath
-  && state.readOnly === !!options.readOnly && !options.onBlockedAction;
+  && state.readOnly === !!options.readOnly && !options.onBlockedAction && !state.blocked;
  const model = canRetain ? state.task : { ...source, fieldValues: { ...source.fieldValues } };
  const currentCallbacks = canRetain ? state.callbacks : { ...callbacks };
  if (canRetain) {
@@ -186,11 +191,53 @@ export function updateReadingInlineTaskRow(
   for (const key of Object.keys(currentCallbacks)) Reflect.deleteProperty(currentCallbacks, key);
   Object.assign(currentCallbacks, callbacks);
  }
- const next = buildReadingTaskRowElement(model, currentCallbacks, renderedDescription, { ...options, owner: previous ?? options.owner });
+ const preparedEntries = options.refreshSignature === undefined ? undefined : prepareReadingTaskChips(model, currentCallbacks, options);
+ const signature = options.refreshSignature === undefined ? undefined : JSON.stringify([
+  model, getTimeScopeSignature(model), preparedEntries,
+  currentCallbacks.isTaskPinned?.(model.operonId), currentCallbacks.isTaskTracking?.(model.operonId),
+  currentCallbacks.getProjectSerialDisplay?.(model.operonId, model),
+  options.readOnly, options.projectSerialPlacement, options.rowClassName,
+  options.showPlayAction, options.showPinAction, options.showNoteAction, options.showSubtaskAction, options.showEditAction,
+ ]);
+ if (canRetain && previous && signature !== undefined && state.signature === signature && state.refreshSignature === options.refreshSignature
+  && !options.beforeTailContent && !options.beforeEditAction) return previous;
+ const description = typeof renderedDescription === 'function' ? renderedDescription() : renderedDescription;
+ const next = buildReadingTaskRowElement(model, currentCallbacks, description, { ...options, preparedEntries, owner: previous ?? options.owner });
  rememberInlineTaskDom(next);
- if (canRetain && previous) { reconcileInlineTaskDom(previous, next); return previous; }
- retainedInlineRows.set(next, { task: model, callbacks: currentCallbacks, readOnly: !!options.readOnly });
+ if (canRetain && previous) {
+  reconcileInlineTaskDom(previous, next);
+  state.signature = signature;
+  state.refreshSignature = options.refreshSignature;
+  return previous;
+ }
+ retainedInlineRows.set(next, { task: model, callbacks: currentCallbacks, readOnly: !!options.readOnly, blocked: !!options.onBlockedAction, signature, refreshSignature: options.refreshSignature });
  return next;
+}
+
+function prepareReadingTaskChips(
+	task: IndexedTask,
+	callbacks: ReadingTaskRowCallbacks,
+	options?: ReadingTaskRowOptions,
+	workflowStatusIdentityIndex = options?.workflowStatusIdentityIndex ?? buildWorkflowStatusIdentityIndex(callbacks.getPipelines()),
+): InlineTaskCompactChipEntry[] {
+	const settings = callbacks.getSettings();
+	const locationResolver = shouldResolveLocationCompactChips(settings, options?.chipItems)
+		? getLocationPlaceIndex(callbacks.app, settings).resolve
+		: undefined;
+	return buildInlineTaskCompactChipEntries(
+		task.fieldValues,
+		task.tags,
+		settings,
+		options?.renderContext?.tasks ?? callbacks.getAllTasks(),
+		options?.chipItems,
+		locationResolver,
+		{
+			app: callbacks.app,
+			repeatSkipDateResolver: callbacks.getRepeatSkipDates,
+			workflowStatusIdentityIndex,
+			taskLookup: options?.renderContext?.taskLookup,
+		},
+	);
 }
 
 const retainedFilterRows = new WeakMap<HTMLElement, { task: IndexedTask; callbacks: ReadingTaskRowCallbacks; adopt: (task: IndexedTask, callbacks: ReadingTaskRowCallbacks) => void }>();
@@ -332,22 +379,7 @@ export function buildReadingTaskRowElement(
 	}
 
 	const settings = callbacks.getSettings();
-	const locationResolver = shouldResolveLocationCompactChips(settings, options?.chipItems)
-		? getLocationPlaceIndex(callbacks.app, settings).resolve
-		: undefined;
-	const entries = buildInlineTaskCompactChipEntries(
-		task.fieldValues,
-		task.tags,
-		settings,
-		callbacks.getAllTasks(),
-		options?.chipItems,
-		locationResolver,
-		{
-			app: callbacks.app,
-			repeatSkipDateResolver: callbacks.getRepeatSkipDates,
-			workflowStatusIdentityIndex,
-		},
-	);
+	const entries = options?.preparedEntries ?? prepareReadingTaskChips(task, callbacks, options, workflowStatusIdentityIndex);
 	for (const entry of entries) {
 		const renderEntry = readOnly && entry.interactive ? { ...entry, interactive: false } : entry;
 		const chip = createInlineTaskCompactChipElement(renderEntry, 'operon-reading-task-chip operon-task-chip');
@@ -500,14 +532,18 @@ export function buildReadingTaskRowElement(
 	if (showNoteAction && readOnly && noteValue) {
 		const noteIndicator = createOperonHoverIndicator({
 			title: t('taskEditor', 'notes'),
-			contentEl: createCompactTaskMarkdownTooltipContent(actions, noteValue),
+			contentElFactory: () => createCompactTaskMarkdownTooltipContent(actions, noteValue),
 			icon: getConfiguredKeyMappingIcon('note', callbacks.getSettings().keyMappings) || 'notebook-pen',
 			taskColor,
 			preferredHorizontal: 'right',
 		});
 		noteIndicator.querySelector('.operon-hover-trigger')?.classList.add('operon-reading-task-note-neutral', 'operon-task-chip-action');
+		identifyInlineTaskPart(noteIndicator, 'note', JSON.stringify([rawNoteValue, taskColor, settings.language, noteIndicator.outerHTML.replace(/operon-accessible-label-\d+/g, 'operon-accessible-label')]));
 		actions.appendChild(noteIndicator);
 	} else if (showNoteAction && !readOnly && (!isTerminal || noteValue)) {
+		// Keep action closures independent of the render-pass lookup.
+		const retainDom = options?.retainDom;
+		const owner = options?.owner;
 		const noteButton = createTaskNoteActionButton({
 			owner: row,
 			noteValue,
@@ -523,7 +559,7 @@ export function buildReadingTaskRowElement(
 					anchor,
 					operonId: task.operonId,
 					sourcePath: task.primary.filePath,
-					lifecycleOwner: resolveReadingTaskNoteLifecycleOwner(options?.retainDom ? noteButton.closest<HTMLElement>('.operon-reading-task-row') ?? row : row, options?.owner),
+					lifecycleOwner: resolveReadingTaskNoteLifecycleOwner(retainDom ? noteButton.closest<HTMLElement>('.operon-reading-task-row') ?? row : row, owner),
 					initialValue: rawNoteValue,
 					taskDescription: task.description,
 					taskColor,

@@ -105,6 +105,9 @@ function sortFieldsCanonical(fields: OperonField[], keyMappings: KeyMapping[] = 
 	return fields
 		.map((field, index) => ({ field, index }))
 		.sort((a, b) => {
+			const bucket = (field: OperonField): number => field.key === 'datetimeModified' ? 4 : field.key === 'datetimeCreated' ? 3 : CANONICAL_KEY_MAP.has(field.key) ? 0 : getManagedCustomKeyOrder(field.key, keyMappings) !== null ? 1 : 2;
+			const group = bucket(a.field) - bucket(b.field);
+			if (group) return group;
 			const customOrderA = getManagedCustomKeyOrder(a.field.key, keyMappings);
 			const customOrderB = getManagedCustomKeyOrder(b.field.key, keyMappings);
 			const isCustomA = customOrderA !== null;
@@ -153,6 +156,8 @@ function getSerializedKeyName(field: OperonField, _keyMappings: KeyMapping[]): s
 }
 
 export function serializeField(field: OperonField, keyMappings: KeyMapping[] = []): string {
+	if (!CANONICAL_KEY_MAP.has(field.key) && field.sourceToken !== undefined && field.sourceValue === field.value
+		&& field.sourceToken.slice(2, field.sourceToken.indexOf('::')).trim() === field.sourceKey) return field.sourceToken;
 	const normalizedValue = field.key === 'datetimeCreated'
 		? normalizeLegacyCreatedDatetime(field.value)
 		: field.key === 'taskIcon'
