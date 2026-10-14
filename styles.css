@@ -15839,6 +15839,10 @@ body:not(.is-mobile) .mod-root .workspace-leaf-content[data-type="operon-filter-
 	background: color-mix(in srgb, var(--background-primary) 76%, var(--background-secondary));
 }
 
+.operon-condition-row > button:last-child {
+	margin-left: auto;
+}
+
 .operon-condition-row--locked {
 	opacity: 0.72;
 	cursor: not-allowed;
