@@ -36679,6 +36679,12 @@ body .operon-task-editor:not(.operon-task-editor-mobile) button.operon-editor-de
 /* Creator focus mode: preserve hit targets and wrapping so picker anchors never move. */
 body:not(.is-mobile) .operon-task-creator-tool {
 	position: relative;
+	transition: border-color 0.09s ease, background 0.09s ease, box-shadow 0.09s ease, color 0.09s ease;
+}
+/* Icons, quiet lines and the button border share the same transition clock. */
+body:not(.is-mobile) .operon-task-creator-tool .operon-task-creator-tool-icon,
+body:not(.is-mobile) .operon-task-creator-tool::after {
+	transition: opacity 0.09s ease;
 }
 body:not(.is-mobile) .operon-task-creator-tool::after {
 	content: "";
@@ -36707,6 +36713,14 @@ body:not(.is-mobile) .operon-task-creator:not(:has(.operon-task-creator-toolbar:
 }
 body:not(.is-mobile) .operon-task-creator:not(:has(.operon-task-creator-toolbar:hover, .operon-task-creator-tool:focus-within)):not(.has-open-creator-picker):not(.has-open-creator-picker *) .operon-task-creator-tool::after {
 	opacity: 1;
+}
+
+@media (prefers-reduced-motion: reduce) {
+	body:not(.is-mobile) .operon-task-creator-tool,
+	body:not(.is-mobile) .operon-task-creator-tool .operon-task-creator-tool-icon,
+	body:not(.is-mobile) .operon-task-creator-tool::after {
+		transition: none;
+	}
 }
 
 /* Task Editor touch desktop layout: phones opting out of legacy mobile, and tablets. */
