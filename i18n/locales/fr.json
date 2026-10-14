@@ -1860,6 +1860,8 @@
 		"excludedFileTasksFolderBlocked": "{{folder}} est le dossier des tâches-fichiers ou le contient, il ne peut donc pas être exclu.",
 		"excludedFileTasksFolderRemoved": "Dossier des tâches-fichiers retiré des dossiers exclus.",
 		"removeExcludedFolder": "Retirer le dossier exclu",
+		"periodicNotes": "Notes périodiques",
+		"periodicNotesAsFileTasks": "Notes périodiques comme tâches fichier",
 		"fileTaskDailyNotes": "Notes quotidiennes",
 		"manageDailyNotesWithOperon": "Gérer les notes quotidiennes avec Operon",
 		"manageDailyNotesWithOperonDesc": "Utilise le format, le modèle et le dossier d’Operon. Si désactivé, Operon utilise la configuration du module principal Daily Notes.",

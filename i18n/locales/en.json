@@ -1859,6 +1859,8 @@
 		"excludedFileTasksFolderBlocked": "{{folder}} is the File tasks folder or contains it, so it cannot be excluded.",
 		"excludedFileTasksFolderRemoved": "Removed the File tasks folder from excluded folders.",
 		"removeExcludedFolder": "Remove excluded folder",
+		"periodicNotes": "Periodic Notes",
+		"periodicNotesAsFileTasks": "Periodic Notes as File Tasks",
 		"fileTaskDailyNotes": "Daily notes",
 		"manageDailyNotesWithOperon": "Manage daily notes with Operon",
 		"manageDailyNotesWithOperonDesc": "Use Operon's format, template, and folder when it creates or resolves Daily Notes. When disabled, Operon continues to use the Core Daily Notes configuration.",

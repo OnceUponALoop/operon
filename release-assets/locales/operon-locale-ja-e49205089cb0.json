@@ -1,8 +1,8 @@
 {
   "schemaVersion": 1,
   "locale": "ja",
-  "keyCount": 3650,
-  "keyFingerprint": "3ba55f91f00b60baa21640f349ca7a1def7b8960ba503bc8feebf25d803cd49c",
+  "keyCount": 3652,
+  "keyFingerprint": "853b19c5f15756a38938112fa7a11c8f1f0e3c71ab0cb12ea4bb0b5828ac2f31",
   "translations": {
     "buttons": {
       "addFileSubtask": "ファイルサブタスクを追加",
@@ -2107,6 +2107,8 @@
       "periodicNoteSyntaxInvalid": "この形式では安全な定期ノートパスを生成できません。",
       "periodicNoteSyntaxPreview": "現在の構文: {{example}}",
       "periodicNoteSyntaxReference": "構文リファレンス",
+      "periodicNotes": "定期ノート",
+      "periodicNotesAsFileTasks": "ファイルタスクとしての定期ノート",
       "pinnedDockAutoClose": "ピン留めドックを自動的に閉じる",
       "pinnedDockAutoCloseDelay": "ピン留めドックの自動クローズ遅延（秒）",
       "pinnedDockAutoCloseDelayDesc": "ドックを折りたたむ前に、マウスが離れてから待機する秒数。",
@@ -3695,5 +3697,5 @@
       "toggleDescendantPreview": "子孫プレビューを切り替え"
     }
   },
-  "sourceVersion": "af65a8646b9fd0a0871085286e76605a334a53921e7e7bd5295d4093aec670c6"
+  "sourceVersion": "ce678aebfbc2ee1eecc2efc4c7885f8e6ebbcfedea21184ec9bcd12c668a3b86"
 }

@@ -1860,6 +1860,8 @@
 		"excludedFileTasksFolderBlocked": "{{folder}} 是檔案任務資料夾或包含它，因此無法被排除。",
 		"excludedFileTasksFolderRemoved": "已從排除的資料夾中移除檔案任務資料夾。",
 		"removeExcludedFolder": "移除排除的資料夾",
+		"periodicNotes": "週期筆記",
+		"periodicNotesAsFileTasks": "將週期筆記作為檔案任務",
 		"fileTaskDailyNotes": "日記",
 		"manageDailyNotesWithOperon": "使用 Operon 管理日記",
 		"manageDailyNotesWithOperonDesc": "使用 Operon 的格式、模板與資料夾。關閉時使用核心 Daily Notes 設定。",

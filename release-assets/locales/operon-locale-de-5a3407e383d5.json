@@ -1,8 +1,8 @@
 {
   "schemaVersion": 1,
   "locale": "de",
-  "keyCount": 3650,
-  "keyFingerprint": "3ba55f91f00b60baa21640f349ca7a1def7b8960ba503bc8feebf25d803cd49c",
+  "keyCount": 3652,
+  "keyFingerprint": "853b19c5f15756a38938112fa7a11c8f1f0e3c71ab0cb12ea4bb0b5828ac2f31",
   "translations": {
     "buttons": {
       "addFileSubtask": "Datei-Unteraufgabe hinzufügen",
@@ -2107,6 +2107,8 @@
       "periodicNoteSyntaxInvalid": "Dieses Format erzeugt keinen sicheren Pfad für periodische Notizen.",
       "periodicNoteSyntaxPreview": "Ihre aktuelle Syntax sieht so aus: {{example}}",
       "periodicNoteSyntaxReference": "Syntaxreferenz",
+      "periodicNotes": "Periodische Notizen",
+      "periodicNotesAsFileTasks": "Periodische Notizen als Dateiaufgaben",
       "pinnedDockAutoClose": "Dock für angeheftete Aufgaben automatisch schließen",
       "pinnedDockAutoCloseDelay": "Verzögerung für automatisches Schließen des Docks für angeheftete Aufgaben (Sekunden)",
       "pinnedDockAutoCloseDelayDesc": "Sekunden, die nach dem Verlassen des Docks durch die Maus gewartet wird, bevor es eingeklappt wird.",
@@ -3695,5 +3697,5 @@
       "toggleDescendantPreview": "Vorschau untergeordneter Aufgaben umschalten"
     }
   },
-  "sourceVersion": "30d5a17a3ef1bbd6fca6314845e80049fd3dec87cdb810ef7446428f531b9a3c"
+  "sourceVersion": "4d6dce16a808777b23eb42b5032aa31e9a0551b64b512de6f9b6ff0dbbeee48f"
 }

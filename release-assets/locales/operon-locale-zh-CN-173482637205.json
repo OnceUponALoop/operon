@@ -1,8 +1,8 @@
 {
   "schemaVersion": 1,
   "locale": "zh-CN",
-  "keyCount": 3650,
-  "keyFingerprint": "3ba55f91f00b60baa21640f349ca7a1def7b8960ba503bc8feebf25d803cd49c",
+  "keyCount": 3652,
+  "keyFingerprint": "853b19c5f15756a38938112fa7a11c8f1f0e3c71ab0cb12ea4bb0b5828ac2f31",
   "translations": {
     "buttons": {
       "addFileSubtask": "添加文件子任务",
@@ -2107,6 +2107,8 @@
       "periodicNoteSyntaxInvalid": "此格式无法生成安全的周期笔记路径。",
       "periodicNoteSyntaxPreview": "当前语法示例：{{example}}",
       "periodicNoteSyntaxReference": "语法参考",
+      "periodicNotes": "周期笔记",
+      "periodicNotesAsFileTasks": "将周期笔记作为文件任务",
       "pinnedDockAutoClose": "自动关闭置顶停靠栏",
       "pinnedDockAutoCloseDelay": "置顶停靠栏自动关闭延迟（秒）",
       "pinnedDockAutoCloseDelayDesc": "鼠标离开停靠栏后等待多少秒再折叠它。",
@@ -3695,5 +3697,5 @@
       "toggleDescendantPreview": "切换子任务预览"
     }
   },
-  "sourceVersion": "8d20c44b3220b49f0d10ce01445fe50edd8c3f856c1930c92f71c54fdbd8347c"
+  "sourceVersion": "172366bda587b0030b138abc420e1522714adb9d9cb8a4eadb361a0cefa08bdc"
 }

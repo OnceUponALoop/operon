@@ -1,8 +1,8 @@
 {
   "schemaVersion": 1,
   "locale": "zh-TW",
-  "keyCount": 3650,
-  "keyFingerprint": "3ba55f91f00b60baa21640f349ca7a1def7b8960ba503bc8feebf25d803cd49c",
+  "keyCount": 3652,
+  "keyFingerprint": "853b19c5f15756a38938112fa7a11c8f1f0e3c71ab0cb12ea4bb0b5828ac2f31",
   "translations": {
     "buttons": {
       "addFileSubtask": "新增檔案子任務",
@@ -2107,6 +2107,8 @@
       "periodicNoteSyntaxInvalid": "此格式無法產生安全的週期筆記路徑。",
       "periodicNoteSyntaxPreview": "目前語法範例：{{example}}",
       "periodicNoteSyntaxReference": "語法參考",
+      "periodicNotes": "週期筆記",
+      "periodicNotesAsFileTasks": "將週期筆記作為檔案任務",
       "pinnedDockAutoClose": "自動關閉置頂停靠欄",
       "pinnedDockAutoCloseDelay": "置頂停靠欄自動關閉延遲（秒）",
       "pinnedDockAutoCloseDelayDesc": "滑鼠離開停靠欄後等待多少秒再摺疊它。",
@@ -3695,5 +3697,5 @@
       "toggleDescendantPreview": "切換子任務預覽"
     }
   },
-  "sourceVersion": "e10996e170d6652a5ca7fb267bfba22902c91e04d1a5fab957f35e70c8031ab1"
+  "sourceVersion": "a65901752d3af1091b67f71ffe9690ed408a4a56eabbff4937e22eede03ed93e"
 }

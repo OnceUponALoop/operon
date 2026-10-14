@@ -1,8 +1,8 @@
 {
   "schemaVersion": 1,
   "locale": "fr",
-  "keyCount": 3650,
-  "keyFingerprint": "3ba55f91f00b60baa21640f349ca7a1def7b8960ba503bc8feebf25d803cd49c",
+  "keyCount": 3652,
+  "keyFingerprint": "853b19c5f15756a38938112fa7a11c8f1f0e3c71ab0cb12ea4bb0b5828ac2f31",
   "translations": {
     "buttons": {
       "addFileSubtask": "Ajouter une sous-tâche-fichier",
@@ -2107,6 +2107,8 @@
       "periodicNoteSyntaxInvalid": "Ce format ne produit pas un chemin de note périodique sûr.",
       "periodicNoteSyntaxPreview": "Votre syntaxe actuelle ressemble à ceci : {{example}}",
       "periodicNoteSyntaxReference": "Référence de syntaxe",
+      "periodicNotes": "Notes périodiques",
+      "periodicNotesAsFileTasks": "Notes périodiques comme tâches fichier",
       "pinnedDockAutoClose": "Fermer automatiquement le panneau épinglé",
       "pinnedDockAutoCloseDelay": "Délai de fermeture automatique du panneau épinglé (secondes)",
       "pinnedDockAutoCloseDelayDesc": "Secondes à attendre après que la souris a quitté le panneau avant de le réduire.",
@@ -3695,5 +3697,5 @@
       "toggleDescendantPreview": "Basculer l'aperçu des descendants"
     }
   },
-  "sourceVersion": "0aa65944bf8454f5db48c33b721fcd164e6d5fbb833508856249b9b8628147a2"
+  "sourceVersion": "1ad00b6c7b07c08914574aa802ef68d5cf69fd7c3bd19184daa15cda3716fb8d"
 }

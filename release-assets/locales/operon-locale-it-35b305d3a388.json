@@ -1,8 +1,8 @@
 {
   "schemaVersion": 1,
   "locale": "it",
-  "keyCount": 3650,
-  "keyFingerprint": "3ba55f91f00b60baa21640f349ca7a1def7b8960ba503bc8feebf25d803cd49c",
+  "keyCount": 3652,
+  "keyFingerprint": "853b19c5f15756a38938112fa7a11c8f1f0e3c71ab0cb12ea4bb0b5828ac2f31",
   "translations": {
     "buttons": {
       "addFileSubtask": "Aggiungi sotto-attività-file",
@@ -2107,6 +2107,8 @@
       "periodicNoteSyntaxInvalid": "Questo formato non produce un percorso sicuro per la nota periodica.",
       "periodicNoteSyntaxPreview": "La sintassi corrente appare così: {{example}}",
       "periodicNoteSyntaxReference": "Riferimento sintassi",
+      "periodicNotes": "Note periodiche",
+      "periodicNotesAsFileTasks": "Note periodiche come attività file",
       "pinnedDockAutoClose": "Chiudi automaticamente pannello fissato",
       "pinnedDockAutoCloseDelay": "Ritardo chiusura automatica pannello fissato (secondi)",
       "pinnedDockAutoCloseDelayDesc": "Secondi da attendere dopo che il mouse lascia il pannello prima di comprimerlo.",
@@ -3695,5 +3697,5 @@
       "toggleDescendantPreview": "Alterna anteprima discendenti"
     }
   },
-  "sourceVersion": "502f1a1770cdf07332ece71202716aa425dccbc1fc5d96aaa609ab18d2a78bab"
+  "sourceVersion": "3c6d5fddfbe6b2fc8c3e11cc07ef207fc59a81b893b823c1b32519fcac287f04"
 }

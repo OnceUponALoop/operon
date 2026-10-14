@@ -1,8 +1,8 @@
 {
   "schemaVersion": 1,
   "locale": "ru",
-  "keyCount": 3650,
-  "keyFingerprint": "3ba55f91f00b60baa21640f349ca7a1def7b8960ba503bc8feebf25d803cd49c",
+  "keyCount": 3652,
+  "keyFingerprint": "853b19c5f15756a38938112fa7a11c8f1f0e3c71ab0cb12ea4bb0b5828ac2f31",
   "translations": {
     "buttons": {
       "addFileSubtask": "Добавить файловую подзадачу",
@@ -2107,6 +2107,8 @@
       "periodicNoteSyntaxInvalid": "Этот формат не создаёт безопасный путь периодической заметки.",
       "periodicNoteSyntaxPreview": "Текущий синтаксис выглядит так: {{example}}",
       "periodicNoteSyntaxReference": "Справочник синтаксиса",
+      "periodicNotes": "Периодические заметки",
+      "periodicNotesAsFileTasks": "Периодические заметки как файловые задачи",
       "pinnedDockAutoClose": "Автозакрытие дока закреплённых задач",
       "pinnedDockAutoCloseDelay": "Задержка автозакрытия дока закреплённых задач (сек.)",
       "pinnedDockAutoCloseDelayDesc": "Количество секунд ожидания после того, как курсор покинул док, перед его сворачиванием.",
@@ -3695,5 +3697,5 @@
       "toggleDescendantPreview": "Переключить предпросмотр потомков"
     }
   },
-  "sourceVersion": "258a89ddab60a741881df3621aa30cea9427e6c352a00adea9f961c851b46689"
+  "sourceVersion": "0ee98c0842357a56bb6a397a1123abd8b682cf64aa8446a0387a93fc252d14af"
 }

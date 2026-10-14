@@ -1,8 +1,8 @@
 {
   "schemaVersion": 1,
   "locale": "tr",
-  "keyCount": 3650,
-  "keyFingerprint": "3ba55f91f00b60baa21640f349ca7a1def7b8960ba503bc8feebf25d803cd49c",
+  "keyCount": 3652,
+  "keyFingerprint": "853b19c5f15756a38938112fa7a11c8f1f0e3c71ab0cb12ea4bb0b5828ac2f31",
   "translations": {
     "buttons": {
       "addFileSubtask": "Dosya Tipi Alt Görev Ekle",
@@ -2107,6 +2107,8 @@
       "periodicNoteSyntaxInvalid": "Bu biçim güvenli bir periyodik not yolu üretmiyor.",
       "periodicNoteSyntaxPreview": "Geçerli söz diziminiz şöyle görünüyor: {{example}}",
       "periodicNoteSyntaxReference": "Söz Dizimi Referansı",
+      "periodicNotes": "Periyodik Notlar",
+      "periodicNotesAsFileTasks": "Dosya Görevi Olarak Periyodik Notlar",
       "pinnedDockAutoClose": "Sabitlenmiş görev panelini otomatik daralt",
       "pinnedDockAutoCloseDelay": "Sabitlenmiş görev paneli otomatik daraltma gecikmesi (saniye)",
       "pinnedDockAutoCloseDelayDesc": "Fare panelden ayrıldıktan sonra paneli daraltmadan önce beklenecek saniye.",
@@ -3695,5 +3697,5 @@
       "toggleDescendantPreview": "Alt görev önizlemesini aç/kapat"
     }
   },
-  "sourceVersion": "fa3f51656f77073edd88bb4013d73b2ce1519fcb765fcd780f50ad2107b1cd74"
+  "sourceVersion": "c81120f18e858d31427f0963400431a45664bd495634fbd8767134ff9398c276"
 }

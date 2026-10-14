@@ -131,15 +131,7 @@ test('exactly the 11 routing settings belong to Task Router search', () => {
 		'taskCreatorDefaultToFileTask',
 		'taskCreatorDefaultFileTemplateId',
 		'fileTaskTemplateFolder',
-		'manageDailyNotesWithOperon',
-		'dailyNoteFormat',
-		'dailyNoteTemplate',
-		'dailyNoteFolder',
 		'createDailyNotesAsOperonTask',
-		'manageWeeklyNotesWithOperon',
-		'weeklyNoteFormat',
-		'weeklyNoteTemplate',
-		'weeklyNoteFolder',
 		'createWeeklyNotesAsOperonTask',
 		'excludedFolders',
 		'fileTaskMigration',
@@ -150,22 +142,20 @@ test('exactly the 11 routing settings belong to Task Router search', () => {
 	assert.match(registrySource, /'tasksTaskRouter', 'moveConvertedNotesToPipelineLocation'/);
 });
 
-test('File Tasks renders managed Daily and Weekly Notes and Task Router exposes the Weekly destination', () => {
+test('Task Router owns note management while File Tasks owns task initialization', () => {
 	const periodicMethod = ['renderFileDailyNotesSettings', 'renderFileWeeklyNotesSettings'].map(name => extractMethod(settingsTabSource, name)).join('\n');
 	const sharedMethod = extractMethod(settingsTabSource, 'renderPeriodicNoteSettings', 'renderPeriodicNoteFormatSetting');
 	const formatMethod = extractMethod(settingsTabSource, 'renderPeriodicNoteFormatSetting', 'renderFileTaskArchiveSettings');
 
 	assert.match(periodicMethod, /kind: 'daily'/);
-	assert.match(extractMethod(settingsTabSource, 'buildTaskCaptureSearchSections'), /renderFileDailyNotesSettings\(el, key\), \['DOCS-050 Daily Notes workflows', 'DOCS-137 Daily and Weekly Notes'\]/);
+	assert.match(extractMethod(settingsTabSource, 'buildTaskRouterSettingsItems'), /periodicNotes[\s\S]*?renderPeriodicRoutingSettings/);
 	assert.match(periodicMethod, /kind: 'weekly'/);
 	assert.doesNotMatch(periodicMethod, /weekly[\s\S]*?docsTarget/u);
 	assert.match(sharedMethod, /managedFieldsEl\.empty\(\)/);
 	assert.match(sharedMethod, /if \(!selectedKey && !this\.settings\[options\.managementKey\]\) return/);
-	assert.ok(
-		sharedMethod.indexOf('renderManagedFields();')
-			< sharedMethod.indexOf("t('settings', options.createAsTaskKey)"),
-		'create-as-task must remain outside the hidden managed fields',
-	);
+	assert.doesNotMatch(sharedMethod, /createAsTaskKey|createDailyNotesAsOperonTask|createWeeklyNotesAsOperonTask/);
+	assert.match(extractMethod(settingsTabSource, 'renderPeriodicFileTaskSettings'), /createDailyNotesAsOperonTask[\s\S]*?createWeeklyNotesAsOperonTask/);
+
 	assert.match(sharedMethod, /onAfterChange: \(\) => selectedKey \? this\.refreshNativeSettingsDom\(\) : renderManagedFields\(\)/);
 	assert.doesNotMatch(sharedMethod, /redisplayPreservingScroll/);
 	assert.match(sharedMethod, /new FileSuggest[\s\S]*?file\.extension === 'md'/);
@@ -181,9 +171,9 @@ test('File Tasks renders managed Daily and Weekly Notes and Task Router exposes 
 });
 
 test('routing sections render only from Task Router and archive is not duplicated', () => {
-	assert.deepEqual(renderRoute('tasksTaskRouter').calls, ['renderInlineTaskRoutingSettings', 'renderInlineTaskParentRoutingSettings', 'renderFileTaskRoutingSettings', 'renderFileTaskParentRoutingSettings', 'renderFileTaskArchiveSettings']);
+	assert.deepEqual(renderRoute('tasksTaskRouter').calls, ['renderInlineTaskRoutingSettings', 'renderPeriodicRoutingSettings', 'renderInlineTaskParentRoutingSettings', 'renderFileTaskRoutingSettings', 'renderFileTaskParentRoutingSettings', 'renderFileTaskArchiveSettings']);
 	for (const page of ['tasksInlineTasks', 'tasksFileTasks']) {
-		assert.ok(renderRoute(page).calls.every(name => !['renderInlineTaskRoutingSettings', 'renderInlineTaskParentRoutingSettings', 'renderFileTaskRoutingSettings', 'renderFileTaskParentRoutingSettings', 'renderFileTaskArchiveSettings'].includes(name)));
+		assert.ok(renderRoute(page).calls.every(name => !['renderInlineTaskRoutingSettings', 'renderPeriodicRoutingSettings', 'renderInlineTaskParentRoutingSettings', 'renderFileTaskRoutingSettings', 'renderFileTaskParentRoutingSettings', 'renderFileTaskArchiveSettings'].includes(name)));
 	}
 });
 
@@ -191,7 +181,7 @@ test('File Tasks keeps section copy and documentation attached while rendering t
 	const templateMethod = extractMethod(settingsTabSource, 'renderFileTaskTemplateSettings');
 	assert.deepEqual(renderRoute('tasksFileTasks').calls, [
 		'renderFileCreationDefaultsSection', 'renderFileTemplatesSection',
-		'renderFileDailyNotesSettings', 'renderFileWeeklyNotesSettings',
+		'renderPeriodicFileTaskSettings',
 		'renderFileConversionSection', 'renderExcludedFolderSettings', 'renderFileTaskMigrationSettings',
 	]);
 	assert.match(extractMethod(settingsTabSource, 'buildTaskCaptureSearchSections'), /renderFileCreationDefaultsSection\(el, key\), \['DOCS-024 Task templates', 'DOCS-020 Task Creator'\]/);
@@ -300,3 +290,15 @@ test('successful timer finalization requeues only the previous assigned task for
 		/scheduleAfterTimerFinalized\(operonId: string\): void \{[\s\S]*?if \(!task \|\| !this\.isCandidate\(task\)\)[\s\S]*?this\.schedule\(task\.operonId, this\.trigger\(task\)\);/u,
 	);
 });
+
+ test('periodic management search moves without duplicating or renaming stored keys', () => {
+  for (const key of ['manageDailyNotesWithOperon', 'dailyNoteFormat', 'dailyNoteTemplate', 'dailyNoteFolder', 'manageWeeklyNotesWithOperon', 'weeklyNoteFormat', 'weeklyNoteTemplate', 'weeklyNoteFolder']) {
+   const lines = registrySource.split('\n').filter(line => line.includes(`'${key}'`));
+   assert.equal(lines.length, 1);
+   assert.ok(lines[0].includes("'tasksTaskRouter'"));
+  }
+  for (const {locale} of routerLocales) {
+   assert.ok(locale.settings.periodicNotes);
+   assert.ok(locale.settings.periodicNotesAsFileTasks);
+  }
+ });

@@ -1860,6 +1860,8 @@
 		"excludedFileTasksFolderBlocked": "{{folder}} é a pasta de tarefas em arquivo ou contém ela, portanto não pode ser excluído.",
 		"excludedFileTasksFolderRemoved": "A pasta de tarefas em arquivo foi removida das pastas excluídas.",
 		"removeExcludedFolder": "Remover pasta excluída",
+		"periodicNotes": "Notas periódicas",
+		"periodicNotesAsFileTasks": "Notas periódicas como tarefas de arquivo",
 		"fileTaskDailyNotes": "Notas diárias",
 		"manageDailyNotesWithOperon": "Gerenciar notas diárias com Operon",
 		"manageDailyNotesWithOperonDesc": "Use o formato, o modelo e a pasta do Operon quando ele criar ou resolver Notas Diárias. Quando desativado, Operon continua a usar a configuração do plugin nativo Daily Notes.",

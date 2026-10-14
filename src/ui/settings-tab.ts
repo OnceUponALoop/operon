@@ -1587,8 +1587,7 @@ export class OperonSettingsTab extends PluginSettingTab {
 		return this.buildTaskSettingsGroups([
 			['newFileTaskCreationDefaults', ['taskCreatorDefaultToFileTask', 'taskCreatorDefaultFileTemplateId', 'fileTaskUseLastTemplateAsDefault'], (el, key) => this.renderFileCreationDefaultsSection(el, key), ['DOCS-024 Task templates', 'DOCS-020 Task Creator']],
 			['fileTaskTemplates', ['fileTaskTemplateFolder'], el => this.renderFileTemplatesSection(el), 'DOCS-024 Task templates'],
-			['fileTaskDailyNotes', ['manageDailyNotesWithOperon', 'dailyNoteFormat', 'dailyNoteTemplate', 'dailyNoteFolder', 'createDailyNotesAsOperonTask'], (el, key) => this.renderFileDailyNotesSettings(el, key), ['DOCS-050 Daily Notes workflows', 'DOCS-137 Daily and Weekly Notes']],
-			['fileTaskWeeklyNotes', ['manageWeeklyNotesWithOperon', 'weeklyNoteFormat', 'weeklyNoteTemplate', 'weeklyNoteFolder', 'createWeeklyNotesAsOperonTask'], (el, key) => this.renderFileWeeklyNotesSettings(el, key), 'DOCS-137 Daily and Weekly Notes'],
+			['periodicNotesAsFileTasks', ['createDailyNotesAsOperonTask', 'createWeeklyNotesAsOperonTask'], (el, key) => this.renderPeriodicFileTaskSettings(el, key), 'DOCS-137 Daily and Weekly Notes'],
 			['fileTaskConversion', ['inlineToFileTaskMovePlainCheckboxes', 'inlineToFileTaskSourceDisposition'], (el, key) => this.renderFileConversionSection(el, key), 'DOCS-019 Converting inline and file tasks'],
 			['excludedFolders', ['excludedFolders'], el => this.renderExcludedFolderSettings(el), 'DOCS-054 Missing tasks'],
 			['fileTaskMigrationTitle', ['fileTaskMigration'], el => this.renderFileTaskMigrationSettings(el), ['DOCS-082 Bulk convert a folder into file tasks', 'DOCS-093 How to migrate from TaskNotes']],
@@ -1638,6 +1637,7 @@ export class OperonSettingsTab extends PluginSettingTab {
 	private buildTaskRouterSettingsItems(entries: OperonSettingsSearchEntry[]): SettingDefinitionItem[] {
 		const sections: Array<[string, string[], (containerEl: HTMLElement, key: string) => void, string?]> = [
 			['inlineTasksSection', ['inlineTaskSaveMode', 'inlineTaskTargetFile', 'inlineTaskHeading'], (el, key) => this.renderInlineTaskRoutingSettings(el, key), 'DOCS-137 Daily and Weekly Notes'],
+			['periodicNotes', ['manageDailyNotesWithOperon', 'dailyNoteFormat', 'dailyNoteTemplate', 'dailyNoteFolder', 'manageWeeklyNotesWithOperon', 'weeklyNoteFormat', 'weeklyNoteTemplate', 'weeklyNoteFolder'], (el, key) => this.renderPeriodicRoutingSettings(el, key), 'DOCS-137 Daily and Weekly Notes'],
 			['parentAwareInlineSaveLocation', ['inlineTaskParentInlineTargetMode', 'inlineTaskParentFileTargetMode', 'inlineTaskParentFileHeadingKeyword', 'keepInlineTasksWithParent'], (el, key) => this.renderInlineTaskParentRoutingSettings(el, key), 'DOCS-094 How to create a task with Task Creator'],
 			['fileTasksSection', ['fileTasksFolder', 'fileTaskPipelineLocations', 'moveConvertedNotesToPipelineLocation'], (el, key) => this.renderFileTaskRoutingSettings(el, key), 'DOCS-013 File tasks'],
 			['parentAwareFileTaskPlacement', ['fileTaskParentInlineTargetMode', 'fileTaskParentFileTargetMode'], (el, key) => this.renderFileTaskParentRoutingSettings(el, key)],
@@ -13300,6 +13300,17 @@ export class OperonSettingsTab extends PluginSettingTab {
 		}
 	}
 
+	private renderPeriodicRoutingSettings(containerEl: HTMLElement, selectedKey?: string): void {
+		if (!selectedKey || selectedKey === 'manageDailyNotesWithOperon' || selectedKey.startsWith('dailyNote')) this.renderFileDailyNotesSettings(containerEl, selectedKey);
+		if (!selectedKey || selectedKey === 'manageWeeklyNotesWithOperon' || selectedKey.startsWith('weeklyNote')) this.renderFileWeeklyNotesSettings(containerEl, selectedKey);
+	}
+
+	private renderPeriodicFileTaskSettings(containerEl: HTMLElement, selectedKey?: string): void {
+		for (const key of ['createDailyNotesAsOperonTask', 'createWeeklyNotesAsOperonTask'] as const) {
+			if (!selectedKey || selectedKey === key) this.renderBoundToggleSetting(containerEl, t('settings', key), t('settings', `${key}Desc`), key);
+		}
+	}
+
 	private renderFileDailyNotesSettings(containerEl: HTMLElement, selectedKey?: string): void {
 		this.renderPeriodicNoteSettings(containerEl, {
 			kind: 'daily',
@@ -13307,7 +13318,6 @@ export class OperonSettingsTab extends PluginSettingTab {
 			formatKey: 'dailyNoteFormat',
 			templateKey: 'dailyNoteTemplate',
 			folderKey: 'dailyNoteFolder',
-			createAsTaskKey: 'createDailyNotesAsOperonTask',
 		}, selectedKey);
 	}
 
@@ -13318,7 +13328,6 @@ export class OperonSettingsTab extends PluginSettingTab {
 			formatKey: 'weeklyNoteFormat',
 			templateKey: 'weeklyNoteTemplate',
 			folderKey: 'weeklyNoteFolder',
-			createAsTaskKey: 'createWeeklyNotesAsOperonTask',
 		}, selectedKey);
 
 	}
@@ -13329,7 +13338,6 @@ export class OperonSettingsTab extends PluginSettingTab {
 		formatKey: 'dailyNoteFormat' | 'weeklyNoteFormat';
 		templateKey: 'dailyNoteTemplate' | 'weeklyNoteTemplate';
 		folderKey: 'dailyNoteFolder' | 'weeklyNoteFolder';
-		createAsTaskKey: 'createDailyNotesAsOperonTask' | 'createWeeklyNotesAsOperonTask';
 	}, selectedKey?: string): void {
 		const sectionEl = containerEl.createDiv();
 
@@ -13390,14 +13398,6 @@ export class OperonSettingsTab extends PluginSettingTab {
 		const managedFieldsEl = sectionEl.createDiv({ cls: `operon-file-task-${options.kind}-notes-managed-fields` });
 		renderManagedFields();
 
-		if (!selectedKey || selectedKey === options.createAsTaskKey) {
-			this.renderBoundToggleSetting(
-				sectionEl,
-				t('settings', options.createAsTaskKey),
-				t('settings', `${options.createAsTaskKey}Desc`),
-				options.createAsTaskKey,
-			);
-		}
 	}
 
 	private renderPeriodicNoteFormatSetting(

@@ -1860,6 +1860,8 @@
 		"excludedFileTasksFolderBlocked": "{{folder}} dosya görevi klasörü veya onu kapsayan bir klasör olduğu için hariç tutulamaz.",
 		"excludedFileTasksFolderRemoved": "Dosya görevi klasörü hariç tutulan klasörlerden kaldırıldı.",
 		"removeExcludedFolder": "Hariç tutulan klasörü kaldır",
+		"periodicNotes": "Periyodik Notlar",
+		"periodicNotesAsFileTasks": "Dosya Görevi Olarak Periyodik Notlar",
 		"fileTaskDailyNotes": "Günlük notlar",
 		"manageDailyNotesWithOperon": "Günlük notları Operon ile yönet",
 		"manageDailyNotesWithOperonDesc": "Operon günlük notları oluştururken veya çözümlerken Operon biçimini, şablonunu ve klasörünü kullan. Kapalıysa Core Daily Notes yapılandırması kullanılır.",

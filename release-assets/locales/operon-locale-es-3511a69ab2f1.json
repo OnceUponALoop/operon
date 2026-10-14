@@ -1,8 +1,8 @@
 {
   "schemaVersion": 1,
   "locale": "es",
-  "keyCount": 3650,
-  "keyFingerprint": "3ba55f91f00b60baa21640f349ca7a1def7b8960ba503bc8feebf25d803cd49c",
+  "keyCount": 3652,
+  "keyFingerprint": "853b19c5f15756a38938112fa7a11c8f1f0e3c71ab0cb12ea4bb0b5828ac2f31",
   "translations": {
     "buttons": {
       "addFileSubtask": "Añadir subtarea de archivo",
@@ -2107,6 +2107,8 @@
       "periodicNoteSyntaxInvalid": "Este formato no produce una ruta segura de nota periódica.",
       "periodicNoteSyntaxPreview": "Tu sintaxis actual se ve así: {{example}}",
       "periodicNoteSyntaxReference": "Referencia de sintaxis",
+      "periodicNotes": "Notas periódicas",
+      "periodicNotesAsFileTasks": "Notas periódicas como tareas de archivo",
       "pinnedDockAutoClose": "Cerrar automáticamente el panel fijado",
       "pinnedDockAutoCloseDelay": "Retardo de cierre automático del panel fijado (segundos)",
       "pinnedDockAutoCloseDelayDesc": "Segundos a esperar después de que el ratón abandone el panel antes de contraerlo.",
@@ -3695,5 +3697,5 @@
       "toggleDescendantPreview": "Alternar vista previa de descendientes"
     }
   },
-  "sourceVersion": "6b3f69b224fcd695c514f46d32d50020072dc82f7e985b80054320b48aead9ce"
+  "sourceVersion": "0f5e689550380b457325fb53498806ef118b656ba9e138fbaa1b27bd0c57ec13"
 }
