@@ -2107,8 +2107,8 @@
       "periodicNoteSyntaxInvalid": "Este formato no produce una ruta segura de nota periódica.",
       "periodicNoteSyntaxPreview": "Tu sintaxis actual se ve así: {{example}}",
       "periodicNoteSyntaxReference": "Referencia de sintaxis",
-      "periodicNotes": "Notas periódicas",
-      "periodicNotesAsFileTasks": "Notas periódicas como tareas de archivo",
+      "periodicNotes": "Notas diarias y semanales",
+      "periodicNotesAsFileTasks": "Notas diarias y semanales como tareas de archivo",
       "pinnedDockAutoClose": "Cerrar automáticamente el panel fijado",
       "pinnedDockAutoCloseDelay": "Retardo de cierre automático del panel fijado (segundos)",
       "pinnedDockAutoCloseDelayDesc": "Segundos a esperar después de que el ratón abandone el panel antes de contraerlo.",
@@ -3697,5 +3697,5 @@
       "toggleDescendantPreview": "Alternar vista previa de descendientes"
     }
   },
-  "sourceVersion": "0f5e689550380b457325fb53498806ef118b656ba9e138fbaa1b27bd0c57ec13"
+  "sourceVersion": "221773f0d759d90be7fdad085e1ac55510f24ed147d8c9fc3c0245fc93161ee0"
 }

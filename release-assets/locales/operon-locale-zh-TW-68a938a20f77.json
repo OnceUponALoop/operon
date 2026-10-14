@@ -2107,8 +2107,8 @@
       "periodicNoteSyntaxInvalid": "此格式無法產生安全的週期筆記路徑。",
       "periodicNoteSyntaxPreview": "目前語法範例：{{example}}",
       "periodicNoteSyntaxReference": "語法參考",
-      "periodicNotes": "週期筆記",
-      "periodicNotesAsFileTasks": "將週期筆記作為檔案任務",
+      "periodicNotes": "每日與每週筆記",
+      "periodicNotesAsFileTasks": "將每日與每週筆記作為檔案任務",
       "pinnedDockAutoClose": "自動關閉置頂停靠欄",
       "pinnedDockAutoCloseDelay": "置頂停靠欄自動關閉延遲（秒）",
       "pinnedDockAutoCloseDelayDesc": "滑鼠離開停靠欄後等待多少秒再摺疊它。",
@@ -3697,5 +3697,5 @@
       "toggleDescendantPreview": "切換子任務預覽"
     }
   },
-  "sourceVersion": "a65901752d3af1091b67f71ffe9690ed408a4a56eabbff4937e22eede03ed93e"
+  "sourceVersion": "554d9804d48c4831bb6d71276104f16484fb7c396b2761ba4f4b79cbba5ef1d2"
 }

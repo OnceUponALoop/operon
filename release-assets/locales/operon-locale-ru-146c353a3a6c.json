@@ -2107,8 +2107,8 @@
       "periodicNoteSyntaxInvalid": "Этот формат не создаёт безопасный путь периодической заметки.",
       "periodicNoteSyntaxPreview": "Текущий синтаксис выглядит так: {{example}}",
       "periodicNoteSyntaxReference": "Справочник синтаксиса",
-      "periodicNotes": "Периодические заметки",
-      "periodicNotesAsFileTasks": "Периодические заметки как файловые задачи",
+      "periodicNotes": "Ежедневные и еженедельные заметки",
+      "periodicNotesAsFileTasks": "Ежедневные и еженедельные заметки как файловые задачи",
       "pinnedDockAutoClose": "Автозакрытие дока закреплённых задач",
       "pinnedDockAutoCloseDelay": "Задержка автозакрытия дока закреплённых задач (сек.)",
       "pinnedDockAutoCloseDelayDesc": "Количество секунд ожидания после того, как курсор покинул док, перед его сворачиванием.",
@@ -3697,5 +3697,5 @@
       "toggleDescendantPreview": "Переключить предпросмотр потомков"
     }
   },
-  "sourceVersion": "0ee98c0842357a56bb6a397a1123abd8b682cf64aa8446a0387a93fc252d14af"
+  "sourceVersion": "7cc5745b5a67ad8b3a7be50974011b426e8df74e10f19fb204190404d4b39a3c"
 }

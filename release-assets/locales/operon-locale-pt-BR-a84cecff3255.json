@@ -2107,8 +2107,8 @@
       "periodicNoteSyntaxInvalid": "Este formato não produz um caminho seguro de nota periódica.",
       "periodicNoteSyntaxPreview": "Sua sintaxe atual é assim: {{example}}",
       "periodicNoteSyntaxReference": "Referência de Sintaxe",
-      "periodicNotes": "Notas periódicas",
-      "periodicNotesAsFileTasks": "Notas periódicas como tarefas de arquivo",
+      "periodicNotes": "Notas diárias e semanais",
+      "periodicNotesAsFileTasks": "Notas diárias e semanais como tarefas de arquivo",
       "pinnedDockAutoClose": "Fechar dock fixo automaticamente",
       "pinnedDockAutoCloseDelay": "Atraso de fechamento automático do dock fixo (segundos)",
       "pinnedDockAutoCloseDelayDesc": "Segundos a esperar depois que o mouse sair do dock antes de colapsá-lo.",
@@ -3697,5 +3697,5 @@
       "toggleDescendantPreview": "Alternar visualização descendente"
     }
   },
-  "sourceVersion": "48b6e7351fcee12f9cfd703f0207258bed1062c0958af6dbf6ea5641a6513703"
+  "sourceVersion": "f7b610b9684563658907f6853b51dfa2f1a74f9420e94bb060233a4a86684b5e"
 }

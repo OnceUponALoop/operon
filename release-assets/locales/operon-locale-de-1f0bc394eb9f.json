@@ -2107,8 +2107,8 @@
       "periodicNoteSyntaxInvalid": "Dieses Format erzeugt keinen sicheren Pfad für periodische Notizen.",
       "periodicNoteSyntaxPreview": "Ihre aktuelle Syntax sieht so aus: {{example}}",
       "periodicNoteSyntaxReference": "Syntaxreferenz",
-      "periodicNotes": "Periodische Notizen",
-      "periodicNotesAsFileTasks": "Periodische Notizen als Dateiaufgaben",
+      "periodicNotes": "Tägliche und wöchentliche Notizen",
+      "periodicNotesAsFileTasks": "Tägliche und wöchentliche Notizen als Dateiaufgaben",
       "pinnedDockAutoClose": "Dock für angeheftete Aufgaben automatisch schließen",
       "pinnedDockAutoCloseDelay": "Verzögerung für automatisches Schließen des Docks für angeheftete Aufgaben (Sekunden)",
       "pinnedDockAutoCloseDelayDesc": "Sekunden, die nach dem Verlassen des Docks durch die Maus gewartet wird, bevor es eingeklappt wird.",
@@ -3697,5 +3697,5 @@
       "toggleDescendantPreview": "Vorschau untergeordneter Aufgaben umschalten"
     }
   },
-  "sourceVersion": "4d6dce16a808777b23eb42b5032aa31e9a0551b64b512de6f9b6ff0dbbeee48f"
+  "sourceVersion": "51f7acfb379aa7841b27e6db1dfeb351db26ae7a4afbd860977df4b5f5511954"
 }

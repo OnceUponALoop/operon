@@ -104,3 +104,15 @@ test('bulk Tasks action renders through its own searchable section without persi
    assert.equal(JSON.stringify(harness.settings), before);
   }
  });
+
+test('Daily and Weekly headings and singular/plural search aliases remain discoverable', () => {
+ assert.equal(locale.settings.periodicNotes, 'Daily and Weekly Notes');
+ assert.equal(locale.settings.periodicNotesAsFileTasks, 'Daily and Weekly Notes as File Tasks');
+ for (const kind of ['daily', 'weekly']) {
+  for (const [tabId, expected] of [['tasksTaskRouter', 4], ['tasksFileTasks', 1]]) {
+   const page = new Harness().buildSettingsSearchTabPage({id: tabId}, entriesFor(tabId));
+   const items = page.items.flatMap(group => group.items);
+   for (const query of [kind, `${kind} note`, `${kind} notes`]) assert.equal(items.filter(item => item.aliases.includes(query)).length, expected, `${tabId}: ${query}`);
+  }
+ }
+});

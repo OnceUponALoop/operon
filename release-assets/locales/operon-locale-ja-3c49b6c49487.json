@@ -2107,8 +2107,8 @@
       "periodicNoteSyntaxInvalid": "この形式では安全な定期ノートパスを生成できません。",
       "periodicNoteSyntaxPreview": "現在の構文: {{example}}",
       "periodicNoteSyntaxReference": "構文リファレンス",
-      "periodicNotes": "定期ノート",
-      "periodicNotesAsFileTasks": "ファイルタスクとしての定期ノート",
+      "periodicNotes": "デイリーノートとウィークリーノート",
+      "periodicNotesAsFileTasks": "ファイルタスクとしてのデイリーノートとウィークリーノート",
       "pinnedDockAutoClose": "ピン留めドックを自動的に閉じる",
       "pinnedDockAutoCloseDelay": "ピン留めドックの自動クローズ遅延（秒）",
       "pinnedDockAutoCloseDelayDesc": "ドックを折りたたむ前に、マウスが離れてから待機する秒数。",
@@ -3697,5 +3697,5 @@
       "toggleDescendantPreview": "子孫プレビューを切り替え"
     }
   },
-  "sourceVersion": "ce678aebfbc2ee1eecc2efc4c7885f8e6ebbcfedea21184ec9bcd12c668a3b86"
+  "sourceVersion": "4f2287a6ab349fe2e4b40c8972e2095c2b775f0a8fab74bfefdc8b09430d129a"
 }

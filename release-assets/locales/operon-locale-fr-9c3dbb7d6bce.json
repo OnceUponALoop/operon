@@ -2107,8 +2107,8 @@
       "periodicNoteSyntaxInvalid": "Ce format ne produit pas un chemin de note périodique sûr.",
       "periodicNoteSyntaxPreview": "Votre syntaxe actuelle ressemble à ceci : {{example}}",
       "periodicNoteSyntaxReference": "Référence de syntaxe",
-      "periodicNotes": "Notes périodiques",
-      "periodicNotesAsFileTasks": "Notes périodiques comme tâches fichier",
+      "periodicNotes": "Notes quotidiennes et hebdomadaires",
+      "periodicNotesAsFileTasks": "Notes quotidiennes et hebdomadaires comme tâches fichier",
       "pinnedDockAutoClose": "Fermer automatiquement le panneau épinglé",
       "pinnedDockAutoCloseDelay": "Délai de fermeture automatique du panneau épinglé (secondes)",
       "pinnedDockAutoCloseDelayDesc": "Secondes à attendre après que la souris a quitté le panneau avant de le réduire.",
@@ -3697,5 +3697,5 @@
       "toggleDescendantPreview": "Basculer l'aperçu des descendants"
     }
   },
-  "sourceVersion": "1ad00b6c7b07c08914574aa802ef68d5cf69fd7c3bd19184daa15cda3716fb8d"
+  "sourceVersion": "529d4e71f2a5b5f0a30b149531a63532f2226d13c29b5d839d0806580daea93b"
 }
