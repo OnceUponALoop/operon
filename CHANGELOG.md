@@ -24,6 +24,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Improved
 
+- Made **nested filters** easier to scan with hierarchical group numbers, clearer scope lines, and quieter controls.
+
 - Reorganized the desktop **Task Editor** into compact property groups with consistent task colors, expandable description and notes, clearer identity actions, and stable split-panel sizing.
 - Unified custom and vault properties in **Additional**. Existing empty properties appear as header shortcuts.
 - Made **Automatic and incompatible property warnings** clearer in Task Editor and Tables, including empty cells. Automatic properties remain selectable in Task Editor with a red shield icon and an explanation of why editing is unavailable. Read-only explanations take precedence over truncated-value tooltips.
@@ -51,6 +53,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Opening an empty **Starts at** picker in Task Editor now fills in the task’s scheduled date and focuses the time field; the date remains editable.
 
 ### Changed
+
+- Moved **Daily and Weekly Notes** management to Task Router; options to create these notes as File Tasks remain in File Tasks.
+- Simplified **default task chips** for new installations and explicit settings resets, while preserving existing users’ preferences.
 
 - Switching between **File and Inline** in Task Creator now loads the destination mode's default template. Manual template selection or clearing remains in effect until the mode changes.
 - The **template shortcut suggestion** now always reads “Pick a Template”, while the bottom template control continues to show the selected template name.
