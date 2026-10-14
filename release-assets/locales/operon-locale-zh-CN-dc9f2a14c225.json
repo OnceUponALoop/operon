@@ -970,7 +970,7 @@
       "periodicNoteRecoveryRequired": "{{kind}} 未能完成，可能需要手动恢复：{{path}}",
       "periodicNoteTargetConflict": "{{kind}} 路径已被其他仓库项目占用。",
       "periodicNoteTemplateUnavailable": "无法读取为 {{kind}} 配置的模板。",
-      "periodicNotesManagementDisabled": "{{kind}}管理已停用。请先在文件任务设置中启用，才能使用此命令。",
+      "periodicNotesManagementDisabled": "{{kind}}管理已停用。请在 Task Router → 每日和每周笔记 中启用，才能使用此命令。",
       "periodicParentUnchanged": "计划日期已保存，但 Operon 无法更新其周期性父任务。",
       "pinnedTaskOrderSaveFailed": "无法保存置顶任务顺序。",
       "pipelineMinimalFileTaskTemplateUnavailable": "所选流水线已不可用或没有有效的初始状态。",
@@ -1041,7 +1041,7 @@
       "trackedTimeRange": "已追踪：{{range}}",
       "webViewerUnavailable": "请启用 Obsidian 的核心插件“Web Viewer”，以在新标签页中打开此链接。",
       "weeklyNotesConversionRequiresCursor": "要将文件任务转换到周记，请将光标放在已打开笔记的空行上。",
-      "weeklyNotesManagementDisabled": "周记管理已禁用。请先在文件任务设置中启用它，再在其中创建内联任务。",
+      "weeklyNotesManagementDisabled": "周记管理已禁用。请先在Task Router → 每日和每周笔记中启用它，再在其中创建内联任务。",
       "workflowRenameComplete": "工作流重命名完成 — 已更新 {{updated}} 个任务，保留 {{conflicts}} 个冲突。",
       "workflowRenameNeedsRetry": "需要重试工作流重命名 — {{failed}} 个任务写入失败。",
       "workflowRenameNoPending": "没有待处理的工作流重命名。",
@@ -2461,7 +2461,7 @@
       "settingsPageColorPaletteDesc": "自定义 Operon 颜色选择器使用的 28 种命名颜色。",
       "settingsPageContextMenuDesc": "日历悬停和右键菜单操作、延迟以及界面可见性。",
       "settingsPageCoreGeneralDesc": "语言、时间格式、演示工作区、索引和重复项提醒。",
-      "settingsPageFileTasksDesc": "文件任务默认设置、模板、日记和周记管理、排除项及笔记转换。",
+      "settingsPageFileTasksDesc": "文件任务创建默认设置、模板、将日记和周记创建为文件任务、排除项及笔记转换。",
       "settingsPageInlineTasksDesc": "行内任务的日记元数据默认设置和实时预览转换操作。",
       "settingsPageLocationMapDesc": "位置标签选择器的地图默认设置和地图预览尺寸。",
       "settingsPageMobileCalendarDesc": "手机优先的日历布局、议程窗口、可见项目和移动端事件显示。",
@@ -2475,7 +2475,7 @@
       "settingsPageTaskChipsDesc": "Task Creator 标签，以及用于行内任务、筛选视图结果、看板卡片、任务查找器和任务维基链接覆盖层的紧凑任务标签。",
       "settingsPageTaskEditorDesc": "任务编辑器选择器行、顺序和可见性。",
       "settingsPageTaskFinderDesc": "任务查找器启动行为、可见结果、记住的范围、快捷键和结果标签。",
-      "settingsPageTaskRouterDesc": "选择行内任务和文件任务的创建位置、相对于父任务的放置方式以及归档位置。",
+      "settingsPageTaskRouterDesc": "选择任务目标位置、相对于父任务的放置方式和归档位置，并配置日记和周记。",
       "settingsPageTrackerDesc": "时间追踪历史、状态栏计时器、FlowTime 行为和会话拆分。",
       "settingsPageTweaksDesc": "针对滚动条、属性和侧边停靠标签图标的可选工作区级视觉辅助。",
       "settingsPageUpcomingDesc": "每日分组和显示偏好。",
@@ -3697,5 +3697,5 @@
       "toggleDescendantPreview": "切换子任务预览"
     }
   },
-  "sourceVersion": "6c4d8435f79863ef88c8cde6632a656089aedeb887c913535ca87147000cb67f"
+  "sourceVersion": "371b8583533f059a4255d893ba004d0454704bbc58b0d42cf9c44c1990e41819"
 }

@@ -970,7 +970,7 @@
       "periodicNoteRecoveryRequired": "{{kind}} n’a pas pu être finalisé et peut nécessiter une récupération manuelle : {{path}}",
       "periodicNoteTargetConflict": "Le chemin de {{kind}} est occupé par un autre élément du coffre.",
       "periodicNoteTemplateUnavailable": "Le modèle configuré pour {{kind}} n’a pas pu être lu.",
-      "periodicNotesManagementDisabled": "La gestion de {{kind}} est désactivée. Activez-la dans les réglages des tâches-fichiers pour utiliser cette commande.",
+      "periodicNotesManagementDisabled": "La gestion de {{kind}} est désactivée. Activez-la sous Task Router → Notes quotidiennes et hebdomadaires pour utiliser cette commande.",
       "periodicParentUnchanged": "La date planifiée a été enregistrée, mais Operon n’a pas pu mettre à jour sa tâche parente périodique.",
       "pinnedTaskOrderSaveFailed": "L'ordre des tâches épinglées n'a pas pu être enregistré.",
       "pipelineMinimalFileTaskTemplateUnavailable": "Le pipeline sélectionné n’est plus disponible ou n’a pas de statut initial valide.",
@@ -1041,7 +1041,7 @@
       "trackedTimeRange": "Suivi : {{range}}",
       "webViewerUnavailable": "Activez le module principal Web Viewer d’Obsidian pour ouvrir ce lien dans un nouvel onglet.",
       "weeklyNotesConversionRequiresCursor": "Pour convertir une tâche-fichier vers les notes hebdomadaires, placez le curseur sur une ligne vide d'une note ouverte.",
-      "weeklyNotesManagementDisabled": "La gestion des notes hebdomadaires est désactivée. Activez-la dans les réglages des tâches-fichiers avant d'y créer des tâches en ligne.",
+      "weeklyNotesManagementDisabled": "La gestion des notes hebdomadaires est désactivée. Activez-la sous Task Router → Notes quotidiennes et hebdomadaires avant d'y créer des tâches en ligne.",
       "workflowRenameComplete": "Renommage du workflow terminé — {{updated}} tâches mises à jour, {{conflicts}} conflits conservés.",
       "workflowRenameNeedsRetry": "Le renommage du workflow doit être réessayé — {{failed}} écritures de tâches ont échoué.",
       "workflowRenameNoPending": "Aucun renommage de workflow en attente.",
@@ -2461,7 +2461,7 @@
       "settingsPageColorPaletteDesc": "Personnalisez les 28 couleurs nommées utilisées par les sélecteurs de couleur d'Operon.",
       "settingsPageContextMenuDesc": "Actions du menu de survol et du menu contextuel du calendrier, délais et visibilité des surfaces.",
       "settingsPageCoreGeneralDesc": "Langue, format de l'heure, espace de travail de démonstration, indexation et alertes de doublons.",
-      "settingsPageFileTasksDesc": "Valeurs par défaut des tâches-fichiers, modèles, gestion des notes quotidiennes et hebdomadaires, exclusions et conversion.",
+      "settingsPageFileTasksDesc": "Valeurs par défaut des tâches-fichiers, modèles, création de notes quotidiennes et hebdomadaires comme tâches-fichiers, exclusions et conversion.",
       "settingsPageInlineTasksDesc": "Valeurs par défaut des métadonnées des notes quotidiennes et actions de conversion en Aperçu en direct pour les tâches en ligne.",
       "settingsPageLocationMapDesc": "Valeurs par défaut du sélecteur de carte des puces Location et taille de l'aperçu de carte.",
       "settingsPageMobileCalendarDesc": "Disposition du calendrier adaptée aux téléphones, fenêtres d'agenda, éléments visibles et affichage des événements sur mobile.",
@@ -2475,7 +2475,7 @@
       "settingsPageTaskChipsDesc": "Puces de Task Creator et puces de tâche compactes pour les tâches en ligne, les résultats de la vue de filtre, les cartes Kanban, la recherche de tâches et les Task Wikilink Overlays.",
       "settingsPageTaskEditorDesc": "Lignes de sélecteurs de l'éditeur de tâche, ordre et visibilité.",
       "settingsPageTaskFinderDesc": "Comportement de lancement de la recherche de tâches, résultats visibles, portées mémorisées, raccourcis et puces de résultats.",
-      "settingsPageTaskRouterDesc": "Choisissez où les tâches en ligne et les tâches-fichiers sont créées, placées par rapport à leurs parents et archivées.",
+      "settingsPageTaskRouterDesc": "Choisissez les destinations, le placement selon les tâches parentes et les archives, et configurez les notes quotidiennes et hebdomadaires.",
       "settingsPageTrackerDesc": "Historique du suivi du temps, minuteur de la barre d'état, comportement FlowTime et fractionnement des sessions.",
       "settingsPageTweaksDesc": "Aides visuelles optionnelles au niveau du workspace pour les barres de défilement, Properties et les icônes d'onglets du side dock.",
       "settingsPageUpcomingDesc": "Groupes quotidiens et préférences d’affichage.",
@@ -3697,5 +3697,5 @@
       "toggleDescendantPreview": "Basculer l'aperçu des descendants"
     }
   },
-  "sourceVersion": "529d4e71f2a5b5f0a30b149531a63532f2226d13c29b5d839d0806580daea93b"
+  "sourceVersion": "66cb807fe4295cb6934c4bb4a581751d07619525f5616bb78f05ce34bc060e30"
 }

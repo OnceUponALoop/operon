@@ -970,7 +970,7 @@
       "periodicNoteRecoveryRequired": "{{kind}} tamamlanamadı ve elle kurtarma gerekebilir: {{path}}",
       "periodicNoteTargetConflict": "{{kind}} yolu başka bir kasa öğesi tarafından kullanılıyor.",
       "periodicNoteTemplateUnavailable": "Yapılandırılmış {{kind}} şablonu okunamadı.",
-      "periodicNotesManagementDisabled": "{{kind}} yönetimi kapalı. Bu komutu kullanmak için Dosya Görevleri ayarlarından etkinleştirin.",
+      "periodicNotesManagementDisabled": "{{kind}} yönetimi kapalı. Bu komutu kullanmak için Task Router → Günlük ve Haftalık Notlar bölümünden etkinleştirin.",
       "periodicParentUnchanged": "Planlanan tarih kaydedildi, ancak Operon periyodik üst görevi güncelleyemedi.",
       "pinnedTaskOrderSaveFailed": "Sabitlenmiş görev sırası kaydedilemedi.",
       "pipelineMinimalFileTaskTemplateUnavailable": "Seçilen pipeline artık kullanılamıyor veya geçerli bir başlangıç status'u yok.",
@@ -1041,7 +1041,7 @@
       "trackedTimeRange": "Takibe eklendi: {{range}}",
       "webViewerUnavailable": "Bu bağlantıyı yeni bir sekmede açmak için Obsidian'ın Web Viewer çekirdek eklentisini etkinleştirin.",
       "weeklyNotesConversionRequiresCursor": "Bir dosya görevini Haftalık Notlara dönüştürmek için açık bir notta imleci boş bir satıra yerleştirin.",
-      "weeklyNotesManagementDisabled": "Haftalık Notlar yönetimi kapalı. Satır içi görevleri buraya oluşturmadan önce Dosya Görevleri ayarlarından etkinleştirin.",
+      "weeklyNotesManagementDisabled": "Haftalık Notlar yönetimi kapalı. Satır içi görevleri buraya oluşturmadan önce Task Router → Günlük ve Haftalık Notlar bölümünden etkinleştirin.",
       "workflowRenameComplete": "İş akışı yeniden adlandırması tamamlandı — {{updated}} görev güncellendi, {{conflicts}} çakışma korundu.",
       "workflowRenameNeedsRetry": "İş akışı yeniden adlandırması yeniden denenmeli — {{failed}} görev yazımı başarısız oldu.",
       "workflowRenameNoPending": "Bekleyen iş akışı yeniden adlandırması yok.",
@@ -2461,7 +2461,7 @@
       "settingsPageColorPaletteDesc": "Operon color picker'larında kullanılan 28 adlandırılmış rengi özelleştir.",
       "settingsPageContextMenuDesc": "Takvim hover ve bağlam menüsü aksiyonları, gecikmeler ve yüzey görünürlüğü.",
       "settingsPageCoreGeneralDesc": "Dil, saat biçimi, demo çalışma alanı, indeksleme ve yinelenen ID uyarıları.",
-      "settingsPageFileTasksDesc": "Dosya görevi oluşturma varsayılanları, şablonlar, günlük ve haftalık not yönetimi, hariç tutmalar ve not dönüştürme.",
+      "settingsPageFileTasksDesc": "Dosya görevi oluşturma varsayılanları, şablonlar, günlük ve haftalık notları dosya görevi olarak oluşturma, hariç tutmalar ve not dönüştürme.",
       "settingsPageInlineTasksDesc": "Satır içi görevler için Daily Note metadata varsayılanları ve Canlı Önizleme dönüştürme aksiyonları.",
       "settingsPageLocationMapDesc": "Location chip picker harita varsayılanları ve harita önizleme boyutu.",
       "settingsPageMobileCalendarDesc": "Telefon odaklı Takvim düzeni, agenda aralıkları, görünür öğeler ve mobil etkinlik gösterimi.",
@@ -2475,7 +2475,7 @@
       "settingsPageTaskChipsDesc": "Task Creator simgeleri, satır içi görevler, Filtre Görünümü sonuçları, Kanban kartları, Görev Bul ve Task Wikilink Overlay yüzeyleri için kompakt görev simgeleri.",
       "settingsPageTaskEditorDesc": "Görev Editörü picker satırları, sırası ve görünürlüğü.",
       "settingsPageTaskFinderDesc": "Görev Bul açılış davranışı, görünür sonuçlar, hatırlanan kapsamlar, kısayollar ve sonuç simgeleri.",
-      "settingsPageTaskRouterDesc": "Satır içi ve dosya görevlerinin nerede oluşturulacağını, üst görevlere göre nasıl yerleştirileceğini ve nerede arşivleneceğini seçin.",
+      "settingsPageTaskRouterDesc": "Görev hedeflerini, üst göreve göre yerleşimi ve arşivleri seçin; günlük ve haftalık notları yapılandırın.",
       "settingsPageTrackerDesc": "Zaman takibi geçmişi, durum çubuğu sayacı, FlowTime davranışı ve oturum bölme.",
       "settingsPageTweaksDesc": "Scrollbars, Properties ve side dock tab ikonları için isteğe bağlı workspace görsel yardımcıları.",
       "settingsPageUpcomingDesc": "Günlük gruplar ve görünüm ayarları.",
@@ -3697,5 +3697,5 @@
       "toggleDescendantPreview": "Alt görev önizlemesini aç/kapat"
     }
   },
-  "sourceVersion": "dfefb20cf91ff69a1c77c0c5691b585bb45b33f516d66e77ac07807a98a0b18e"
+  "sourceVersion": "03b5ebd24b5d6964e3bef40883a956910a34fe4758f4a2795afee1803f380288"
 }

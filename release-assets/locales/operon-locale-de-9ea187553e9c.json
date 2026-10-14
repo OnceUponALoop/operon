@@ -970,7 +970,7 @@
       "periodicNoteRecoveryRequired": "{{kind}} konnte nicht fertiggestellt werden und erfordert möglicherweise eine manuelle Wiederherstellung: {{path}}",
       "periodicNoteTargetConflict": "Der Pfad für {{kind}} ist durch ein anderes Vault-Element belegt.",
       "periodicNoteTemplateUnavailable": "Die konfigurierte Vorlage für {{kind}} konnte nicht gelesen werden.",
-      "periodicNotesManagementDisabled": "Die Verwaltung von {{kind}} ist deaktiviert. Aktiviere sie in den Datei-Aufgaben-Einstellungen, um diesen Befehl zu verwenden.",
+      "periodicNotesManagementDisabled": "Die Verwaltung von {{kind}} ist deaktiviert. Aktiviere sie unter Task Router → Tägliche und wöchentliche Notizen, um diesen Befehl zu verwenden.",
       "periodicParentUnchanged": "Das geplante Datum wurde gespeichert, aber Operon konnte die periodische übergeordnete Aufgabe nicht aktualisieren.",
       "pinnedTaskOrderSaveFailed": "Die Reihenfolge der angehefteten Aufgaben konnte nicht gespeichert werden.",
       "pipelineMinimalFileTaskTemplateUnavailable": "Die ausgewählte Pipeline ist nicht mehr verfügbar oder hat keinen gültigen Anfangsstatus.",
@@ -1041,7 +1041,7 @@
       "trackedTimeRange": "Erfasst: {{range}}",
       "webViewerUnavailable": "Aktiviere das Obsidian-Kern-Plugin „Web Viewer“, um diesen Link in einem neuen Tab zu öffnen.",
       "weeklyNotesConversionRequiresCursor": "Setze den Cursor in einer geöffneten Notiz auf eine leere Zeile, um eine Datei-Aufgabe in Wochennotizen umzuwandeln.",
-      "weeklyNotesManagementDisabled": "Die Verwaltung der Wochennotizen ist deaktiviert. Aktiviere sie in den Datei-Aufgaben-Einstellungen, bevor du dort Inline-Aufgaben erstellst.",
+      "weeklyNotesManagementDisabled": "Die Verwaltung der Wochennotizen ist deaktiviert. Aktiviere sie unter Task Router → Tägliche und wöchentliche Notizen, bevor du dort Inline-Aufgaben erstellst.",
       "workflowRenameComplete": "Workflow-Umbenennung abgeschlossen — {{updated}} Aufgaben aktualisiert, {{conflicts}} Konflikte beibehalten.",
       "workflowRenameNeedsRetry": "Workflow-Umbenennung muss erneut versucht werden — {{failed}} Schreibvorgänge für Aufgaben sind fehlgeschlagen.",
       "workflowRenameNoPending": "Keine ausstehende Workflow-Umbenennung.",
@@ -2461,7 +2461,7 @@
       "settingsPageColorPaletteDesc": "Passe die 28 benannten Farben an, die Operon-Farbauswahlen verwenden.",
       "settingsPageContextMenuDesc": "Kalender-Hover- und Kontextmenü-Aktionen, Verzögerungen und Sichtbarkeit der Oberflächen.",
       "settingsPageCoreGeneralDesc": "Sprache, Zeitformat, Demo-Arbeitsbereich, Indexierung und Duplikat-Warnungen.",
-      "settingsPageFileTasksDesc": "Erstellungsstandards für Datei-Aufgaben, Vorlagen, Verwaltung von Tages- und Wochennotizen, Ausschlüsse und Notizumwandlung.",
+      "settingsPageFileTasksDesc": "Erstellungsstandards für Datei-Aufgaben, Vorlagen, Tages- und Wochennotizen als Datei-Aufgaben, Ausschlüsse und Notizumwandlung.",
       "settingsPageInlineTasksDesc": "Metadaten-Standardwerte für Tagesnotizen und Umwandlungsaktionen in der Live-Vorschau für Inline-Aufgaben.",
       "settingsPageLocationMapDesc": "Standardwerte der Karten-Auswahl für Location-Chips und Größe der Kartenvorschau.",
       "settingsPageMobileCalendarDesc": "Für Telefone optimiertes Kalenderlayout, Agenda-Fenster, sichtbare Elemente und mobile Ereignisanzeige.",
@@ -2475,7 +2475,7 @@
       "settingsPageTaskChipsDesc": "Task-Creator-Chips sowie kompakte Aufgaben-Chips für Inline-Aufgaben, Filteransicht-Ergebnisse, Kanban-Karten, Aufgabensuche und Task Wikilink Overlays.",
       "settingsPageTaskEditorDesc": "Auswahlzeilen, Reihenfolge und Sichtbarkeit im Aufgaben-Editor.",
       "settingsPageTaskFinderDesc": "Startverhalten der Aufgabensuche, sichtbare Ergebnisse, gemerkte Suchbereiche, Kürzel und Ergebnis-Chips.",
-      "settingsPageTaskRouterDesc": "Wählen Sie, wo Inline- und Datei-Aufgaben erstellt, relativ zu übergeordneten Aufgaben platziert und archiviert werden.",
+      "settingsPageTaskRouterDesc": "Wählen Sie Aufgabenziele, übergeordnete Aufgaben berücksichtigende Platzierung und Archive und konfigurieren Sie Tages- und Wochennotizen.",
       "settingsPageTrackerDesc": "Verlauf der Erfassungssitzungen, Statusleisten-Timer, FlowTime-Verhalten und Aufteilung von Erfassungssitzungen.",
       "settingsPageTweaksDesc": "Optionale visuelle Workspace-Helfer für Scrollbars, Properties und Side-Dock-Tab-Symbole.",
       "settingsPageUpcomingDesc": "Tagesgruppen und Anzeigeeinstellungen.",
@@ -3697,5 +3697,5 @@
       "toggleDescendantPreview": "Vorschau untergeordneter Aufgaben umschalten"
     }
   },
-  "sourceVersion": "51f7acfb379aa7841b27e6db1dfeb351db26ae7a4afbd860977df4b5f5511954"
+  "sourceVersion": "4205ee2305993085d75086c3232d88df6fa05429fd7b096b85c2bc241017d279"
 }

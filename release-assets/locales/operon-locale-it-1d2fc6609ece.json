@@ -970,7 +970,7 @@
       "periodicNoteRecoveryRequired": "{{kind}} non è stato completato e potrebbe richiedere un ripristino manuale: {{path}}",
       "periodicNoteTargetConflict": "Il percorso di {{kind}} è occupato da un altro elemento del vault.",
       "periodicNoteTemplateUnavailable": "Impossibile leggere il modello configurato per {{kind}}.",
-      "periodicNotesManagementDisabled": "La gestione di {{kind}} è disattivata. Attivala nelle impostazioni delle attività-file per usare questo comando.",
+      "periodicNotesManagementDisabled": "La gestione di {{kind}} è disattivata. Attivala in Task Router → Note giornaliere e settimanali per usare questo comando.",
       "periodicParentUnchanged": "La data pianificata è stata salvata, ma Operon non ha potuto aggiornare la relativa attività padre periodica.",
       "pinnedTaskOrderSaveFailed": "Impossibile salvare l'ordine delle attività fissate.",
       "pipelineMinimalFileTaskTemplateUnavailable": "La pipeline selezionata non è più disponibile oppure non ha uno stato iniziale valido.",
@@ -1041,7 +1041,7 @@
       "trackedTimeRange": "Monitorato: {{range}}",
       "webViewerUnavailable": "Attiva il plugin principale Web Viewer di Obsidian per aprire questo collegamento in una nuova scheda.",
       "weeklyNotesConversionRequiresCursor": "Per convertire un'attività-file in note settimanali, posiziona il cursore su una riga vuota di una nota aperta.",
-      "weeklyNotesManagementDisabled": "La gestione delle note settimanali è disattivata. Attivala nelle impostazioni delle attività-file prima di creare lì attività in linea.",
+      "weeklyNotesManagementDisabled": "La gestione delle note settimanali è disattivata. Attivala in Task Router → Note giornaliere e settimanali prima di creare lì attività in linea.",
       "workflowRenameComplete": "Rinomina del flusso di lavoro completata — {{updated}} attività aggiornate, {{conflicts}} conflitti conservati.",
       "workflowRenameNeedsRetry": "La rinomina del flusso di lavoro richiede un nuovo tentativo — {{failed}} scritture di attività non riuscite.",
       "workflowRenameNoPending": "Nessuna rinomina del flusso di lavoro in sospeso.",
@@ -2461,7 +2461,7 @@
       "settingsPageColorPaletteDesc": "Personalizza i 28 colori con nome usati dai selettori di colore di Operon.",
       "settingsPageContextMenuDesc": "Azioni del menu al passaggio del mouse e del menu contestuale del calendario, ritardi e visibilità delle superfici.",
       "settingsPageCoreGeneralDesc": "Lingua, formato orario, area di lavoro dimostrativa, indicizzazione e avvisi di duplicati.",
-      "settingsPageFileTasksDesc": "Valori predefiniti delle attività-file, modelli, gestione delle note giornaliere e settimanali, esclusioni e conversione.",
+      "settingsPageFileTasksDesc": "Valori predefiniti delle attività-file, modelli, creazione di note giornaliere e settimanali come attività-file, esclusioni e conversione.",
       "settingsPageInlineTasksDesc": "Valori predefiniti dei metadati delle Note giornaliere e azioni di conversione in Anteprima in tempo reale per le attività in linea.",
       "settingsPageLocationMapDesc": "Valori predefiniti della mappa del selettore chip Location e dimensione dell'anteprima mappa.",
       "settingsPageMobileCalendarDesc": "Disposizione del calendario ottimizzata per telefono, finestre agenda, elementi visibili e visualizzazione eventi mobile.",
@@ -2475,7 +2475,7 @@
       "settingsPageTaskChipsDesc": "Chip di Task Creator più chip di attività compatti per attività in linea, risultati della Vista filtro, schede Kanban, Ricerca attività e overlay wikilink attività.",
       "settingsPageTaskEditorDesc": "Righe di selezione dell'Editor attività, ordine e visibilità.",
       "settingsPageTaskFinderDesc": "Comportamento di avvio della Ricerca attività, risultati visibili, ambiti memorizzati, scorciatoie e chip dei risultati.",
-      "settingsPageTaskRouterDesc": "Scegli dove vengono create le attività in linea e le attività-file, come vengono posizionate rispetto ai genitori e dove vengono archiviate.",
+      "settingsPageTaskRouterDesc": "Scegli le destinazioni, il posizionamento rispetto alle attività principali e gli archivi e configura le note giornaliere e settimanali.",
       "settingsPageTrackerDesc": "Cronologia del monitoraggio del tempo, timer nella barra di stato, comportamento FlowTime e suddivisione delle sessioni.",
       "settingsPageTweaksDesc": "Aiuti visivi opzionali a livello di area di lavoro per barre di scorrimento, Proprietà e icone delle schede del pannello laterale.",
       "settingsPageUpcomingDesc": "Gruppi giornalieri e preferenze di visualizzazione.",
@@ -3697,5 +3697,5 @@
       "toggleDescendantPreview": "Alterna anteprima discendenti"
     }
   },
-  "sourceVersion": "2315b4a01464320953e3782332541a19f1c04ed9b68e0857a081370a8071811c"
+  "sourceVersion": "b8f5be6be0c65d1ec2408be3570e6996d11da7bc26d530cf0cc273f44850a8f5"
 }
