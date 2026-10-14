@@ -9,7 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### New
 
-- Added **Obsidian’s six highlight colors** across task views and Edit session descriptions, with native color selection in Task Editor, Task Creator, and Markdown text popovers.
+- Added **Obsidian’s six highlight colors** across task views, Edit session, and Session History descriptions, with native color selection in Task Editor, Task Creator, and Markdown text popovers.
 - Added **Vault Properties** to the desktop Task Editor and main and embedded Tables for both File and Inline Tasks, with editors for Text, List, Number, Checkbox, Date, and Date & time values.
 - Added **Inline Task templates** in Task Creator using the same template picker as File Tasks. Inline Tasks use supported template properties without copying the template body.
 - Added **Default Inline Task Template** in Inline Tasks settings, including None and minimal pipeline templates, for Task Creator, quick creation, and supported checkbox and selection conversions.
@@ -75,11 +75,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Security
 
-- Updated development dependencies to address known security vulnerabilities.
+- Updated development-tool dependencies to address known security vulnerabilities.
 
 ### Validation
 
-- Passed the unified local regression suite: **4,957/4,957 checks**, with all imported test groups registered and no test filter; combined local validation covered strict lint, production build, Runtime and Developer API regressions, Index V8 checks, locale checks, and the Plugin release guard. Earlier combined-source validation passed 66 creation-draft, 31 prepared-Creator, and 164 native-property and index tests; 40 File/Inline creation and index round trips; 100-task note conversion and 100-task Settings conversion scenarios; and 33 focused Creator and property-warning UI checks. Additional validation passed 11 focused touch/picker regressions and 8 narrow-viewport tests, plus synthetic browser checks for touch targets, wrapping, panel breakpoints, and unchanged legacy mobile and desktop geometry. Physical phone and tablet validation has not been performed; automated checks do not establish physical-device acceptance.
+- Full local Plugin checks, production build, release guard, and code review passed, along with **4,960/4,960** local regression tests.
 
 ## [3.12.0] - 2026-10-06
 
