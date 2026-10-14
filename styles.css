@@ -15664,7 +15664,9 @@ body:not(.is-mobile) .mod-root .workspace-leaf-content[data-type="operon-filter-
 }
 
 .operon-filter-logic-selector {
-	display: flex;
+	display: grid;
+	grid-template-columns: repeat(3, 1fr);
+	width: max-content;
 	align-items: center;
 	gap: 6px;
 }
