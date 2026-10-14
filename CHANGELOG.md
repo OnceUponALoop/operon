@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Validation
+
+## [4.0.0] - 2026-10-14
+
 ### New
 
 - Added **Obsidian’s six highlight colors** across task views, Edit session, and Session History descriptions, with native color selection in Task Editor, Task Creator, and Markdown text popovers.

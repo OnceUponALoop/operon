@@ -13,6 +13,57 @@ const RELEASE_NOTE_LIMIT = 5;
 
 export const OPERON_RELEASE_NOTES: OperonReleaseNote[] = [
 	{
+		version: '4.0.0',
+		date: '2026-10-14',
+		title: 'Operon 4.0.0 — Unity',
+		showOnUpdate: true,
+		bannerUrl: 'operon-4-0-0-unity.png',
+		body: `
+Tasks, properties, and templates now work together more consistently—from creation and editing to tables and everyday navigation.
+
+### Unified properties and faster tables
+
+- **Vault Properties** join canonical and custom fields in Task Editor and standalone and embedded Tables, with editors suited to each property type.
+- **Tasks and Vault Properties now share the persistent index.** The first launch automatically rebuilds the index; later launches load them together. No manual reindex is required.
+- **Tables preserve unchanged rows during property updates**, without dimming the whole table. Preset switching also reuses verified property data.
+
+### Templates and task creation
+
+- **Inline Tasks now support templates**, with separate File and Inline defaults and optional last-used template preferences.
+- **Task Creator previews template properties before creation**, including empty fields. Your edits and removals remain protected when changing templates or task modes.
+- **Bulk-convert Tasks emoji tasks from selected files or folders**, with scanning, progress, cancellation, and recovery support. Checkbox conversion can optionally open Creator for review.
+- **A calmer Creator** combines compact controls, improved discard handling, and better cursor placement. Fresh installations and explicit settings resets use simpler chip defaults; existing preferences are preserved.
+
+### A renewed Task Editor
+
+- **Customize desktop sections**, finish tasks directly from the header, and edit sessions by clicking their duration. Checkbox property icons now reflect their values.
+- **The desktop layout adapts to phones and tablets.** The previous phone layout remains available in Settings. File Body stays available on desktop and tablet.
+- **Description, notes, Additional, and File Body** have clearer grouping, controls, and editing behavior.
+
+### Everyday improvements
+
+- **Six Obsidian highlight colors** work across task views, Edit session, and Session History, with native color selection in supported Markdown editors.
+- **Nested filters** use hierarchical group numbers and calmer controls. **Daily and Weekly Notes** management now lives in Task Router, while file-task creation options remain in File Tasks.
+- **Dense inline-task notes scroll more smoothly.** Date/time editing, task conversion, default-priority handling, and Calendar/Kanban behavior also receive reliability improvements.
+
+### New Docs
+
+- [[DOCS-149 Tasks bulk conversion|Tasks Bulk Conversion]]
+- [[DOCS-150 Using inline task templates|Using Inline Task Templates]]
+
+### Updated Docs
+
+- [[DOCS-018 Task properties|Task Properties]]
+- [[DOCS-020 Task Creator|Task Creator]]
+- [[DOCS-021 Task Editor|Task Editor]]
+- [[DOCS-039 Key mappings|Key Mappings]]
+- [[DOCS-073 Filter conditions and operators|Filter Conditions and Operators]]
+- [[DOCS-109 Table presets|Table Presets]]
+- [[DOCS-137 Daily and Weekly Notes|Daily and Weekly Notes]]
+- And 36 more updated docs.
+`.trim(),
+	},
+	{
 		version: '3.12.0',
 		date: '2026-10-06',
 		title: 'Operon 3.12.0 — Tasks Meet Excalidraw',
