@@ -1,8 +1,8 @@
 {
   "schemaVersion": 1,
   "locale": "it",
-  "keyCount": 3652,
-  "keyFingerprint": "853b19c5f15756a38938112fa7a11c8f1f0e3c71ab0cb12ea4bb0b5828ac2f31",
+  "keyCount": 3654,
+  "keyFingerprint": "ffbb44f4c0d6e099d341aa45a2c4c775e34909f6b5d1fb4ea74710a448e37b1c",
   "translations": {
     "buttons": {
       "addFileSubtask": "Aggiungi sotto-attività-file",
@@ -1980,6 +1980,8 @@
       "keyMappingsShowInKanbanSwimlaneLabel": "Mostra nelle corsie Kanban",
       "keyMappingsShowInKanbanSwimlaneTooltip": "Offri questo campo personalizzato come opzione di raggruppamento per corsia Kanban.",
       "keyMappingsSurfaceCheckboxUnsupported": "I campi personalizzati con casella di controllo sono salvati ma non ancora mostrati nelle superfici editor, creatore, chip o corsia Kanban.",
+      "keyMappingsTypeSyncRecovery": "Impossibile verificare la sincronizzazione. Riavvia Obsidian prima di riprovare; nessun tipo esistente è stato sostituito intenzionalmente.",
+      "keyMappingsTypeSyncResult": "Tipi: {{updated}} assegnati, {{unchanged}} già corrispondenti, {{conflicts}} conflitti mantenuti, {{failed}} non verificati.",
       "keyMappingsType_checkbox": "casella di controllo",
       "keyMappingsType_date": "data",
       "keyMappingsType_datetime": "data e ora",
@@ -3697,5 +3699,5 @@
       "toggleDescendantPreview": "Alterna anteprima discendenti"
     }
   },
-  "sourceVersion": "b8f5be6be0c65d1ec2408be3570e6996d11da7bc26d530cf0cc273f44850a8f5"
+  "sourceVersion": "58ae9894250f4981f4c0e9577380639c6996009da920abd15f3fc360213f47d7"
 }

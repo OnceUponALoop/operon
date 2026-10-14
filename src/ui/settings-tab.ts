@@ -1,3 +1,6 @@
+import { syncCustomPropertyType } from '../core/custom-property-type-sync';
+import { getNativePropertyIndex } from '../indexer/native-property-index';
+import { notifyPropertyTypeChanges } from './table/table-file-property';
 import type { TasksConversionUiIntegration } from './tasks-conversion-controller';
 import { normalizeTaskEditorSections, type TaskEditorSection, type TaskEditorSectionId } from '../types/task-editor-sections';
 import { taskEditorSectionDefaultLabel } from './task-editor-section-label';
@@ -11735,6 +11738,30 @@ export class OperonSettingsTab extends PluginSettingTab {
 		}];
 	}
 
+	async synchronizeExistingCustomKeyTypes(isCurrent: () => boolean, backupDirectory: string): Promise<void> {
+  if (!isCurrent()) return;
+  await this.syncCustomKeyPropertyTypes(getManagedCustomFieldMappings(this.settings.keyMappings, { includeCheckbox: true }), false, isCurrent, backupDirectory);
+ }
+
+	private async syncCustomKeyPropertyTypes(mappings: readonly KeyMapping[], report = true, isCurrent: () => boolean = () => true, backupDirectory?: string): Promise<void> {
+  let updated = 0, unchanged = 0, conflicts = 0, failed = 0;
+  let restartRequired = false;
+  for (const mapping of mappings) {
+   const expected = JSON.stringify([mapping.canonicalKey, mapping.visiblePropertyName, mapping.type]);
+   const result = await syncCustomPropertyType(this.app, mapping, () => isCurrent() && this.settings.keyMappings.some(current => current.isSystem === false && JSON.stringify([current.canonicalKey, current.visiblePropertyName, current.type]) === expected), backupDirectory);
+   if (!isCurrent()) return;
+   if (result.status === 'updated' || result.status === 'unchanged') {
+    if (result.status === 'updated') updated++; else unchanged++;
+    getNativePropertyIndex(this.app).setTypes(result.types);
+   } else if (result.status === 'conflict') conflicts++;
+   else { failed++; if (result.status === 'failed' && result.restartRequired) restartRequired = true; }
+  }
+  if (!isCurrent()) return;
+  notifyPropertyTypeChanges(this.app);
+  if (restartRequired) new Notice(t('settings', 'keyMappingsTypeSyncRecovery'));
+  if (report || conflicts || failed) new Notice(t('settings', 'keyMappingsTypeSyncResult', { updated: String(updated), unchanged: String(unchanged), conflicts: String(conflicts), failed: String(failed) }));
+ }
+
 	private renderCustomKeyAddButton(host: HTMLElement): void {
 		const addRowEl = host.createDiv('operon-settings-add-row operon-key-mapping-add-row');
 		const addBtn = createSettingsAddButton(addRowEl, t('settings', 'keyMappingsAddCustomField'));
@@ -11750,6 +11777,7 @@ export class OperonSettingsTab extends PluginSettingTab {
 						this.setCustomSurfaceMappingVisible(mapping, 'chips', mapping.showInChips === true);
 					}
 					await this.saveSettings();
+					await this.syncCustomKeyPropertyTypes([mapping], false);
 					this.updateNativeSettingsDefinitions();
 				}),
 			}), true).open();

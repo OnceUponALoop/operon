@@ -1,8 +1,8 @@
 {
   "schemaVersion": 1,
   "locale": "ja",
-  "keyCount": 3652,
-  "keyFingerprint": "853b19c5f15756a38938112fa7a11c8f1f0e3c71ab0cb12ea4bb0b5828ac2f31",
+  "keyCount": 3654,
+  "keyFingerprint": "ffbb44f4c0d6e099d341aa45a2c4c775e34909f6b5d1fb4ea74710a448e37b1c",
   "translations": {
     "buttons": {
       "addFileSubtask": "ファイルサブタスクを追加",
@@ -1980,6 +1980,8 @@
       "keyMappingsShowInKanbanSwimlaneLabel": "カンバンスイムレーンに表示",
       "keyMappingsShowInKanbanSwimlaneTooltip": "このカスタムフィールドをカンバンスイムレーンのグループ化オプションとして提供します。",
       "keyMappingsSurfaceCheckboxUnsupported": "チェックボックスのカスタムフィールドは保存されますが、エディター・作成・チップ・カンバンスイムレーンの面にはまだ表示されません。",
+      "keyMappingsTypeSyncRecovery": "型の同期を確認できませんでした。再試行前にObsidianを再起動してください。既存の型を意図的に置き換えてはいません。",
+      "keyMappingsTypeSyncResult": "型：{{updated}}件を設定、{{unchanged}}件は一致、{{conflicts}}件の競合を保持、{{failed}}件は未確認。",
       "keyMappingsType_checkbox": "チェックボックス",
       "keyMappingsType_date": "日付",
       "keyMappingsType_datetime": "日時",
@@ -3697,5 +3699,5 @@
       "toggleDescendantPreview": "子孫プレビューを切り替え"
     }
   },
-  "sourceVersion": "0d6e59db1b9f7792ed9a0d1aa85932e632731b6040c7b647423fc8b674085c03"
+  "sourceVersion": "a89efaed84802dde71c14664855450892c19e284e388cd1272c5c1b933cb2747"
 }

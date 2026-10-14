@@ -1,3 +1,4 @@
+import { bindCreatorToolbarInteractionState } from './surface-interaction-state';
 import { PreparedTaskCreatorDraft, type PreparedTaskCreatorAdapter } from './task-creator-prepared-draft';
 import { openTableFilePropertyPicker } from './table/table-file-property-editor';
 import { bindPropertyReadOnlyWarning } from './property-readonly-warning';
@@ -533,6 +534,7 @@ export class TaskCreatorModal extends Modal {
 	private fileButtonEl!: HTMLButtonElement;
 	private templateButtonEl!: HTMLButtonElement;
 	private fieldButtonMap = new Map<TaskCreatorFieldKey, HTMLButtonElement>();
+	private cleanupInteractionState: (() => void) | null = null;
 	private nativeCloseButtonCleanup: (() => void) | null = null;
 	private suggestionState: SuggestionState | null = null;
 	private creatorPickerClose: (() => void) | null = null;
@@ -596,6 +598,8 @@ export class TaskCreatorModal extends Modal {
 	}
 
 	onOpen(): void {
+		this.cleanupInteractionState?.();
+		this.cleanupInteractionState = null;
 		this.containerEl.addClass('operon-task-creator-modal-container');
 		this.modalEl.addClass('operon-task-creator-modal');
 		this.nativeCloseButtonCleanup?.();
@@ -613,6 +617,7 @@ export class TaskCreatorModal extends Modal {
 		this.updateMobileViewportHeight();
 		this.registerMobilePickerListeners();
 		this.render();
+		this.cleanupInteractionState = bindCreatorToolbarInteractionState(this.contentEl);
 		// Seed the caret once; later focus recovery keeps the user’s current position.
 		const descriptionEnd = this.getDescriptionDisplayValue().length;
 		this.descriptionCompactEditor?.setSelection?.({ anchor: descriptionEnd, head: descriptionEnd });
@@ -641,6 +646,8 @@ export class TaskCreatorModal extends Modal {
 	}
 
 	onClose(): void {
+		this.cleanupInteractionState?.();
+		this.cleanupInteractionState = null;
   this.preparedClosed = true;
   this.prepared?.close();
 		this.nativeCloseButtonCleanup?.();
@@ -2054,7 +2061,13 @@ export class TaskCreatorModal extends Modal {
 	}
 
 	private getVisibleToolbarFieldOrder(): TaskCreatorFieldKey[] {
-  if (this.prepared) return this.prepared.visibleKeys(this.activeCreateType).filter(key => this.canRenderToolbarField(key) || this.prepared!.field(key).property.interpretation === 'native');
+  if (this.prepared) {
+   // Orphan toolbar preferences alone must not resurrect a deleted custom key.
+   const nativeKeys = new Set(this.prepared.fields(this.activeCreateType)
+    .filter(field => field.property.interpretation === 'native')
+    .map(field => this.prepared!.key(field)));
+   return this.prepared.visibleKeys(this.activeCreateType).filter(key => this.canRenderToolbarField(key) || nativeKeys.has(key));
+  }
 		return (this.options.settings.taskCreatorToolbar ?? [])
 			.filter(item => item.visible)
 			.map(item => item.key)

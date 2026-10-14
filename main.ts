@@ -16963,6 +16963,12 @@ export default class OperonPlugin extends Plugin {
 		// Run startup maintenance after layout is ready
 		this.app.workspace.onLayoutReady(() => {
 			if (OPERON_AGENT_RUNTIME_PROBE_ENABLED) setTransportProbePhase('layout-ready');
+			runAsyncAction('startup custom property type synchronization failed', async () => {
+				await this.settingsTab?.synchronizeExistingCustomKeyTypes(
+					() => this.agentRuntimeLifecycle.getPhase() !== 'unloading' && this.storage.canPersistSettings(),
+					`${this.manifest.dir ?? `${this.app.vault.configDir}/plugins/${this.manifest.id}`}/backups/custom-property-types`,
+				);
+			});
 			runAsyncAction('startup locale pack synchronization failed', async () => {
 				await this.synchronizeLanguagePacksAfterLayout();
 			});
@@ -27922,8 +27928,7 @@ export default class OperonPlugin extends Plugin {
 		return name
 			.replace(/[\\/:*?"<>|]/g, '')
 			.replace(/\s+/g, ' ')
-			.trim()
-			.substring(0, 100);
+			.trim();
 	}
 
 	private getYamlTaskByFilePath(filePath: string): IndexedTask | null {

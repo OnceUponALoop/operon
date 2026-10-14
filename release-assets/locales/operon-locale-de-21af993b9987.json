@@ -1,8 +1,8 @@
 {
   "schemaVersion": 1,
   "locale": "de",
-  "keyCount": 3652,
-  "keyFingerprint": "853b19c5f15756a38938112fa7a11c8f1f0e3c71ab0cb12ea4bb0b5828ac2f31",
+  "keyCount": 3654,
+  "keyFingerprint": "ffbb44f4c0d6e099d341aa45a2c4c775e34909f6b5d1fb4ea74710a448e37b1c",
   "translations": {
     "buttons": {
       "addFileSubtask": "Datei-Unteraufgabe hinzufügen",
@@ -1980,6 +1980,8 @@
       "keyMappingsShowInKanbanSwimlaneLabel": "In Kanban-Swimlanes anzeigen",
       "keyMappingsShowInKanbanSwimlaneTooltip": "Dieses benutzerdefinierte Feld als Kanban-Swimlane-Gruppierungsoption anbieten.",
       "keyMappingsSurfaceCheckboxUnsupported": "Benutzerdefinierte Kontrollkästchenfelder werden gespeichert, aber noch nicht in Editor-, Creator-, Chip- oder Kanban-Swimlane-Oberflächen angezeigt.",
+      "keyMappingsTypeSyncRecovery": "Der Typabgleich konnte nicht bestätigt werden. Starten Sie Obsidian vor einem erneuten Versuch neu; bestehende Typen wurden nicht absichtlich ersetzt.",
+      "keyMappingsTypeSyncResult": "Eigenschaftstypen: {{updated}} zugewiesen, {{unchanged}} bereits passend, {{conflicts}} Konflikte beibehalten, {{failed}} nicht bestätigt.",
       "keyMappingsType_checkbox": "Kontrollkästchen",
       "keyMappingsType_date": "Datum",
       "keyMappingsType_datetime": "Datum/Uhrzeit",
@@ -3697,5 +3699,5 @@
       "toggleDescendantPreview": "Vorschau untergeordneter Aufgaben umschalten"
     }
   },
-  "sourceVersion": "4205ee2305993085d75086c3232d88df6fa05429fd7b096b85c2bc241017d279"
+  "sourceVersion": "d3c9d9f2660aaced2cd6c66f2c2aef905fa78d56a666bb53700a5b7b60d0b20b"
 }

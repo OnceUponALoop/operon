@@ -933,3 +933,183 @@ test('registry-only failure and identical recovery refresh native warnings witho
 });
 
 import "./native-property-index.test";
+
+// Explicit custom-key type sync uses Obsidian's native writer, never inferred property types.
+import { syncCustomPropertyType } from '../src/core/custom-property-type-sync';
+function customTypeSyncFixture(initial: Record<string, string> = {}) {
+ let disk = { ...initial }, memory = { ...initial }, writes = 0;
+ let failure: 'read' | 'before' | 'after' | 'verify' | undefined;
+ const mapping: KeyMapping = { canonicalKey: 'customValue', visiblePropertyName: 'Custom Value', type: 'text', isSystem: false, enabled: true, sync: 'yes' };
+ const manager = {
+  getAssignedWidget: (name: string) => Object.entries(memory).find(([key]) => key.toLowerCase() === name.toLowerCase())?.[1] ?? null,
+  async setType(name: string, type: string) {
+   writes++;
+   if (failure === 'before') throw new Error('write failed');
+   memory[name] = type;
+   if (failure === 'after') throw new Error('uncertain write');
+   if (failure !== 'verify') disk = { ...memory };
+  },
+ };
+ const app = { metadataTypeManager: manager, vault: { configDir: '.settings', adapter: {
+  exists: async () => true,
+  read: async (name: string) => { assert.equal(name, '.settings/types.json'); if (failure === 'read') throw new Error('read failed'); return JSON.stringify({ types: disk }); },
+ } } } as unknown as App;
+ return { app, mapping, manager, writes: () => writes, disk: () => disk,
+  fail: (value: typeof failure) => { failure = value; },
+  memory: (value: Record<string, string>) => { memory = value; },
+ };
+}
+for (const type of ['text', 'list', 'number', 'checkbox', 'date', 'datetime'] as const) {
+ test(`custom type sync assigns explicit ${type} once and preserves unrelated types`, async () => {
+  const f = customTypeSyncFixture({ Existing: 'number' }); f.mapping.type = type;
+  const result = await syncCustomPropertyType(f.app, f.mapping, () => true);
+  assert.equal(result.status, 'updated');
+  assert.deepEqual(f.disk(), { Existing: 'number', 'Custom Value': type === 'list' ? 'multitext' : type });
+  assert.equal((await syncCustomPropertyType(f.app, f.mapping, () => true)).status, 'unchanged');
+  assert.equal(f.writes(), 1);
+ });
+}
+test('custom type sync preserves explicit conflicts through either alias and case', async () => {
+ for (const alias of ['Custom Value','CUSTOMVALUE','custom value']) {
+  const f=customTypeSyncFixture({[alias]:'number'});
+  assert.equal((await syncCustomPropertyType(f.app,f.mapping,()=>true)).status,'conflict');assert.equal(f.writes(),0);
+ }
+});
+test('custom type sync serializes repeated user requests without duplicate writes', async () => {
+ const f=customTypeSyncFixture();
+ const results=await Promise.all([syncCustomPropertyType(f.app,f.mapping,()=>true),syncCustomPropertyType(f.app,f.mapping,()=>true)]);
+ assert.deepEqual(results.map(result=>result.status),['updated','unchanged']);assert.equal(f.writes(),1);
+});
+test('custom type sync refuses stale manager, unavailable API and cancelled mapping', async () => {
+ const f=customTypeSyncFixture({Other:'number'});f.memory({});
+ assert.equal((await syncCustomPropertyType(f.app,f.mapping,()=>true)).status,'failed');assert.equal(f.writes(),0);
+ assert.equal((await syncCustomPropertyType({vault:f.app.vault} as App,f.mapping,()=>true)).status,'failed');
+ assert.equal((await syncCustomPropertyType(f.app,f.mapping,()=>false)).status,'cancelled');
+});
+for (const failure of ['read','before','after','verify'] as const) test(`custom type sync never retries uncertain ${failure} failure`,async()=>{
+ const f=customTypeSyncFixture({Other:'number'});f.fail(failure);
+ assert.equal((await syncCustomPropertyType(f.app,f.mapping,()=>true)).status,'failed');
+ assert.equal(f.writes(),failure==='read'?0:1);assert.deepEqual(f.disk(),{Other:'number'});
+ if(failure!=='read'){f.fail(undefined);const other={...f.mapping,canonicalKey:'another',visiblePropertyName:'Another'};assert.equal((await syncCustomPropertyType(f.app,other,()=>true)).status,'failed');assert.equal(f.writes(),1,'later saves cannot flush an uncertain assignment');}
+});
+test('custom type sync cancels a mapping changed during registry read',async()=>{
+ const f=customTypeSyncFixture();let current=true;const read=f.app.vault.adapter.read.bind(f.app.vault.adapter);
+ f.app.vault.adapter.read=async name=>{const result=await read(name);current=false;return result;};
+ assert.equal((await syncCustomPropertyType(f.app,f.mapping,()=>current)).status,'cancelled');assert.equal(f.writes(),0);
+});
+
+const automaticTypeSources = Object.freeze({
+ current: '{"types":{"Other":"number"}}',
+ missing: null,
+ conflict: '{"types":{"Custom Value":"number","Other":"number"}}',
+ matched: '{"types":{"Custom Value":"text","Other":"number"}}',
+ corrupt: '{"types":',
+ recoverable: '{"types":null}',
+ future: '{"version":2,"types":{}}',
+ unknown: '{"types":{"Other":"future-widget"}}',
+});
+type AutoTypeFault = 'backup' | 'backup-silent' | 'native-before' | 'native-after' | 'native-partial' | 'cancel' | 'concurrent';
+async function automaticTypeFixture(source: string | null, fault?: AutoTypeFault) {
+ const fs = await import('node:fs/promises');
+ const root = await fs.mkdtemp(path.join(process.platform === 'darwin' ? '/private/tmp' : tmpdir(), 'operon-auto-types-'));
+ const vault = path.join(root, 'vault');
+ const config = '.settings';
+ const registry = config + '/types.json';
+ const backupDirectory = config + '/plugins/operon/backups/custom-property-types';
+ await fs.mkdir(path.join(vault, config, 'plugins/operon'), { recursive: true });
+ const sealed = JSON.stringify({ source });
+ await fs.writeFile(path.join(root, 'sealed.json'), sealed, { mode: 0o400 });
+ if (source !== null) await fs.writeFile(path.join(vault, registry), source);
+ await fs.writeFile(path.join(vault, 'Note.md'), '---\nCustom Value: untouched\n---\nBody');
+ let current = true;
+ let nativeWrites = 0;
+ const writes: string[] = [];
+ const read = async (name: string): Promise<string | null> => {
+  try { return await fs.readFile(path.join(vault, name), 'utf8'); }
+  catch (error) { if ((error as NodeJS.ErrnoException).code === 'ENOENT') return null; throw error; }
+ };
+ const boot = async (): Promise<App> => {
+  let memory: Record<string, string> = {};
+  try { memory = JSON.parse(await read(registry) ?? '{"types":{}}').types ?? {}; } catch { /* Corrupt source must fail closed. */ }
+  const adapter = {
+   exists: async (name: string) => { try { await fs.stat(path.join(vault, name)); return true; } catch { return false; } },
+   read: async (name: string) => { const value = await read(name); if (value === null) throw new Error('Missing file'); return value; },
+   mkdir: async (name: string) => { await fs.mkdir(path.join(vault, name)); },
+   write: async (name: string, value: string) => {
+    assert.ok(name.startsWith(backupDirectory + '/'), 'only backup IO is delegated to adapter');
+    if (fault === 'backup') throw new Error('backup failed');
+    writes.push(name);
+    if (fault !== 'backup-silent') await fs.writeFile(path.join(vault, name), value);
+    if (fault === 'cancel') current = false;
+    if (fault === 'concurrent') await fs.writeFile(path.join(vault, registry), '{"types":{"Custom Value":"number"}}');
+   },
+  };
+  return { vault: { configDir: config, adapter }, metadataTypeManager: {
+   getAssignedWidget: (name: string) => Object.entries(memory).find(([key]) => key.toLowerCase() === name.toLowerCase())?.[1] ?? null,
+   setType: async (name: string, type: string) => {
+    nativeWrites++;
+    const backups = await fs.readdir(path.join(vault, backupDirectory));
+    assert.ok(backups.length, 'backup must precede the native write');
+    const preimages = await Promise.all(backups.map(file => read(backupDirectory + '/' + file)));
+    assert.ok(preimages.some(value => JSON.parse(value!).source === source));
+    if (fault === 'native-before') throw new Error('native write failed');
+    memory[name.toLowerCase()] = type;
+    writes.push(registry);
+    await fs.writeFile(path.join(vault, registry), fault === 'native-partial' ? '{"types":' : JSON.stringify({ types: memory }));
+    if (fault === 'native-after' || fault === 'native-partial') throw new Error('interrupted');
+   },
+  } } as unknown as App;
+ };
+ const mapping = customTypeSyncFixture().mapping;
+ return { boot, mapping, backupDirectory, writes, nativeWrites: () => nativeWrites, current: () => current,
+  source: () => read(registry), clearFault: () => { fault = undefined; },
+  checkPreserved: async () => {
+   assert.equal(await read('Note.md'), '---\nCustom Value: untouched\n---\nBody');
+   assert.equal(await fs.readFile(path.join(root, 'sealed.json'), 'utf8'), sealed);
+   assert.ok(writes.every(name => name === registry || name.startsWith(backupDirectory + '/')));
+  },
+  restore: async () => {
+   const original = JSON.parse(await fs.readFile(path.join(root, 'sealed.json'), 'utf8')).source as string | null;
+   if (original === null) await fs.rm(path.join(vault, registry), { force: true });
+   else await fs.writeFile(path.join(vault, registry), original);
+   assert.equal(await read(registry), source);
+  },
+  close: () => fs.rm(root, { recursive: true, force: true }),
+ };
+}
+for (const [name, source] of Object.entries(automaticTypeSources)) test(`automatic custom types isolated vault: ${name}`, async () => {
+ const f = await automaticTypeFixture(source);
+ try {
+  const result = await syncCustomPropertyType(await f.boot(), f.mapping, f.current, f.backupDirectory);
+  const updates = name === 'current' || name === 'missing';
+  assert.equal(result.status, updates ? 'updated' : name === 'conflict' ? 'conflict' : name === 'matched' ? 'unchanged' : 'failed');
+  if (updates) {
+   const state = JSON.parse((await f.source())!);
+   assert.equal(state.types['custom value'], 'text');
+   if (name === 'current') assert.equal(state.types.Other, 'number');
+   const writes = f.writes.length;
+   assert.equal((await syncCustomPropertyType(await f.boot(), f.mapping, f.current, f.backupDirectory)).status, 'unchanged');
+   assert.equal(f.writes.length, writes, 'second boot must perform no persistent writes');
+   await f.restore();
+  } else { assert.equal(await f.source(), source); assert.equal(f.writes.length, 0); }
+  await f.checkPreserved();
+ } finally { await f.close(); }
+});
+for (const fault of ['backup','backup-silent','native-before','native-after','native-partial','cancel','concurrent'] as const) test(`automatic custom types isolated failure and restart: ${fault}`, async () => {
+ const f = await automaticTypeFixture(automaticTypeSources.current, fault);
+ try {
+  const app = await f.boot();
+  const result = await syncCustomPropertyType(app, f.mapping, f.current, f.backupDirectory);
+  assert.equal(result.status, fault === 'cancel' ? 'cancelled' : 'failed');
+  assert.equal(f.nativeWrites(), fault.startsWith('native') ? 1 : 0);
+  if (fault.startsWith('native')) {
+   f.clearFault();
+   assert.equal((await syncCustomPropertyType(app, f.mapping, f.current, f.backupDirectory)).status, 'failed', 'same session must not replay uncertain writes');
+   const retry = await syncCustomPropertyType(await f.boot(), f.mapping, f.current, f.backupDirectory);
+   assert.equal(retry.status, fault === 'native-before' ? 'updated' : fault === 'native-after' ? 'unchanged' : 'failed');
+   await f.restore();
+  } else if (fault !== 'concurrent') assert.equal(await f.source(), automaticTypeSources.current);
+  else assert.equal(await f.source(), '{"types":{"Custom Value":"number"}}');
+  await f.checkPreserved();
+ } finally { await f.close(); }
+});

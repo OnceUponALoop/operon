@@ -1,8 +1,8 @@
 {
   "schemaVersion": 1,
   "locale": "es",
-  "keyCount": 3652,
-  "keyFingerprint": "853b19c5f15756a38938112fa7a11c8f1f0e3c71ab0cb12ea4bb0b5828ac2f31",
+  "keyCount": 3654,
+  "keyFingerprint": "ffbb44f4c0d6e099d341aa45a2c4c775e34909f6b5d1fb4ea74710a448e37b1c",
   "translations": {
     "buttons": {
       "addFileSubtask": "Añadir subtarea de archivo",
@@ -1980,6 +1980,8 @@
       "keyMappingsShowInKanbanSwimlaneLabel": "Mostrar en carriles de Kanban",
       "keyMappingsShowInKanbanSwimlaneTooltip": "Ofrecer este campo personalizado como opción de agrupación por carriles de Kanban.",
       "keyMappingsSurfaceCheckboxUnsupported": "Los campos personalizados de casilla se almacenan pero aún no se muestran en las superficies de editor, creador, chip ni carril de Kanban.",
+      "keyMappingsTypeSyncRecovery": "No se pudo verificar la sincronización. Reinicia Obsidian antes de reintentar; no se reemplazaron tipos existentes de forma intencionada.",
+      "keyMappingsTypeSyncResult": "Tipos: {{updated}} asignados, {{unchanged}} ya coinciden, {{conflicts}} conflictos conservados, {{failed}} sin verificar.",
       "keyMappingsType_checkbox": "casilla",
       "keyMappingsType_date": "fecha",
       "keyMappingsType_datetime": "fecha y hora",
@@ -3697,5 +3699,5 @@
       "toggleDescendantPreview": "Alternar vista previa de descendientes"
     }
   },
-  "sourceVersion": "37cf1fb15ae37de64ea9c2ebc8a7abdfc555fc6596ca79a6a357b37c2acb272a"
+  "sourceVersion": "58d9dda46ec7cdfe78bfc99281bf87dcb6a3d6b82ed0509e80888bbf2ef31109"
 }
