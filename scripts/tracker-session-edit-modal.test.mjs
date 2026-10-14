@@ -76,3 +76,11 @@ test('session context uses shared read-only Markdown without changing metadata',
 	assert.match(modalSource, /contextTitle: options\.taskLabel/u);
 	assert.match(modalSource, /text: meta,/u);
 });
+
+test('history description uses visual Markdown and retains its configured task action', () => {
+	assert.match(historySource, /renderCompactTaskMarkdown\(desc, \{\s*value: formatTimeSessionHistoryTaskDescription\(task\),\s*mode: 'visual-only',/u);
+	assert.doesNotMatch(historySource, /desc\.setText\(/u);
+	assert.match(historySource, /desc\.addEventListener\('click', \(\) => this\.handleTaskDescriptionClick\(task\)\)/u);
+	assert.match(historySource, /return task\.description \|\| t\('taskEditor', 'untitledTask'\)/u);
+	assert.match(historySource, /if \(action === 'openTaskEditor'\) \{\s*this\.callbacks\.openTaskEditor\(task\.operonId\);\s*return;\s*\}\s*this\.callbacks\.navigateToTask\(task\);/u);
+});

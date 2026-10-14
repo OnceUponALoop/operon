@@ -20,6 +20,7 @@ import { bindTaskContextualHoverMenu, cleanupTaskContextualHoverMenus, hideTaskC
 import type { ContextualMenuActionHandler } from '../core/contextual-menu-engine';
 import { asyncHandler } from '../core/async-action';
 import { setAccessibleLabelWithoutTooltip } from './accessibility-label';
+import { renderCompactTaskMarkdown } from './compact-task-markdown-renderer';
 
 export const TIME_SESSION_HISTORY_VIEW_TYPE = 'operon-time-session-history';
 
@@ -355,7 +356,10 @@ export class TimeSessionHistoryView extends ItemView {
 		}
 
 		const desc = row.createDiv('operon-time-session-history-task-desc');
-		desc.setText(formatTimeSessionHistoryTaskDescription(task));
+		renderCompactTaskMarkdown(desc, {
+			value: formatTimeSessionHistoryTaskDescription(task),
+			mode: 'visual-only',
+		});
 		desc.addEventListener('click', () => this.handleTaskDescriptionClick(task));
 		desc.addClass('is-history');
 
