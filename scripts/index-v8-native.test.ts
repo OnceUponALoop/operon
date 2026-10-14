@@ -1,3 +1,4 @@
+import { tmpdir } from 'node:os';
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs/promises';
@@ -81,7 +82,7 @@ const base: TableFilePropertySnapshot = { revision: 1, signature: 'test', fields
 	getCell: () => ({ present: false, rawValue: undefined, normalizedValue: '' }), getCandidates: () => [] };
 
 async function fixture() {
-	const root = await fs.mkdtemp('/private/tmp/operon-native-layout2-');
+	const root = await fs.mkdtemp(path.join(process.platform === 'darwin' ? '/private/tmp' : tmpdir(), 'operon-native-layout2-'));
 	const configDir = '.test-config';
 	const paths = buildOperonStoragePaths(configDir).runtime;
 	await fs.mkdir(path.join(root, configDir), { recursive: true });

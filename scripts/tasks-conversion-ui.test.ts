@@ -1,3 +1,4 @@
+import { tmpdir } from 'node:os';
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
 import { readFile, mkdtemp, writeFile, rm } from 'node:fs/promises';
@@ -216,7 +217,7 @@ test('observer failure cannot interrupt conversion after confirmation', async ()
 });
 
 test('production adapter UI flow in synthetic private tmp preserves sealed unrelated content and completes cleanup', async () => {
- const root = await mkdtemp('/private/tmp/operon-stage3-fixture-'), sealed = await mkdtemp('/private/tmp/operon-stage3-sealed-');
+ const root = await mkdtemp(path.join(process.platform === 'darwin' ? '/private/tmp' : tmpdir(), 'operon-stage3-fixture-')), sealed = await mkdtemp(path.join(process.platform === 'darwin' ? '/private/tmp' : tmpdir(), 'operon-stage3-sealed-'));
  try {
   const adapter = new DiskAdapter(root);
   const notes = { 'A.md': '---\nTitle: synthetic\n---\n- [ ] A 📅 2026-10-10\n', 'Unrelated.md': 'Sealed unrelated content\r\n', 'Ref.canvas': JSON.stringify({ nodes: [{ type: 'text', text: 'not a task' }] }) };
@@ -389,7 +390,7 @@ test('retained native recovery adoption guard never leaks synchronization owners
 
 for (const scenario of ['scan-cancel', 'dirty-buffer', 'changed-source', 'concurrent-write', 'external-reference', 'write-failure', 'reload-recovery', 'marker-failure', 'cleanup-failure'] as const) {
  test(`real adapter UI safety: ${scenario}`, async () => {
-  const root = await mkdtemp('/private/tmp/operon-stage3-boundary-'), sealed = await mkdtemp('/private/tmp/operon-stage3-preimage-');
+  const root = await mkdtemp(path.join(process.platform === 'darwin' ? '/private/tmp' : tmpdir(), 'operon-stage3-boundary-')), sealed = await mkdtemp(path.join(process.platform === 'darwin' ? '/private/tmp' : tmpdir(), 'operon-stage3-preimage-'));
   try {
    const adapter = new DiskAdapter(root), originals = { 'A.md': '- [ ] A 🆔 A\r\n', 'B.md': '- [ ] B ⛔ A\n', 'Unrelated.md': '---\nType: Note\n---\nSealed bytes\r\n' };
    for (const [file, content] of Object.entries(originals)) { await adapter.write(file, content); await writeFile(path.join(sealed, file), content); }
@@ -582,7 +583,7 @@ test('all changed files yield an empty revised scope and no write or stale confi
 
 
 test('real adapter skips a conflicted source only after renewed confirmation and keeps unrelated bytes', async () => {
- const root = await mkdtemp('/private/tmp/operon-conflict-continuation-');
+ const root = await mkdtemp(path.join(process.platform === 'darwin' ? '/private/tmp' : tmpdir(), 'operon-conflict-continuation-'));
  try {
   const adapter = new DiskAdapter(root);
   const originals = { 'A.md': '- [ ] A 🆔 A\r\n', 'B.md': '- [ ] B ⛔ A\r\n', 'Unrelated.txt': 'Preserve these bytes\r\n' };

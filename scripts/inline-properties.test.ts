@@ -1,3 +1,5 @@
+import path from 'node:path';
+import { tmpdir } from 'node:os';
 import { getNativePropertyIndex } from '../src/indexer/native-property-index';
 import { scanFileWithMappings } from '../src/indexer/file-scanner';
 import type { ObsidianPropertyTypeId } from '../src/core/property-type-registry';
@@ -632,7 +634,7 @@ async function withIntegratedNative(run: (f: Awaited<ReturnType<typeof integrate
 }
 async function integratedNative(sf: Parameters<Parameters<typeof withSettingsFixture>[1]>[0]) {
  const fs=await import('node:fs/promises');
- const root=await fs.mkdtemp('/private/tmp/operon-native-stage5-');
+ const root=await fs.mkdtemp(path.join(process.platform === 'darwin' ? '/private/tmp' : tmpdir(), 'operon-native-stage5-'));
  const f=nativeTableFixture();
  for(const [name,source] of f.contents)await fs.writeFile(`${root}/${name}`,source);
  let storage=sf.createStorage();await storage.initialize();

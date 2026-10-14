@@ -622,7 +622,7 @@ test('real filesystem adapter, production TaskWriter and reload recovery restore
 });
 
 test('real storage conversion reads only its selected file and preserves sealed malformed templates', async () => {
-	const root = await mkdtemp('/private/tmp/operon-conversion-scope-'), sealed = await mkdtemp('/private/tmp/operon-conversion-scope-sealed-');
+	const root = await mkdtemp(path.join(process.platform === 'darwin' ? '/private/tmp' : tmpdir(), 'operon-conversion-scope-')), sealed = await mkdtemp(path.join(process.platform === 'darwin' ? '/private/tmp' : tmpdir(), 'operon-conversion-scope-sealed-'));
 	try {
 		const adapter = new DiskAdapter(root);
 		const originals = { 'Selected.md': '---\r\nTitle: %opaque YAML\r\n---\r\n- [ ] Repeat 🔁 every day 📅 2026-10-08\r\n',
@@ -746,7 +746,7 @@ test('automatic rollback retains a newly referenced task and its recovery eviden
 });
 
 for (const outcome of ['cancel', 'write-error', 'success'] as const) test(`real storage ${outcome} preserves transaction-created external references`, async () => {
- const root = await mkdtemp('/private/tmp/operon-reference-boundary-');
+ const root = await mkdtemp(path.join(process.platform === 'darwin' ? '/private/tmp' : tmpdir(), 'operon-reference-boundary-'));
  try {
   const adapter = new DiskAdapter(root);
   await adapter.write('A.md', '- [ ] A 📅 2026-10-09'); await adapter.write('B.md', '- [ ] B 📅 2026-10-09');
