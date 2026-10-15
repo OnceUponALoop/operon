@@ -298,6 +298,8 @@ export function resolveDynamicFileTaskFilterInsertLine(
 
 export interface DynamicFileTaskFilterLivePreviewCallbacks {
 	getFilePath: (view: EditorView) => string;
+	/** True only for the owning document editor, never nested or task-body editors. */
+	isDocumentEditor: (view: EditorView) => boolean;
 	getFilterDeps: () => EmbedFilterDeps;
 	openDynamicFilterSettings: (template: FilterSet) => void;
 }
@@ -305,7 +307,7 @@ export interface DynamicFileTaskFilterLivePreviewCallbacks {
 export function operonDynamicFileTaskFilterLivePreviewExtension(
 	callbacks: DynamicFileTaskFilterLivePreviewCallbacks,
 ): Extension {
-	const sourceContextEffect = StateEffect.define<string>();
+	const sourceContextEffect = StateEffect.define<{ filePath: string; documentEditor: boolean }>();
 	const measuredHeightEffect = StateEffect.define<{ filePath: string; height: number }>();
 	class TopFilterWidget extends WidgetType {
 		constructor(readonly filePath: string, readonly height: number) { super(); }
@@ -324,14 +326,15 @@ export function operonDynamicFileTaskFilterLivePreviewExtension(
 		decorations: DecorationSet;
 		filePath: string;
 		fallbackPath: string;
+		documentEditor: boolean;
 		live: boolean;
 		placement: OperonSettings['dynamicFileTaskFilterPlacement'];
 		enabled: boolean;
 		height: number;
 	};
-	function buildTopState(state: EditorState, fallbackPath: string, height: number): TopState {
+	function buildTopState(state: EditorState, fallbackPath: string, height: number, documentEditor: boolean): TopState {
 		const filePath = state.field(editorInfoField, false)?.file?.path ?? fallbackPath;
-		const live = state.facet(operonEditorSurfaceScopeFacet) === 'document' && state.field(editorLivePreviewField, false) === true;
+		const live = documentEditor && state.facet(operonEditorSurfaceScopeFacet) === 'document' && state.field(editorLivePreviewField, false) === true;
 		const deps = callbacks.getFilterDeps();
 		const { dynamicFileTaskFilterPlacement: placement, dynamicFileTaskFilterEnabled: enabled } = deps.getSettings();
 		let decorations = Decoration.none;
@@ -340,28 +343,32 @@ export function operonDynamicFileTaskFilterLivePreviewExtension(
 			const position = line <= state.doc.lines ? state.doc.line(line).from : state.doc.length;
 			decorations = Decoration.set([Decoration.widget({ block: true, side: -1, widget: new TopFilterWidget(filePath, height) }).range(position)]);
 		}
-		return { decorations, filePath, fallbackPath, live, placement, enabled, height };
+		return { decorations, filePath, fallbackPath, documentEditor, live, placement, enabled, height };
 	}
 	const topField = StateField.define<TopState>({
-		create: state => buildTopState(state, '', -1),
+		create: state => buildTopState(state, '', -1, false),
 		update(value, transaction) {
 			const state = transaction.state;
 			let fallbackPath = value.fallbackPath;
+			let documentEditor = value.documentEditor;
 			let height = value.height;
 			let refresh = false;
 			for (const effect of transaction.effects) {
-				if (effect.is(sourceContextEffect)) fallbackPath = effect.value;
+				if (effect.is(sourceContextEffect)) {
+					fallbackPath = effect.value.filePath;
+					documentEditor = effect.value.documentEditor;
+				}
 				if (effect.is(operonIndexRefreshEffect)) refresh = true;
 				if (effect.is(measuredHeightEffect) && effect.value.filePath === value.filePath) height = effect.value.height;
 			}
 			const filePath = state.field(editorInfoField, false)?.file?.path ?? fallbackPath;
 			const settings = callbacks.getFilterDeps().getSettings();
-			const live = state.facet(operonEditorSurfaceScopeFacet) === 'document' && state.field(editorLivePreviewField, false) === true;
-			const contextChanged = filePath !== value.filePath || live !== value.live
+			const live = documentEditor && state.facet(operonEditorSurfaceScopeFacet) === 'document' && state.field(editorLivePreviewField, false) === true;
+			const contextChanged = documentEditor !== value.documentEditor || filePath !== value.filePath || live !== value.live
 				|| settings.dynamicFileTaskFilterPlacement !== value.placement || settings.dynamicFileTaskFilterEnabled !== value.enabled;
 			if (contextChanged) height = -1;
 			if (!transaction.docChanged && !refresh && !contextChanged && height === value.height && fallbackPath === value.fallbackPath) return value;
-			return buildTopState(state, fallbackPath, height);
+			return buildTopState(state, fallbackPath, height, documentEditor);
 		},
 		provide: field => EditorView.decorations.from(field, value => value.decorations),
 	});
@@ -457,6 +464,9 @@ export function operonDynamicFileTaskFilterLivePreviewExtension(
 					return;
 				}
 				if (!this.isLivePreview(view)) {
+					if (view.state.field(topField).documentEditor) {
+						view.dispatch({ effects: sourceContextEffect.of({ filePath: '', documentEditor: false }) });
+					}
 					this.lastFilePath = '';
 					this.lastPlacement = null;
 					this.destroyHost();
@@ -465,8 +475,8 @@ export function operonDynamicFileTaskFilterLivePreviewExtension(
 
 				const deps = callbacks.getFilterDeps();
 				const filePath = renderFilePath ?? view.state.field(editorInfoField, false)?.file?.path ?? callbacks.getFilePath(view);
-				if (view.state.field(topField).filePath !== filePath) {
-					view.dispatch({ effects: sourceContextEffect.of(filePath) });
+				if (!view.state.field(topField).documentEditor || view.state.field(topField).filePath !== filePath) {
+					view.dispatch({ effects: sourceContextEffect.of({ filePath, documentEditor: true }) });
 					return;
 				}
 				const filePathChanged = filePath !== this.lastFilePath;
@@ -567,7 +577,7 @@ export function operonDynamicFileTaskFilterLivePreviewExtension(
 			}
 
 			private isLivePreview(view: EditorView): boolean {
-				if (!allowsOperonDocumentAugmentations(view)) return false;
+				if (!allowsOperonDocumentAugmentations(view) || !callbacks.isDocumentEditor(view)) return false;
 				try {
 					return view.state.field(editorLivePreviewField);
 				} catch {

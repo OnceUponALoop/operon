@@ -23289,6 +23289,7 @@ export default class OperonPlugin extends Plugin {
 				getRepeatSkipDates: (repeatSeriesId: string) => this.storage.repeatSeries.getSkipDates(repeatSeriesId),
 			}));
 			this.registerEditorExtension(operonDynamicFileTaskFilterLivePreviewExtension({
+				isDocumentEditor: (editorView: EditorView) => this.getMarkdownViewForEditorView(editorView) !== null,
 				getFilePath: (editorView: EditorView) => this.getFilePathForEditorView(editorView),
 				getFilterDeps: () => {
 					if (!this.embedFilterDeps) this.embedFilterDeps = this.buildFilterSurfaceDeps();

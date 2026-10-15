@@ -7,7 +7,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+
+- Fixed **Dynamic File Task Filter** appearing inside normal Markdown table cells and the **Task Editor file body**, while preserving inline task features.
+
 ### Validation
+
+- Full local Plugin checks, production build, release guard, and code review passed, along with **5,073/5,073** local regression tests.
 
 ## [4.0.1] - 2026-10-14
 
