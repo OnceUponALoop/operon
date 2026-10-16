@@ -3644,6 +3644,16 @@ export default class OperonPlugin extends Plugin {
 		}
 	}
 
+
+	private refreshCalendarAfterQuickAction(leaf: WorkspaceLeaf): void {
+		// Refresh the originating calendar independently of the global view pass.
+		// Both paths retain the same editing, modal and drag protections.
+		if (!this.shouldFreezeCalendarRefresh()) {
+			callUnknownMethod(leaf.view, 'markDirty', { reason: 'settings' });
+		}
+		this.refreshViews();
+	}
+
 	private refreshKanbanLeaves(preserveViewport = false): void {
 		for (const leaf of this.app.workspace.getLeavesOfType(KANBAN_VIEW_TYPE)) {
 			callUnknownMethod(leaf.view, 'markDirty', { preserveViewport });
@@ -17599,21 +17609,21 @@ export default class OperonPlugin extends Plugin {
 						if (!preset) return;
 						preset.showProjectedOccurrences = nextValue;
 						await this.storage.saveSettings();
-						this.refreshViews();
+						this.refreshCalendarAfterQuickAction(leaf);
 					},
 					onToggleExternalCalendars: async (presetId, nextValue) => {
 						const preset = this.settings.calendarPresets.find(entry => entry.id === presetId);
 						if (!preset) return;
 						preset.showExternalCalendars = nextValue;
 						await this.storage.saveSettings();
-						this.refreshViews();
+						this.refreshCalendarAfterQuickAction(leaf);
 					},
 					onCycleTaskColorSource: async (presetId, nextSource) => {
 						const preset = this.settings.calendarPresets.find(entry => entry.id === presetId);
 						if (!preset) return;
 						preset.colorSource = nextSource;
 						await this.storage.saveSettings();
-						this.refreshViews();
+						this.refreshCalendarAfterQuickAction(leaf);
 					},
 					onMobileCalendarSettingsChange: async (patch) => {
 						Object.assign(this.settings, patch);
@@ -17621,11 +17631,14 @@ export default class OperonPlugin extends Plugin {
 						this.refreshViews();
 					},
 					onSyncExternalCalendars: () => {
-						runAsyncAction('calendar quick action external calendar sync failed', () => this.syncAllExternalCalendarsNow());
+						runAsyncAction('calendar quick action external calendar sync failed', async () => {
+							await this.syncAllExternalCalendarsNow();
+							this.refreshCalendarAfterQuickAction(leaf);
+						});
 					},
 					onExternalItemCreateTask: (seed) => this.handleExternalCalendarItemCreate(leaf, seed),
 					onCalendarDragInteractionEnd: () => this.flushPendingCalendarRefresh(),
-					hasEditableFocus: () => this.hasActiveEditableFocus(),
+					hasEditableFocus: () => this.hasActiveEditableFocus() || this.isTaskEditorModalOpen(),
 					getRepeatSeriesRevision: () => this.storage.repeatSeries.getRevision(),
 					onOpenPresetSettings: (presetId) => {
 						const preset = this.settings.calendarPresets.find(entry => entry.id === presetId) ?? null;

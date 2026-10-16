@@ -7344,7 +7344,10 @@ export class CalendarView extends ItemView {
 		bindOperonHoverTooltip(projectedButton, { content: projectedLabel, taskColor: null });
 		projectedButton.addEventListener('click', (event) => {
 			event.preventDefault();
-			void this.callbacks.onToggleProjectedOccurrences?.(preset.id, !showProjectedOccurrences);
+			projectedButton.focus({ preventScroll: true });
+			const currentPreset = this.getSettings().calendarPresets.find(entry => entry.id === preset.id);
+			if (!currentPreset) return;
+			void this.callbacks.onToggleProjectedOccurrences?.(preset.id, currentPreset.showProjectedOccurrences === false);
 		});
 
 		const hasSelectedExternalCalendars = this.hasSelectedExternalCalendars(preset);
@@ -7370,8 +7373,10 @@ export class CalendarView extends ItemView {
 		bindOperonHoverTooltip(externalCalendarsButton, { content: externalCalendarsLabel, taskColor: null });
 		externalCalendarsButton.addEventListener('click', (event) => {
 			event.preventDefault();
-			if (!hasSelectedExternalCalendars) return;
-			void this.callbacks.onToggleExternalCalendars?.(preset.id, !showExternalCalendars);
+			externalCalendarsButton.focus({ preventScroll: true });
+			const currentPreset = this.getSettings().calendarPresets.find(entry => entry.id === preset.id);
+			if (!currentPreset || !this.hasSelectedExternalCalendars(currentPreset)) return;
+			void this.callbacks.onToggleExternalCalendars?.(preset.id, currentPreset.showExternalCalendars === false);
 		});
 
 		const currentColorSource = normalizeTaskColorSource(preset.colorSource, CALENDAR_PRESET_TASK_COLOR_SOURCES, 'taskColor');
@@ -7389,7 +7394,11 @@ export class CalendarView extends ItemView {
 		bindOperonHoverTooltip(colorSourceButton, { content: colorSourceLabel, taskColor: null });
 		colorSourceButton.addEventListener('click', (event) => {
 			event.preventDefault();
-			void this.callbacks.onCycleTaskColorSource?.(preset.id, nextColorSource);
+			colorSourceButton.focus({ preventScroll: true });
+			const currentPreset = this.getSettings().calendarPresets.find(entry => entry.id === preset.id);
+			if (!currentPreset) return;
+			void this.callbacks.onCycleTaskColorSource?.(preset.id,
+				getNextTaskColorSource(currentPreset.colorSource, CALENDAR_PRESET_TASK_COLOR_SOURCES, 'taskColor'));
 		});
 
 		const syncExternalCalendarsLabel = t('commands', 'updateExternalCalendars');
@@ -7402,6 +7411,7 @@ export class CalendarView extends ItemView {
 		bindOperonHoverTooltip(syncExternalCalendarsButton, { content: syncExternalCalendarsLabel, taskColor: null });
 		syncExternalCalendarsButton.addEventListener('click', (event) => {
 			event.preventDefault();
+			syncExternalCalendarsButton.focus({ preventScroll: true });
 			void this.callbacks.onSyncExternalCalendars?.();
 		});
 
@@ -7414,6 +7424,7 @@ export class CalendarView extends ItemView {
 		bindOperonHoverTooltip(settingsButton, { content: t('calendar', 'editCurrentCalendarPreset'), taskColor: null });
 		settingsButton.addEventListener('click', (event) => {
 			event.preventDefault();
+			settingsButton.focus({ preventScroll: true });
 			this.closeActivePresetPicker();
 			void this.callbacks.onOpenPresetSettings?.(preset.id);
 		});
