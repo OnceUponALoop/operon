@@ -21,6 +21,7 @@ const TASK_TEXT_POPOVER_EXCLUDED_KEYS = new Set([
 	'taskImage',
 ]);
 const SPECIALIZED_TASK_TEXT_FIELD_KEYS = new Set([
+	'repeat',
 	'status',
 	'priority',
 	'parentTask',

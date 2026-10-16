@@ -28,7 +28,7 @@ import {
 } from '../../core/blocked-by-visual-state';
 import type { TableTaskLookup } from './table-value-adapter';
 import { formatTableDetailedDatetimeValue } from './table-datetime-format';
-import { formatTableCompactDuration, isTableDurationLikeTaskField } from './table-display';
+import { formatTableCompactDuration, formatTableRepeatValue, isTableDurationLikeTaskField } from './table-display';
 import { bindTableParentTaskTooltip } from './table-parent-task-tooltip';
 import { getTaskMediaReferenceAlias, resolveTaskMediaReference } from '../../core/task-media-reference';
 import { parseTableTaskListValue } from './table-value-adapter';
@@ -305,6 +305,17 @@ export function renderTableCellChipContent(
 	const externalLink = resolveTableExternalLink(key, value, options);
 	if (externalLink) {
 		renderTableExternalLinkChip(chip, externalLink, options);
+		return;
+	}
+	if (key === 'repeat') {
+		const summary = formatTableRepeatValue(value);
+		renderTableValueIconChipContent(chip, summary, field?.icon ?? 'repeat', 'repeat');
+		setAccessibleLabelWithoutTooltip(chip, summary);
+		bindOperonHoverTooltip(chip, {
+			content: summary,
+			taskColor: resolveTableCellChipAccent(key, value, options),
+			preferredHorizontal: 'center',
+		});
 		return;
 	}
 	const displayValue = formatTableDetailedDatetimeValue(key, value, options.settings);

@@ -2,7 +2,7 @@ import { cleanupTaskContextualHoverMenus, hideTaskContextualHoverMenu } from './
 import { clearTableNativePending, getPendingTableRenderState, retainTableNativePending } from './table/table-native-pending';
 import { retainTablePropertyDraft, tablePropertyPickerDraft, tablePropertyUpdateRequest } from './table/table-file-property-editor';
 import { cancelTableNativePropertyRequest, clearTableNativePropertySnapshot, getTableNativePropertySnapshot, getVerifiedTableRowKeys } from './table/table-native-property';
-import { formatTableCompactDuration } from './table/table-display';
+import { formatTableRepeatValue, formatTableCompactDuration } from './table/table-display';
 import { registerFilterDayRefresh } from '../core/filter-day-refresh';
 import { getScopedTrackerSessions } from '../core/time-scope-values';
 import { withTableRowHover } from './table/table-row-hover';
@@ -4231,7 +4231,8 @@ function renderEmbedTableIconOnlyCell(
 		locationResolver: renderState.locationResolver,
 	});
 	const field = getTableTaskField(column.key, renderState.settings);
-	const baseContent = field?.type === 'date' || field?.type === 'datetime'
+	const baseContent = column.key === 'repeat' ? formatTableRepeatValue(value)
+		: field?.type === 'date' || field?.type === 'datetime'
 		? formatTableDetailedDatetimeValue(column.key, value, renderState.settings)
 		: locationVisual?.label
 		?? formatTableDependencyTooltipContent(column.key, value, renderState.valueResolver.taskLookup)
@@ -4563,7 +4564,7 @@ function decorateEmbedTableEditableTaskCell(
 	}
 	cell.tabIndex = 0;
 	const fieldLabel = getTableTaskFieldLabel(key, renderState.settings);
-	const valueLabel = value.trim();
+	const valueLabel = key === 'repeat' ? formatTableRepeatValue(value) : value.trim();
 	const editCellLabel = t('table', 'editCellAria');
 	setAccessibleLabelWithoutTooltip(
 		cell,

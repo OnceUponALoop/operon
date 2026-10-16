@@ -1,3 +1,5 @@
+import { parseRepeatRule } from '../../core/repeat-rule';
+import { formatRepeatRuleSummaryI18n } from '../../core/repeat-rule-i18n';
 import { formatDurationHuman } from '../../systems/tracker-utils';
 import type { IndexedTask } from '../../types/fields';
 import type { OperonSettings } from '../../types/settings';
@@ -99,4 +101,11 @@ export function formatTableCompactDuration(key: string, value: string): string |
 		if (total >= size) return `${Math.floor(total / size)}${unit}`;
 	}
 	return '0s';
+}
+
+/** Presentation only: keep the serialized rule for editing, colors and storage. */
+export function formatTableRepeatValue(value: string): string {
+	const raw = value.trim();
+	const rule = parseRepeatRule(raw);
+	return rule ? formatRepeatRuleSummaryI18n(rule) : raw;
 }
