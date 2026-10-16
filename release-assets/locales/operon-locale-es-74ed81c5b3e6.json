@@ -1,8 +1,8 @@
 {
   "schemaVersion": 1,
   "locale": "es",
-  "keyCount": 3660,
-  "keyFingerprint": "81020a98728b348621ff7a2c7f0a27a38d864bd2478b57ee639a557c5aa82ee4",
+  "keyCount": 3661,
+  "keyFingerprint": "7a54994578a98011b1ac0bb7cdbd7a0759a8e468fea647aacc1382a37307a053",
   "translations": {
     "buttons": {
       "addFileSubtask": "Añadir subtarea de archivo",
@@ -3505,6 +3505,7 @@
       "repeatPositionThird": "Tercer",
       "repeatPossibleCountMeta": "Posibles: {{count}}",
       "repeatReferenceDate": "Fecha de referencia",
+      "repeatReferenceDateField": "Fecha de referencia de repetición",
       "repeatRemainingCountMeta": "Restantes: {{count}}",
       "repeatReplace": "Reemplazar regla",
       "repeatScheduledDate": "Fecha programada",
@@ -3705,5 +3706,5 @@
       "toggleDescendantPreview": "Alternar vista previa de descendientes"
     }
   },
-  "sourceVersion": "31e9b0d14c8b2946eb57d17ef4094ed2523d74a8504ea21b8aca0fcab4a993a5"
+  "sourceVersion": "46c7f665d3e8179bb48c669e8704de049c384d995d17f5d38183c4ee5bfcbcff"
 }

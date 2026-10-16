@@ -2919,6 +2919,7 @@
 		"repeatInterval": "Every",
 		"repeatScheduledDate": "Scheduled date",
 		"repeatReferenceDate": "Reference date",
+		"repeatReferenceDateField": "Repeat reference date",
 		"repeatEnd": "End condition",
 		"repeatNoEnd": "No end",
 		"repeatEndOnDate": "End on date",

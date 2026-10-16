@@ -2919,6 +2919,7 @@
 		"repeatInterval": "Cada",
 		"repeatScheduledDate": "Fecha programada",
 		"repeatReferenceDate": "Fecha de referencia",
+		"repeatReferenceDateField": "Fecha de referencia de repetición",
 		"repeatEnd": "Condición de fin",
 		"repeatNoEnd": "Sin fin",
 		"repeatEndOnDate": "Terminar en fecha",

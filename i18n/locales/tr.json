@@ -2919,6 +2919,7 @@
 		"repeatInterval": "Her",
 		"repeatScheduledDate": "Planlanan tarih",
 		"repeatReferenceDate": "Referans tarihi",
+		"repeatReferenceDateField": "Tekrar referans tarihi",
 		"repeatEnd": "Bitiş koşulu",
 		"repeatNoEnd": "Bitiş yok",
 		"repeatEndOnDate": "Tarihte bitsin",

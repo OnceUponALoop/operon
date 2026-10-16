@@ -1,8 +1,8 @@
 {
   "schemaVersion": 1,
   "locale": "zh-CN",
-  "keyCount": 3660,
-  "keyFingerprint": "81020a98728b348621ff7a2c7f0a27a38d864bd2478b57ee639a557c5aa82ee4",
+  "keyCount": 3661,
+  "keyFingerprint": "7a54994578a98011b1ac0bb7cdbd7a0759a8e468fea647aacc1382a37307a053",
   "translations": {
     "buttons": {
       "addFileSubtask": "添加文件子任务",
@@ -3505,6 +3505,7 @@
       "repeatPositionThird": "第三个",
       "repeatPossibleCountMeta": "可能：{{count}}",
       "repeatReferenceDate": "参考日期",
+      "repeatReferenceDateField": "重复参考日期",
       "repeatRemainingCountMeta": "剩余：{{count}}",
       "repeatReplace": "替换规则",
       "repeatScheduledDate": "计划日期",
@@ -3705,5 +3706,5 @@
       "toggleDescendantPreview": "切换子任务预览"
     }
   },
-  "sourceVersion": "1a9ec9793a009c55175dd6dd0997b7392edb7503071aa6b8e820845ac5a2a877"
+  "sourceVersion": "adb58fbd3d4a451fd9345fff14eb69ce0da8630a9711a206b7be48096f4fec87"
 }

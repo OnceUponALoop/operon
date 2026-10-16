@@ -2919,6 +2919,7 @@
 		"repeatInterval": "間隔",
 		"repeatScheduledDate": "予定日",
 		"repeatReferenceDate": "基準日",
+		"repeatReferenceDateField": "繰り返しの基準日",
 		"repeatEnd": "終了条件",
 		"repeatNoEnd": "終了なし",
 		"repeatEndOnDate": "日付で終了",

@@ -3857,7 +3857,7 @@ export class OperonTableView extends FileView {
 				app: this.app,
 				settings: renderState.settings,
 				allTasks,
-				canonicalKey: key,
+				canonicalKey: key === 'repeatOccurrenceDate' ? 'repeat' : key,
 				anchor: snapshotFloatingRectAnchor(cell),
 				currentFieldValues: task.fieldValues,
 				currentTags: task.tags,

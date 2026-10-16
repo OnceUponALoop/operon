@@ -1,8 +1,8 @@
 {
   "schemaVersion": 1,
   "locale": "zh-TW",
-  "keyCount": 3660,
-  "keyFingerprint": "81020a98728b348621ff7a2c7f0a27a38d864bd2478b57ee639a557c5aa82ee4",
+  "keyCount": 3661,
+  "keyFingerprint": "7a54994578a98011b1ac0bb7cdbd7a0759a8e468fea647aacc1382a37307a053",
   "translations": {
     "buttons": {
       "addFileSubtask": "新增檔案子任務",
@@ -3505,6 +3505,7 @@
       "repeatPositionThird": "第三個",
       "repeatPossibleCountMeta": "可能：{{count}}",
       "repeatReferenceDate": "參考日期",
+      "repeatReferenceDateField": "重複參考日期",
       "repeatRemainingCountMeta": "剩餘：{{count}}",
       "repeatReplace": "替換規則",
       "repeatScheduledDate": "計劃日期",
@@ -3705,5 +3706,5 @@
       "toggleDescendantPreview": "切換子任務預覽"
     }
   },
-  "sourceVersion": "3e00594932de9379e10e3b031443420d9ff6127806d7bdb4314da1143c43038b"
+  "sourceVersion": "b9ce25e010ac46d3ae84ecd9ebe1f16f5c9e0bdfb3f671a7f3f9c09ff1be109d"
 }

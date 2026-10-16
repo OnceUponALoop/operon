@@ -1,8 +1,8 @@
 {
   "schemaVersion": 1,
   "locale": "tr",
-  "keyCount": 3660,
-  "keyFingerprint": "81020a98728b348621ff7a2c7f0a27a38d864bd2478b57ee639a557c5aa82ee4",
+  "keyCount": 3661,
+  "keyFingerprint": "7a54994578a98011b1ac0bb7cdbd7a0759a8e468fea647aacc1382a37307a053",
   "translations": {
     "buttons": {
       "addFileSubtask": "Dosya Tipi Alt Görev Ekle",
@@ -3505,6 +3505,7 @@
       "repeatPositionThird": "Üçüncü",
       "repeatPossibleCountMeta": "Olası: {{count}}",
       "repeatReferenceDate": "Referans tarihi",
+      "repeatReferenceDateField": "Tekrar referans tarihi",
       "repeatRemainingCountMeta": "Kalan: {{count}}",
       "repeatReplace": "Kuralı değiştir",
       "repeatScheduledDate": "Planlanan tarih",
@@ -3705,5 +3706,5 @@
       "toggleDescendantPreview": "Alt görev önizlemesini aç/kapat"
     }
   },
-  "sourceVersion": "5e96c1689ad74c5f398dc9ce740cfd95a58611398cd6c3f66e36dfe71e81169d"
+  "sourceVersion": "1bee05376f2827685c479a93fadc0c92bbf401fdb0a7043f8ba5969d3321db76"
 }

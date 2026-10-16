@@ -9,6 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### New
 
+- Added a **Repeat reference date** column to Tables, showing the saved date in your preferred format and opening the Repeat picker for editing; tasks without a saved reference date keep an empty cell.
 - Added **vault-local ICS calendars** as read-only external calendar sources, with automatic updates when files change and continued support for URL subscriptions.
 
 ### Improved

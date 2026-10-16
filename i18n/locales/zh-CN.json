@@ -2919,6 +2919,7 @@
 		"repeatInterval": "每",
 		"repeatScheduledDate": "计划日期",
 		"repeatReferenceDate": "参考日期",
+		"repeatReferenceDateField": "重复参考日期",
 		"repeatEnd": "结束条件",
 		"repeatNoEnd": "无结束",
 		"repeatEndOnDate": "在日期结束",

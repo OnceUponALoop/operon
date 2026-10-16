@@ -2919,6 +2919,7 @@
 		"repeatInterval": "Каждые",
 		"repeatScheduledDate": "Запланированная дата",
 		"repeatReferenceDate": "Опорная дата",
+		"repeatReferenceDateField": "Опорная дата повторения",
 		"repeatEnd": "Условие окончания",
 		"repeatNoEnd": "Без окончания",
 		"repeatEndOnDate": "Окончание по дате",

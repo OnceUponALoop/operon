@@ -1,8 +1,8 @@
 {
   "schemaVersion": 1,
   "locale": "fr",
-  "keyCount": 3660,
-  "keyFingerprint": "81020a98728b348621ff7a2c7f0a27a38d864bd2478b57ee639a557c5aa82ee4",
+  "keyCount": 3661,
+  "keyFingerprint": "7a54994578a98011b1ac0bb7cdbd7a0759a8e468fea647aacc1382a37307a053",
   "translations": {
     "buttons": {
       "addFileSubtask": "Ajouter une sous-tâche-fichier",
@@ -3505,6 +3505,7 @@
       "repeatPositionThird": "troisième",
       "repeatPossibleCountMeta": "Possible : {{count}}",
       "repeatReferenceDate": "Date de référence",
+      "repeatReferenceDateField": "Date de référence de répétition",
       "repeatRemainingCountMeta": "Restant : {{count}}",
       "repeatReplace": "Remplacer la règle",
       "repeatScheduledDate": "Date planifiée",
@@ -3705,5 +3706,5 @@
       "toggleDescendantPreview": "Basculer l'aperçu des descendants"
     }
   },
-  "sourceVersion": "9daee0b28c34c282bfb5899f771131ab9d5a15194344e35915a8d681e78fb96e"
+  "sourceVersion": "e2b3033a5deada179f0be55737521bdd9e07ab5ddb099ca1b02bad17746bdd00"
 }

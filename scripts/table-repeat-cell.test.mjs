@@ -18,6 +18,13 @@ await build({ stdin: { contents: `
  export { formatRepeatRuleSummaryI18n } from './src/core/repeat-rule-i18n';
  export * from './src/ui/table/table-text-edit-route';
  export * from './src/ui/table/table-column-color';
+ export * from './src/ui/table/table-field-catalog';
+ export { getTableTaskRawValue } from './src/ui/table/table-value-adapter';
+ export { formatTableDetailedDatetimeValue } from './src/ui/table/table-datetime-format';
+ export { resolveTableValueCellIcon } from './src/ui/table/table-icon-only-cell';
+ export { createDefaultTablePreset, normalizeTablePreset } from './src/types/table';
+ export { installI18nLocale, activateI18nLocale, resetI18nToEnglish } from './src/core/i18n';
+ export { CANONICAL_KEYS } from './src/types/keys';
 `, resolveDir: root }, outfile: path.join(temp, 'helpers.mjs'), bundle: true, format: 'esm', platform: 'node', logLevel: 'silent', alias: { obsidian: path.join(root, 'scripts/test-support/obsidian.ts') } });
 const helpers = await import(pathToFileURL(path.join(temp, 'helpers.mjs')).href);
 const { formatTableRepeatValue, parseRepeatRule, formatRepeatRuleSummaryI18n, isTablePlainTextField, resolveTableTaskTextEditRoute } = helpers;
@@ -43,14 +50,19 @@ class Element {
  dispatch(name, overrides = {}) { for (const callback of this.events[name] ?? []) callback({ button: 0, detail: 1, target: this, preventDefault() {}, stopPropagation() {}, ...overrides }); }
 }
 const field = { key: 'repeat', type: 'text', icon: 'repeat' };
-const settings = { keyMappings: [], pipelines: [], priorities: [], colorPalette: [{ id: 'red', hex: '#ff0000' }, { id: 'blue', hex: '#0000ff' }], calendarWeekStart: 'monday', calendarSidebarShowWeekNumbers: true };
+const settings = { keyMappings: [{ canonicalKey: 'repeat', icon: 'repeat', isSystem: true }], pipelines: [], priorities: [], colorPalette: [{ id: 'red', hex: '#ff0000' }, { id: 'blue', hex: '#0000ff' }], calendarWeekStart: 'monday', calendarSidebarShowWeekNumbers: true };
 const raw = 'mode=done|freq=week|interval=1';
 const task = { operonId: 'task-1', primary: { filePath: 'Tasks.md', format: 'inline' }, tags: [], fieldValues: { repeat: raw, repeatSeriesId: 'series-1', repeatOccurrenceDate: '2026-10-16', dateDue: '2026-10-16', datetimeRepeatEnd: '2027-01-01' } };
 const label = (el, value) => { el.accessibleLabel = value; };
 const chipFile = 'src/ui/table/table-cell-chip.ts', viewFile = 'src/ui/table/operon-table-view.ts';
 const valueIcon = compile(chipFile, 'renderTableValueIconChipContent', { setIcon: (el, icon) => { el.svg = { icon }; } });
 const renderChip = compile(chipFile, 'renderTableCellChipContent', {
- getTableTaskField: () => field, isTableDurationLikeTaskField: () => false, decorateTableDateValueChip() {},
+ getTableTaskField: helpers.getTableTaskField, isTableDurationLikeTaskField: () => false,
+ decorateTableDateValueChip: compile(chipFile, 'decorateTableDateValueChip', { isTableDateLikeFieldType: type => type === 'date' || type === 'datetime' }),
+ formatTableDetailedDatetimeValue: helpers.formatTableDetailedDatetimeValue,
+ isTableListChipField: () => false, resolveTableLocationCellVisual: () => null,
+ isTableValueIconField: compile(chipFile, 'isTableValueIconField', { getTableTaskField: helpers.getTableTaskField, PROJECT_SERIAL_TABLE_FIELD_KEY: 'projectSerial' }),
+ resolveTableValueCellIcon: helpers.resolveTableValueCellIcon,
  applyTableCellChipAccent: (el, key, value, options) => { el.accent = helpers.resolveTableColumnCellAccent(options.column, options.accentValue ?? value, options); },
  resolveTableExternalLink: () => null, formatTableRepeatValue, renderTableValueIconChipContent: valueIcon,
  setAccessibleLabelWithoutTooltip: label, bindOperonHoverTooltip: (el, options) => { el.tooltip = options; },
@@ -214,4 +226,158 @@ test('embedded Table opens Repeat picker with pending guard and commits through 
  pickerCalls[0].options.onClose(); assert.equal(instance.activePickerClose, null);
  instance.pendingCellKey = 'pending'; cell.dispatch('keydown', { key: 'Enter' }); assert.equal(pickerCalls.length, 1);
  instance.pendingCellKey = null; cell.dispatch('keydown', { key: ' ' }); assert.equal(pickerCalls.length, 2);
+});
+
+const referenceKey = 'repeatOccurrenceDate';
+const referenceLabel = 'Repeat reference date';
+const referenceValue = '2026-10-16';
+const referenceSettings = { ...settings, dateDisplayFormat: 'DD/MM/YYYY' };
+const referenceField = helpers.getTableTaskField(referenceKey, settings);
+
+test('reference date is an editable scoped date column while canonical metadata remains internal', () => {
+ assert.equal(referenceField.label, referenceLabel); assert.equal(referenceField.type, 'date');
+ assert.equal(referenceField.icon, 'calendars'); assert.equal(referenceField.readonly, false);
+ assert.equal(helpers.isEditableTableTaskFieldKey(referenceKey, settings), true);
+ assert.equal(helpers.CANONICAL_KEYS.find(field => field.name === referenceKey).internal, true);
+ assert.equal(helpers.getTableTaskField('repeatSeriesId', settings), null);
+ assert.equal(helpers.normalizeTableTaskFieldKey(referenceLabel, settings), referenceKey);
+ assert.equal(helpers.isTableFieldColorModeEligible(referenceField), true);
+ assert.equal(resolveTableTaskTextEditRoute(referenceField, referenceValue), 'picker');
+});
+test('reference date column survives preset round-trip without being added to existing presets', () => {
+ const preset = helpers.createDefaultTablePreset();
+ assert.equal(preset.columns.some(column => column.key === referenceKey), false);
+ const options = { availableFilterSetIds: [] };
+ const old = helpers.normalizeTablePreset(JSON.parse(JSON.stringify(preset)), options);
+ assert.equal(old.columns.some(column => column.key === referenceKey), false);
+ const column = { key: referenceKey, widthPx: 180, displayMode: 'icon', colorMode: 'randomColors' };
+ preset.columns.push(column);
+ const restored = helpers.normalizeTablePreset(JSON.parse(JSON.stringify(preset)), options);
+ assert.deepEqual(JSON.parse(JSON.stringify(restored.columns.find(entry => entry.key === referenceKey))), { ...column, kind: 'task' });
+});
+test('reference date reads only stored value; missing/empty values ignore all other dates', () => {
+ for (const stored of [undefined, '', referenceValue]) {
+  const fields = { repeat: raw, dateScheduled: '2026-10-01', dateDue: '2026-10-02', dateStarted: '2026-10-03', datetimeStart: '2026-10-04T12:00:00', [referenceKey]: stored };
+  const before = JSON.stringify(fields);
+  assert.equal(helpers.getTableTaskRawValue({ ...task, fieldValues: fields }, referenceKey), stored ?? '');
+  assert.equal(JSON.stringify(fields), before);
+ }
+});
+test('reference date detailed chip uses calendars, date format and shared date/color classes', () => {
+ for (const [dateDisplayFormat, expected] of [['YYYY-MM-DD', referenceValue], ['DD/MM/YYYY', '16/10/2026'], ['MM/DD/YYYY', '10/16/2026']]) {
+  for (const colorMode of ['noColor', 'randomColors', 'taskColor']) {
+   const chip = new Element(), options = { settings: { ...settings, dateDisplayFormat }, task, column: { key: referenceKey, colorMode }, accentValue: referenceValue };
+   renderChip(chip, referenceKey, referenceValue, options);
+   assert.equal(chip.children[0].svg.icon, 'calendars'); assert.equal(chip.children[1].textContent, expected);
+   assert.match(chip.cls, /operon-table-date-value-chip/u); assert.match(chip.children[1].cls, /operon-table-cell-chip-label/u);
+   assert.equal(chip.accent, helpers.resolveTableColumnCellAccent(options.column, referenceValue, options));
+   assert.deepEqual(chip.events, {});
+  }
+ }
+});
+
+function referenceHarness(embedded, value = referenceValue, editable = true, writable = true) {
+ pickerCalls.length = 0;
+ const cell = new Element(), commits = [], state = { pendingCellKey: null };
+ const target = { ...task, fieldValues: { ...task.fieldValues, [referenceKey]: value } };
+ const deps = {
+  resolveTableParentTaskActivation: helpers.resolveTableParentTaskActivation,
+  buildTableEditableCellKey: (task, key) => `${task.operonId}:${key}`,
+  getTableTaskFieldLabel: helpers.getTableTaskFieldLabel, getTableTaskField: helpers.getTableTaskField,
+  formatTableRepeatValue, t: () => 'Edit', setAccessibleLabelWithoutTooltip: label,
+  resolveTableTaskTextEditRoute, snapshotFloatingRectAnchor: cell => cell,
+  getExcludedTablePickerTaskIds: () => [], getTableManualDatePickerOptions: () => undefined,
+  normalizeTablePickerPayload: value => value, openTaskFieldPicker: dispatchPicker,
+  isCompactTaskMarkdownLinkEventTarget: () => false, getOwnerWindow: () => ({ setTimeout() {} }),
+  canWriteEmbedTable: () => writable, findEmbedTableInstance: () => state,
+  syncEmbedTablePendingCellState() {}, closeEmbedTableActivePicker() {},
+  commitEmbedTableCellUpdate: (instance, deps, cell, task, key, cellKey, payload) => commits.push({ key, payload }),
+ };
+ const host = { app: {}, indexer: { getAllTasks: () => [target] }, callbacks: writable ? { onUpdateTaskFields() {} } : {},
+  syncPendingCellState() {}, closeActivePicker() {},
+  commitTaskCellUpdate: (cell, task, key, cellKey, payload) => commits.push({ key, payload }),
+ };
+ Object.assign(state, host);
+ if (embedded) compile('src/ui/embed-table-processor.ts', 'decorateEmbedTableEditableTaskCell', deps)(cell, target, referenceKey, value, { settings: referenceSettings }, host, editable);
+ else compile(viewFile, 'decorateEditableTaskCell', deps, 'OperonTableView').call(state, cell, target, referenceKey, value, { settings: referenceSettings }, editable);
+ return { cell, commits, state, target };
+}
+for (const embedded of [false, true]) {
+ const surface = embedded ? 'embedded' : 'standalone';
+ test(`${surface} reference date: pointer/keyboard opens Repeat once with original task context`, () => {
+  for (const value of ['', referenceValue]) for (const event of ['pointer', 'click', 'Enter', ' ']) {
+   const { cell, target } = referenceHarness(embedded, value);
+   if (event === 'pointer') { cell.dispatch('pointerdown', { target: new Element() }); cell.dispatch('click'); }
+   else if (event === 'click') cell.dispatch('click');
+   else cell.dispatch('keydown', { key: event });
+   assert.equal(pickerCalls.length, 1); const { options, anchor } = pickerCalls[0];
+   assert.equal(anchor, cell); assert.equal(options.value, raw); assert.equal(options.repeatOccurrenceDate, value);
+   assert.equal(options.repeatSeriesId, target.fieldValues.repeatSeriesId); assert.equal(options.repeatEnd, target.fieldValues.datetimeRepeatEnd);
+   assert.equal(options.dateDue, target.fieldValues.dateDue); assert.equal(options.taskFormat, 'inline');
+   assert.equal(cell.dataset.editCellKey, `task-1:${referenceKey}`);
+  }
+ });
+ test(`${surface} reference date: read-only and pending saves block activation`, () => {
+  for (const [editable, writable] of [[false, true], [true, false], [true, true]]) {
+   const { cell, state } = referenceHarness(embedded, referenceValue, editable, writable);
+   if (editable && writable) state.pendingCellKey = 'pending';
+   else { assert.equal(cell.attrs['aria-readonly'], 'true'); assert.deepEqual(cell.events, {}); }
+   cell.dispatch('pointerdown'); cell.dispatch('click'); cell.dispatch('keydown', { key: 'Enter' });
+   assert.equal(pickerCalls.length, 0);
+  }
+ });
+ test(`${surface} reference date: Cancel is write-free; Save/Clear use the recurrence mutation payload`, () => {
+  const { cell, commits, state } = referenceHarness(embedded); cell.dispatch('click');
+  const options = pickerCalls[0].options;
+  options.onCancel?.(); options.onClose(); assert.deepEqual(commits, []); assert.equal(state.activePickerClose, null);
+  const payload = { repeat: raw, datetimeRepeatEnd: '', repeatOccurrenceDate: '2026-10-20' };
+  options.onSave(payload); assert.deepEqual(commits[0], { key: referenceKey, payload });
+  options.onClear(); assert.deepEqual(commits[1], { key: referenceKey, payload: { repeat: '', datetimeRepeatEnd: '', repeatSeriesId: '', repeatOccurrenceDate: '' } });
+ });
+ test(`${surface} reference date: icon-only has calendars and formatted tooltip/accessibility; empty has no icon`, () => {
+  let captured;
+  const deps = {
+   getTableTaskFieldLabel: helpers.getTableTaskFieldLabel, getTableTaskField: helpers.getTableTaskField,
+   formatTableDetailedDatetimeValue: helpers.formatTableDetailedDatetimeValue,
+   resolveTableLocationCellVisual: () => null, TABLE_TASK_DATA_TYPE_COLUMN_KEY: '__dataType',
+   formatTableCompactDuration: () => null, isTablePlainTextField, isTableTaskMediaField: () => false,
+   renderTableIconOnlyCell: (cell, options) => { captured = options; return new Element(); },
+   resolveTableIconOnlyCellIcon: (key, value, fallback) => fallback, resolveTableValueCellIcon: helpers.resolveTableValueCellIcon,
+   resolveTableIconOnlyCellAccent: () => '#123456', bindTableCompactAssigneeImage() {},
+  };
+  const render = embedded ? compile('src/ui/embed-table-processor.ts', 'renderEmbedTableIconOnlyCell', deps) : compile(viewFile, 'renderIconOnlyCell', deps, 'OperonTableView');
+  for (const value of ['', referenceValue]) {
+   captured = undefined;
+   render.call({ callbacks: {} }, new Element(), task, { key: referenceKey }, value, { settings: referenceSettings, valueResolver: { getRawValue: () => value } }, {});
+   if (!value) assert.equal(captured, undefined);
+   else { assert.equal(captured.icon, 'calendars'); assert.equal(captured.content, '16/10/2026'); assert.equal(captured.ariaLabel, `${referenceLabel}: 16/10/2026`); }
+  }
+ });
+ test(`${surface} reference date: detailed surface uses common bordered chips and leaves blanks empty`, () => {
+  const deps = {
+   applyTableColumnGeometryClass() {}, isTableAdminColumn: () => false, applyTableColumnAlignmentClass() {},
+   resolveTableParentContextContentColumn: column => column, TABLE_TASK_TREE_COLUMN_KEY: '__tree',
+   isTableFilePropertyColumnKey: () => false, isTableProgressColumnKey: () => false, PROJECT_SERIAL_TABLE_FIELD_KEY: 'projectSerial',
+   isEditableTableTaskFieldKey: helpers.isEditableTableTaskFieldKey, decorateEmbedTableEditableTaskCell() {}, shouldUseEmbedTableIconOnlyColumn: () => false,
+   isTablePlainTextField, getTableTaskField: helpers.getTableTaskField,
+   renderTableCellChips: (cell, key, value, options) => { cell.chips = { key, value, options }; },
+  };
+  const render = embedded ? compile('src/ui/embed-table-processor.ts', 'renderEmbedTableCell', deps) : compile(viewFile, 'renderValueCell', deps, 'OperonTableView');
+  for (const value of ['', referenceValue]) {
+   const cell = new Element(), renderState = { settings: referenceSettings, columnGeometry: { entries: [{}] }, valueResolver: { getDisplayValue: () => value } };
+   if (embedded) render({ createDiv: () => cell }, {}, task, { key: referenceKey }, renderState, 0, {}, 1, false);
+   else render.call({ isEditableTaskCell: () => true, decorateEditableTaskCell() {}, shouldUseIconOnlyColumn: () => false }, cell, task, { key: referenceKey }, value, renderState, false);
+   if (!value) assert.equal(cell.chips, undefined);
+   else { assert.equal(cell.chips.value, referenceValue); assert.match(cell.chips.options.chipClassName, /operon-table-editable-chip/u); assert.match(cell.chips.options.chipClassName, /operon-table-cell-chip/u); }
+  }
+ });
+}
+
+test('reference date label follows language changes even with unchanged key mappings', () => {
+ try {
+  helpers.installI18nLocale('tr', JSON.parse(read('i18n/locales/tr.json')));
+  assert.equal(helpers.activateI18nLocale('tr'), true);
+  assert.equal(helpers.getTableTaskField(referenceKey, settings).label, 'Tekrar referans tarihi');
+ } finally { helpers.resetI18nToEnglish(); }
+ assert.equal(helpers.getTableTaskField(referenceKey, settings).label, referenceLabel);
 });
