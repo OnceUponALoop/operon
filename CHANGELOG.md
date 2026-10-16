@@ -7,13 +7,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Improved
+
+- Made **desktop Task Editor on phones** more compact, with consistent control sizes, single-line property values, and aligned section headings.
+- Replaced **Add session** text with a **clock-plus icon** in the desktop Task Editor, while keeping its tooltip and accessible label.
+
 ### Fixed
 
 - Fixed **Dynamic File Task Filter** appearing inside normal Markdown table cells and the **Task Editor file body**, while preserving inline task features.
 
 ### Validation
 
-- Full local Plugin checks, production build, release guard, and code review passed, along with **5,073/5,073** local regression tests.
+- Full local Plugin checks, production build, release guard, and code review passed, along with **5,074/5,074** local regression tests.
 
 ## [4.0.1] - 2026-10-14
 

@@ -36929,3 +36929,104 @@ body .operon-task-editor-touch-picker :is(.operon-day-picker-grid, .operon-repea
 	flex-wrap: wrap;
 	gap: 8px;
 }
+
+
+/* Desktop-family Sessions is icon-only; touch sizes retain their existing precedence. */
+body .operon-task-editor:not(.operon-task-editor-mobile) button.operon-editor-tracking-sessions-add {
+	flex: 0 0 var(--operon-task-editor-header-action-width, 34px);
+	width: var(--operon-task-editor-header-action-width, 34px);
+	min-width: var(--operon-task-editor-header-action-width, 34px);
+	height: 30px;
+	min-height: 30px;
+	padding: 0;
+}
+
+.operon-task-editor:not(.operon-task-editor-mobile) .operon-editor-tracking-sessions-add svg {
+	width: 16px;
+	height: 16px;
+}
+
+/* Phone desktop editor only. Tablet touch rules and legacy mobile stay independent. */
+.operon-task-editor.operon-task-editor-phone-desktop:not(.operon-task-editor-mobile) {
+	--operon-task-editor-property-control-height: 26px;
+	--operon-task-editor-header-action-width: 26px;
+}
+
+body .operon-task-editor.operon-task-editor-phone-desktop:not(.operon-task-editor-mobile) :is(.operon-editor-desktop-group-header, .operon-editor-tracking-sessions-header) > .operon-editor-core-title-badge {
+	flex: 0 0 100%;
+	width: 100%;
+	min-width: 0;
+	height: 30px;
+	min-height: 30px;
+}
+
+body .operon-task-editor.operon-task-editor-phone-desktop:not(.operon-task-editor-mobile) :is(.operon-editor-desktop-group-header, .operon-editor-desktop-commands, .operon-editor-description-actions, .operon-task-editor-title-row, .operon-editor-tracking-sessions-header) :is(button.operon-editor-core-action-btn, button.operon-task-editor-workflow-action-button, button.operon-editor-file-property-add) {
+	box-sizing: border-box;
+	flex: 0 0 26px;
+	width: 26px;
+	min-width: 26px;
+	height: 26px;
+	min-height: 26px;
+	padding: 0;
+}
+
+body .operon-task-editor.operon-task-editor-phone-desktop:not(.operon-task-editor-mobile) .operon-editor-description-actions .operon-editor-project-serial {
+	flex: 0 1 auto;
+	width: auto;
+	min-width: 0;
+	height: 26px;
+	min-height: 26px;
+}
+
+body .operon-task-editor.operon-task-editor-phone-desktop:not(.operon-task-editor-mobile) .operon-editor-desktop-property-value :is(.operon-editor-value-token, .operon-editor-compact-selection-chip, .operon-editor-picker-chip, .operon-editor-picker-button, .operon-icon-trigger, .operon-color-swatch, .operon-editor-repeat-trigger, .operon-editor-repeat-skip, .operon-editor-estimate-reallocate, .operon-editor-estimate-input-shell, .operon-editor-subtasks-more, input) {
+	box-sizing: border-box;
+	height: 26px;
+	min-height: 26px;
+	min-width: 0;
+	max-width: 100%;
+	padding-block: 0;
+	white-space: nowrap;
+	overflow-wrap: normal;
+}
+
+body .operon-task-editor.operon-task-editor-phone-desktop:not(.operon-task-editor-mobile) .operon-editor-desktop-property-value :is(.operon-editor-value-token, .operon-editor-compact-selection-chip, .operon-editor-picker-chip) {
+	gap: 3px;
+}
+
+body .operon-task-editor.operon-task-editor-phone-desktop:not(.operon-task-editor-mobile) .operon-editor-desktop-property-value .operon-editor-value-token :is(button:not(.operon-editor-value-clear), input, .operon-editor-estimate-input-shell) {
+	flex: 1 1 auto;
+	height: 24px;
+	min-height: 24px;
+	min-width: 0;
+}
+
+body .operon-task-editor.operon-task-editor-phone-desktop:not(.operon-task-editor-mobile) .operon-editor-desktop-property-value button:is(.operon-editor-value-clear, .operon-editor-compact-selection-chip-remove, .operon-editor-picker-chip-remove) {
+	flex: 0 0 20px;
+	width: 20px;
+	min-width: 20px;
+	height: 20px;
+	min-height: 20px;
+	padding: 0;
+}
+
+body .operon-task-editor.operon-task-editor-phone-desktop:not(.operon-task-editor-mobile) .operon-editor-desktop-property-value :is(.operon-inline-compact-chip-label, .operon-editor-picker-button-text, .operon-editor-appearance-value) {
+	flex: 1 1 auto;
+	min-width: 0;
+	overflow: hidden;
+	text-overflow: ellipsis;
+	white-space: nowrap;
+	overflow-wrap: normal;
+}
+
+body .operon-task-editor.operon-task-editor-phone-desktop:not(.operon-task-editor-mobile) button.operon-editor-desktop-property-label {
+	height: 26px;
+	min-height: 26px;
+}
+
+body .operon-task-editor.operon-task-editor-phone-desktop:not(.operon-task-editor-mobile) button.operon-editor-stats-counter {
+	height: 26px;
+	min-height: 26px;
+	min-width: 0;
+	padding-block: 0;
+	white-space: nowrap;
+}

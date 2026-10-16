@@ -5879,8 +5879,15 @@ export class TaskEditorContent {
 			cls: 'operon-editor-core-action-btn operon-editor-tracking-sessions-add',
 			attr: { type: 'button' },
 		});
-		setIcon(addButton, 'plus');
-		addButton.createSpan({ text: t('taskEditor', 'addSession') });
+		const addSessionLabel = t('taskEditor', 'addSession');
+		if (this.usesMobileLayout) {
+			setIcon(addButton, 'plus');
+			addButton.createSpan({ text: addSessionLabel });
+		} else {
+			setIcon(addButton, 'clock-plus');
+			setAccessibleLabelWithoutTooltip(addButton, addSessionLabel);
+			this.bindTaskEditorTooltip(addButton, addSessionLabel);
+		}
 
 		const list = section.createDiv('operon-editor-tracking-sessions-list');
 		const more = this.usesMobileLayout ? null : section.createEl('button', {
