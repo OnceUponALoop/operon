@@ -1,8 +1,8 @@
 {
   "schemaVersion": 1,
   "locale": "zh-TW",
-  "keyCount": 3654,
-  "keyFingerprint": "ffbb44f4c0d6e099d341aa45a2c4c775e34909f6b5d1fb4ea74710a448e37b1c",
+  "keyCount": 3660,
+  "keyFingerprint": "81020a98728b348621ff7a2c7f0a27a38d864bd2478b57ee639a557c5aa82ee4",
   "translations": {
     "buttons": {
       "addFileSubtask": "新增檔案子任務",
@@ -1474,6 +1474,9 @@
       "externalCalendarEditAria": "編輯外部日曆：{{name}}",
       "externalCalendarEditTitle": "編輯外部日曆",
       "externalCalendarEditTooltip": "編輯外部日曆源",
+      "externalCalendarFile": "ICS 檔案",
+      "externalCalendarFileDesc": "儲存庫內的唯讀 ICS 檔案。檔案變更時自動更新。移動檔案後需要選擇新路徑。",
+      "externalCalendarFileRequired": "請選擇儲存庫內現有的 ICS 檔案。",
       "externalCalendarHideCreatedEvents": "隱藏已建立的事件",
       "externalCalendarHideCreatedEventsDesc": "啟用後，此源會隱藏在相同計劃日期上已有匹配任務的外部事件。禁用時，外部事件保持可見。",
       "externalCalendarLastError": "上次錯誤：{{value}}",
@@ -1489,6 +1492,9 @@
       "externalCalendarSectionDisplayBehavior": "顯示與行為",
       "externalCalendarSectionSource": "源",
       "externalCalendarSectionSync": "同步",
+      "externalCalendarSourceKind": "來源",
+      "externalCalendarSourceUrl": "URL",
+      "externalCalendarSourceVault": "儲存庫檔案",
       "externalCalendarSyncNever": "從不",
       "externalCalendarSyncNow": "立即同步",
       "externalCalendarUntitled": "無標題外部日曆",
@@ -3699,5 +3705,5 @@
       "toggleDescendantPreview": "切換子任務預覽"
     }
   },
-  "sourceVersion": "01bae8c561667a8cad93214db2f2964b9a8ae917f7c82291b9349ce5260f8f7b"
+  "sourceVersion": "3e00594932de9379e10e3b031443420d9ff6127806d7bdb4314da1143c43038b"
 }

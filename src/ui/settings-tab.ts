@@ -1,3 +1,4 @@
+import { FileSuggest } from './file-suggest';
 import { syncCustomPropertyType } from '../core/custom-property-type-sync';
 import { getNativePropertyIndex } from '../indexer/native-property-index';
 import { notifyPropertyTypeChanges } from './table/table-file-property';
@@ -631,58 +632,6 @@ function applyOperonTooltipToExtraButton(button: { extraSettingsEl?: HTMLElement
 	if (!button.extraSettingsEl) return;
 	setAccessibleLabelWithoutTooltip(button.extraSettingsEl, content);
 	applyOperonTooltip(button.extraSettingsEl, content);
-}
-
-/**
- * File suggest dropdown — shows matching vault md files as user types.
- */
-interface FileSuggestOptions {
-	files?: () => TFile[];
-	filter?: (file: TFile) => boolean;
-}
-
-class FileSuggest extends AbstractInputSuggest<TFile> {
-	private selectCallback: (file: TFile) => void;
-	private textInputEl: HTMLInputElement;
-	private files: () => TFile[];
-	private filter: (file: TFile) => boolean;
-
-	constructor(
-		app: App,
-		inputEl: HTMLInputElement,
-		selectCallback: (file: TFile) => void,
-		options: FileSuggestOptions = {},
-	) {
-		super(app, inputEl);
-		this.textInputEl = inputEl;
-		this.selectCallback = selectCallback;
-		this.files = options.files ?? (() => this.app.vault.getMarkdownFiles());
-		this.filter = options.filter ?? (() => true);
-	}
-
-	getSuggestions(query: string): TFile[] {
-		const lowerQuery = query.toLowerCase();
-		const files: TFile[] = [];
-		for (const f of this.files()) {
-			if (!this.filter(f)) continue;
-			if (!lowerQuery || f.path.toLowerCase().includes(lowerQuery) || f.basename.toLowerCase().includes(lowerQuery)) {
-				files.push(f);
-			}
-		}
-		files.sort((a, b) => a.path.localeCompare(b.path));
-		return files.slice(0, 20);
-	}
-
-	renderSuggestion(file: TFile, el: HTMLElement): void {
-		el.setText(file.path);
-	}
-
-	selectSuggestion(file: TFile): void {
-		this.textInputEl.value = file.path;
-		this.textInputEl.trigger('input');
-		this.selectCallback(file);
-		this.close();
-	}
 }
 
 class TextValueSuggest extends AbstractInputSuggest<string> {
@@ -7808,8 +7757,6 @@ export class OperonSettingsTab extends PluginSettingTab {
 		index: number,
 		refresh: () => void,
 	): void {
-		const cache = this.storage.externalCalendars.getSource(source.id);
-		const syncedAt = this.formatSettingsDateTime(cache?.syncedAt ?? null);
 		const displayName = source.name.trim() || t('settings', 'externalCalendarUntitled');
 		const total = this.settings.externalCalendars.length;
 
@@ -7820,19 +7767,10 @@ export class OperonSettingsTab extends PluginSettingTab {
 			className: 'operon-external-calendar-card',
 		});
 
-		createSettingsListCardChip({
-			containerEl: card.metaEl,
-			icon: 'clock',
-			label: t('settings', 'externalCalendarLastSynced', { value: syncedAt }),
-		});
-		if (cache?.lastError) {
-			createSettingsListCardChip({
-				containerEl: card.metaEl,
-				icon: 'alert-triangle',
-				label: t('settings', 'externalCalendarLastError', { value: cache.lastError }),
-				className: 'is-error',
-			});
-		}
+		const status = card.metaEl;
+		status.addClass('operon-external-calendar-source-status');
+		status.dataset.sourceId = source.id;
+		this.renderExternalCalendarStatus(status, source.id);
 
 		createSettingsListCardActionButton({
 			containerEl: card.actionsEl,
@@ -7890,6 +7828,31 @@ export class OperonSettingsTab extends PluginSettingTab {
 				refresh();
 			},
 		});
+	}
+
+	public refreshExternalCalendarStatuses(): void {
+		for (const el of Array.from(this.containerEl.querySelectorAll<HTMLElement>('.operon-external-calendar-source-status'))) {
+			if (el.dataset.sourceId) this.renderExternalCalendarStatus(el, el.dataset.sourceId);
+		}
+	}
+
+	private renderExternalCalendarStatus(containerEl: HTMLElement, sourceId: string): void {
+		containerEl.empty();
+		const cache = this.storage.externalCalendars.getSource(sourceId);
+		const syncedAt = this.formatSettingsDateTime(cache?.syncedAt ?? null);
+		createSettingsListCardChip({
+			containerEl,
+			icon: 'clock',
+			label: t('settings', 'externalCalendarLastSynced', { value: syncedAt }),
+		});
+		if (cache?.lastError) {
+			createSettingsListCardChip({
+				containerEl,
+				icon: 'alert-triangle',
+				label: t('settings', 'externalCalendarLastError', { value: cache.lastError }),
+				className: 'is-error',
+			});
+		}
 	}
 
 	private openExternalCalendarSourceEditModal(
@@ -10011,7 +9974,7 @@ export class OperonSettingsTab extends PluginSettingTab {
 			for (const source of externalCalendars) {
 				const isVisible = preset.externalCalendarVisibility[source.id] === true;
 				new Setting(bodyInner)
-					.setName(source.name || source.url)
+					.setName(source.name || source.filePath || source.url)
 					.addToggle(toggle => {
 						toggle.setValue(isVisible);
 						toggle.onChange(async (value) => {

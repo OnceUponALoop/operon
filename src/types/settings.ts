@@ -790,6 +790,9 @@ export interface FileTaskTemplateDefinition {
 export interface ExternalCalendarSource {
 	id: string;
 	type: 'ics';
+	/** Omitted on legacy URL sources to preserve their stored representation. */
+	sourceKind?: 'url' | 'vault-file';
+	filePath?: string;
 	name: string;
 	url: string;
 	color: string;
@@ -2805,6 +2808,9 @@ function normalizeExternalCalendarSource(raw: unknown): ExternalCalendarSource |
 	return {
 		id: normalizeOptionalString(src.id) ?? createExternalCalendarSourceId(),
 		type: 'ics',
+		...(src.sourceKind === 'vault-file'
+			? { sourceKind: 'vault-file' as const, filePath: normalizeOptionalString(src.filePath) ?? '' }
+			: src.sourceKind === 'url' ? { sourceKind: 'url' as const } : {}),
 		name: normalizeOptionalString(src.name) ?? '',
 		url: normalizeOptionalString(src.url) ?? '',
 		color: normalizeExternalCalendarColor(src.color),

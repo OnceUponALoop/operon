@@ -1,8 +1,8 @@
 {
   "schemaVersion": 1,
   "locale": "pt-BR",
-  "keyCount": 3654,
-  "keyFingerprint": "ffbb44f4c0d6e099d341aa45a2c4c775e34909f6b5d1fb4ea74710a448e37b1c",
+  "keyCount": 3660,
+  "keyFingerprint": "81020a98728b348621ff7a2c7f0a27a38d864bd2478b57ee639a557c5aa82ee4",
   "translations": {
     "buttons": {
       "addFileSubtask": "Adicionar subtarefa em arquivo",
@@ -1474,6 +1474,9 @@
       "externalCalendarEditAria": "Editar calendário externo: {{name}}",
       "externalCalendarEditTitle": "Editar calendário externo",
       "externalCalendarEditTooltip": "Editar origem do calendário externo",
+      "externalCalendarFile": "Arquivo ICS",
+      "externalCalendarFileDesc": "Arquivo ICS somente leitura no cofre. Atualiza automaticamente quando o arquivo muda. Após movê-lo, selecione o novo caminho.",
+      "externalCalendarFileRequired": "Selecione um arquivo ICS existente no cofre.",
       "externalCalendarHideCreatedEvents": "Ocultar eventos criados",
       "externalCalendarHideCreatedEventsDesc": "Quando ativado, esta origem oculta eventos externos que já possuem uma tarefa correspondente na mesma data agendada. Desativado, os eventos externos permanecem visíveis.",
       "externalCalendarLastError": "Último erro: {{value}}",
@@ -1489,6 +1492,9 @@
       "externalCalendarSectionDisplayBehavior": "Exibição e comportamento",
       "externalCalendarSectionSource": "Origem",
       "externalCalendarSectionSync": "Sincronizar",
+      "externalCalendarSourceKind": "Origem",
+      "externalCalendarSourceUrl": "URL",
+      "externalCalendarSourceVault": "Arquivo do cofre",
       "externalCalendarSyncNever": "Nunca",
       "externalCalendarSyncNow": "Sincronizar agora",
       "externalCalendarUntitled": "Calendário externo sem título",
@@ -3699,5 +3705,5 @@
       "toggleDescendantPreview": "Alternar visualização descendente"
     }
   },
-  "sourceVersion": "9762c7adcd8634929cd2c946cb5b529904951d4ba57999b5218068cc6910298f"
+  "sourceVersion": "2a85609d742520d519a7508941dd29623a3f6fa6abdce130addd4e1ebd29b903"
 }

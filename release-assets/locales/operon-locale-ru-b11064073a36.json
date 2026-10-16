@@ -1,8 +1,8 @@
 {
   "schemaVersion": 1,
   "locale": "ru",
-  "keyCount": 3654,
-  "keyFingerprint": "ffbb44f4c0d6e099d341aa45a2c4c775e34909f6b5d1fb4ea74710a448e37b1c",
+  "keyCount": 3660,
+  "keyFingerprint": "81020a98728b348621ff7a2c7f0a27a38d864bd2478b57ee639a557c5aa82ee4",
   "translations": {
     "buttons": {
       "addFileSubtask": "Добавить файловую подзадачу",
@@ -1474,6 +1474,9 @@
       "externalCalendarEditAria": "Редактировать внешний календарь: {{name}}",
       "externalCalendarEditTitle": "Редактировать внешний календарь",
       "externalCalendarEditTooltip": "Редактировать источник внешнего календаря",
+      "externalCalendarFile": "Файл ICS",
+      "externalCalendarFileDesc": "Файл ICS только для чтения внутри хранилища. Обновляется при изменении файла. После перемещения выберите новый путь.",
+      "externalCalendarFileRequired": "Выберите существующий файл ICS внутри хранилища.",
       "externalCalendarHideCreatedEvents": "Скрывать созданные события",
       "externalCalendarHideCreatedEventsDesc": "Если включено, этот источник скрывает внешние события, для которых уже есть соответствующая задача на ту же запланированную дату. Если отключено, внешние события остаются видимыми.",
       "externalCalendarLastError": "Последняя ошибка: {{value}}",
@@ -1489,6 +1492,9 @@
       "externalCalendarSectionDisplayBehavior": "Отображение и поведение",
       "externalCalendarSectionSource": "Источник",
       "externalCalendarSectionSync": "Синхронизация",
+      "externalCalendarSourceKind": "Источник",
+      "externalCalendarSourceUrl": "URL",
+      "externalCalendarSourceVault": "Файл хранилища",
       "externalCalendarSyncNever": "Никогда",
       "externalCalendarSyncNow": "Синхронизировать сейчас",
       "externalCalendarUntitled": "Внешний календарь без названия",
@@ -3699,5 +3705,5 @@
       "toggleDescendantPreview": "Переключить предпросмотр потомков"
     }
   },
-  "sourceVersion": "0d1e4cbc09c0938c0a7527cd403ebe412e5496fa8cabd3006a8a96df7e08def3"
+  "sourceVersion": "67f21721d48ff1f4dd95ce0b2c2a65385aa6e1aa6a897a9ab7c3c6add67ee124"
 }

@@ -1,8 +1,8 @@
 {
   "schemaVersion": 1,
   "locale": "tr",
-  "keyCount": 3654,
-  "keyFingerprint": "ffbb44f4c0d6e099d341aa45a2c4c775e34909f6b5d1fb4ea74710a448e37b1c",
+  "keyCount": 3660,
+  "keyFingerprint": "81020a98728b348621ff7a2c7f0a27a38d864bd2478b57ee639a557c5aa82ee4",
   "translations": {
     "buttons": {
       "addFileSubtask": "Dosya Tipi Alt Görev Ekle",
@@ -1474,6 +1474,9 @@
       "externalCalendarEditAria": "Harici takvimi düzenle: {{name}}",
       "externalCalendarEditTitle": "Harici takvimi düzenle",
       "externalCalendarEditTooltip": "Harici takvim kaynağını düzenle",
+      "externalCalendarFile": "ICS dosyası",
+      "externalCalendarFileDesc": "Vault içindeki salt okunur ICS dosyası. Dosya değiştiğinde otomatik güncellenir. Taşınırsa yeni yolunu seçmeniz gerekir.",
+      "externalCalendarFileRequired": "Vault içinde mevcut bir ICS dosyası seçin.",
       "externalCalendarHideCreatedEvents": "Oluşturulan etkinlikleri gizle",
       "externalCalendarHideCreatedEventsDesc": "Etkin olduğunda bu kaynak, aynı planlanan tarih üzerinde eşleşen bir görevi olan harici etkinlikleri gizler. Devre dışı olduğunda harici etkinlikler görünür kalır.",
       "externalCalendarLastError": "Son hata: {{value}}",
@@ -1489,6 +1492,9 @@
       "externalCalendarSectionDisplayBehavior": "Görünüm ve davranış",
       "externalCalendarSectionSource": "Kaynak",
       "externalCalendarSectionSync": "Eşitleme",
+      "externalCalendarSourceKind": "Kaynak",
+      "externalCalendarSourceUrl": "URL",
+      "externalCalendarSourceVault": "Vault dosyası",
       "externalCalendarSyncNever": "Hiçbir zaman",
       "externalCalendarSyncNow": "Şimdi eşitle",
       "externalCalendarUntitled": "Adsız harici takvim",
@@ -3699,5 +3705,5 @@
       "toggleDescendantPreview": "Alt görev önizlemesini aç/kapat"
     }
   },
-  "sourceVersion": "013776b2f57131eada193571e1eb7542f6a5ff73be63c4d56360acba9e161e4f"
+  "sourceVersion": "5e96c1689ad74c5f398dc9ce740cfd95a58611398cd6c3f66e36dfe71e81169d"
 }

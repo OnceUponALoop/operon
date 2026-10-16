@@ -16423,7 +16423,9 @@ export default class OperonPlugin extends Plugin {
 			() => {
 				if (!this.startupReady) return;
 				this.refreshViews();
+				this.settingsTab?.refreshExternalCalendarStatuses();
 			},
+			this.app,
 		);
 		await this.externalCalendarService.applySettings(this.settings.externalCalendars);
 		this.register(() => {

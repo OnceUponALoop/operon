@@ -1,3 +1,5 @@
+import { App, TFile, TFolder, type EventRef } from 'obsidian';
+import { externalCalendarSourceAddress, externalCalendarSourceIdentity, isVaultCalendarPath } from '../core/external-calendar-source';
 import { localNow, localToday } from '../core/local-time';
 import {
 	ExternalCalendarCacheStore,
@@ -32,13 +34,47 @@ export class ExternalCalendarService {
 	private lastCoverageCheckKey: string | null = null;
 	private lastCoverageCheckAt = 0;
 	private destroyed = false;
+	private vaultReady = false;
+	private settingsGeneration = 0;
+	private revisions = new Map<string, number>();
+	private localTimers = new Map<string, number>();
+	private syncIdentities = new Map<string, string>();
+	private queuedSyncs = new Map<string, { start: string; end: string }>();
+	private vaultEvents: EventRef[] = [];
 
 	constructor(
 		cacheStore: ExternalCalendarCacheStore,
 		onChange: () => void,
+		private readonly app?: App,
 	) {
 		this.cacheStore = cacheStore;
 		this.onChange = onChange;
+		app?.workspace.onLayoutReady(() => {
+			if (this.destroyed) return;
+			this.vaultReady = true;
+			const changed = (file: TFile | TFolder, oldPath?: string): void => {
+				for (const source of this.sources.values()) {
+					if (source.sourceKind !== 'vault-file' || !source.enabled) continue;
+					const path = source.filePath ?? '';
+					const matches = (base: string): boolean => path === base || (file instanceof TFolder && path.startsWith(`${base}/`));
+					if (!matches(file.path) && !(oldPath && matches(oldPath))) continue;
+					this.revisions.set(source.id, (this.revisions.get(source.id) ?? 0) + 1);
+					this.scheduleLocalSync(source.id, 500, true);
+				}
+			};
+			this.vaultEvents = [
+				app.vault.on('modify', file => { if (file instanceof TFile) changed(file); }),
+				app.vault.on('create', file => { if (file instanceof TFile || file instanceof TFolder) changed(file); }),
+				app.vault.on('delete', file => { if (file instanceof TFile || file instanceof TFolder) changed(file); }),
+				app.vault.on('rename', (file, oldPath) => { if (file instanceof TFile || file instanceof TFolder) changed(file, oldPath); }),
+			];
+			for (const source of this.sources.values()) {
+				if (source.sourceKind === 'vault-file' && this.isAutoSyncableSource(source)) {
+					this.scheduleTimer(source.id);
+					void this.syncSource(source.id, this.requestedRangeStart, this.requestedRangeEnd);
+				}
+			}
+		});
 		for (const source of cacheStore.getAllSources()) {
 			this.caches.set(source.sourceId, source);
 		}
@@ -46,16 +82,26 @@ export class ExternalCalendarService {
 
 	async applySettings(sources: ExternalCalendarSource[]): Promise<void> {
 		if (this.destroyed) return;
+		const generation = ++this.settingsGeneration;
+		const previous = this.sources;
 		this.sources = new Map(sources.map(source => [source.id, { ...source }]));
-		await this.cacheStore.removeSourcesExcept(this.sources.keys());
-		if (this.destroyed) return;
-		const retained = new Map<string, ExternalCalendarSourceCache>();
-		for (const [sourceId, cache] of this.caches.entries()) {
-			if (this.sources.has(sourceId)) {
-				retained.set(sourceId, cache);
+		const retainedIds: string[] = [];
+		for (const id of new Set([...previous.keys(), ...this.sources.keys(), ...this.caches.keys()])) {
+			const before = previous.get(id), after = this.sources.get(id), cache = this.caches.get(id);
+			const changed = !!before && !!after && externalCalendarSourceIdentity(before) !== externalCalendarSourceIdentity(after);
+			const cacheMismatch = !!after && !!cache && (cache.sourceIdentity
+				? cache.sourceIdentity !== externalCalendarSourceIdentity(after)
+				: after.sourceKind === 'vault-file');
+			if (!after || changed || cacheMismatch) this.caches.delete(id);
+			else retainedIds.push(id);
+			if (!after || changed || before?.enabled !== after.enabled) {
+				this.revisions.set(id, (this.revisions.get(id) ?? 0) + 1);
+				this.clearLocalTimer(id);
+				this.queuedSyncs.delete(id);
 			}
 		}
-		this.caches = retained;
+		await this.cacheStore.removeSourcesExcept(retainedIds);
+		if (this.destroyed || generation !== this.settingsGeneration) return;
 		for (const sourceId of Array.from(this.timers.keys())) {
 			const source = this.sources.get(sourceId);
 			if (!source || !this.isAutoSyncableSource(source)) {
@@ -65,7 +111,9 @@ export class ExternalCalendarService {
 		for (const source of sources) {
 			if (!this.isAutoSyncableSource(source)) continue;
 			this.scheduleTimer(source.id);
-			if (this.shouldSyncSource(source.id, this.requestedRangeStart, this.requestedRangeEnd)) {
+			if ((source.sourceKind === 'vault-file' && previous.get(source.id)?.enabled !== true)
+				|| (previous.has(source.id) && externalCalendarSourceIdentity(previous.get(source.id)!) !== externalCalendarSourceIdentity(source))
+				|| this.shouldSyncSource(source.id, this.requestedRangeStart, this.requestedRangeEnd)) {
 				void this.syncSource(source.id, this.requestedRangeStart, this.requestedRangeEnd);
 			}
 		}
@@ -131,6 +179,10 @@ export class ExternalCalendarService {
 
 	async destroy(): Promise<void> {
 		this.destroyed = true;
+		for (const event of this.vaultEvents) this.app?.vault.offref(event);
+		this.vaultEvents = [];
+		for (const id of this.localTimers.keys()) this.clearLocalTimer(id);
+		this.queuedSyncs.clear();
 		for (const sourceId of Array.from(this.timers.keys())) {
 			this.clearTimer(sourceId);
 		}
@@ -162,6 +214,10 @@ export class ExternalCalendarService {
 		this.requestedRangeEnd = nextRange.end;
 		for (const source of this.sources.values()) {
 			if (!this.isAutoSyncableSource(source)) continue;
+			if (source.sourceKind === 'vault-file' && this.syncPromises.has(source.id) && isExternalCalendarCoverageExpanding(this.caches.get(source.id) ?? null, this.requestedRangeStart, this.requestedRangeEnd)) {
+				this.queuedSyncs.set(source.id, { start: this.requestedRangeStart, end: this.requestedRangeEnd });
+				continue;
+			}
 			if (!this.shouldSyncSource(source.id, this.requestedRangeStart, this.requestedRangeEnd)) continue;
 			void this.syncSource(source.id, this.requestedRangeStart, this.requestedRangeEnd);
 		}
@@ -208,20 +264,46 @@ export class ExternalCalendarService {
 		this.timers.delete(sourceId);
 	}
 
-	private syncSource(
-		sourceId: string,
-		rangeStart: string,
-		rangeEnd: string,
-	): Promise<void> {
-		if (this.destroyed) return Promise.resolve();
+	private clearLocalTimer(sourceId: string): void {
+		const timer = this.localTimers.get(sourceId);
+		if (timer !== undefined) window.clearTimeout(timer);
+		this.localTimers.delete(sourceId);
+	}
+
+	private scheduleLocalSync(sourceId: string, delay: number, allowRetry: boolean): void {
+		this.clearLocalTimer(sourceId);
+		this.localTimers.set(sourceId, window.setTimeout(() => {
+			this.localTimers.delete(sourceId);
+			void this.syncSource(sourceId, this.requestedRangeStart, this.requestedRangeEnd, allowRetry);
+		}, delay));
+	}
+
+	private syncSource(sourceId: string, rangeStart: string, rangeEnd: string, allowRetry = true): Promise<void> {
+		const source = this.sources.get(sourceId);
+		if (this.destroyed || !source || !this.isAutoSyncableSource(source)) return Promise.resolve();
 		const existing = this.syncPromises.get(sourceId);
-		if (existing) return existing;
-		const run = this.syncSourceInternal(sourceId, rangeStart, rangeEnd)
-			.finally(() => {
-				if (this.syncPromises.get(sourceId) === run) {
-					this.syncPromises.delete(sourceId);
-				}
-			});
+		if (existing) {
+			if (source.sourceKind === 'vault-file' || this.syncIdentities.get(sourceId) !== externalCalendarSourceIdentity(source)) this.queuedSyncs.set(sourceId, { start: rangeStart, end: rangeEnd });
+			return existing;
+		}
+		this.clearLocalTimer(sourceId);
+		this.syncIdentities.set(sourceId, externalCalendarSourceIdentity(source));
+		const run = (async () => {
+			do {
+				this.queuedSyncs.delete(sourceId);
+				await this.syncSourceInternal(sourceId, rangeStart, rangeEnd);
+				const queued = this.queuedSyncs.get(sourceId);
+				if (queued) { rangeStart = queued.start; rangeEnd = queued.end; }
+			} while (!this.destroyed && this.queuedSyncs.has(sourceId));
+		})().finally(() => {
+			if (this.syncPromises.get(sourceId) !== run) return;
+			this.syncPromises.delete(sourceId);
+			this.syncIdentities.delete(sourceId);
+			const current = this.sources.get(sourceId);
+			if (!this.destroyed && allowRetry && current?.sourceKind === 'vault-file'
+				&& this.isAutoSyncableSource(current) && this.caches.get(sourceId)?.lastError
+				&& !this.localTimers.has(sourceId)) this.scheduleLocalSync(sourceId, 1000, false);
+		});
 		this.syncPromises.set(sourceId, run);
 		return run;
 	}
@@ -235,6 +317,11 @@ export class ExternalCalendarService {
 		const source = this.sources.get(sourceId);
 		if (!source) return;
 		if (!this.isAutoSyncableSource(source)) return;
+		const revision = this.revisions.get(sourceId) ?? 0;
+		const identity = externalCalendarSourceIdentity(source);
+		const isCurrent = (): boolean => !this.destroyed && this.sources.get(sourceId)?.enabled === true
+			&& (this.revisions.get(sourceId) ?? 0) === revision
+			&& externalCalendarSourceIdentity(this.sources.get(sourceId)!) === identity;
 		const cache = this.caches.get(sourceId) ?? {
 			sourceId,
 			syncedAt: null,
@@ -252,12 +339,16 @@ export class ExternalCalendarService {
 			// range; validators are safe only while the requested range stays
 			// inside the covered range.
 			const canUseCacheValidators = !isExternalCalendarCoverageExpanding(cache, rangeStart, rangeEnd);
-			const response = await fetchExternalCalendarIcs(source.url, canUseCacheValidators ? cache : null);
+			const response = source.sourceKind === 'vault-file'
+				? await this.readVaultCalendar(source)
+				: await fetchExternalCalendarIcs(source.url, canUseCacheValidators ? cache : null);
+			if (!isCurrent()) return;
 			if (response.status === 'notModified') {
 				// The feed body is unchanged, so previously covered coverage is
 				// still valid; keep the union with the requested range.
 				const nextCache: ExternalCalendarSourceCache = {
 					...cache,
+					sourceIdentity: identity,
 					lastAttemptAt: attemptAt,
 					syncedAt: attemptAt,
 					etag: response.etag ?? cache.etag,
@@ -270,18 +361,20 @@ export class ExternalCalendarService {
 						: rangeEnd,
 					lastError: null,
 				};
-				await this.commitSourceCache(sourceId, cache, nextCache);
+				await this.commitSourceCache(sourceId, cache, nextCache, isCurrent);
 				return;
 			}
 			const events = parseExternalCalendarIcsEvents({
 				sourceId,
 				url: source.url,
+				requireCalendar: source.sourceKind === 'vault-file',
 				body: response.body ?? '',
 				rangeStart,
 				rangeEnd,
 			});
 			const nextCache: ExternalCalendarSourceCache = {
 				sourceId,
+				sourceIdentity: identity,
 				syncedAt: attemptAt,
 				lastAttemptAt: attemptAt,
 				etag: response.etag,
@@ -291,15 +384,17 @@ export class ExternalCalendarService {
 				lastError: null,
 				events,
 			};
-			await this.commitSourceCache(sourceId, cache, nextCache);
+			await this.commitSourceCache(sourceId, cache, nextCache, isCurrent);
 		} catch (error) {
+			if (!isCurrent()) return;
 			const message = error instanceof Error ? error.message : String(error);
 			const nextCache: ExternalCalendarSourceCache = {
 				...cache,
+				sourceIdentity: identity,
 				lastAttemptAt: attemptAt,
 				lastError: message,
 			};
-			await this.commitSourceCache(sourceId, cache, nextCache);
+			await this.commitSourceCache(sourceId, cache, nextCache, isCurrent);
 		}
 	}
 
@@ -307,22 +402,33 @@ export class ExternalCalendarService {
 		sourceId: string,
 		previousCache: ExternalCalendarSourceCache,
 		nextCache: ExternalCalendarSourceCache,
+		isCurrent: () => boolean,
 	): Promise<void> {
-		if (this.destroyed) return;
+		if (!isCurrent()) return;
 		const renderedEventsChanged = !areExternalCalendarEventListsEqual(previousCache.events, nextCache.events);
 		this.caches.set(sourceId, nextCache);
 		// Bookkeeping-only updates (syncedAt / lastAttemptAt) live in memory;
 		// rewriting the whole multi-source cache file for them cost a disk
 		// write per refresh interval and per failed attempt.
-		if (shouldPersistExternalCalendarCacheUpdate(previousCache, nextCache, renderedEventsChanged)) {
+		if (previousCache.sourceIdentity !== nextCache.sourceIdentity || shouldPersistExternalCalendarCacheUpdate(previousCache, nextCache, renderedEventsChanged)) {
 			await this.cacheStore.upsertSource(nextCache);
 			if (this.destroyed) return;
 		}
-		if (renderedEventsChanged) this.onChange();
+		if (isCurrent() && (renderedEventsChanged || previousCache.lastError !== nextCache.lastError)) this.onChange();
+	}
+
+	private async readVaultCalendar(source: ExternalCalendarSource) {
+		const path = source.filePath ?? '';
+		if (!this.app || !isVaultCalendarPath(path, this.app.vault.configDir)) throw new Error('Invalid vault ICS path');
+		const file = this.app.vault.getAbstractFileByPath(path);
+		if (!(file instanceof TFile)) throw new Error('Vault ICS file not found');
+		const body = await this.app.vault.read(file);
+		return { status: 'success' as const, body, etag: null, lastModified: null };
 	}
 
 	private isAutoSyncableSource(source: ExternalCalendarSource): boolean {
-		return source.enabled && source.url.trim().length > 0;
+		return source.enabled && externalCalendarSourceAddress(source).trim().length > 0
+			&& (source.sourceKind !== 'vault-file' || this.vaultReady);
 	}
 }
 

@@ -1,8 +1,8 @@
 {
   "schemaVersion": 1,
   "locale": "de",
-  "keyCount": 3654,
-  "keyFingerprint": "ffbb44f4c0d6e099d341aa45a2c4c775e34909f6b5d1fb4ea74710a448e37b1c",
+  "keyCount": 3660,
+  "keyFingerprint": "81020a98728b348621ff7a2c7f0a27a38d864bd2478b57ee639a557c5aa82ee4",
   "translations": {
     "buttons": {
       "addFileSubtask": "Datei-Unteraufgabe hinzufügen",
@@ -1474,6 +1474,9 @@
       "externalCalendarEditAria": "Externen Kalender bearbeiten: {{name}}",
       "externalCalendarEditTitle": "Externen Kalender bearbeiten",
       "externalCalendarEditTooltip": "Externe Kalenderquelle bearbeiten",
+      "externalCalendarFile": "ICS-Datei",
+      "externalCalendarFileDesc": "Schreibgeschützte ICS-Datei im Vault. Wird bei Dateiänderungen automatisch aktualisiert. Nach dem Verschieben muss der neue Pfad gewählt werden.",
+      "externalCalendarFileRequired": "Wähle eine vorhandene ICS-Datei im Vault.",
       "externalCalendarHideCreatedEvents": "Erstellte Ereignisse ausblenden",
       "externalCalendarHideCreatedEventsDesc": "Wenn aktiviert, blendet diese Quelle externe Ereignisse aus, die bereits eine passende Aufgabe am selben geplanten Datum haben. Wenn deaktiviert, bleiben externe Ereignisse sichtbar.",
       "externalCalendarLastError": "Letzter Fehler: {{value}}",
@@ -1489,6 +1492,9 @@
       "externalCalendarSectionDisplayBehavior": "Anzeige und Verhalten",
       "externalCalendarSectionSource": "Quelle",
       "externalCalendarSectionSync": "Synchronisierung",
+      "externalCalendarSourceKind": "Quelle",
+      "externalCalendarSourceUrl": "URL",
+      "externalCalendarSourceVault": "Vault-Datei",
       "externalCalendarSyncNever": "Nie",
       "externalCalendarSyncNow": "Jetzt synchronisieren",
       "externalCalendarUntitled": "Unbenannter externer Kalender",
@@ -3699,5 +3705,5 @@
       "toggleDescendantPreview": "Vorschau untergeordneter Aufgaben umschalten"
     }
   },
-  "sourceVersion": "d3c9d9f2660aaced2cd6c66f2c2aef905fa78d56a666bb53700a5b7b60d0b20b"
+  "sourceVersion": "7550a8afcd94d9cd37a6f96e6f2a47e1dce696c44018e8563ea16376ca4d12e5"
 }

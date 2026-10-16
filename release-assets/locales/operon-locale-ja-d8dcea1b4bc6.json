@@ -1,8 +1,8 @@
 {
   "schemaVersion": 1,
   "locale": "ja",
-  "keyCount": 3654,
-  "keyFingerprint": "ffbb44f4c0d6e099d341aa45a2c4c775e34909f6b5d1fb4ea74710a448e37b1c",
+  "keyCount": 3660,
+  "keyFingerprint": "81020a98728b348621ff7a2c7f0a27a38d864bd2478b57ee639a557c5aa82ee4",
   "translations": {
     "buttons": {
       "addFileSubtask": "ファイルサブタスクを追加",
@@ -1474,6 +1474,9 @@
       "externalCalendarEditAria": "外部カレンダーを編集: {{name}}",
       "externalCalendarEditTitle": "外部カレンダーを編集",
       "externalCalendarEditTooltip": "外部カレンダーソースを編集",
+      "externalCalendarFile": "ICSファイル",
+      "externalCalendarFileDesc": "保管庫内の読み取り専用ICSファイル。ファイルの変更時に自動更新されます。移動後は新しいパスを選択してください。",
+      "externalCalendarFileRequired": "保管庫内の既存のICSファイルを選択してください。",
       "externalCalendarHideCreatedEvents": "作成済みイベントを非表示",
       "externalCalendarHideCreatedEventsDesc": "有効にすると、このソースは同じ予定日にすでに一致するタスクがある外部イベントを非表示にします。無効にすると、外部イベントは表示されたままになります。",
       "externalCalendarLastError": "最後のエラー: {{value}}",
@@ -1489,6 +1492,9 @@
       "externalCalendarSectionDisplayBehavior": "表示と動作",
       "externalCalendarSectionSource": "ソース",
       "externalCalendarSectionSync": "同期",
+      "externalCalendarSourceKind": "ソース",
+      "externalCalendarSourceUrl": "URL",
+      "externalCalendarSourceVault": "保管庫内のファイル",
       "externalCalendarSyncNever": "なし",
       "externalCalendarSyncNow": "今すぐ同期",
       "externalCalendarUntitled": "無題の外部カレンダー",
@@ -3699,5 +3705,5 @@
       "toggleDescendantPreview": "子孫プレビューを切り替え"
     }
   },
-  "sourceVersion": "a89efaed84802dde71c14664855450892c19e284e388cd1272c5c1b933cb2747"
+  "sourceVersion": "b6071cba33c400ad12d1958413d5a71ce46799dd28325396555892b9aaed5de9"
 }

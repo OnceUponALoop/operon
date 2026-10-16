@@ -1,8 +1,8 @@
 {
   "schemaVersion": 1,
   "locale": "zh-CN",
-  "keyCount": 3654,
-  "keyFingerprint": "ffbb44f4c0d6e099d341aa45a2c4c775e34909f6b5d1fb4ea74710a448e37b1c",
+  "keyCount": 3660,
+  "keyFingerprint": "81020a98728b348621ff7a2c7f0a27a38d864bd2478b57ee639a557c5aa82ee4",
   "translations": {
     "buttons": {
       "addFileSubtask": "添加文件子任务",
@@ -1474,6 +1474,9 @@
       "externalCalendarEditAria": "编辑外部日历：{{name}}",
       "externalCalendarEditTitle": "编辑外部日历",
       "externalCalendarEditTooltip": "编辑外部日历源",
+      "externalCalendarFile": "ICS 文件",
+      "externalCalendarFileDesc": "仓库内的只读 ICS 文件。文件更改时自动更新。移动文件后需要选择新路径。",
+      "externalCalendarFileRequired": "请选择仓库内现有的 ICS 文件。",
       "externalCalendarHideCreatedEvents": "隐藏已创建的事件",
       "externalCalendarHideCreatedEventsDesc": "启用后，此源会隐藏在相同计划日期上已有匹配任务的外部事件。禁用时，外部事件保持可见。",
       "externalCalendarLastError": "上次错误：{{value}}",
@@ -1489,6 +1492,9 @@
       "externalCalendarSectionDisplayBehavior": "显示与行为",
       "externalCalendarSectionSource": "源",
       "externalCalendarSectionSync": "同步",
+      "externalCalendarSourceKind": "来源",
+      "externalCalendarSourceUrl": "URL",
+      "externalCalendarSourceVault": "仓库文件",
       "externalCalendarSyncNever": "从不",
       "externalCalendarSyncNow": "立即同步",
       "externalCalendarUntitled": "无标题外部日历",
@@ -3699,5 +3705,5 @@
       "toggleDescendantPreview": "切换子任务预览"
     }
   },
-  "sourceVersion": "faf2241794cc5bcf134c93de74c68e0e907040b2dc27863ba13215e7c6267439"
+  "sourceVersion": "1a9ec9793a009c55175dd6dd0997b7392edb7503071aa6b8e820845ac5a2a877"
 }

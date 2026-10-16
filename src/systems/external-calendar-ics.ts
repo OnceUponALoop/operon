@@ -19,6 +19,7 @@ export interface ExternalCalendarParseOptions {
 	body: string;
 	rangeStart: string;
 	rangeEnd: string;
+	requireCalendar?: boolean;
 }
 
 const DATE_RE = /^\d{4}-\d{2}-\d{2}$/u;
@@ -78,8 +79,14 @@ export function parseExternalCalendarIcsEvents(
 	options: ExternalCalendarParseOptions,
 ): ExternalCalendarCachedEvent[] {
 	const jcal: unknown = ICAL.parse(options.body);
-	if (!isIcalComponentInput(jcal)) return [];
+	if (!isIcalComponentInput(jcal)) {
+		if (options.requireCalendar) throw new Error('Expected a VCALENDAR document');
+		return [];
+	}
 	const root = new ICAL.Component(jcal);
+	if (options.requireCalendar && root.name !== 'vcalendar') {
+		throw new Error('Expected a VCALENDAR document');
+	}
 	const vevents = root.getAllSubcomponents('vevent');
 	const masters = vevents.filter(component => {
 		const event = new ICAL.Event(component);

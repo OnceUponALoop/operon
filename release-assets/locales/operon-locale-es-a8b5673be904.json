@@ -1,8 +1,8 @@
 {
   "schemaVersion": 1,
   "locale": "es",
-  "keyCount": 3654,
-  "keyFingerprint": "ffbb44f4c0d6e099d341aa45a2c4c775e34909f6b5d1fb4ea74710a448e37b1c",
+  "keyCount": 3660,
+  "keyFingerprint": "81020a98728b348621ff7a2c7f0a27a38d864bd2478b57ee639a557c5aa82ee4",
   "translations": {
     "buttons": {
       "addFileSubtask": "Añadir subtarea de archivo",
@@ -1474,6 +1474,9 @@
       "externalCalendarEditAria": "Editar calendario externo: {{name}}",
       "externalCalendarEditTitle": "Editar calendario externo",
       "externalCalendarEditTooltip": "Editar la fuente del calendario externo",
+      "externalCalendarFile": "Archivo ICS",
+      "externalCalendarFileDesc": "Archivo ICS de solo lectura dentro de la bóveda. Se actualiza al cambiar el archivo. Si se mueve, selecciona su nueva ruta.",
+      "externalCalendarFileRequired": "Selecciona un archivo ICS existente dentro de la bóveda.",
       "externalCalendarHideCreatedEvents": "Ocultar eventos creados",
       "externalCalendarHideCreatedEventsDesc": "Cuando está activado, esta fuente oculta los eventos externos que ya tienen una tarea coincidente en la misma fecha programada. Cuando está desactivado, los eventos externos permanecen visibles.",
       "externalCalendarLastError": "Último error: {{value}}",
@@ -1489,6 +1492,9 @@
       "externalCalendarSectionDisplayBehavior": "Visualización y comportamiento",
       "externalCalendarSectionSource": "Fuente",
       "externalCalendarSectionSync": "Sincronización",
+      "externalCalendarSourceKind": "Origen",
+      "externalCalendarSourceUrl": "URL",
+      "externalCalendarSourceVault": "Archivo de la bóveda",
       "externalCalendarSyncNever": "Nunca",
       "externalCalendarSyncNow": "Sincronizar ahora",
       "externalCalendarUntitled": "Calendario externo sin título",
@@ -3699,5 +3705,5 @@
       "toggleDescendantPreview": "Alternar vista previa de descendientes"
     }
   },
-  "sourceVersion": "58d9dda46ec7cdfe78bfc99281bf87dcb6a3d6b82ed0509e80888bbf2ef31109"
+  "sourceVersion": "31e9b0d14c8b2946eb57d17ef4094ed2523d74a8504ea21b8aca0fcab4a993a5"
 }

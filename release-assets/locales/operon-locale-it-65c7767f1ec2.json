@@ -1,8 +1,8 @@
 {
   "schemaVersion": 1,
   "locale": "it",
-  "keyCount": 3654,
-  "keyFingerprint": "ffbb44f4c0d6e099d341aa45a2c4c775e34909f6b5d1fb4ea74710a448e37b1c",
+  "keyCount": 3660,
+  "keyFingerprint": "81020a98728b348621ff7a2c7f0a27a38d864bd2478b57ee639a557c5aa82ee4",
   "translations": {
     "buttons": {
       "addFileSubtask": "Aggiungi sotto-attività-file",
@@ -1474,6 +1474,9 @@
       "externalCalendarEditAria": "Modifica calendario esterno: {{name}}",
       "externalCalendarEditTitle": "Modifica calendario esterno",
       "externalCalendarEditTooltip": "Modifica origine calendario esterno",
+      "externalCalendarFile": "File ICS",
+      "externalCalendarFileDesc": "File ICS di sola lettura nel vault. Si aggiorna quando il file cambia. Dopo uno spostamento, seleziona il nuovo percorso.",
+      "externalCalendarFileRequired": "Seleziona un file ICS esistente nel vault.",
       "externalCalendarHideCreatedEvents": "Nascondi eventi creati",
       "externalCalendarHideCreatedEventsDesc": "Quando attivo, questa origine nasconde gli eventi esterni che hanno già un'attività corrispondente nella stessa data pianificata. Quando disattivo, gli eventi esterni rimangono visibili.",
       "externalCalendarLastError": "Ultimo errore: {{value}}",
@@ -1489,6 +1492,9 @@
       "externalCalendarSectionDisplayBehavior": "Visualizzazione e comportamento",
       "externalCalendarSectionSource": "Origine",
       "externalCalendarSectionSync": "Sincronizzazione",
+      "externalCalendarSourceKind": "Origine",
+      "externalCalendarSourceUrl": "URL",
+      "externalCalendarSourceVault": "File del vault",
       "externalCalendarSyncNever": "Mai",
       "externalCalendarSyncNow": "Sincronizza ora",
       "externalCalendarUntitled": "Calendario esterno senza titolo",
@@ -3699,5 +3705,5 @@
       "toggleDescendantPreview": "Alterna anteprima discendenti"
     }
   },
-  "sourceVersion": "58ae9894250f4981f4c0e9577380639c6996009da920abd15f3fc360213f47d7"
+  "sourceVersion": "19502c7374bf21c588d9f1f4257e782203ac4c21db1224607904aa499f9b6125"
 }

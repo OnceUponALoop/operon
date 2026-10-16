@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### New
+
+- Added **vault-local ICS calendars** as read-only external calendar sources, with automatic updates when files change and continued support for URL subscriptions.
+
 ### Improved
 
 - Made **desktop Task Editor on phones** more compact, with consistent control sizes, single-line property values, and aligned section headings.
@@ -22,7 +26,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Validation
 
-- Full local Plugin checks, production build, release guard, and code review passed, along with **5,096/5,096** local regression tests.
+- Full local Plugin checks, production build, release guard, and code review passed, along with **5,097/5,097** local regression tests.
 
 ## [4.0.1] - 2026-10-14
 

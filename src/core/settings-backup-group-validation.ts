@@ -1,3 +1,4 @@
+import { isVaultCalendarPath } from './external-calendar-source';
 import { mergeImportedInlinePropertyDefinitions, validateInlinePropertyDefinitions, type InlinePropertyDefinitions } from './inline-property-definitions';
 import type { JsonValue } from '../agent-runtime/contracts/v1/primitives';
 import type { PresetFavorites } from './preset-favorites';
@@ -610,13 +611,16 @@ function decodeExternalCalendars(data: unknown, path: string, diagnostics: Opero
 	const names = new Set<string>();
 	for (const [index, raw] of (calendars ?? []).entries()) {
 		const itemPath = `${path}.externalCalendars[${index}]`;
-		const item = inspectObject(raw, itemPath, ['id', 'type', 'name', 'url', 'color', 'enabled', 'hideCreatedEvents', 'refreshIntervalHours'], ['id', 'type', 'name', 'url', 'color', 'enabled', 'hideCreatedEvents', 'refreshIntervalHours'], diagnostics);
+		const item = inspectObject(raw, itemPath, ['id', 'type', 'name', 'url', 'color', 'enabled', 'hideCreatedEvents', 'refreshIntervalHours', 'sourceKind', 'filePath'], ['id', 'type', 'name', 'url', 'color', 'enabled', 'hideCreatedEvents', 'refreshIntervalHours'], diagnostics);
 		if (!item) continue;
 		validateFieldTypes(item, itemPath, { id: 'string', type: 'string', name: 'string', url: 'string', color: 'string', enabled: 'boolean', hideCreatedEvents: 'boolean', refreshIntervalHours: 'number' }, diagnostics);
 		const id = requiredString(item.id, `${itemPath}.id`, diagnostics);
 		const name = requiredString(item.name, `${itemPath}.name`, diagnostics);
 		checkDuplicate(id, ids, `${itemPath}.id`, 'external calendar ID', diagnostics);
 		checkDuplicate(name?.toLocaleLowerCase('en-US') ?? null, names, `${itemPath}.name`, 'external calendar name', diagnostics);
+		if (item.sourceKind !== undefined && item.sourceKind !== 'url' && item.sourceKind !== 'vault-file') diagnostics.push(error(`${itemPath}.sourceKind`, 'value', 'Unsupported calendar source kind.'));
+		if (item.sourceKind === 'vault-file' && (typeof item.filePath !== 'string' || !isVaultCalendarPath(item.filePath))) diagnostics.push(error(`${itemPath}.filePath`, 'value', 'A vault-relative ICS path is required.'));
+		if (item.sourceKind !== 'vault-file' && item.filePath !== undefined) diagnostics.push(error(`${itemPath}.filePath`, 'value', 'File paths belong to vault sources.'));
 		if (item.type !== 'ics') diagnostics.push(error(`${itemPath}.type`, 'value', 'External calendar type must be ics.'));
 	}
 	return object;

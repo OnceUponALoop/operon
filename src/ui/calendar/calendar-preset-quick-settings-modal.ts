@@ -359,7 +359,7 @@ export class CalendarPresetQuickSettingsModal extends Modal {
 			for (const source of externalCalendars) {
 				const isVisible = preset.externalCalendarVisibility[source.id] === true;
 				new Setting(externalCard)
-					.setName(source.name || source.url)
+					.setName(source.name || source.filePath || source.url)
 					.addToggle(toggle => {
 						toggle.setValue(isVisible);
 						toggle.onChange(async value => {

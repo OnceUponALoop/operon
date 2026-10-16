@@ -1,8 +1,8 @@
 {
   "schemaVersion": 1,
   "locale": "fr",
-  "keyCount": 3654,
-  "keyFingerprint": "ffbb44f4c0d6e099d341aa45a2c4c775e34909f6b5d1fb4ea74710a448e37b1c",
+  "keyCount": 3660,
+  "keyFingerprint": "81020a98728b348621ff7a2c7f0a27a38d864bd2478b57ee639a557c5aa82ee4",
   "translations": {
     "buttons": {
       "addFileSubtask": "Ajouter une sous-tâche-fichier",
@@ -1474,6 +1474,9 @@
       "externalCalendarEditAria": "Modifier le calendrier externe : {{name}}",
       "externalCalendarEditTitle": "Modifier le calendrier externe",
       "externalCalendarEditTooltip": "Modifier la source de calendrier externe",
+      "externalCalendarFile": "Fichier ICS",
+      "externalCalendarFileDesc": "Fichier ICS en lecture seule dans le coffre. Actualisation automatique après modification. Après un déplacement, sélectionnez le nouveau chemin.",
+      "externalCalendarFileRequired": "Sélectionnez un fichier ICS existant dans le coffre.",
       "externalCalendarHideCreatedEvents": "Masquer les événements créés",
       "externalCalendarHideCreatedEventsDesc": "Lorsque cette option est activée, cette source masque les événements externes qui ont déjà une tâche correspondante à la même date planifiée. Lorsqu'elle est désactivée, les événements externes restent visibles.",
       "externalCalendarLastError": "Dernière erreur : {{value}}",
@@ -1489,6 +1492,9 @@
       "externalCalendarSectionDisplayBehavior": "Affichage et comportement",
       "externalCalendarSectionSource": "Source",
       "externalCalendarSectionSync": "Synchronisation",
+      "externalCalendarSourceKind": "Source",
+      "externalCalendarSourceUrl": "URL",
+      "externalCalendarSourceVault": "Fichier du coffre",
       "externalCalendarSyncNever": "Jamais",
       "externalCalendarSyncNow": "Synchroniser maintenant",
       "externalCalendarUntitled": "Calendrier externe sans titre",
@@ -3699,5 +3705,5 @@
       "toggleDescendantPreview": "Basculer l'aperçu des descendants"
     }
   },
-  "sourceVersion": "b78946e0f24d2e0e5acf420ad4668eed2c93ad9cb9c56da93ae65941521f5836"
+  "sourceVersion": "9daee0b28c34c282bfb5899f771131ab9d5a15194344e35915a8d681e78fb96e"
 }
