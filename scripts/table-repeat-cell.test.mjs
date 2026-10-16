@@ -24,6 +24,7 @@ await build({ stdin: { contents: `
  export { resolveTableValueCellIcon } from './src/ui/table/table-icon-only-cell';
  export { createDefaultTablePreset, normalizeTablePreset } from './src/types/table';
  export { installI18nLocale, activateI18nLocale, resetI18nToEnglish } from './src/core/i18n';
+ export { evaluateFilterSet } from './src/core/filter-evaluator';
  export { CANONICAL_KEYS } from './src/types/keys';
 `, resolveDir: root }, outfile: path.join(temp, 'helpers.mjs'), bundle: true, format: 'esm', platform: 'node', logLevel: 'silent', alias: { obsidian: path.join(root, 'scripts/test-support/obsidian.ts') } });
 const helpers = await import(pathToFileURL(path.join(temp, 'helpers.mjs')).href);
@@ -380,4 +381,22 @@ test('reference date label follows language changes even with unchanged key mapp
   assert.equal(helpers.getTableTaskField(referenceKey, settings).label, 'Tekrar referans tarihi');
  } finally { helpers.resetI18nToEnglish(); }
  assert.equal(helpers.getTableTaskField(referenceKey, settings).label, referenceLabel);
+});
+
+test('Repeat picker reference-date Save/Clear updates both Table values and active filter matches', () => {
+ const condition = { id: 'condition', field: referenceKey, fieldType: 'date', operator: 'dateIs', value: '2026-11-01' };
+ const filter = { id: 'filter', name: 'Reference date', rootGroup: { id: 'root', logic: 'all', children: [condition] }, sorts: [], conditions: [condition], matchLogic: 'all' };
+ for (const embedded of [false, true]) {
+  const { cell, target, commits } = referenceHarness(embedded);
+  const matches = () => helpers.evaluateFilterSet(filter, [target]).length;
+  assert.equal(matches(), 0); cell.dispatch('click');
+  const options = pickerCalls[0].options;
+  options.onSave({ repeat: raw, repeatOccurrenceDate: '2026-11-01', datetimeRepeatEnd: '' });
+  Object.assign(target.fieldValues, commits[0].payload);
+  assert.equal(helpers.getTableTaskRawValue(target, referenceKey), '2026-11-01');
+  assert.equal(helpers.formatTableDetailedDatetimeValue(referenceKey, helpers.getTableTaskRawValue(target, referenceKey), referenceSettings), '01/11/2026');
+  assert.equal(matches(), 1);
+  options.onClear(); Object.assign(target.fieldValues, commits[1].payload);
+  assert.equal(helpers.getTableTaskRawValue(target, referenceKey), ''); assert.equal(matches(), 0);
+ }
 });
