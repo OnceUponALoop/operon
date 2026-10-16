@@ -112,6 +112,10 @@ for (const device of ['phone', 'tablet', 'desktop']) for (const enabled of [fals
   host.description = 'Task'; host.refreshTrackingSessionsSection(); assert.equal(button.disabled, false);
   await button.events.click(); assert.equal(opened, 1);
   assert.equal(modalOptions.title, 'addSession');
+  assert.equal(modalOptions.contextTitle, 'Task');
+  assert.equal(modalOptions.contextMeta, undefined);
+  assert.equal(modalOptions.initialStart, undefined);
+  assert.equal(modalOptions.initialEnd, undefined);
   assert.equal(await modalOptions.onSave(10, 20), undefined); assert.equal(saved, 1); assert.equal(syncs, 1);
  });
 }

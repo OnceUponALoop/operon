@@ -11947,8 +11947,9 @@ body.active-line .operon-task-creator-compact-text-host:is(.is-description, .is-
 }
 
 .operon-tracker-session-modal-field {
-	display: flex;
-	flex-direction: column;
+	display: grid;
+	grid-template-columns: 80px minmax(0, 1fr);
+	align-items: start;
 	gap: 8px;
 }
 
@@ -11956,10 +11957,12 @@ body.active-line .operon-task-creator-compact-text-host:is(.is-description, .is-
 	display: flex;
 	align-items: center;
 	gap: 8px;
+	min-width: 0;
 }
 
 .operon-tracker-session-modal-input-row input {
-	flex: 1 1 auto;
+	flex: 1 1 0;
+	min-width: 0;
 }
 
 .operon-tracker-session-modal-adjustments {
@@ -11973,7 +11976,9 @@ body .modal.operon-tracker-session-edit-modal button.operon-tracker-session-moda
 	appearance: none;
 	-webkit-appearance: none;
 	min-width: 68px;
-	height: 40px;
+	height: 34px;
+	min-height: 34px;
+	box-sizing: border-box;
 	border: 1px solid var(--operon-tracker-session-modal-border);
 	border-radius: 8px;
 	background: transparent;
@@ -12029,6 +12034,14 @@ body .modal.operon-tracker-session-edit-modal button.operon-tracker-session-moda
 }
 
 .operon-tracker-session-modal-field label {
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	box-sizing: border-box;
+	height: 34px;
+	padding: 0 8px;
+	border: 1px solid var(--operon-tracker-session-modal-border);
+	border-radius: 8px;
 	font-size: 12px;
 	font-weight: 600;
 	color: var(--text-muted);
@@ -12038,7 +12051,9 @@ body .modal.operon-tracker-session-edit-modal .operon-tracker-session-modal-fiel
 	appearance: none;
 	-webkit-appearance: none;
 	width: 100%;
-	min-height: 40px;
+	height: 34px;
+	min-height: 34px;
+	padding-block: 0;
 	border: 1px solid var(--operon-tracker-session-modal-border);
 	border-radius: 8px;
 	background: transparent;
@@ -12081,6 +12096,10 @@ body .modal.operon-tracker-session-edit-modal .operon-tracker-session-modal-fiel
 	min-height: 18px;
 	font-size: 12px;
 	color: var(--text-error);
+}
+
+.operon-tracker-session-modal-error:empty {
+	min-height: 0;
 }
 
 .operon-tracker-session-modal-actions {

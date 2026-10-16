@@ -11,6 +11,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Made **desktop Task Editor on phones** more compact, with consistent control sizes, single-line property values, and aligned section headings.
 - Replaced **Add session** text with a **clock-plus icon** in the desktop Task Editor, while keeping its tooltip and accessible label.
+- Added the task title to **Add session**, making it easier to see which task the new session belongs to.
+- Made **Add session** and **Edit session** more compact, with equal-width Start and End labels beside the date fields, controls matching the footer height, and less empty space below the duration.
 
 ### Fixed
 
@@ -18,7 +20,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Validation
 
-- Full local Plugin checks, production build, release guard, and code review passed, along with **5,074/5,074** local regression tests.
+- Full local Plugin checks, production build, release guard, and code review passed, along with **5,077/5,077** local regression tests.
 
 ## [4.0.1] - 2026-10-14
 

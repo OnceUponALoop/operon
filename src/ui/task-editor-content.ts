@@ -5902,6 +5902,7 @@ export class TaskEditorContent {
 			if (!operonId) return;
 			new TrackerSessionEditModal(this.app, {
 				title: t('taskEditor', 'addSession'),
+				contextTitle: this.description,
 				taskNote: this.buildTrackerSessionTaskNoteOptions(operonId),
 				onSave: async (start, end) => {
 					const added = await this.timeTracker.addSession(operonId, start, end);
