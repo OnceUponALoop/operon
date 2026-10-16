@@ -233,19 +233,6 @@ function bindLivePreviewChipHoverState(element: HTMLElement): void {
 	element.addEventListener('focusout', removeHover);
 }
 
-class HiddenCheckboxWidget extends WidgetType {
-	toDOM(view: EditorView): HTMLElement {
-		const span = createOwnerElement(view.dom, 'span');
-		span.className = 'operon-lp-checkbox-hidden';
-		span.setAttribute('aria-hidden', 'true');
-		return span;
-	}
-
-	eq(): boolean {
-		return true;
-	}
-}
-
 export class TaskIconWidget extends WidgetType {
 	private readonly renderSignature: string;
 	private static readonly owners = new WeakMap<HTMLElement, TaskIconWidget>();
@@ -835,9 +822,9 @@ export function operonLivePreviewConcealExtension(callbacks: LivePreviewCallback
 			}
 
 			if (parsed.checkboxRange.to > parsed.checkboxRange.from) {
-				const checkboxWidget = Decoration.replace({
-					widget: new HiddenCheckboxWidget(),
-				});
+				// Keep the native empty replacement: a zero-height widget breaks
+				// coordinate lookup beside Obsidian list indent/fold decorations.
+				const checkboxWidget = Decoration.replace({});
 				decorations.add(line.from + parsed.checkboxRange.from, line.from + parsed.checkboxRange.to, checkboxWidget);
 			}
 

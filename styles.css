@@ -1018,13 +1018,6 @@ body.operon-tweak-compact-sidebar-tab-icons:not(.is-mobile) .mod-sidedock .works
    Live Preview Conceal
    ======================================== */
 
-.operon-lp-checkbox-hidden {
-	display: inline-block;
-	width: 0;
-	height: 0;
-	overflow: hidden;
-}
-
 .operon-live-preview-status-icon {
 	display: inline-flex;
 	align-items: center;
@@ -1171,13 +1164,13 @@ body.operon-tweak-compact-sidebar-tab-icons:not(.is-mobile) .mod-sidedock .works
 	opacity: 0.72;
 }
 
-.cm-content .cm-line.operon-inline-row-done > span:not(.operon-live-preview-tail):not(.operon-lp-checkbox-hidden),
-.markdown-source-view.mod-cm6 .cm-line.operon-inline-row-done > span:not(.operon-live-preview-tail):not(.operon-lp-checkbox-hidden) {
+.cm-content .cm-line.operon-inline-row-done > span:not(.operon-live-preview-tail),
+.markdown-source-view.mod-cm6 .cm-line.operon-inline-row-done > span:not(.operon-live-preview-tail) {
 	opacity: 0.6;
 }
 
-.cm-content .cm-line.operon-inline-row-cancelled > span:not(.operon-live-preview-tail):not(.operon-lp-checkbox-hidden),
-.markdown-source-view.mod-cm6 .cm-line.operon-inline-row-cancelled > span:not(.operon-live-preview-tail):not(.operon-lp-checkbox-hidden) {
+.cm-content .cm-line.operon-inline-row-cancelled > span:not(.operon-live-preview-tail),
+.markdown-source-view.mod-cm6 .cm-line.operon-inline-row-cancelled > span:not(.operon-live-preview-tail) {
 	opacity: 0.4;
 }
 
