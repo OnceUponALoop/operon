@@ -39,7 +39,8 @@ export class ExternalCalendarService {
 	private revisions = new Map<string, number>();
 	private localTimers = new Map<string, number>();
 	private syncIdentities = new Map<string, string>();
-	private queuedSyncs = new Map<string, { start: string; end: string }>();
+	private queuedSyncs = new Map<string, { start: string; end: string; forceFetch?: boolean }>();
+	private fullFetches = new Set<string>();
 	private vaultEvents: EventRef[] = [];
 
 	constructor(
@@ -156,7 +157,10 @@ export class ExternalCalendarService {
 		if (this.destroyed) return 'skipped';
 		const source = this.sources.get(sourceId);
 		if (!source || !this.isAutoSyncableSource(source)) return 'skipped';
-		await this.syncSource(sourceId, this.requestedRangeStart, this.requestedRangeEnd);
+		const identity = externalCalendarSourceIdentity(source);
+		await this.syncSource(sourceId, this.requestedRangeStart, this.requestedRangeEnd, true, true);
+		const current = this.sources.get(sourceId);
+		if (!current || !this.isAutoSyncableSource(current) || externalCalendarSourceIdentity(current) !== identity) return 'skipped';
 		if (!this.destroyed && this.isAutoSyncableSource(source)) {
 			this.scheduleTimer(sourceId);
 		}
@@ -215,7 +219,7 @@ export class ExternalCalendarService {
 		for (const source of this.sources.values()) {
 			if (!this.isAutoSyncableSource(source)) continue;
 			if (source.sourceKind === 'vault-file' && this.syncPromises.has(source.id) && isExternalCalendarCoverageExpanding(this.caches.get(source.id) ?? null, this.requestedRangeStart, this.requestedRangeEnd)) {
-				this.queuedSyncs.set(source.id, { start: this.requestedRangeStart, end: this.requestedRangeEnd });
+				this.queuedSyncs.set(source.id, { ...this.queuedSyncs.get(source.id), start: this.requestedRangeStart, end: this.requestedRangeEnd });
 				continue;
 			}
 			if (!this.shouldSyncSource(source.id, this.requestedRangeStart, this.requestedRangeEnd)) continue;
@@ -278,12 +282,18 @@ export class ExternalCalendarService {
 		}, delay));
 	}
 
-	private syncSource(sourceId: string, rangeStart: string, rangeEnd: string, allowRetry = true): Promise<void> {
+	private syncSource(sourceId: string, rangeStart: string, rangeEnd: string, allowRetry = true, forceFetch = false): Promise<void> {
 		const source = this.sources.get(sourceId);
 		if (this.destroyed || !source || !this.isAutoSyncableSource(source)) return Promise.resolve();
 		const existing = this.syncPromises.get(sourceId);
 		if (existing) {
-			if (source.sourceKind === 'vault-file' || this.syncIdentities.get(sourceId) !== externalCalendarSourceIdentity(source)) this.queuedSyncs.set(sourceId, { start: rangeStart, end: rangeEnd });
+			if (source.sourceKind === 'vault-file' || this.syncIdentities.get(sourceId) !== externalCalendarSourceIdentity(source)
+				|| (forceFetch && !this.fullFetches.has(sourceId))) {
+				this.queuedSyncs.set(sourceId, {
+					start: rangeStart, end: rangeEnd,
+					forceFetch: forceFetch || this.queuedSyncs.get(sourceId)?.forceFetch,
+				});
+			}
 			return existing;
 		}
 		this.clearLocalTimer(sourceId);
@@ -291,14 +301,15 @@ export class ExternalCalendarService {
 		const run = (async () => {
 			do {
 				this.queuedSyncs.delete(sourceId);
-				await this.syncSourceInternal(sourceId, rangeStart, rangeEnd);
+				await this.syncSourceInternal(sourceId, rangeStart, rangeEnd, forceFetch);
 				const queued = this.queuedSyncs.get(sourceId);
-				if (queued) { rangeStart = queued.start; rangeEnd = queued.end; }
+				if (queued) { rangeStart = queued.start; rangeEnd = queued.end; forceFetch = queued.forceFetch ?? false; }
 			} while (!this.destroyed && this.queuedSyncs.has(sourceId));
 		})().finally(() => {
 			if (this.syncPromises.get(sourceId) !== run) return;
 			this.syncPromises.delete(sourceId);
 			this.syncIdentities.delete(sourceId);
+			this.fullFetches.delete(sourceId);
 			const current = this.sources.get(sourceId);
 			if (!this.destroyed && allowRetry && current?.sourceKind === 'vault-file'
 				&& this.isAutoSyncableSource(current) && this.caches.get(sourceId)?.lastError
@@ -312,6 +323,7 @@ export class ExternalCalendarService {
 		sourceId: string,
 		rangeStart: string,
 		rangeEnd: string,
+		forceFetch: boolean,
 	): Promise<void> {
 		if (this.destroyed) return;
 		const source = this.sources.get(sourceId);
@@ -339,11 +351,16 @@ export class ExternalCalendarService {
 			// range; validators are safe only while the requested range stays
 			// inside the covered range.
 			const canUseCacheValidators = !isExternalCalendarCoverageExpanding(cache, rangeStart, rangeEnd);
+			const requestCache = !forceFetch && canUseCacheValidators ? cache : null;
+			const fullFetch = !requestCache?.etag && !requestCache?.lastModified;
+			if (fullFetch) this.fullFetches.add(sourceId);
+			else this.fullFetches.delete(sourceId);
 			const response = source.sourceKind === 'vault-file'
 				? await this.readVaultCalendar(source)
-				: await fetchExternalCalendarIcs(source.url, canUseCacheValidators ? cache : null);
+				: await fetchExternalCalendarIcs(source.url, requestCache);
 			if (!isCurrent()) return;
 			if (response.status === 'notModified') {
+				if (fullFetch) throw new Error('Unexpected HTTP 304 for a full calendar refresh');
 				// The feed body is unchanged, so previously covered coverage is
 				// still valid; keep the union with the requested range.
 				const nextCache: ExternalCalendarSourceCache = {

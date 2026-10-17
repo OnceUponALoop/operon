@@ -103,7 +103,7 @@ test('disabled sources and destroy cancel listeners, retries and reads',async t=
 });
 
 test('URL transport, webcal normalization and HTTP 304 remain intact',async t=>{
- const h=harness(t);const calls:any[]=[];(globalThis as any).__obsidianRequestUrl=async(options:any)=>{calls.push(options);return calls.length===1?{status:200,headers:{etag:'"v1"'},text:calendar(event('Remote'))}:{status:304,headers:{etag:'"v1"'},text:''};};await h.start([remote()]);assert.equal(h.counts().reads,0);assert.equal(calls[0].url,'https://example.invalid/work.ics');await h.service.syncNow('remote');assert.equal(calls[1].headers['If-None-Match'],'"v1"');assert.equal(h.service.getSourceCache('remote')?.events[0].title,'Remote');
+ const h=harness(t);const calls:any[]=[];(globalThis as any).__obsidianRequestUrl=async(options:any)=>{calls.push(options);return calls.length===1?{status:200,headers:{etag:'"v1"'},text:calendar(event('Remote'))}:{status:304,headers:{etag:'"v1"'},text:''};};await h.start([remote()]);assert.equal(h.counts().reads,0);assert.equal(calls[0].url,'https://example.invalid/work.ics');await h.advance(3600000);assert.equal(calls[1].headers['If-None-Match'],'"v1"');assert.equal(h.service.getSourceCache('remote')?.events[0].title,'Remote');
 });
 
 test('local recurrence, all-day, timezone and expanded ranges reuse existing parsing',()=>{
@@ -182,4 +182,138 @@ test('named timezone content has the same event times for vault and URL parsing'
  const fileEvents=parseExternalCalendarIcsEvents({...options,requireCalendar:true});
  assert.equal(fileEvents.length,1);assert.deepEqual(fileEvents,parseExternalCalendarIcsEvents(options));
  assert.equal(new Date(fileEvents[0].startDateTime!).toISOString(),'2026-10-16T10:00:00.000Z');
+});
+
+// Issue #267: source timezone proof, never a blanket empty-series fallback.
+const outlookRule = 'FREQ=YEARLY;UNTIL=20261031T230000Z;INTERVAL=1;BYMONTHDAY=1;BYMONTH=11';
+function outlookCalendar(options: { rule?: string; zone?: string; extra?: string; components?: string; start?: string; end?: string } = {}) {
+ const zone = options.zone ?? 'X-WR-TIMEZONE:Europe/Madrid';
+ return calendar(`${zone}\r\nBEGIN:VEVENT\r\nUID:outlook-holiday\r\nSUMMARY:Outlook holiday\r\nDTSTART;VALUE=DATE:${options.start ?? '20261101'}\r\nDTEND;VALUE=DATE:${options.end ?? '20261102'}\r\nRRULE:${options.rule ?? outlookRule}\r\n${options.extra ?? ''}END:VEVENT\r\n${options.components ?? ''}`);
+}
+function parseOutlook(body: string, requireCalendar = true, start = '2026-01-01', end = '2027-12-31') {
+ return parseExternalCalendarIcsEvents({ sourceId: 'work', url: '', body, rangeStart: start, rangeEnd: end, requireCalendar });
+}
+function outlookRange(h: ReturnType<typeof harness>) {
+ (h.service as any).requestedRangeStart = '2026-01-01';
+ (h.service as any).requestedRangeEnd = '2027-12-31';
+}
+function fixedZone(id: string, offset = '+0100') {
+ return `BEGIN:VTIMEZONE\r\nTZID:${id}\r\nBEGIN:STANDARD\r\nDTSTART:19700101T000000\r\nTZOFFSETFROM:${offset}\r\nTZOFFSETTO:${offset}\r\nEND:STANDARD\r\nEND:VTIMEZONE\r\n`;
+}
+
+test('Outlook yearly boundary yields one identical URL/file occurrence and no extra year', () => {
+ const body=outlookCalendar(), items=parseOutlook(body);
+ assert.deepEqual(items,parseOutlook(body,false));assert.equal(items.length,1);
+ assert.equal(items[0].startDate,'2026-11-01');assert.equal(items[0].endDate,'2026-11-01');
+ assert.equal(body,outlookCalendar());assert.equal(parseOutlook(body,true,'2027-01-01','2027-12-31').length,0);
+ assert.equal(parseOutlook(body,true,'2026-11-02','2026-11-30').length,0);
+});
+
+test('Outlook result does not depend on host timezone and respects source summer time', () => {
+ const before=process.env.TZ;
+ try {for(const tz of ['Europe/Madrid','Europe/Berlin','UTC','America/New_York']) {
+  process.env.TZ=tz;
+  assert.equal(parseOutlook(outlookCalendar()).length,1,tz);
+  const summer=outlookCalendar({start:'20260701',end:'20260702',rule:'FREQ=YEARLY;UNTIL=20260630T220000Z;BYMONTH=7;BYMONTHDAY=1'});
+  assert.equal(parseOutlook(summer)[0]?.startDate,'2026-07-01',tz);
+ }} finally {if(before===undefined)delete process.env.TZ;else process.env.TZ=before;}
+});
+
+for(const [name, options] of Object.entries({
+ missingZone:{zone:''},unknownZone:{zone:'X-WR-TIMEZONE:Unknown/Zone'},windowsZone:{zone:'X-WR-TIMEZONE:Romance Standard Time'},
+ duplicateZone:{zone:'X-WR-TIMEZONE:Europe/Madrid\r\nX-WR-TIMEZONE:Europe/Berlin'},
+ earlier:{rule:outlookRule.replace('20261031T230000Z','20261030T230000Z')},
+ nonMidnight:{rule:outlookRule.replace('T230000Z','T233000Z')},
+ nonUtc:{rule:outlookRule.replace('230000Z','230000')},
+ validEarlierDate:{rule:outlookRule.replace('20261031T230000Z','20261031')},
+ daily:{rule:outlookRule.replace('YEARLY','DAILY')},interval:{rule:outlookRule.replace('interval=1'.toUpperCase(),'INTERVAL=2')},
+ count:{rule:outlookRule+';COUNT=1'},otherBy:{rule:outlookRule+';BYDAY=SU'},
+ differentMonth:{rule:outlookRule.replace('BYMONTH=11','BYMONTH=12')},
+ multipleDays:{rule:outlookRule.replace('BYMONTHDAY=1','BYMONTHDAY=1,2')},
+ secondRule:{extra:'RRULE:'+outlookRule+'\r\n'},
+ brokenEmbedded:{components:'BEGIN:VTIMEZONE\r\nTZID:Europe/Madrid\r\nEND:VTIMEZONE\r\n'},
+ duplicateEmbedded:{components:fixedZone('Europe/Madrid')+fixedZone('Europe/Madrid')},
+ embeddedOverridesIana:{components:fixedZone('Europe/Madrid','+0200')},
+})) test(`Outlook compatibility does not guess or widen ${name}`,()=>assert.equal(parseOutlook(outlookCalendar(options)).length,0));
+
+test('matching embedded timezone is used without a global timezone registration', () => {
+ assert.equal(parseOutlook(outlookCalendar({zone:'X-WR-TIMEZONE:+01:00'})).length,0);
+ assert.equal(parseOutlook(outlookCalendar({zone:'X-WR-TIMEZONE:+0100',components:fixedZone('+0100')})).length,1);
+ assert.equal(parseOutlook(outlookCalendar({zone:'X-WR-TIMEZONE:Custom/Institution',components:fixedZone('Custom/Institution')})).length,1);
+ assert.equal(parseOutlook(outlookCalendar({zone:'',components:fixedZone('Custom/Institution')})).length,0);
+});
+
+test('Outlook normalization preserves EXDATE, RDATE and recurrence exceptions', () => {
+ assert.equal(parseOutlook(outlookCalendar({extra:'EXDATE;VALUE=DATE:20261101\r\n'})).length,0);
+ const added=parseOutlook(outlookCalendar({extra:'RDATE;VALUE=DATE:20261101,20261103\r\n'}));
+ assert.deepEqual(added.map(e=>e.startDate),['2026-11-01','2026-11-03']);
+ const exception='BEGIN:VEVENT\r\nUID:outlook-holiday\r\nRECURRENCE-ID;VALUE=DATE:20261101\r\nDTSTART;VALUE=DATE:20261102\r\nDTEND;VALUE=DATE:20261104\r\nSUMMARY:Moved holiday\r\nEND:VEVENT\r\n';
+ const moved=parseOutlook(outlookCalendar({components:exception}));
+ assert.deepEqual(moved,parseOutlook(outlookCalendar({components:exception,rule:outlookRule.replace('20261031T230000Z','20261101')})));
+ assert.equal(moved.length,1);assert.equal(moved[0].startDate,'2026-11-02');assert.equal(moved[0].endDate,'2026-11-03');
+});
+
+test('valid equality, COUNT, daily, weekly, yearly and timed recurrences retain their results',()=>{
+ for(const [rule,count] of [
+  ['FREQ=YEARLY;UNTIL=20261101',1],['FREQ=YEARLY;UNTIL=20261101T000000Z',1],
+  ['FREQ=YEARLY;UNTIL=20271101',2],['FREQ=YEARLY;COUNT=2',2],
+  ['FREQ=DAILY;COUNT=3',3],['FREQ=WEEKLY;COUNT=3',3],
+ ] as const) assert.equal(parseOutlook(outlookCalendar({rule})).length,count,rule);
+ const timed=outlookCalendar({rule:'FREQ=YEARLY;UNTIL=20271101T100000Z'}).replace('DTSTART;VALUE=DATE:20261101','DTSTART:20261101T100000Z').replace('DTEND;VALUE=DATE:20261102','DTEND:20261101T110000Z');
+ assert.equal(parseOutlook(timed).length,2);
+});
+
+test('local Outlook source updates through existing file events with no HTTP or writes',async t=>{
+ const h=harness(t);outlookRange(h);h.files.set('Calendars/work.ics',outlookCalendar());await h.start();
+ assert.equal(h.service.getSourceCache('work')?.events.length,1);
+ h.files.set('Calendars/work.ics',outlookCalendar({extra:'EXDATE;VALUE=DATE:20261101\r\n'}));h.emit('modify',new TFile('Calendars/work.ics'));await h.advance(500);
+ assert.equal(h.service.getSourceCache('work')?.events.length,0);assert.equal(h.counts().writes,0);
+});
+
+test('old empty URL cache survives automatic 304 and recovers with manual full fetch',async t=>{
+ const h=harness(t,[{sourceId:'remote',events:[],etag:'"old"',lastModified:'old-date',syncedAt:null,coveredRangeStart:'2026-01-01',coveredRangeEnd:'2027-12-31'}]);outlookRange(h);const calls:any[]=[];
+ (globalThis as any).__obsidianRequestUrl=async(o:any)=>{calls.push(o);return calls.length===1?{status:304,headers:{},text:''}:{status:200,headers:{etag:'"new"'},text:outlookCalendar()};};
+ await h.start([remote()]);assert.equal(calls[0].headers['If-None-Match'],'"old"');assert.equal(h.service.getSourceCache('remote')?.events.length,0);
+ assert.equal(await h.service.syncNow('remote'),'synced');assert.deepEqual(calls[1].headers,{});assert.equal(h.service.getSourceCache('remote')?.events.length,1);
+ assert.equal(h.service.getSourceCache('remote')?.etag,'"new"');
+});
+
+test('manual request during conditional fetch waits for one coalesced full fetch',async t=>{
+ const h=harness(t,[{sourceId:'remote',events:[],etag:'"old"',syncedAt:null,coveredRangeStart:'2026-01-01',coveredRangeEnd:'2027-12-31'}]);outlookRange(h);
+ const first=deferred<any>(),second=deferred<any>(),calls:any[]=[];
+ (globalThis as any).__obsidianRequestUrl=(o:any)=>{calls.push(o);return calls.length===1?first.promise:second.promise;};
+ await h.start([remote()]);let finished=false;
+ const a=h.service.syncNow('remote').then(r=>{finished=true;return r;}),b=h.service.syncNow('remote');
+ assert.equal(calls.length,1);first.resolve({status:304,headers:{},text:''});await settle();
+ assert.equal(calls.length,2);assert.deepEqual(calls[1].headers,{});assert.equal(finished,false);
+ const c=h.service.syncNow('remote');second.resolve({status:200,headers:{etag:'"new"'},text:outlookCalendar()});
+ assert.deepEqual(await Promise.all([a,b,c]),['synced','synced','synced']);assert.equal(calls.length,2);
+});
+
+for(const failure of ['304','network']) test(`manual full fetch preserves cached events on ${failure}`,async t=>{
+ const h=harness(t);outlookRange(h);
+ (globalThis as any).__obsidianRequestUrl=async()=>({status:200,headers:{etag:'"good"'},text:outlookCalendar()});await h.start([remote()]);
+ const before=h.service.getSourceCache('remote')!.events;let calls=0;
+ (globalThis as any).__obsidianRequestUrl=async()=>{calls++;if(failure==='network')throw Error('Offline');return {status:304,headers:{},text:''};};
+ assert.equal(await h.service.syncNow('remote'),'failed');assert.equal(calls,1);assert.deepEqual(h.service.getSourceCache('remote')?.events,before);assert.ok(h.service.getSourceCache('remote')?.lastError);
+});
+
+test('sync all manually omits validators for every URL source',async t=>{
+ const h=harness(t);outlookRange(h);const calls:any[]=[];
+ (globalThis as any).__obsidianRequestUrl=async(o:any)=>{calls.push(o);return {status:200,headers:{etag:'"v1"'},text:outlookCalendar()};};
+ await h.start([remote(),{...remote(),id:'remote2',url:'https://example.invalid/two.ics'}]);calls.length=0;
+ assert.deepEqual(await h.service.syncAllNow(),{synced:2,skipped:0,failed:0});assert.equal(calls.length,2);assert.ok(calls.every(c=>Object.keys(c.headers).length===0));
+});
+
+for(const action of ['remove','disable','replace','destroy']) test(`queued manual full fetch respects ${action}`,async t=>{
+ const h=harness(t,[{sourceId:'remote',events:[],etag:'"old"',syncedAt:null,coveredRangeStart:'2026-01-01',coveredRangeEnd:'2027-12-31'}]);outlookRange(h);
+ const gate=deferred<any>();let calls=0;
+ (globalThis as any).__obsidianRequestUrl=()=>{calls++;return calls===1?gate.promise:Promise.resolve({status:200,headers:{},text:outlookCalendar().replace('Outlook holiday','New source')});};
+ await h.start([remote()]);const pending=h.service.syncNow('remote');
+ let closing:Promise<void>|undefined;
+ if(action==='destroy') closing=h.service.destroy();
+ else await h.service.applySettings(action==='remove'?[]:[{...remote(),...(action==='disable'?{enabled:false}:{url:'https://example.invalid/new.ics'})}]);
+ gate.resolve({status:304,headers:{},text:''});assert.equal(await pending,'skipped');await closing;
+ if(action==='replace'){assert.equal(h.service.getSourceCache('remote')?.events[0]?.title,'New source');assert.equal(calls,2);}
+ else {assert.equal(calls,1);assert.equal(h.service.getSourceCache('remote')?.events.length??0,0);}
 });

@@ -15,6 +15,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Improved
 
+- Made **Sync now** fetch fresh external calendar contents, allowing previously empty cached results to recover while automatic refreshes retain conditional HTTP caching.
 - Made **Table repeat cells** easier to read with bordered repeat icons, human-readable descriptions in detailed mode, and matching cell colors and hover states; clicking a cell now opens the Repeat picker instead of a text editor.
 - Made **desktop Task Editor on phones** more compact, with consistent control sizes, single-line property values, and aligned section headings.
 - Replaced **Add session** text with a **clock-plus icon** in the desktop Task Editor, while keeping its tooltip and accessible label.
@@ -23,12 +24,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- Fixed certain **Outlook all-day yearly events** missing from URL and vault-local ICS calendars when the calendar’s timezone confirms that the recurrence end matches the event’s start.
 - Fixed **Dynamic File Task Filter** appearing inside normal Markdown table cells and the **Task Editor file body**, while preserving inline task features.
 - Fixed **Calendar sidebar and toolbar actions** updating only after another interaction; visibility toggles and color changes now update immediately while preserving editing and drag protections.
 - Fixed the cursor jumping to the start when clicking **nested inline task descriptions** in Live Preview; clicks now place it at the selected text position, including wrapped lines.
 
 ### Validation
 
+- External calendar compatibility and refresh checks passed **67/67** focused tests.
 - Full local Plugin checks, production build, release guard, and code review passed, along with **5,099/5,099** local regression tests.
 
 ## [4.0.1] - 2026-10-14
