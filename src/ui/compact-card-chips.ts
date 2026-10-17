@@ -40,7 +40,6 @@ import {
 import { showLocationMapPreview } from './location-map-preview';
 import { bindOperonHoverTooltip, createCompactTaskMarkdownTooltipContent, wrapWithOperonHoverTooltip } from './operon-hover-tooltip';
 import { createProjectSerialChipElement } from './project-serial-chip';
-import { openObsidianTagSearch } from './tag-search';
 import { openTaskFieldPicker } from './task-field-picker-dispatch';
 import { getCustomFieldMapping, isProjectedCustomFieldType } from './custom-field-surfaces';
 import { setAccessibleLabelWithoutTooltip } from './accessibility-label';
@@ -178,7 +177,7 @@ export function buildCompactCardChipRow(
 		)
 		: null;
 	for (const rawEntry of entries) {
-		const allowNavigation = options.allowReadOnlyNavigation === true && !!(rawEntry.linkTarget || rawEntry.externalUrl || rawEntry.locationCoordinate || rawEntry.key === 'tags');
+		const allowNavigation = options.allowReadOnlyNavigation === true && !!(rawEntry.linkTarget || rawEntry.externalUrl || rawEntry.locationCoordinate);
   const entry = readOnly && !allowNavigation ? { ...rawEntry, interactive: false } : rawEntry;
 		const chip = createInlineTaskCompactChipElement(entry, `${options.classPrefix}-chip operon-task-chip`, { owner: chipStrip });
 		bindAssigneeChipImage(chip, entry, callbacks.app, task.primary.filePath, settings.assigneeImageProperty);
@@ -391,6 +390,7 @@ function attachKanbanChipAction(
  isTargetReadOnly?: (target: HTMLElement) => boolean,
 	onCommit?: () => void,
 ): void {
+	let tagPickerOpen = false;
 	bindLinksChipKeyboard(chip, entry.key);
 	chip.addEventListener('click', (event) => {
 		if (isTargetReadOnly?.(chip)) return;
@@ -400,7 +400,7 @@ function attachKanbanChipAction(
 			onCommit?.();
 			return;
 		}
-		if (entry.iconOnly && shouldOpenIconOnlyChipPreview(chip)) {
+		if (entry.key !== 'tags' && entry.iconOnly && shouldOpenIconOnlyChipPreview(chip)) {
 			openIconOnlyChipPreview(chip);
 			return;
 		}
@@ -421,8 +421,9 @@ function attachKanbanChipAction(
 			return;
 		}
 		if (entry.key === 'tags') {
-			void openObsidianTagSearch(callbacks.app, entry.label);
-			onCommit?.();
+			if (tagPickerOpen || callbacks.canMutate?.() === false || (!callbacks.updateField && !callbacks.updateFields)) return;
+			tagPickerOpen = true;
+			openKanbanTaskFieldPicker(chip, entry, callbacks.getTaskById?.(task.operonId) ?? task, callbacks, allTasks, onCommit, () => { tagPickerOpen = false; });
 			return;
 		}
 		if (entry.linkTarget) {
@@ -455,10 +456,12 @@ function openKanbanTaskFieldPicker(
 	callbacks: CompactCardChipRowCallbacks,
 	allTasks: IndexedTask[],
 	onCommit?: () => void,
+	onClose?: () => void,
 ): void {
 	const settings = callbacks.getSettings();
 	const reminderItem = entry.reminderItem;
 	openTaskFieldPicker({
+		onClose,
 		app: callbacks.app,
 		settings,
 		allTasks,

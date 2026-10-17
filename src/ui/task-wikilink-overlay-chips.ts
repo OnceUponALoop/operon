@@ -19,7 +19,6 @@ import { resolveTaskDateToneColor } from '../core/task-date-tone';
 import { findStatusDef, Pipeline } from '../types/pipeline';
 import { PriorityDefinition } from '../types/priority';
 import { bindOperonHoverTooltip, wrapWithOperonHoverTooltip } from './operon-hover-tooltip';
-import { openObsidianTagSearch } from './tag-search';
 import { bindCompactChipLinkPreview, bindTaskMediaChipPreview } from './compact-chip-link-preview';
 import { bindExternalLinkContextMenu, openExternalUrl } from './external-link-actions';
 import { showLocationMapPreview } from './location-map-preview';
@@ -215,8 +214,7 @@ function isOverlayChipInteractive(
 	entry: InlineTaskCompactChipEntry,
 	callbacks: TaskWikilinkOverlayChipRenderCallbacks,
 ): boolean {
-	return (entry.key === 'taskType' && !!callbacks.updateField)
-		|| entry.key === 'tags'
+	return ((entry.key === 'taskType' || entry.key === 'tags') && !!callbacks.updateField)
 		|| !!entry.locationCoordinate
 		|| !!entry.linkTarget
 		|| !!entry.externalUrl;
@@ -229,6 +227,7 @@ function attachOverlayChipAction(
 	task: IndexedTask,
 	onCommit?: () => void,
 ): void {
+	let tagPickerOpen = false;
 	bindLinksChipKeyboard(chip, entry.key);
 	chip.addEventListener('click', (event) => {
 		event.preventDefault();
@@ -237,13 +236,31 @@ function attachOverlayChipAction(
 			onCommit?.();
 			return;
 		}
-		if (entry.iconOnly && shouldOpenIconOnlyChipPreview(chip)) {
+		if (entry.key !== 'tags' && entry.iconOnly && shouldOpenIconOnlyChipPreview(chip)) {
 			openIconOnlyChipPreview(chip);
 			return;
 		}
 		if (entry.key === 'tags') {
-			void openObsidianTagSearch(callbacks.app, entry.label);
-			onCommit?.();
+			if (tagPickerOpen || !callbacks.updateField) return;
+			tagPickerOpen = true;
+			openTaskFieldPicker({
+				app: callbacks.app,
+				settings: callbacks.getSettings(),
+				allTasks: callbacks.getAllTasks(),
+				canonicalKey: 'tags',
+				anchor: chip,
+				currentFieldValues: task.fieldValues,
+				currentTags: callbacks.getAllTasks().find(candidate => candidate.operonId === task.operonId)?.tags ?? task.tags,
+				sourcePath: task.primary.filePath,
+				taskFormat: task.primary.format,
+				closeListPickerOnSelect: true,
+				onClose: () => { tagPickerOpen = false; },
+				onCommit: payload => {
+					if (!Array.isArray(payload.tags)) return;
+					void callbacks.updateField?.(task.operonId, '_tags', payload.tags.join('; '));
+					onCommit?.();
+				},
+			});
 			return;
 		}
 		if (entry.key === 'taskType' && callbacks.updateField) {

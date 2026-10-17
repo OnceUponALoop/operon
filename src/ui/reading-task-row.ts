@@ -30,7 +30,6 @@ import { bindTaskContextualHoverMenu } from './contextual-hover-menu';
 import type { ContextualMenuActionHandler } from '../core/contextual-menu-engine';
 import { getConfiguredKeyMappingIcon } from '../core/key-mapping-icons';
 import { getLocationPlaceIndex } from '../core/location-source-resolver';
-import { openObsidianTagSearch } from './tag-search';
 import { bindCompactChipLinkPreview, bindTaskMediaChipPreview } from './compact-chip-link-preview';
 import { bindExternalLinkContextMenu, openExternalUrl } from './external-link-actions';
 import { showLocationMapPreview } from './location-map-preview';
@@ -695,6 +694,7 @@ function attachReadingChipAction(
 	taskColor?: string | null,
  getCurrent?: () => { task: IndexedTask; callbacks: ReadingTaskRowCallbacks },
 ): void {
+	let tagPickerOpen = false;
 	bindLinksChipKeyboard(chip, entry.key);
 	chip.addEventListener('click', (event) => {
 		event.preventDefault();
@@ -703,7 +703,7 @@ function attachReadingChipAction(
 			onCommit?.();
 			return;
 		}
-		if (entry.iconOnly && shouldOpenIconOnlyChipPreview(chip)) {
+		if (entry.key !== 'tags' && entry.iconOnly && shouldOpenIconOnlyChipPreview(chip)) {
 			openIconOnlyChipPreview(chip);
 			return;
 		}
@@ -832,8 +832,26 @@ function attachReadingChipAction(
 				}
 				break;
 			case 'tags':
-				void openObsidianTagSearch(callbacks.app, entry.label);
-				onCommit?.();
+				if (tagPickerOpen) return;
+				tagPickerOpen = true;
+				openTaskFieldPicker({
+					app: callbacks.app,
+					settings: callbacks.getSettings(),
+					allTasks: callbacks.getAllTasks(),
+					canonicalKey: 'tags',
+					anchor: chip,
+					currentFieldValues: task.fieldValues,
+					currentTags: callbacks.getAllTasks().find(candidate => candidate.operonId === task.operonId)?.tags ?? task.tags,
+					sourcePath: task.primary.filePath,
+					taskFormat: task.primary.format,
+					closeListPickerOnSelect: true,
+					onClose: () => { tagPickerOpen = false; },
+					onCommit: payload => {
+						if (!Array.isArray(payload.tags)) return;
+						void callbacks.updateField(task.operonId, '_tags', payload.tags.join('; '));
+						onCommit?.();
+					},
+				});
 				break;
 			case 'links':
 				openExternalUrl(entry.externalUrl);

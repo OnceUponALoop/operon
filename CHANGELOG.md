@@ -16,6 +16,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Improved
 
+- **Operon task tag chips** now open the task’s tag picker for direct editing, keeping normal Markdown tag behavior and existing editing protections unchanged.
 - Calendar navigation now follows your **date format** with separate year and date buttons; the date button clearly indicates **Go to today**, and the picker uses neutral controls with matching selection borders and underlines.
 - Made **Repeat picker selections** clearer with accent-colored underlines and stronger borders, plus matching Summary and Save borders, while keeping text neutral and controls compact.
 
@@ -36,12 +37,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Validation
 
+- Task tag chip routing, editing, and write protection checks passed **15/15** focused tests.
 - Calendar year/month navigation checks passed **15/15** focused tests and **24/24** browser scenarios.
 - Repeat picker appearance and interaction checks passed **48/48** browser scenarios across Task Creator and Task Editor.
 
 - Task Creator repeat editing and template protection checks passed **16/16** focused tests.
 - External calendar compatibility and refresh checks passed **67/67** focused tests.
-- Full local Plugin checks, production build, release guard, and code review passed, along with **5,103/5,103** local regression tests.
+- Full local Plugin checks, production build, release guard, and code review passed, along with **5,104/5,104** local regression tests.
 
 ## [4.0.1] - 2026-10-14
 
