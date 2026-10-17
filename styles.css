@@ -18712,6 +18712,79 @@ body.operon-calendar-sidebar-is-resizing {
 	gap: 10px;
 }
 
+
+/* Calendar year/month navigation keeps the existing outer arrow geometry. */
+.operon-calendar-date-navigation {
+	display: flex;
+	gap: 6px;
+	min-width: 0;
+}
+.operon-calendar-date-navigation .operon-calendar-year-button {
+	flex: 0 0 auto;
+}
+.operon-calendar-date-navigation .operon-calendar-date-button {
+	display: block;
+	flex: 1 1 auto;
+	min-width: 0;
+	overflow: hidden;
+	text-overflow: ellipsis;
+	white-space: nowrap;
+}
+.operon-calendar-month-picker {
+	width: 280px;
+	max-width: calc(100vw - 24px);
+	padding: 12px;
+}
+.operon-calendar-month-picker-years {
+	display: grid;
+	grid-template-columns: 28px repeat(3, minmax(0, 1fr)) 28px;
+	gap: 4px;
+	margin-bottom: 12px;
+}
+.operon-calendar-month-picker-months {
+	display: grid;
+	grid-template-columns: repeat(4, minmax(0, 1fr));
+	gap: 6px;
+}
+body .operon-calendar-month-picker button.operon-calendar-toolbar-button {
+	min-width: 0;
+	padding: 0 4px;
+	appearance: none;
+	-webkit-appearance: none;
+	background: transparent;
+	background-image: none;
+	border-color: color-mix(in srgb, var(--background-modifier-border) 84%, transparent);
+	color: var(--text-normal);
+	box-shadow: none;
+	filter: none;
+	--button-bg: transparent;
+	--button-hover-bg: transparent;
+	--button-active-bg: transparent;
+	--button-shadow: none;
+}
+body .operon-calendar-month-picker button.operon-calendar-toolbar-button:is(:hover, :focus-visible) {
+	background: color-mix(in srgb, var(--interactive-accent) 9%, transparent);
+	border-color: color-mix(in srgb, var(--interactive-accent) 78%, var(--background-modifier-border));
+}
+body .operon-calendar-month-picker button.operon-calendar-toolbar-button[aria-pressed="true"] {
+	border-color: var(--interactive-accent);
+}
+.operon-calendar-month-picker button[aria-pressed="true"] {
+	border-color: var(--interactive-accent);
+}
+.operon-calendar-month-picker button[aria-pressed="true"] .operon-calendar-month-choice-label {
+	color: var(--interactive-accent);
+	text-decoration: underline;
+	text-underline-offset: 3px;
+}
+.operon-calendar-month-picker .operon-calendar-month-choice-text {
+	color: var(--text-normal);
+}
+
+.operon-calendar-toolbar-center > button.operon-calendar-toolbar-button {
+	flex-shrink: 0;
+}
+
 .operon-calendar-sidebar-month-nav {
 	display: grid;
 	grid-template-columns: 30px minmax(0, 1fr) 30px;

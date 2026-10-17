@@ -9,12 +9,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### New
 
+- Added a **year and month picker** to the desktop Calendar sidebar and toolbar, making it easier to jump to another month while preserving the focused day where possible.
 - Added **Repeat reference date** filter conditions for saved dates, including relative dates and empty values; changing the date through the Table Repeat picker updates matching results.
 - Added a **Repeat reference date** column to Tables, showing the saved date in your preferred format and opening the Repeat picker for editing; tasks without a saved reference date keep an empty cell.
 - Added **vault-local ICS calendars** as read-only external calendar sources, with automatic updates when files change and continued support for URL subscriptions.
 
 ### Improved
 
+- Calendar navigation now follows your **date format** with separate year and date buttons; the date button clearly indicates **Go to today**, and the picker uses neutral controls with matching selection borders and underlines.
 - Made **Repeat picker selections** clearer with accent-colored underlines and stronger borders, plus matching Summary and Save borders, while keeping text neutral and controls compact.
 
 - Made **Sync now** fetch fresh external calendar contents, allowing previously empty cached results to recover while automatic refreshes retain conditional HTTP caching.
@@ -34,11 +36,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Validation
 
+- Calendar year/month navigation checks passed **15/15** focused tests and **24/24** browser scenarios.
 - Repeat picker appearance and interaction checks passed **48/48** browser scenarios across Task Creator and Task Editor.
 
 - Task Creator repeat editing and template protection checks passed **16/16** focused tests.
 - External calendar compatibility and refresh checks passed **67/67** focused tests.
-- Full local Plugin checks, production build, release guard, and code review passed, along with **5,101/5,101** local regression tests.
+- Full local Plugin checks, production build, release guard, and code review passed, along with **5,103/5,103** local regression tests.
 
 ## [4.0.1] - 2026-10-14
 
