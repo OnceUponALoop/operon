@@ -126,14 +126,39 @@ export class TaskCreationDraft {
 		const property = this.writable(sourceName);
 		const read = this.catalog.read(property, raw);
 		if (read.readOnlyReason || read.value === undefined) throw new Error('Invalid creation draft value');
-		if (property.merge === 'set' && Array.isArray(read.value)) read.value = [...new Set(read.value)];
+		this.writeValue(property, read.value);
+	}
+
+	private writeValue(property: CreationDraftProperty, value: VaultPropertyValue): void {
+		if (property.merge === 'set' && Array.isArray(value)) value = [...new Set(value)];
 		const user = this.emptyUser();
 		user.action = 'set';
-		user.value = read.value;
-		if (Array.isArray(read.value)) user.members = read.value.map(value => this.userMember(value));
+		user.value = value;
+		if (Array.isArray(value)) user.members = value.map(member => this.userMember(member));
 		this.users.set(property.id, user);
 		this.properties.set(property.id, property);
 		this.revision++;
+	}
+
+	/** Dedicated Creator Repeat edit: validate the whole patch before changing any field.
+	 * System metadata from templates and generic field edits remains forbidden. */
+	setRepeatValues(payload: Record<string, VaultPropertyValue>): void {
+		if (!Object.prototype.hasOwnProperty.call(payload, 'repeat')) throw new Error('Repeat edit requires a rule');
+		const allowed = new Set(['repeat', 'datetimeRepeatEnd', 'repeatOccurrenceDate', 'repeatSeriesId', 'dateScheduled', 'datetimeStart', 'datetimeEnd', 'estimate']);
+		const changes: Array<{ property: CreationDraftProperty; value: VaultPropertyValue }> = [];
+		for (const [name, raw] of Object.entries(payload)) {
+			if (!allowed.has(name)) throw new Error('Unexpected Repeat companion field');
+			// Series identity is allocated only when the new task is actually created.
+			if (name === 'repeatSeriesId') {
+				if (raw !== '') throw new Error('Creator cannot set a repeat series identity');
+				continue;
+			}
+			const property = name === 'repeatOccurrenceDate' ? this.catalog.resolve(name) : this.writable(name);
+			const read = this.catalog.read(property, raw);
+			if (this.resolve(property).readOnlyReason || read.readOnlyReason || read.value === undefined) throw new Error('Invalid Creator Repeat value');
+			changes.push({ property, value: read.value });
+		}
+		for (const { property, value } of changes) this.writeValue(property, value);
 	}
 
 	clearValue(sourceName: string): void {
@@ -210,7 +235,7 @@ export class TaskCreationDraft {
 	/** Derive companion values without converting source contributions into user edits. */
 	private resolvedFields(excludedSource?: CreationDraftSource): CreationDraftFieldSnapshot[] {
 		const fields = [...this.properties.values()].map(property => this.resolve(property, excludedSource));
-		const keys = ['dateScheduled', 'datetimeStart', 'datetimeEnd', 'estimate', 'repeat', 'datetimeRepeatEnd'];
+		const keys = ['dateScheduled', 'datetimeStart', 'datetimeEnd', 'estimate', 'repeat', 'datetimeRepeatEnd', 'repeatOccurrenceDate'];
 		const rank = (field: CreationDraftFieldSnapshot): number => {
 			if (field.userModified) return SOURCE_ORDER.length;
 			const source = field.contributions.find(item => item.value !== undefined && !isEmptyFilePropertyValue(item.value))?.source;

@@ -206,7 +206,7 @@
     "phase5:regression": "node scripts/run-phase5-regression.mjs",
     "properties:inline:test": "node scripts/run-inline-properties-tests.mjs",
     "task-creator:commit:test": "node scripts/run-task-creator-commit-tests.mjs",
-    "task-creator:prepared:test": "node scripts/run-task-creator-prepared-tests.mjs",
+    "task-creator:prepared:test": "node scripts/run-task-creator-prepared-tests.mjs && node --test scripts/task-creator-repeat.test.mjs",
     "task-creator:template:test": "node scripts/run-task-creation-template-tests.mjs",
     "task-creator:draft:test": "node scripts/run-task-creation-draft-tests.mjs"
   },

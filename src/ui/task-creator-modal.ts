@@ -1380,6 +1380,7 @@ export class TaskCreatorModal extends Modal {
 		this.closeActivePicker();
 
 		let pickerBaseline = preparedField;
+		let pendingRepeatCompletionMode: InlineRepeatCompletionMode | undefined;
 		const close = openTaskFieldPicker({
 			app: this.app,
 			settings: this.options.settings,
@@ -1406,6 +1407,7 @@ export class TaskCreatorModal extends Modal {
 			repeatInlineCompletionMode: this.draft.inlineCompletionMode,
 			onCommit: payload => {
 				this.applyPayloadToDraft(payload);
+				if (pendingRepeatCompletionMode !== undefined) this.draft.inlineCompletionMode = pendingRepeatCompletionMode;
 				if (canonicalKey === 'assignees' || canonicalKey === 'tags' || canonicalKey === 'contexts' || canonicalKey === 'links' || canonicalKey === 'taskGallery') {
 					return;
 				}
@@ -1413,7 +1415,7 @@ export class TaskCreatorModal extends Modal {
 				restorePickerFocus();
 			},
 			onRepeatInlineCompletionModeChange: mode => {
-				this.draft.inlineCompletionMode = normalizeInlineCompletionMode(mode);
+				pendingRepeatCompletionMode = normalizeInlineCompletionMode(mode);
 			},
 			onOpenNote: () => {
 				this.openNote();

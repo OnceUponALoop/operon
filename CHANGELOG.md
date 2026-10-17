@@ -24,6 +24,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- Fixed **Task Creator repeat editing** so saving or clearing updates immediately, reference dates and Count settings are preserved for Inline and File tasks, and cancelled edits leave the draft unchanged.
 - Fixed certain **Outlook all-day yearly events** missing from URL and vault-local ICS calendars when the calendar’s timezone confirms that the recurrence end matches the event’s start.
 - Fixed **Dynamic File Task Filter** appearing inside normal Markdown table cells and the **Task Editor file body**, while preserving inline task features.
 - Fixed **Calendar sidebar and toolbar actions** updating only after another interaction; visibility toggles and color changes now update immediately while preserving editing and drag protections.
@@ -31,8 +32,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Validation
 
+- Task Creator repeat editing and template protection checks passed **16/16** focused tests.
 - External calendar compatibility and refresh checks passed **67/67** focused tests.
-- Full local Plugin checks, production build, release guard, and code review passed, along with **5,099/5,099** local regression tests.
+- Full local Plugin checks, production build, release guard, and code review passed, along with **5,100/5,100** local regression tests.
 
 ## [4.0.1] - 2026-10-14
 
