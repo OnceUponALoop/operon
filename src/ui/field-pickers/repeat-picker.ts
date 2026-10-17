@@ -150,6 +150,13 @@ function normalizeCount(value: number): number {
 	return Number.isInteger(value) && value > 0 ? value : 1;
 }
 
+function createRepeatChoiceButton(text: string, className: string, parent: HTMLElement): HTMLButtonElement {
+	const button = createButton('', className, parent);
+	const label = button.createSpan('operon-repeat-choice-label');
+	label.createSpan({ cls: 'operon-repeat-choice-text', text });
+	return button;
+}
+
 function setButtonState(button: HTMLButtonElement, active: boolean): void {
 	button.classList.toggle('is-active', active);
 }
@@ -469,9 +476,9 @@ export function showRepeatPicker(anchor: HTMLElement | DOMRect, options: RepeatP
 
 		const modeSection = panel.createDiv('operon-repeat-picker-section');
 		const modeWrap = modeSection.createDiv('operon-repeat-picker-segment operon-repeat-picker-mode-segment');
-		const scheduleBtn = createButton(t('taskEditor', 'repeatModeSchedule'), 'operon-repeat-picker-segment-btn', modeWrap);
-		const doneBtn = createButton(t('taskEditor', 'repeatModeDone'), 'operon-repeat-picker-segment-btn', modeWrap);
-		const countBtn = createButton(t('taskEditor', 'repeatModeCount'), 'operon-repeat-picker-segment-btn', modeWrap);
+		const scheduleBtn = createRepeatChoiceButton(t('taskEditor', 'repeatModeSchedule'), 'operon-repeat-picker-segment-btn', modeWrap);
+		const doneBtn = createRepeatChoiceButton(t('taskEditor', 'repeatModeDone'), 'operon-repeat-picker-segment-btn', modeWrap);
+		const countBtn = createRepeatChoiceButton(t('taskEditor', 'repeatModeCount'), 'operon-repeat-picker-segment-btn', modeWrap);
 		modeWrap.appendChild(scheduleBtn);
 		modeWrap.appendChild(doneBtn);
 		modeWrap.appendChild(countBtn);
@@ -525,8 +532,8 @@ export function showRepeatPicker(anchor: HTMLElement | DOMRect, options: RepeatP
 			const endSection = panel.createDiv('operon-repeat-picker-section');
 			endSection.createDiv({ cls: 'operon-floating-subtitle', text: t('taskEditor', 'repeatEnd') });
 			const endWrap = endSection.createDiv('operon-repeat-picker-end');
-			noEndBtn = createButton(t('taskEditor', 'repeatNoEnd'), 'operon-repeat-picker-segment-btn', endWrap);
-			const withEndBtn = createButton(t('taskEditor', 'repeatEndOnDate'), 'operon-repeat-picker-segment-btn', endWrap);
+			noEndBtn = createRepeatChoiceButton(t('taskEditor', 'repeatNoEnd'), 'operon-repeat-picker-segment-btn', endWrap);
+			const withEndBtn = createRepeatChoiceButton(t('taskEditor', 'repeatEndOnDate'), 'operon-repeat-picker-segment-btn', endWrap);
 			endWrap.appendChild(noEndBtn);
 			endWrap.appendChild(withEndBtn);
 
@@ -617,8 +624,8 @@ export function showRepeatPicker(anchor: HTMLElement | DOMRect, options: RepeatP
 			const completionSection = panel.createDiv('operon-repeat-picker-section operon-repeat-picker-completed-copy-section');
 			completionSection.createDiv({ cls: 'operon-floating-subtitle', text: t('taskEditor', 'repeatCompletedCopy') });
 			const completionWrap = completionSection.createDiv('operon-repeat-picker-segment operon-repeat-picker-completed-copy');
-			const keepBtn = createButton(t('taskEditor', 'repeatCompletedCopyKeep'), 'operon-repeat-picker-segment-btn', completionWrap);
-			const replaceBtn = createButton(t('taskEditor', 'repeatCompletedCopyReplace'), 'operon-repeat-picker-segment-btn', completionWrap);
+			const keepBtn = createRepeatChoiceButton(t('taskEditor', 'repeatCompletedCopyKeep'), 'operon-repeat-picker-segment-btn', completionWrap);
+			const replaceBtn = createRepeatChoiceButton(t('taskEditor', 'repeatCompletedCopyReplace'), 'operon-repeat-picker-segment-btn', completionWrap);
 			const isInlineTask = taskFormat === 'inline';
 			const selectedMode = isInlineTask
 				? inlineCompletionMode
@@ -681,7 +688,7 @@ export function showRepeatPicker(anchor: HTMLElement | DOMRect, options: RepeatP
 		const renderWeekdayChips = (container: HTMLElement, singleSelect: boolean) => {
 			const chipWrap = container.createDiv('operon-repeat-picker-chip-grid');
 			for (const option of WEEKDAY_OPTIONS) {
-				const button = createButton(t('taskEditor', option.labelKey), 'operon-repeat-picker-chip', chipWrap);
+				const button = createRepeatChoiceButton(t('taskEditor', option.labelKey), 'operon-repeat-picker-chip', chipWrap);
 				setButtonState(button, draft.days.has(option.key));
 				button.addEventListener('click', () => {
 					if (singleSelect) {
@@ -701,7 +708,7 @@ export function showRepeatPicker(anchor: HTMLElement | DOMRect, options: RepeatP
 		const renderMonthdayChips = (container: HTMLElement) => {
 			const grid = container.createDiv('operon-repeat-picker-day-grid');
 			for (let day = 1; day <= 31; day++) {
-				const button = createButton(String(day), 'operon-repeat-picker-chip is-number', grid);
+				const button = createRepeatChoiceButton(String(day), 'operon-repeat-picker-chip is-number', grid);
 				setButtonState(button, draft.monthdays.has(day));
 				button.addEventListener('click', () => {
 					if (draft.monthdays.has(day)) {
@@ -718,8 +725,8 @@ export function showRepeatPicker(anchor: HTMLElement | DOMRect, options: RepeatP
 
 		const renderMonthlyMode = (container: HTMLElement) => {
 			const modeButtons = container.createDiv('operon-repeat-picker-segment');
-			const dayBtn = createButton(t('taskEditor', 'repeatMonthOnDays'), 'operon-repeat-picker-segment-btn', modeButtons);
-			const weekdayBtn = createButton(t('taskEditor', 'repeatMonthOnWeekday'), 'operon-repeat-picker-segment-btn', modeButtons);
+			const dayBtn = createRepeatChoiceButton(t('taskEditor', 'repeatMonthOnDays'), 'operon-repeat-picker-segment-btn', modeButtons);
+			const weekdayBtn = createRepeatChoiceButton(t('taskEditor', 'repeatMonthOnWeekday'), 'operon-repeat-picker-segment-btn', modeButtons);
 			setButtonState(dayBtn, draft.monthlyMode === 'monthdays');
 			setButtonState(weekdayBtn, draft.monthlyMode === 'weekday');
 			dayBtn.addEventListener('click', () => {

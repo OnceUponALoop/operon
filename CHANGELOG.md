@@ -15,6 +15,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Improved
 
+- Made **Repeat picker selections** clearer with accent-colored underlines and stronger borders, plus matching Summary and Save borders, while keeping text neutral and controls compact.
+
 - Made **Sync now** fetch fresh external calendar contents, allowing previously empty cached results to recover while automatic refreshes retain conditional HTTP caching.
 - Made **Table repeat cells** easier to read with bordered repeat icons, human-readable descriptions in detailed mode, and matching cell colors and hover states; clicking a cell now opens the Repeat picker instead of a text editor.
 - Made **desktop Task Editor on phones** more compact, with consistent control sizes, single-line property values, and aligned section headings.
@@ -32,9 +34,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Validation
 
+- Repeat picker appearance and interaction checks passed **48/48** browser scenarios across Task Creator and Task Editor.
+
 - Task Creator repeat editing and template protection checks passed **16/16** focused tests.
 - External calendar compatibility and refresh checks passed **67/67** focused tests.
-- Full local Plugin checks, production build, release guard, and code review passed, along with **5,100/5,100** local regression tests.
+- Full local Plugin checks, production build, release guard, and code review passed, along with **5,101/5,101** local regression tests.
 
 ## [4.0.1] - 2026-10-14
 

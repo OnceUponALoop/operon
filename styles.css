@@ -4526,6 +4526,27 @@ body .operon-searchable-option-picker-panel .operon-searchable-option-picker-ite
 	box-shadow: 0 0 0 2px var(--operon-repeat-picker-danger-ring);
 }
 
+/* Repeat selection, summary and primary action share one restrained accent. */
+.operon-repeat-picker-panel {
+	--operon-repeat-picker-emphasis: color-mix(in srgb, var(--operon-repeat-picker-accent) 85%, var(--background-modifier-border));
+}
+
+.operon-repeat-picker-panel button:is(.operon-repeat-picker-segment-btn, .operon-repeat-picker-chip).is-active:not(:disabled):not(.is-disabled),
+.operon-repeat-picker-panel button.operon-floating-btn:not(.is-secondary):not(:disabled),
+.operon-repeat-picker-panel .operon-repeat-picker-hero {
+	border-color: var(--operon-repeat-picker-emphasis);
+}
+
+.operon-repeat-picker-panel button.is-active:not(:disabled):not(.is-disabled) .operon-repeat-choice-label {
+	color: var(--operon-repeat-picker-emphasis);
+	text-decoration: underline;
+	text-underline-offset: 3px;
+}
+
+.operon-repeat-picker-panel .operon-repeat-choice-text {
+	color: var(--text-normal);
+}
+
 .operon-repeat-picker-dynamic {
 	display: flex;
 	flex-direction: column;
