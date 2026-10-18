@@ -1,3 +1,5 @@
+import { getIcon } from 'obsidian';
+import { normalizeTaskIconValue } from '../../core/task-icon-value';
 import { PriorityDefinition } from '../../types/priority';
 import { t } from '../../core/i18n';
 import { createButton, createFloatingPanel, focusFloatingInput } from './common';
@@ -92,8 +94,17 @@ export function showPriorityPicker(anchor: HTMLElement | DOMRect, options: Prior
 			option.className = 'operon-priority-option';
 			if (absoluteIndex === activeIndex) option.classList.add('is-active');
 
-			const dot = option.createSpan('operon-priority-dot');
-			dot.style.backgroundColor = priority.color;
+			const iconName = normalizeTaskIconValue(priority.priorityIcon);
+			const icon = iconName ? getIcon(iconName) : null;
+			if (icon) {
+				icon.classList.add('operon-priority-picker-icon');
+				icon.style.color = priority.color;
+				icon.setAttribute('aria-hidden', 'true');
+				option.appendChild(icon);
+			} else {
+				const dot = option.createSpan('operon-priority-dot');
+				dot.style.backgroundColor = priority.color;
+			}
 
 			const label = option.createSpan();
 			label.textContent = priority.label;
