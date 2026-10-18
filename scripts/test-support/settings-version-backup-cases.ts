@@ -2,7 +2,7 @@ import { OperonDataPackageStore } from '../../src/storage/operon-data-package-st
 import { buildOperonStoragePaths } from '../../src/storage/operon-storage-paths';
 import { DEFAULT_SETTINGS } from '../../src/types/settings';
 import assert from 'node:assert/strict';
-import { existsSync, readdirSync, readFileSync } from 'node:fs';
+import { existsSync, readdirSync, readFileSync, rmSync } from 'node:fs';
 import { SettingsPreservationHarness, assertBytesEqual, readSealedFixture, sha256 } from './settings-preservation-harness';
 
 type Case = { name: string; run: () => Promise<void> };
@@ -154,25 +154,26 @@ for (const boundary of ['intent', 'temporary', 'publish', 'finalize', 'eviction'
     assert.ok(copies(fixture).length <= 2);
     if (previousNewest) assert.ok(copies(fixture).includes(previousNewest), 'Last sound permanent backup was lost');
     fixture.adapter.write = write; fixture.adapter.rename = rename; fixture.adapter.remove = remove;
-    const recoverable = !(boundary === 'intent' && fault === 'partial' && !priorCopies) && !(boundary === 'publish' && fault === 'partial');
+    const recoverable = !(boundary === 'publish' && fault === 'partial');
+    const backupPaused = boundary === 'intent' && fault === 'partial' && !priorCopies;
     assert.equal(await boot(fixture, target), recoverable);
     const names = copies(fixture);
     assert.equal(await boot(fixture, target), recoverable);
     assert.deepEqual(copies(fixture), names);
     assert.ok(names.length <= 2);
-    if (recoverable) assert.ok(contents(fixture).includes(source!));
+    if (recoverable && !backupPaused) assert.ok(contents(fixture).includes(source!));
    });
   });
   }
  }
 }
-add('changed retained backup is never deleted', async () => {
+add('changed retained backup is preserved without blocking settings', async () => {
  await use(async fixture => {
   await boot(fixture); await boot(fixture, '3.9.2');
   const oldest = copies(fixture).sort()[0];
   fixture.seed(`${directory(fixture)}/${oldest}`, 'externally edited');
   const before = contents(fixture);
-  assert.equal(await boot(fixture, '3.9.3'), false);
+  assert.equal(await boot(fixture, '3.9.3'), true);
   assert.deepEqual(contents(fixture), before);
  });
 });
@@ -209,13 +210,13 @@ add('supported schema 1 is backed up before migration', async () => {
   assert.equal(fixture.package().schemaVersion, 2);
  }, JSON.stringify(source));
 });
-add('unowned automatic-looking copy blocks accumulation without deletion', async () => {
+add('unowned automatic-looking copy pauses backups without blocking settings', async () => {
  await use(async fixture => {
   const name = 'data-20260915T143000000Z-before-3.9.0-00000000-0000-0000-0000-000000000000.json';
   fixture.addSentinel(`${directory(fixture)}/${name}`, fixture.initialRaw!);
-  assert.equal(await boot(fixture), false);
+  assert.equal(await boot(fixture), true);
   assert.equal(copies(fixture).length, 1);
-  assert.equal(fixture.canonicalAttempts, 0);
+
  });
 });
 add('concurrent stores serialize backup creation and do not duplicate', async () => {
@@ -225,13 +226,13 @@ add('concurrent stores serialize backup creation and do not duplicate', async ()
   assert.deepEqual(contents(fixture), [fixture.initialRaw]);
  });
 });
-add('both invalid metadata slots block without deleting good copies', async () => {
+add('both invalid metadata slots pause backups without deleting good copies', async () => {
  await use(async fixture => {
   await boot(fixture);
   const before = contents(fixture);
   fixture.seed(`${directory(fixture)}/metadata-0.json`, '{torn');
   fixture.seed(`${directory(fixture)}/metadata-1.json`, '{torn');
-  assert.equal(await boot(fixture, '3.9.2'), false);
+  assert.equal(await boot(fixture, '3.9.2'), true);
   assert.deepEqual(contents(fixture), before);
  });
 });
@@ -320,3 +321,70 @@ for (const boundary of ['pending.tmp', 'metadata-0.json', 'published']) add(`rea
   assert.deepEqual(contents(fixture), [fixture.initialRaw]);
  });
 });
+
+const orphanName = 'data-20260915T143000000Z-before-3.9.0-00000000-0000-0000-0000-000000000000.json';
+const backupSnapshot = (fixture: SettingsPreservationHarness): Record<string,string> => Object.fromEntries(
+ files(fixture).map(name => [name,readFileSync(fixture.resolve(`${directory(fixture)}/${name}`),'utf8')]));
+for (const conflict of ['synced-orphan', 'lost-journals', 'torn-journals', 'ambiguous-journals', 'missing-copy', 'changed-copy', 'orphan-temporary', 'interrupted-other-source']) {
+ add(`sync ${conflict} permits settings save and restart without modifying backup evidence`, async () => {
+  await use(async fixture => {
+   await boot(fixture);
+   const root=directory(fixture), snapshot=backupSnapshot(fixture);
+   const latest=JSON.parse(snapshot['metadata-1.json']);
+   fixture.addSentinel(`${root}/metadata-1 (device conflicted copy).json`,snapshot['metadata-1.json']);
+   if(conflict==='synced-orphan') fixture.addSentinel(`${root}/${orphanName}`,fixture.initialRaw!);
+   if(conflict==='lost-journals') for(const slot of [0,1]) rmSync(fixture.resolve(`${root}/metadata-${slot}.json`));
+   if(conflict==='torn-journals') for(const slot of [0,1]) fixture.seed(`${root}/metadata-${slot}.json`,'{incomplete');
+   if(conflict==='ambiguous-journals') {
+    latest.payload.processedVersion='3.9.0';latest.sha256=sha256(JSON.stringify(latest.payload));
+    fixture.seed(`${root}/metadata-0.json`,JSON.stringify(latest));
+   }
+   if(conflict==='missing-copy') rmSync(fixture.resolve(`${root}/${copies(fixture)[0]}`));
+   if(conflict==='changed-copy') fixture.seed(`${root}/${copies(fixture)[0]}`,'changed by sync');
+   if(conflict==='orphan-temporary') fixture.seed(`${root}/pending.tmp`,'synced temporary');
+   if(conflict==='interrupted-other-source') {
+    latest.payload.pending={targetVersion:'3.9.2',entry:{name:orphanName.replace('3.9.0','3.9.2'),digest:'0'.repeat(64)}};
+    latest.sha256=sha256(JSON.stringify(latest.payload));fixture.seed(`${root}/metadata-1.json`,JSON.stringify(latest));
+   }
+   const before=backupSnapshot(fixture);let blocked=0;const warnings:unknown[][]=[];const warn=console.warn;
+   const storage=fixture.createStorage(()=>blocked++,'3.9.2');
+   try { console.warn=(...args:unknown[])=>{warnings.push(args);};await storage.initialize(); } finally {console.warn=warn;}
+   assert.equal(storage.getDeveloperApiGrantDataStore().canPersist(),true);
+   assert.equal(blocked,0);assert.equal(warnings.filter(args=>String(args[0]).includes('Settings saving remains available')).length,1);
+   assert.ok(!warnings.some(args=>String(args[0]).includes('writes are suspended')));
+   storage.getSettings().calendarSidebarShowWeekNumbers=false;await storage.saveSettings();
+   assert.deepEqual(backupSnapshot(fixture),before);
+   const reopened=fixture.createStorage(()=>blocked++,'3.9.2');await reopened.initialize();
+   assert.equal(reopened.getSettings().calendarSidebarShowWeekNumbers,false);
+   assert.equal(reopened.getDeveloperApiGrantDataStore().canPersist(),true);assert.equal(blocked,0);
+   assert.deepEqual(backupSnapshot(fixture),before);
+  });
+ });
+}
+for(const fault of ['changed-during-check','unreadable-during-check','changed-before-save','failed-save'] as const) {
+ add(`sync conflict does not bypass canonical ${fault} protection`,async()=>{
+  await use(async fixture=>{
+   await boot(fixture);fixture.addSentinel(`${directory(fixture)}/${orphanName}`,fixture.initialRaw!);
+   const before=fixture.raw(), attempts=fixture.canonicalAttempts;const list=fixture.adapter.list;
+   if(fault.endsWith('during-check')) fixture.adapter.list=async path=>{
+    const result=await list(path);
+    if(path===directory(fixture)) {
+     if(fault==='changed-during-check') fixture.seed(fixture.canonicalPath,before+'\n');
+     else fixture.readFault='unreadable';
+    }
+    return result;
+   };
+   let blocked=0;const storage=fixture.createStorage(()=>blocked++,'3.9.2');await storage.initialize();
+   if(fault.endsWith('during-check')) {
+    assert.equal(storage.getDeveloperApiGrantDataStore().canPersist(),false);
+    assert.equal(fixture.canonicalAttempts,attempts);assert.ok(blocked>0);
+   } else {
+    assert.equal(storage.getDeveloperApiGrantDataStore().canPersist(),true);
+    if(fault==='changed-before-save')fixture.seed(fixture.canonicalPath,before+'\n');else fixture.writeFault='silent-before';
+    storage.getSettings().calendarSidebarShowWeekNumbers=false;
+    await assert.rejects(storage.saveSettings());
+    assertBytesEqual(fixture.raw(),fault==='changed-before-save'?before+'\n':before);
+   }
+  });
+ });
+}

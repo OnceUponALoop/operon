@@ -1,6 +1,6 @@
 import { prepareInlinePropertyUpgradeBackup } from './inline-property-upgrade';
 import { isSupportedDataPackageSchema, OPERON_TYPED_PROPERTY_SCHEMA_VERSION } from './operon-data-package';
-import { prepareSettingsVersionBackup } from './settings-version-backup';
+import { prepareSettingsVersionBackup, SettingsBackupConflictError } from './settings-version-backup';
 import type { DataAdapter } from 'obsidian';
 import {
 	buildOperonDataPackageFromSettings,
@@ -182,6 +182,7 @@ export class OperonDataPackageStore {
 	private canonicalSource: string | null | undefined;
 	private suspensionNotified = false;
 	private versionBackupBlocked = false;
+	private backupConflictReported = false;
 	private saveQueue: Promise<void> = Promise.resolve();
 	private writesSuspended = false;
 	private writeSuspensionReason: string | null = null;
@@ -233,8 +234,12 @@ export class OperonDataPackageStore {
 				await prepareSettingsVersionBackup(this.adapter, this.paths.pluginDir,
 					this.paths.dataPackagePath, this.canonicalSource, this.pluginVersion);
 				this.versionBackupBlocked = false;
-			} catch {
-				this.suspendWrites('Automatic settings backup could not be verified; restart after resolving the storage problem');
+			} catch (error) {
+				if (await this.isIsolatedBackupConflict(error)) this.versionBackupBlocked = false;
+				else {
+					console.warn('Operon: automatic settings backup verification failed', error);
+					if (!this.writesSuspended) this.suspendWrites('Automatic settings backup could not be verified; restart after resolving the storage problem');
+				}
 			}
 		}
 		if (existingPackage && !this.writesSuspended) existingPackage = await this.reconcileTaskCreationProfileV2Recovery(existingPackage);
@@ -526,6 +531,20 @@ export class OperonDataPackageStore {
 
 	getStartupPipelineTaxonomyDiagnostics(): OperonPipelineTaxonomyDiagnostics {
 		return clonePipelineTaxonomyDiagnostics(this.startupPipelineTaxonomyDiagnostics);
+	}
+
+	/** Separate backup bookkeeping conflicts from an unreadable or changed settings source. */
+	private async isIsolatedBackupConflict(error: unknown): Promise<boolean> {
+		if (!(error instanceof SettingsBackupConflictError) || this.writesSuspended
+			|| typeof this.canonicalSource !== 'string') return false;
+		try {
+			if (await this.readCanonicalSource() !== this.canonicalSource) return false;
+		} catch { return false; }
+		if (!this.backupConflictReported) {
+			this.backupConflictReported = true;
+			console.warn('Operon: automatic settings backups are paused because their records conflict. Existing backup files were preserved. Settings saving remains available.', error.message);
+		}
+		return true;
 	}
 
 	canPersist(): boolean {
@@ -1523,10 +1542,13 @@ export class OperonDataPackageStore {
 				try {
 					await prepareSettingsVersionBackup(this.adapter, this.paths.pluginDir,
 						this.paths.dataPackagePath, observed, this.pluginVersion, true);
-				} catch {
-					// The canonical creation is verified; only subsequent writes are blocked.
-					this.versionBackupBlocked = true;
-					this.suspendWrites('Initial settings version could not be recorded; restart after resolving the storage problem');
+				} catch (error) {
+					if (!await this.isIsolatedBackupConflict(error)) {
+						// The canonical creation is verified; only subsequent writes are blocked.
+						this.versionBackupBlocked = true;
+						console.warn('Operon: initial settings version backup failed', error);
+						this.suspendWrites('Initial settings version could not be recorded; restart after resolving the storage problem');
+					}
 				}
 			}
 			return acknowledgementFailed;
