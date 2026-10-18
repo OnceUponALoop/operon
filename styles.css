@@ -2906,6 +2906,8 @@ body .operon-color-picker-panel button.operon-color-picker-copy:disabled {
 }
 
 .operon-status-picker-list {
+	padding: 3px;
+	margin: -3px;
 	display: flex;
 	flex-direction: column;
 	gap: 4px;
@@ -2955,6 +2957,12 @@ body .operon-color-picker-panel button.operon-color-picker-copy:disabled {
 	color: var(--text-normal);
 	outline: none;
 	box-shadow: 0 0 0 2px var(--operon-status-picker-focus-ring);
+}
+
+.operon-status-picker-panel .operon-status-dropdown-item:hover,
+.operon-status-picker-panel .operon-status-dropdown-item:focus-visible {
+	border-color: color-mix(in srgb, var(--operon-status-picker-accent) 60%, var(--background-modifier-border));
+	box-shadow: 0 0 0 2px color-mix(in srgb, var(--operon-status-picker-accent) 18%, transparent);
 }
 
 .operon-searchable-option-picker-panel,
@@ -5110,7 +5118,8 @@ body .operon-searchable-option-picker-panel .operon-searchable-option-picker-ite
 	background: color-mix(in srgb, var(--interactive-accent) 12%, var(--background-primary));
 }
 
-.operon-priority-picker-panel .operon-priority-picker-icon {
+.operon-priority-picker-panel .operon-priority-picker-icon,
+.operon-status-picker-panel .operon-status-picker-icon {
 	width: 14px;
 	height: 14px;
 	flex-shrink: 0;

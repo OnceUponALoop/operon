@@ -16,6 +16,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Improved
 
+- **Status chips** now open the status picker consistently across editable task surfaces, with the current value selected for immediate typing; checkbox and cycle commands keep their existing behavior.
+- **Status pickers** now show configured icons in their status colors, retain colored dots as a fallback, and provide clearer hover feedback that disappears when the pointer leaves without clipping the highlight at list edges.
 - **Priority pickers** now show configured priority icons in their selected colors across task surfaces, keeping colored dots when no usable icon is configured.
 - **Type, Custom Keys Text, and Vault Properties Text pickers** now show the current value above an empty search field, making all suggestions available immediately across task chips and Tables; click the current value to edit it.
 - Made **Text property editing** consistent across standalone and embedded Tables, preserving long and multiline values for Inline and File tasks while keeping save and conflict protections.
@@ -42,6 +44,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Validation
 
+- Status chip routing, picker focus, icons, and interaction checks passed **26/26** focused tests, plus **4/4** light/dark and narrow/wide browser checks.
 - Priority picker icon, fallback, and selection checks passed **8/8** focused tests.
 - Periodic-note settings, search, and redraw checks passed **12/12** focused tests.
 - Automatic settings backup and synchronization-conflict checks passed **78/78** focused tests.
@@ -51,7 +54,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Task Creator repeat editing and template protection checks passed **16/16** focused tests.
 - External calendar compatibility and refresh checks passed **67/67** focused tests.
-- Full local Plugin checks, production build, release guard, and code review passed, along with **5,149/5,149** local regression tests.
+- Full local Plugin checks, production build, release guard, and code review passed, along with **5,150/5,150** local regression tests.
 
 ## [4.0.1] - 2026-10-14
 

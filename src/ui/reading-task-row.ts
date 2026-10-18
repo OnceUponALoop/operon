@@ -695,6 +695,7 @@ function attachReadingChipAction(
  getCurrent?: () => { task: IndexedTask; callbacks: ReadingTaskRowCallbacks },
 ): void {
 	let tagPickerOpen = false;
+	let statusPickerOpen = false;
 	bindLinksChipKeyboard(chip, entry.key);
 	chip.addEventListener('click', (event) => {
 		event.preventDefault();
@@ -703,7 +704,7 @@ function attachReadingChipAction(
 			onCommit?.();
 			return;
 		}
-		if (entry.key !== 'tags' && entry.iconOnly && shouldOpenIconOnlyChipPreview(chip)) {
+		if (entry.key !== 'tags' && entry.key !== 'status' && entry.iconOnly && shouldOpenIconOnlyChipPreview(chip)) {
 			openIconOnlyChipPreview(chip);
 			return;
 		}
@@ -742,12 +743,16 @@ function attachReadingChipAction(
 			return;
 		}
 		switch (entry.key) {
+			case 'status':
 			case 'taskType':
+				if (entry.key === 'status' && statusPickerOpen) return;
+				if (entry.key === 'status') statusPickerOpen = true;
 				openTaskFieldPicker({
 					app: callbacks.app,
 					settings: callbacks.getSettings(),
 					allTasks: callbacks.getAllTasks(),
-					canonicalKey: 'taskType',
+					canonicalKey: entry.key,
+					onClose: () => { statusPickerOpen = false; },
 					anchor: chip,
 					currentFieldValues: task.fieldValues,
 					getCurrentFieldValues: () => callbacks.getAllTasks()
@@ -756,9 +761,10 @@ function attachReadingChipAction(
 					sourcePath: task.primary.filePath,
 					taskFormat: task.primary.format,
 					onCommit: payload => {
-						const value = payload.taskType;
+						const value = payload[entry.key];
+						statusPickerOpen = false;
 						if (typeof value !== 'string') return;
-						void callbacks.updateField(task.operonId, 'taskType', value);
+						void callbacks.updateField(task.operonId, entry.key, value);
 						onCommit?.();
 					},
 				});
@@ -779,11 +785,6 @@ function attachReadingChipAction(
 					);
 					onCommit?.();
 				}
-				break;
-			case 'status':
-				if (callbacks.onContextualAction) void callbacks.onContextualAction(task.operonId, 'taskStatus');
-				else runReadingRowStatusCycle(callbacks, task.operonId);
-				onCommit?.();
 				break;
 			case 'priority':
 					showPriorityPicker(chip, {

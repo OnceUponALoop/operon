@@ -214,7 +214,7 @@ function isOverlayChipInteractive(
 	entry: InlineTaskCompactChipEntry,
 	callbacks: TaskWikilinkOverlayChipRenderCallbacks,
 ): boolean {
-	return ((entry.key === 'taskType' || entry.key === 'tags') && !!callbacks.updateField)
+	return ((entry.key === 'taskType' || entry.key === 'tags' || entry.key === 'status') && !!callbacks.updateField)
 		|| !!entry.locationCoordinate
 		|| !!entry.linkTarget
 		|| !!entry.externalUrl;
@@ -228,6 +228,7 @@ function attachOverlayChipAction(
 	onCommit?: () => void,
 ): void {
 	let tagPickerOpen = false;
+	let statusPickerOpen = false;
 	bindLinksChipKeyboard(chip, entry.key);
 	chip.addEventListener('click', (event) => {
 		event.preventDefault();
@@ -236,7 +237,7 @@ function attachOverlayChipAction(
 			onCommit?.();
 			return;
 		}
-		if (entry.key !== 'tags' && entry.iconOnly && shouldOpenIconOnlyChipPreview(chip)) {
+		if (entry.key !== 'tags' && entry.key !== 'status' && entry.iconOnly && shouldOpenIconOnlyChipPreview(chip)) {
 			openIconOnlyChipPreview(chip);
 			return;
 		}
@@ -263,12 +264,15 @@ function attachOverlayChipAction(
 			});
 			return;
 		}
-		if (entry.key === 'taskType' && callbacks.updateField) {
+		if ((entry.key === 'taskType' || entry.key === 'status') && callbacks.updateField) {
+			if (entry.key === 'status' && statusPickerOpen) return;
+			if (entry.key === 'status') statusPickerOpen = true;
 			openTaskFieldPicker({
 				app: callbacks.app,
 				settings: callbacks.getSettings(),
 				allTasks: callbacks.getAllTasks(),
-				canonicalKey: 'taskType',
+				canonicalKey: entry.key,
+				onClose: () => { statusPickerOpen = false; },
 				anchor: chip,
 				currentFieldValues: task.fieldValues,
 				getCurrentFieldValues: () => callbacks.getAllTasks()
@@ -277,9 +281,10 @@ function attachOverlayChipAction(
 				sourcePath: task.primary.filePath,
 				taskFormat: task.primary.format,
 				onCommit: payload => {
-					const value = payload.taskType;
+					const value = payload[entry.key];
+					statusPickerOpen = false;
 					if (typeof value !== 'string') return;
-					void callbacks.updateField?.(task.operonId, 'taskType', value);
+					void callbacks.updateField?.(task.operonId, entry.key, value);
 					onCommit?.();
 				},
 			});

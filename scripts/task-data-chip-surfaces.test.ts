@@ -286,7 +286,7 @@ function run(): void {
 	assert.doesNotMatch(remoteMediaPreviewCss, /(?:padding|border|background):/u, 'HTTP media preview shell must remain frameless.');
 	assertions += 44;
 	for (const source of [readingRowSource, livePreviewSource, overlayChipSource]) {
-		assert.match(source, /canonicalKey: 'taskType'/u, 'Editable compact surfaces must route taskType through the text picker.');
+		assert.match(source, /canonicalKey: (?:'taskType'|entry\.key)/u, 'Editable compact surfaces must route taskType through the text picker.');
 		assertions += 1;
 	}
 	for (const source of [readingRowSource, livePreviewSource, overlayChipSource, kanbanChipSource]) {

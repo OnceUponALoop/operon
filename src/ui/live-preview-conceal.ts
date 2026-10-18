@@ -1238,7 +1238,14 @@ function attachLivePreviewChipAction(
 	onCommit?: () => void,
 ): void {
 	let tagPickerOpen = false;
+	let statusPickerOpen = false;
 	bindLinksChipKeyboard(chip, entry.key);
+	if (entry.key === 'status') {
+		chip.addEventListener('mousedown', event => {
+			event.preventDefault();
+			event.stopPropagation();
+		});
+	}
 	chip.addEventListener('click', (event) => {
 		event.preventDefault();
 		event.stopPropagation();
@@ -1246,7 +1253,7 @@ function attachLivePreviewChipAction(
 			onCommit?.();
 			return;
 		}
-		if (entry.key !== 'tags' && entry.iconOnly && shouldOpenIconOnlyChipPreview(chip)) {
+		if (entry.key !== 'tags' && entry.key !== 'status' && entry.iconOnly && shouldOpenIconOnlyChipPreview(chip)) {
 			openIconOnlyChipPreview(chip);
 			return;
 		}
@@ -1283,12 +1290,16 @@ function attachLivePreviewChipAction(
 			return;
 		}
 		switch (entry.key) {
+			case 'status':
 			case 'taskType':
+				if (entry.key === 'status' && statusPickerOpen) return;
+				if (entry.key === 'status') statusPickerOpen = true;
 				openTaskFieldPicker({
 					app: callbacks.app,
 					settings: callbacks.getSettings(),
 					allTasks: callbacks.getAllTasks(),
-					canonicalKey: 'taskType',
+					canonicalKey: entry.key,
+					onClose: () => { statusPickerOpen = false; },
 					anchor: pickerAnchor,
 					currentFieldValues: fieldValues,
 					getCurrentFieldValues: () => getLivePreviewCurrentFieldValues(task, view, callbacks),
@@ -1297,17 +1308,13 @@ function attachLivePreviewChipAction(
 					retainInputFocus: true,
 					taskFormat: 'inline',
 					onCommit: payload => {
-						const value = payload.taskType;
+						const value = payload[entry.key];
+						statusPickerOpen = false;
 						if (typeof value !== 'string') return;
-						void callbacks.updateField(operonId, 'taskType', value, restoreCursor());
+						void callbacks.updateField(operonId, entry.key, value, restoreCursor());
 						onCommit?.();
 					},
 				});
-				break;
-			case 'status':
-				if (callbacks.onContextualAction) void callbacks.onContextualAction(operonId, 'taskStatus');
-				else callbacks.cycleStatus(task, view);
-				onCommit?.();
 				break;
 			case 'location':
 				if (entry.locationCoordinate) {

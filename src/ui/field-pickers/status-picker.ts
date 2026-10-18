@@ -1,3 +1,5 @@
+import { getIcon } from 'obsidian';
+import { normalizeTaskIconValue } from '../../core/task-icon-value';
 import { Pipeline } from '../../types/pipeline';
 import { t } from '../../core/i18n';
 import { createButton, createFloatingPanel, requestFloatingInputFocus } from './common';
@@ -29,6 +31,7 @@ export function showStatusPicker(anchor: HTMLElement | DOMRect, options: StatusP
 	input.className = 'operon-floating-input';
 	input.placeholder = t('taskEditor', 'filterStatus');
 	input.value = options.value ?? '';
+	input.addEventListener('focus', () => input.select(), { once: true });
 
 	const list = panel.createDiv('operon-status-picker-list');
 
@@ -72,18 +75,21 @@ export function showStatusPicker(anchor: HTMLElement | DOMRect, options: StatusP
 			item.dataset.statusIndex = String(index);
 			if (index === activeIndex) item.classList.add('is-active');
 
-			const dot = item.createSpan('operon-status-dot');
-			dot.style.background = match.color;
+			const iconName = normalizeTaskIconValue(match.icon);
+			const icon = iconName ? getIcon(iconName) : null;
+			if (icon) {
+				icon.classList.add('operon-status-picker-icon');
+				icon.style.color = match.color;
+				icon.setAttribute('aria-hidden', 'true');
+				item.appendChild(icon);
+			} else {
+				const dot = item.createSpan('operon-status-dot');
+				dot.style.background = match.color;
+			}
 
 			const label = item.createSpan('operon-status-item-name');
 			label.textContent = match.value;
 
-			item.addEventListener('mouseenter', () => {
-				if (activeIndex !== index) {
-					activeIndex = index;
-					updateVisibleActiveItem();
-				}
-			});
 			item.addEventListener('mousedown', event => {
 				event.preventDefault();
 				selectStatus(match.value);

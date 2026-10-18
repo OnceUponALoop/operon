@@ -391,6 +391,7 @@ function attachKanbanChipAction(
 	onCommit?: () => void,
 ): void {
 	let tagPickerOpen = false;
+	let statusPickerOpen = false;
 	bindLinksChipKeyboard(chip, entry.key);
 	chip.addEventListener('click', (event) => {
 		if (isTargetReadOnly?.(chip)) return;
@@ -400,7 +401,7 @@ function attachKanbanChipAction(
 			onCommit?.();
 			return;
 		}
-		if (entry.key !== 'tags' && entry.iconOnly && shouldOpenIconOnlyChipPreview(chip)) {
+		if (entry.key !== 'tags' && entry.key !== 'status' && entry.iconOnly && shouldOpenIconOnlyChipPreview(chip)) {
 			openIconOnlyChipPreview(chip);
 			return;
 		}
@@ -437,6 +438,14 @@ function attachKanbanChipAction(
 			return;
 		}
 		if (callbacks.canMutate?.() === false) return;
+		if (entry.key === 'status') {
+			if (statusPickerOpen || (!callbacks.updateField && !callbacks.updateFields)) return;
+			statusPickerOpen = true;
+			openKanbanTaskFieldPicker(chip, entry, callbacks.getTaskById?.(task.operonId) ?? task, callbacks, allTasks,
+				() => { statusPickerOpen = false; onCommit?.(); },
+				() => { statusPickerOpen = false; });
+			return;
+		}
 		if (shouldOpenKanbanTaskFieldPicker(entry, callbacks.getSettings())) {
 			openKanbanTaskFieldPicker(chip, entry, task, callbacks, allTasks, onCommit);
 		}
