@@ -1348,10 +1348,10 @@
       "createWeeklyNotesAsOperonTask": "ウィークリーノートを Operon タスクとして作成",
       "createWeeklyNotesAsOperonTaskDesc": "Operon が作成するウィークリーノートを最小限のファイルタスクフィールドで初期化します。",
       "customKeysDesc": "カスタムの正規フィールドの作成と管理、表示、使用状況、順序、削除動作。",
-      "dailyNoteFolder": "ノートフォルダー",
+      "dailyNoteFolder": "デイリーノートのフォルダー",
       "dailyNoteFolderDesc": "デイリーノートのフォルダー。保管庫ルートには空欄にします。",
       "dailyNoteFolderPlaceholder": "例 40 Areas/Periodic Notes",
-      "dailyNoteFormat": "形式",
+      "dailyNoteFormat": "デイリーノートの形式",
       "dailyNoteFormatDesc": "デイリーノート名に使用する Moment 形式。",
       "dailyNoteInlineTaskDefaults": "デイリーノートのデフォルト",
       "dailyNoteTemplate": "デイリーノートテンプレート",
@@ -2891,10 +2891,10 @@
       "useLastTemplateAsDefaultDesc": "Task Creatorでタスクを正常に作成した後、使用したテンプレートをこのタスクの種類の既定として保存します。コマンドや変換でもこの既定が使用されます。",
       "visualPropertyPool": "CanvasとExcalidrawのProperty Pool",
       "visualTaskPool": "CanvasとExcalidrawのタスクプール",
-      "weeklyNoteFolder": "ノートフォルダー",
+      "weeklyNoteFolder": "ウィークリーノートのフォルダー",
       "weeklyNoteFolderDesc": "ウィークリーノートのフォルダー。保管庫ルートには空欄にします。",
       "weeklyNoteFolderPlaceholder": "例 40 Areas/Periodic Notes",
-      "weeklyNoteFormat": "形式",
+      "weeklyNoteFormat": "ウィークリーノートの形式",
       "weeklyNoteFormatDesc": "ウィークリーノート名に使用する Moment 形式。",
       "weeklyNoteTemplate": "ウィークリーノートテンプレート",
       "weeklyNoteTemplateDesc": "新規ノート用 Markdown テンプレート。空のノートには空欄にします。",
@@ -3707,5 +3707,5 @@
       "toggleDescendantPreview": "子孫プレビューを切り替え"
     }
   },
-  "sourceVersion": "037b85c768dd842664b01913a1c00a35ba41f6a148f771da220bc2258df13a37"
+  "sourceVersion": "5ed4fbf2bc2d43afc9737cba9e29652e496c89b68fb46a7c82e24f02d8e8c991"
 }

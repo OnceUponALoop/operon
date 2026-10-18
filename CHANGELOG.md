@@ -31,6 +31,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- Distinguished **Daily and Weekly Notes** format and folder setting names, preventing duplicate-setting warnings when Obsidian redraws settings while preserving saved values.
 - Fixed **automatic settings backup conflicts**, including those caused by synchronization, blocking settings saves and Table startup; existing backups are preserved and automatic backup creation pauses with a clear console message, while settings-file safety checks remain active.
 - Fixed **Task Creator repeat editing** so saving or clearing updates immediately, reference dates and Count settings are preserved for Inline and File tasks, and cancelled edits leave the draft unchanged.
 - Fixed certain **Outlook all-day yearly events** missing from URL and vault-local ICS calendars when the calendar’s timezone confirms that the recurrence end matches the event’s start.
@@ -40,6 +41,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Validation
 
+- Periodic-note settings, search, and redraw checks passed **12/12** focused tests.
 - Automatic settings backup and synchronization-conflict checks passed **78/78** focused tests.
 - Task tag chip routing, editing, and write protection checks passed **15/15** focused tests.
 - Calendar year/month navigation checks passed **15/15** focused tests and **24/24** browser scenarios.
@@ -47,7 +49,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Task Creator repeat editing and template protection checks passed **16/16** focused tests.
 - External calendar compatibility and refresh checks passed **67/67** focused tests.
-- Full local Plugin checks, production build, release guard, and code review passed, along with **5,147/5,147** local regression tests.
+- Full local Plugin checks, production build, release guard, and code review passed, along with **5,148/5,148** local regression tests.
 
 ## [4.0.1] - 2026-10-14
 

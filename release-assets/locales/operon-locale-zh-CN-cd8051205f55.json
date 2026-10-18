@@ -1348,10 +1348,10 @@
       "createWeeklyNotesAsOperonTask": "将周记创建为 Operon 任务",
       "createWeeklyNotesAsOperonTaskDesc": "由 Operon 创建的周记会以最简文件任务字段初始化。",
       "customKeysDesc": "创建和管理自定义规范字段、界面可见性、用途、顺序和删除行为。",
-      "dailyNoteFolder": "笔记文件夹",
+      "dailyNoteFolder": "日记文件夹",
       "dailyNoteFolderDesc": "日记所在文件夹。留空则使用仓库根目录。",
       "dailyNoteFolderPlaceholder": "例如 40 Areas/Periodic Notes",
-      "dailyNoteFormat": "格式",
+      "dailyNoteFormat": "日记格式",
       "dailyNoteFormatDesc": "用于命名日记的 Moment 格式。",
       "dailyNoteInlineTaskDefaults": "日记默认设置",
       "dailyNoteTemplate": "日记模板",
@@ -2891,10 +2891,10 @@
       "useLastTemplateAsDefaultDesc": "在 Task Creator 中成功创建任务后，将所用模板保存为此任务类型的默认模板。命令和转换也会使用此默认模板。",
       "visualPropertyPool": "Canvas 和 Excalidraw Property Pool",
       "visualTaskPool": "Canvas 和 Excalidraw 任务池",
-      "weeklyNoteFolder": "笔记文件夹",
+      "weeklyNoteFolder": "周记文件夹",
       "weeklyNoteFolderDesc": "周记所在文件夹。留空则使用仓库根目录。",
       "weeklyNoteFolderPlaceholder": "例如 40 Areas/Periodic Notes",
-      "weeklyNoteFormat": "格式",
+      "weeklyNoteFormat": "周记格式",
       "weeklyNoteFormatDesc": "用于命名周记的 Moment 格式。",
       "weeklyNoteTemplate": "周记模板",
       "weeklyNoteTemplateDesc": "新建周记使用的 Markdown 模板。留空则创建空白笔记。",
@@ -3707,5 +3707,5 @@
       "toggleDescendantPreview": "切换子任务预览"
     }
   },
-  "sourceVersion": "472ae3be75023d34205a0e646b943cd67a466dc610ba5c0fcae8d077fefbe24e"
+  "sourceVersion": "811f73ebf70757d287b585776b2c8c2bd2d67502240c75b0770b74853dbc3dce"
 }

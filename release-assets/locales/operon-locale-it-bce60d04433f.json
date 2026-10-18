@@ -1348,10 +1348,10 @@
       "createWeeklyNotesAsOperonTask": "Crea note settimanali come attività Operon",
       "createWeeklyNotesAsOperonTaskDesc": "Le note settimanali create da Operon ricevono i campi minimi di attività-file.",
       "customKeysDesc": "Crea e gestisci campi canonici personalizzati, visibilità delle superfici, utilizzo, ordine e comportamento di eliminazione.",
-      "dailyNoteFolder": "Cartella note",
+      "dailyNoteFolder": "Cartella delle note giornaliere",
       "dailyNoteFolderDesc": "Cartella delle note giornaliere. Lascia vuoto per la radice del vault.",
       "dailyNoteFolderPlaceholder": "es. 40 Areas/Periodic Notes",
-      "dailyNoteFormat": "Formato",
+      "dailyNoteFormat": "Formato delle note giornaliere",
       "dailyNoteFormatDesc": "Formato Moment usato per nominare le note giornaliere.",
       "dailyNoteInlineTaskDefaults": "Valori predefiniti nota giornaliera",
       "dailyNoteTemplate": "Modello nota giornaliera",
@@ -2891,10 +2891,10 @@
       "useLastTemplateAsDefaultDesc": "Dopo la creazione riuscita in Task Creator, salva il modello utilizzato come predefinito per questo tipo di attività. Anche i comandi e le conversioni usano questo modello.",
       "visualPropertyPool": "Property Pool di Canvas ed Excalidraw",
       "visualTaskPool": "Pool attività Canvas ed Excalidraw",
-      "weeklyNoteFolder": "Cartella note",
+      "weeklyNoteFolder": "Cartella delle note settimanali",
       "weeklyNoteFolderDesc": "Cartella delle note settimanali. Lascia vuoto per la radice del vault.",
       "weeklyNoteFolderPlaceholder": "es. 40 Areas/Periodic Notes",
-      "weeklyNoteFormat": "Formato",
+      "weeklyNoteFormat": "Formato delle note settimanali",
       "weeklyNoteFormatDesc": "Formato Moment usato per nominare le note settimanali.",
       "weeklyNoteTemplate": "Modello nota settimanale",
       "weeklyNoteTemplateDesc": "Modello Markdown per le nuove note. Lascia vuoto per una nota vuota.",
@@ -3707,5 +3707,5 @@
       "toggleDescendantPreview": "Alterna anteprima discendenti"
     }
   },
-  "sourceVersion": "9aa60b731816817b0f20349328efeaf62e70e6c1f7b8c48f0d64610f1eb9cca2"
+  "sourceVersion": "bd362d1e18141e69096dedab2ff663c10d67be2299e3b5d089f0f57d65a08c81"
 }

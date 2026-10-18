@@ -1348,10 +1348,10 @@
       "createWeeklyNotesAsOperonTask": "Wochennotizen als Operon-Aufgabe erstellen",
       "createWeeklyNotesAsOperonTaskDesc": "Wenn aktiviert, werden von Operon erstellte Wochennotizen mit den minimalen Operon-Datei-Aufgabenfeldern initialisiert.",
       "customKeysDesc": "Erstelle und verwalte benutzerdefinierte kanonische Felder, Oberflächen-Sichtbarkeit, Nutzung, Reihenfolge und Löschverhalten.",
-      "dailyNoteFolder": "Notizordner",
+      "dailyNoteFolder": "Ordner für Tagesnotizen",
       "dailyNoteFolderDesc": "Ordner für Tagesnotizen. Für den Vault-Stamm leer lassen.",
       "dailyNoteFolderPlaceholder": "z. B. 40 Areas/Periodic Notes",
-      "dailyNoteFormat": "Format",
+      "dailyNoteFormat": "Format für Tagesnotizen",
       "dailyNoteFormatDesc": "Moment-Format für die Benennung von Tagesnotizen.",
       "dailyNoteInlineTaskDefaults": "Standardwerte für Tagesnotizen",
       "dailyNoteTemplate": "Vorlage für Tagesnotizen",
@@ -2891,10 +2891,10 @@
       "useLastTemplateAsDefaultDesc": "Nach erfolgreicher Erstellung im Task Creator wird die verwendete Vorlage als Standard für diesen Aufgabentyp gespeichert. Befehle und Konvertierungen verwenden ebenfalls diesen Standard.",
       "visualPropertyPool": "Canvas und Excalidraw Property Pool",
       "visualTaskPool": "Canvas- und Excalidraw-Aufgabenpool",
-      "weeklyNoteFolder": "Notizordner",
+      "weeklyNoteFolder": "Ordner für Wochennotizen",
       "weeklyNoteFolderDesc": "Ordner für Wochennotizen. Für den Vault-Stamm leer lassen.",
       "weeklyNoteFolderPlaceholder": "z. B. 40 Areas/Periodic Notes",
-      "weeklyNoteFormat": "Format",
+      "weeklyNoteFormat": "Format für Wochennotizen",
       "weeklyNoteFormatDesc": "Moment-Format für die Benennung von Wochennotizen.",
       "weeklyNoteTemplate": "Vorlage für Wochennotizen",
       "weeklyNoteTemplateDesc": "Markdown-Vorlage für neue Wochennotizen. Für eine leere Notiz leer lassen.",
@@ -3707,5 +3707,5 @@
       "toggleDescendantPreview": "Vorschau untergeordneter Aufgaben umschalten"
     }
   },
-  "sourceVersion": "0027e53ccaaaf4603b34dbd0ca3bbf2ebf6a0005e1937958583a2ea997aa2f7a"
+  "sourceVersion": "400d85a47a58e66a216218a158d963751fdcead712c9a6c75a1bac576f330b71"
 }

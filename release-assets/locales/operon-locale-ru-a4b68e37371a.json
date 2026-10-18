@@ -1348,10 +1348,10 @@
       "createWeeklyNotesAsOperonTask": "Создавать еженедельные заметки как задачу Operon",
       "createWeeklyNotesAsOperonTaskDesc": "Еженедельные заметки Operon получают минимальные поля файловой задачи.",
       "customKeysDesc": "Создавайте и управляйте пользовательскими каноническими полями, видимостью на поверхностях, использованием, порядком и поведением при удалении.",
-      "dailyNoteFolder": "Папка заметок",
+      "dailyNoteFolder": "Папка ежедневных заметок",
       "dailyNoteFolderDesc": "Папка ежедневных заметок. Оставьте пустой для корня хранилища.",
       "dailyNoteFolderPlaceholder": "напр. 40 Areas/Periodic Notes",
-      "dailyNoteFormat": "Формат",
+      "dailyNoteFormat": "Формат ежедневных заметок",
       "dailyNoteFormatDesc": "Формат Moment для имен ежедневных заметок.",
       "dailyNoteInlineTaskDefaults": "Значения по умолчанию для ежедневной заметки",
       "dailyNoteTemplate": "Шаблон ежедневной заметки",
@@ -2891,10 +2891,10 @@
       "useLastTemplateAsDefaultDesc": "После успешного создания задачи в Task Creator сохранить использованный шаблон по умолчанию для этого типа задач. Команды и преобразования также используют этот шаблон.",
       "visualPropertyPool": "Property Pool для Canvas и Excalidraw",
       "visualTaskPool": "Пул задач Canvas и Excalidraw",
-      "weeklyNoteFolder": "Папка заметок",
+      "weeklyNoteFolder": "Папка еженедельных заметок",
       "weeklyNoteFolderDesc": "Папка еженедельных заметок. Оставьте пустой для корня хранилища.",
       "weeklyNoteFolderPlaceholder": "напр. 40 Areas/Periodic Notes",
-      "weeklyNoteFormat": "Формат",
+      "weeklyNoteFormat": "Формат еженедельных заметок",
       "weeklyNoteFormatDesc": "Формат Moment для имен еженедельных заметок.",
       "weeklyNoteTemplate": "Шаблон еженедельной заметки",
       "weeklyNoteTemplateDesc": "Markdown-шаблон для новых заметок. Оставьте пустым для пустой заметки.",
@@ -3707,5 +3707,5 @@
       "toggleDescendantPreview": "Переключить предпросмотр потомков"
     }
   },
-  "sourceVersion": "dfd8cb3647eaec5b3017286954f42889dc316a9c829b6e04222c56f7fee75051"
+  "sourceVersion": "c8ee6eb3f3242ebf4c7bf99c079ebab658883392cf830b30e1bef7c6690231e9"
 }

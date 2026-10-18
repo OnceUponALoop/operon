@@ -1348,10 +1348,10 @@
       "createWeeklyNotesAsOperonTask": "Haftalık notları Operon görevi olarak oluştur",
       "createWeeklyNotesAsOperonTaskDesc": "Açık olduğunda Operon tarafından oluşturulan haftalık notlar minimal Operon Dosya Görevi alanlarıyla başlatılır.",
       "customKeysDesc": "Özel eş kurallı alanları, yüzey görünürlüğünü, kullanım bilgisini, sıralamayı ve silme davranışını oluşturup yönet.",
-      "dailyNoteFolder": "Not klasörü",
+      "dailyNoteFolder": "Günlük not klasörü",
       "dailyNoteFolderDesc": "Operon'un günlük notları oluşturacağı klasör. Kasa kökü için boş bırakın.",
       "dailyNoteFolderPlaceholder": "örn. 40 Areas/Periodic Notes",
-      "dailyNoteFormat": "Biçim",
+      "dailyNoteFormat": "Günlük not biçimi",
       "dailyNoteFormatDesc": "Günlük notları adlandırmak için kullanılan Moment biçimi.",
       "dailyNoteInlineTaskDefaults": "Günlük Not Varsayılanları",
       "dailyNoteTemplate": "Günlük not şablonu",
@@ -2891,10 +2891,10 @@
       "useLastTemplateAsDefaultDesc": "Task Creator ile görev başarıyla oluşturulduğunda kullanılan şablonu bu görev türünün varsayılanı olarak kaydeder. Komutlar ve dönüştürme de bu varsayılanı kullanır.",
       "visualPropertyPool": "Canvas ve Excalidraw Property Pool",
       "visualTaskPool": "Canvas ve Excalidraw Görev Havuzu",
-      "weeklyNoteFolder": "Not klasörü",
+      "weeklyNoteFolder": "Haftalık not klasörü",
       "weeklyNoteFolderDesc": "Operon'un haftalık notları oluşturacağı klasör. Kasa kökü için boş bırakın.",
       "weeklyNoteFolderPlaceholder": "örn. 40 Areas/Periodic Notes",
-      "weeklyNoteFormat": "Biçim",
+      "weeklyNoteFormat": "Haftalık not biçimi",
       "weeklyNoteFormatDesc": "Haftalık notları adlandırmak için kullanılan Moment biçimi.",
       "weeklyNoteTemplate": "Haftalık not şablonu",
       "weeklyNoteTemplateDesc": "Operon haftalık not oluştururken kullanılan Markdown şablonu. Boş not için boş bırakın.",
@@ -3707,5 +3707,5 @@
       "toggleDescendantPreview": "Alt görev önizlemesini aç/kapat"
     }
   },
-  "sourceVersion": "26c6a90d5922a56f28bdd1c7c7842a437a59c3df7170f4daa6f40e8cf7c3af65"
+  "sourceVersion": "eb076886b01d5f50473f39a2662b2fbaaa6dc6f0fd9ab544e52bedaa703bb5b4"
 }

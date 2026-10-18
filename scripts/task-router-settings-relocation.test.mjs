@@ -58,6 +58,7 @@ ${extractMethod(settingsTabSource, 'buildTaskCaptureSearchSections')}
 ${extractMethod(settingsTabSource, 'buildTaskCaptureSearchSection')}
 ${extractMethod(settingsTabSource, 'buildTaskRouterSettingsItems')}
 ${extractMethod(settingsTabSource, 'buildTaskSettingsGroups')}
+${extractMethod(settingsTabSource, 'isTaskSettingsEntryVisible')}
 buildDeclarativeSettingsDocsButton() { return () => {}; }
 buildNativeSettingsDocsAction() { return {}; }
 getSettingsSearchAliasesForEntries() { return []; }
@@ -302,3 +303,46 @@ test('successful timer finalization requeues only the previous assigned task for
    assert.ok(locale.settings.periodicNotesAsFileTasks);
   }
  });
+
+const periodicKeys = ['dailyNoteFormat', 'dailyNoteFolder', 'weeklyNoteFormat', 'weeklyNoteFolder'];
+const periodicEntries = [...registrySource.matchAll(/e\('([^']+)', '([^']+)', '([^']+)', '([^']+)', '([^']+)', '([^']+)', '[^']+', (\[[^\n]*?\])\)/g)]
+ .filter(match => periodicKeys.includes(match[3]))
+ .map(match => ({id:`${match[1]}.${match[3]}`,tabId:match[2],key:match[3],name:{namespace:match[4],key:match[5]},desc:{namespace:match[4],key:match[6]},aliases:JSON.parse(match[7].replaceAll("'",'"'))}));
+
+test('periodic note Settings Search distinguishes names and retains original storage bindings in every locale', () => {
+ assert.equal(periodicEntries.length,4);
+ for(const {code,locale} of routerLocales) {
+  const harness=new Routes();harness.getSettingsSearchText=ref=>locale[ref.namespace][ref.key];harness.getSettingsSearchAliases=entry=>entry.aliases;
+  const definitions=periodicEntries.map(entry=>harness.buildTaskCaptureSearchSection(entry,()=>{}));
+  assert.equal(new Set(definitions.map(row=>`name:${row.name}`)).size,4,code);
+  periodicEntries.forEach((entry,index)=>{
+   assert.equal(entry.name.key,entry.key);assert.equal(entry.id,`automation.${entry.key}`);
+   assert.equal(entry.tabId,'tasksTaskRouter');assert.deepEqual(definitions[index].aliases,entry.aliases);
+   assert.ok(entry.aliases.includes(entry.key.startsWith('daily')?'daily notes':'weekly notes'));
+  });
+ }
+ assert.deepEqual(periodicEntries.map(entry=>englishLocale.settings[entry.key]),['Daily note format','Daily note folder','Weekly note format','Weekly note folder']);
+});
+
+test('periodic note definitions keep unique row identities and values across management toggles and rerenders', () => {
+ for(const {code,locale} of routerLocales) {
+  const harness=new Routes();harness.getSettingsSearchText=ref=>locale[ref.namespace][ref.key];
+  const values={dailyNoteFormat:'YYYY/MM/DD',weeklyNoteFormat:'GGGG-[W]WW',dailyNoteFolder:'Daily',weeklyNoteFolder:'Weekly'};
+  harness.settings={...values};let previous=new Map();
+  for(const [daily,weekly] of [[true,true],[false,true],[true,false],[false,false],[true,true]]) {
+   Object.assign(harness.settings,{manageDailyNotesWithOperon:daily,manageWeeklyNotesWithOperon:weekly});
+   const rendered=[];const definitions=periodicEntries.map(entry=>harness.buildTaskCaptureSearchSection(entry,(_el,key)=>rendered.push(key)));
+   const active=definitions.filter(row=>row.visible());const next=new Map();
+   for(const row of active) {
+    assert.ok(!next.has(`name:${row.name}`),code);
+    const element={empty(){},removeClass(){},addClass(){},querySelector(){return null;}};
+    row.render({settingEl:element});const key=rendered.at(-1);
+    const identity=`name:${row.name}`;if(previous.has(identity))assert.equal(previous.get(identity),key);
+    next.set(identity,key);
+   }
+   assert.deepEqual(rendered,periodicEntries.filter(entry=>entry.key.startsWith('daily')?daily:weekly).map(entry=>entry.key));
+   for(const key of periodicKeys)assert.equal(harness.settings[key],values[key]);
+   previous=next;
+  }
+ }
+});

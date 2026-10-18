@@ -1348,10 +1348,10 @@
       "createWeeklyNotesAsOperonTask": "Créer les notes hebdomadaires comme tâche Operon",
       "createWeeklyNotesAsOperonTaskDesc": "Les notes hebdomadaires créées par Operon reçoivent les champs minimaux d’une tâche-fichier.",
       "customKeysDesc": "Créez et gérez les champs canoniques personnalisés, la visibilité des surfaces, l'utilisation, l'ordre et le comportement de suppression.",
-      "dailyNoteFolder": "Dossier des notes",
+      "dailyNoteFolder": "Dossier des notes quotidiennes",
       "dailyNoteFolderDesc": "Dossier des notes quotidiennes. Laisser vide pour la racine du coffre.",
       "dailyNoteFolderPlaceholder": "ex. 40 Areas/Periodic Notes",
-      "dailyNoteFormat": "Format",
+      "dailyNoteFormat": "Format des notes quotidiennes",
       "dailyNoteFormatDesc": "Format Moment utilisé pour nommer les notes quotidiennes.",
       "dailyNoteInlineTaskDefaults": "Valeurs par défaut des notes quotidiennes",
       "dailyNoteTemplate": "Modèle de note quotidienne",
@@ -2891,10 +2891,10 @@
       "useLastTemplateAsDefaultDesc": "Après une création réussie dans Task Creator, enregistrer le modèle utilisé comme modèle par défaut pour ce type de tâche. Les commandes et conversions utilisent aussi ce modèle.",
       "visualPropertyPool": "Property Pool de Canvas et Excalidraw",
       "visualTaskPool": "Réservoir de tâches Canvas et Excalidraw",
-      "weeklyNoteFolder": "Dossier des notes",
+      "weeklyNoteFolder": "Dossier des notes hebdomadaires",
       "weeklyNoteFolderDesc": "Dossier des notes hebdomadaires. Laisser vide pour la racine du coffre.",
       "weeklyNoteFolderPlaceholder": "ex. 40 Areas/Periodic Notes",
-      "weeklyNoteFormat": "Format",
+      "weeklyNoteFormat": "Format des notes hebdomadaires",
       "weeklyNoteFormatDesc": "Format Moment utilisé pour nommer les notes hebdomadaires.",
       "weeklyNoteTemplate": "Modèle de note hebdomadaire",
       "weeklyNoteTemplateDesc": "Modèle Markdown utilisé lors de la création. Laisser vide pour une note vierge.",
@@ -3707,5 +3707,5 @@
       "toggleDescendantPreview": "Basculer l'aperçu des descendants"
     }
   },
-  "sourceVersion": "26fe47ee1351e4911c097e47f141dcca877ad18c4ed23de50d4d1ba6f7ce8a3d"
+  "sourceVersion": "0dea5228089694c8ab53db13c6f37ac44f4683bc94a1487e5a8b10d0ed44a41f"
 }

@@ -1348,10 +1348,10 @@
       "createWeeklyNotesAsOperonTask": "Crear notas semanales como tarea de Operon",
       "createWeeklyNotesAsOperonTaskDesc": "Las notas semanales creadas por Operon reciben los campos mínimos de una tarea de archivo.",
       "customKeysDesc": "Crear y gestionar campos canónicos personalizados, visibilidad de superficies, uso, orden y comportamiento de eliminación.",
-      "dailyNoteFolder": "Carpeta de notas",
+      "dailyNoteFolder": "Carpeta de notas diarias",
       "dailyNoteFolderDesc": "Carpeta de notas diarias. Déjala vacía para la raíz de la bóveda.",
       "dailyNoteFolderPlaceholder": "p. ej. 40 Areas/Periodic Notes",
-      "dailyNoteFormat": "Formato",
+      "dailyNoteFormat": "Formato de notas diarias",
       "dailyNoteFormatDesc": "Formato Moment usado para nombrar las notas diarias.",
       "dailyNoteInlineTaskDefaults": "Valores predeterminados de la nota diaria",
       "dailyNoteTemplate": "Plantilla de nota diaria",
@@ -2891,10 +2891,10 @@
       "useLastTemplateAsDefaultDesc": "Tras crear una tarea correctamente en Task Creator, guardar la plantilla utilizada como predeterminada para este tipo de tarea. Los comandos y las conversiones también usan esta plantilla.",
       "visualPropertyPool": "Property Pool de Canvas y Excalidraw",
       "visualTaskPool": "Grupo de tareas de Canvas y Excalidraw",
-      "weeklyNoteFolder": "Carpeta de notas",
+      "weeklyNoteFolder": "Carpeta de notas semanales",
       "weeklyNoteFolderDesc": "Carpeta de notas semanales. Déjala vacía para la raíz de la bóveda.",
       "weeklyNoteFolderPlaceholder": "p. ej. 40 Areas/Periodic Notes",
-      "weeklyNoteFormat": "Formato",
+      "weeklyNoteFormat": "Formato de notas semanales",
       "weeklyNoteFormatDesc": "Formato Moment usado para nombrar las notas semanales.",
       "weeklyNoteTemplate": "Plantilla de nota semanal",
       "weeklyNoteTemplateDesc": "Plantilla Markdown para notas nuevas. Déjala vacía para una nota en blanco.",
@@ -3707,5 +3707,5 @@
       "toggleDescendantPreview": "Alternar vista previa de descendientes"
     }
   },
-  "sourceVersion": "e79539b43a4b122483b89e99deb51332bd325d49b19572a64403b807dc2f293d"
+  "sourceVersion": "3631833f724be45fdca88769091ec6a13307cebb9aad8b885df2e2df9369fcbf"
 }

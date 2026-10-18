@@ -1348,10 +1348,10 @@
       "createWeeklyNotesAsOperonTask": "Criar notas semanais como uma tarefa Operon",
       "createWeeklyNotesAsOperonTaskDesc": "Quando ativado, as notas semanais criadas por Operon são inicializadas com os campos mínimos de tarefa em arquivo Operon.",
       "customKeysDesc": "Criar e gerenciar campos canônicos personalizados, visibilidade, uso, ordem e comportamento de exclusão.",
-      "dailyNoteFolder": "Pasta de Notas Diárias",
+      "dailyNoteFolder": "Pasta das notas diárias",
       "dailyNoteFolderDesc": "Pasta usada quando Operon cria ou resolve Notas Diárias. Deixe vazio para a raiz do cofre.",
       "dailyNoteFolderPlaceholder": "ex.: 40 Areas/Notas Periódicas",
-      "dailyNoteFormat": "Formato",
+      "dailyNoteFormat": "Formato das notas diárias",
       "dailyNoteFormatDesc": "Formato Moment usado para nomear Notas Diárias.",
       "dailyNoteInlineTaskDefaults": "Padrões de Nota Diária",
       "dailyNoteTemplate": "Modelo de Nota Diária",
@@ -2891,10 +2891,10 @@
       "useLastTemplateAsDefaultDesc": "Após criar uma tarefa com sucesso no Task Creator, salvar o modelo utilizado como padrão para este tipo de tarefa. Comandos e conversões também usam esse padrão.",
       "visualPropertyPool": "Property Pool do Canvas e Excalidraw",
       "visualTaskPool": "Conjunto de tarefas do Canvas e Excalidraw",
-      "weeklyNoteFolder": "Pasta de Notas Semanais",
+      "weeklyNoteFolder": "Pasta das notas semanais",
       "weeklyNoteFolderDesc": "Pasta usada quando Operon cria ou resolve Notas Semanais. Deixe vazio para a raiz do cofre.",
       "weeklyNoteFolderPlaceholder": "ex.: 40 Areas/Notas Periódicas",
-      "weeklyNoteFormat": "Formato",
+      "weeklyNoteFormat": "Formato das notas semanais",
       "weeklyNoteFormatDesc": "Formato Moment usado para nomear Notas Semanais.",
       "weeklyNoteTemplate": "Modelo de Nota Semanal",
       "weeklyNoteTemplateDesc": "Modelo Markdown usado quando Operon cria uma Nota Semanal. Deixe vazio para uma nota em branco.",
@@ -3707,5 +3707,5 @@
       "toggleDescendantPreview": "Alternar visualização descendente"
     }
   },
-  "sourceVersion": "70e22da0ea5029c16423b1b6b23f90087fc5729466c35a821a5089fd63ccf198"
+  "sourceVersion": "5b2401c713ae9b62ddbd20050c2f28351e2e31232a5270b21b6418f4d68ed7a7"
 }
