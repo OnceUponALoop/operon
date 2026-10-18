@@ -19,6 +19,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Improved
 
+- Added consistent **background dimming** to desktop Task Creator, Task Finder, and Task Editor, keeping their existing sizes, controls, and picker behavior. Lightbox previews opened from these modals appear above them, with nested dialogs and Escape navigation preserving the underlying draft.
 - Made supported **task chip and Table links** open consistently in the desktop lightbox, including media, Parent Task, and existing wikilinks in Type and Text/List values; ordinary values and missing wikilinks retain their pickers, and clicking outside a Table link still edits the cell.
 - Extended the same opening behavior to **task description links and Description/Note popovers** across supported task views. Cmd/Ctrl-click opens a focused tab; local links follow Page Preview preferences, and media keeps its quick hover preview with single-click opening.
 - Refined **lightbox layout** with a narrower Markdown/web view, wider Base/Table views, inset content frames, and four matching controls beside the content; Operon Table presets and Gantt remain usable inside the preview.
@@ -55,7 +56,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Validation
 
-- Desktop lightbox opening, lifecycle, and interaction checks passed **189/189** focused tests, **14/14** shell tests, **8/8** web tests, **24/24** layout checks, and **12/12** editor/draft browser checks.
+- Desktop Creator, Finder, and Editor backdrop checks passed **6/6** focused tests and **24/24** browser scenarios covering geometry, modal/lightbox layering, focus, and draft preservation.
+- Desktop lightbox opening, lifecycle, and interaction checks passed **189/189** focused tests, **16/16** shell tests, **8/8** web tests, **24/24** layout checks, and **12/12** editor/draft browser checks.
 - Source and Project Serial chip settings, navigation, and interaction checks passed **48/48** focused tests, **6/6** Settings Search and redraw scenarios, and **22/22** browser checks across six profiles.
 - Subtask chip routing and interaction protections passed **23/23** focused tests across File and Inline tasks.
 
@@ -71,7 +73,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Task Creator repeat editing and template protection checks passed **16/16** focused tests.
 - External calendar compatibility and refresh checks passed **67/67** focused tests.
-- Full local Plugin checks, production build, release guard, and code review passed, along with **5,170/5,170** local regression tests.
+- Full local Plugin checks, production build, release guard, and code review passed, along with **5,172/5,172** local regression tests.
 
 ## [4.0.1] - 2026-10-14
 

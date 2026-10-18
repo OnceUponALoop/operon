@@ -5833,6 +5833,17 @@ button.operon-task-media-hover-toolbar:hover {
 	box-shadow: none;
 }
 
+.operon-task-media-lightbox,
+.modal-container.operon-focus-modal {
+	--operon-focus-backdrop: rgba(0, 0, 0, 0.82);
+}
+
+.modal-container.operon-focus-modal > .modal-bg {
+	background: var(--operon-focus-backdrop);
+	opacity: 1;
+	backdrop-filter: none;
+}
+
 .operon-task-media-lightbox {
 	position: fixed;
 	inset: 0;
@@ -5841,7 +5852,7 @@ button.operon-task-media-hover-toolbar:hover {
 	align-items: center;
 	justify-content: center;
 	padding: 48px;
-	background: rgba(0, 0, 0, 0.82);
+	background: var(--operon-focus-backdrop);
 	overscroll-behavior: contain;
 }
 
@@ -35164,6 +35175,9 @@ body .operon-canvas-task-pool .operon-canvas-task-pool-meta button:hover { color
 
 /* Host menus and Page Preview use Obsidian's own overlay layers. */
 .operon-task-media-lightbox:is(.is-native, .is-web) { z-index: var(--layer-popover); }
+
+/* Modal-owned previews share the native modal layer; later dialogs remain above them. */
+.operon-task-media-lightbox.is-modal-owned { z-index: var(--layer-modal); }
 
 .operon-task-media-lightbox-title[hidden] { display: none; }
 

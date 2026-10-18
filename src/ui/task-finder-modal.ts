@@ -1,3 +1,4 @@
+import { applyDesktopModalBackdrop } from './modal-backdrop';
 import { bindAssigneeChipImage } from './assignee-chip-image';
 import { App, getIcon, Modal, Platform, setIcon } from 'obsidian';
 import { t } from '../core/i18n';
@@ -94,6 +95,7 @@ export class TaskFinderModal extends Modal {
 	private includeFinishedButton!: HTMLButtonElement;
 	private toolbarEl: HTMLElement | null = null;
 	private toolsEl: HTMLElement | null = null;
+	private backdropCleanup: (() => void) | null = null;
 	private nativeCloseButtonCleanup: (() => void) | null = null;
 	private selectedProjectEl!: HTMLElement;
 	private resultsEl!: HTMLElement;
@@ -151,6 +153,8 @@ export class TaskFinderModal extends Modal {
 		this.isClosing = false;
 		this.cancelSearchRender();
 		this.containerEl.addClass('operon-task-finder-modal-container');
+		this.backdropCleanup?.();
+		this.backdropCleanup = applyDesktopModalBackdrop(this.containerEl);
 		this.modalEl.addClass('operon-task-finder-modal');
 		this.nativeCloseButtonCleanup?.();
 		this.nativeCloseButtonCleanup = suppressNativeModalCloseButton(this.containerEl, this.modalEl);
@@ -298,6 +302,8 @@ export class TaskFinderModal extends Modal {
 	}
 
 	onClose(): void {
+		this.backdropCleanup?.();
+		this.backdropCleanup = null;
 		this.isClosing = true;
 		this.cancelSearchRender();
 		this.searchSessions.clear();

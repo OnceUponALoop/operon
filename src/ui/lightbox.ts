@@ -1,6 +1,7 @@
-import { Notice, Platform, setIcon, type App, type WorkspaceLeaf } from 'obsidian';
-import { asHTMLElement, getOwnerBody, getOwnerDocument, isHTMLElement } from '../core/dom-compat';
+import { Notice, Platform, Scope, setIcon, type App, type WorkspaceLeaf } from 'obsidian';
+import { asHTMLElement, getOwnerBody, getOwnerDocument, getOwnerWindow, isHTMLElement } from '../core/dom-compat';
 import { t } from '../core/i18n';
+import { getWindowApp } from '../core/obsidian-app';
 import { setAccessibleLabelWithoutTooltip } from './accessibility-label';
 import { bindOperonHoverTooltip, cleanupOperonHoverTooltips } from './operon-hover-tooltip';
 
@@ -40,6 +41,7 @@ interface LightboxSource {
 const sources = new Set<LightboxSource>();
 interface LightboxRecord {
  shell: HTMLElement;
+ modalOwner?: HTMLElement;
  originLeaf?: WorkspaceLeaf;
  parent?: LightboxRecord;
  source?: LightboxSource;
@@ -99,6 +101,10 @@ export function openLightbox(anchor: HTMLElement, options: LightboxOptions): Lig
 	const previous = activeLightboxes.get(ownerDocument);
  const parent = Platform.isDesktopApp ? recordFor(anchor) : undefined;
  const source = Platform.isDesktopApp ? sourceFor(anchor) : undefined;
+ const modalOwner = Platform.isDesktopApp ? parent?.modalOwner
+  ?? anchor.closest<HTMLElement>('.operon-focus-modal')
+  ?? asHTMLElement(source?.owner, anchor)?.closest<HTMLElement>('.operon-focus-modal')
+  ?? undefined : undefined;
 	if (previous && !parent) {
 		const result = previous();
 		if (result instanceof Promise) {
@@ -118,6 +124,7 @@ export function openLightbox(anchor: HTMLElement, options: LightboxOptions): Lig
 		.some(el => !existingOverlays.has(el) && el !== lightbox && !lightbox.contains(el));
 	const lightbox = getOwnerBody(anchor).createDiv('operon-task-media-lightbox');
 	if (options.className) lightbox.addClass(options.className);
+ if (modalOwner) lightbox.addClass('is-modal-owned');
 	if (Platform.isDesktopApp) lightbox.addClass('has-content-controls');
 	lightbox.setAttribute('role', 'dialog');
 	lightbox.setAttribute('aria-modal', 'true');
@@ -155,6 +162,10 @@ export function openLightbox(anchor: HTMLElement, options: LightboxOptions): Lig
  }
  bindOperonHoverTooltip(closeButton, {content: t('buttons', 'close'), taskColor: null});
  let disposePosition: (() => void) | null = null;
+ // A child preview must not inherit the underlying modal's Escape or Tab trap.
+ const modalApp = modalOwner ? getWindowApp(getOwnerWindow(anchor)) : undefined;
+ const modalScope = modalApp?.keymap ? new Scope(modalApp.scope) : null;
+ let modalScopeActive = false;
 
 
 	let isClosed = false;
@@ -176,6 +187,10 @@ export function openLightbox(anchor: HTMLElement, options: LightboxOptions): Lig
 		try {
 			cleanup?.();
 		} finally {
+   if (modalScopeActive && modalScope) {
+    modalScopeActive = false;
+    modalApp?.keymap.popScope(modalScope);
+   }
 			lightbox.remove();
 			options.onDispose?.();
 			if (activeLightboxes.get(ownerDocument) === close) {
@@ -243,7 +258,7 @@ export function openLightbox(anchor: HTMLElement, options: LightboxOptions): Lig
    });
   return closing;
  };
- const record: LightboxRecord = {shell: lightbox, originLeaf: parent?.originLeaf ?? options.originLeaf, parent, source, close, finish: finishClose, prepare: () => options.beforeClose?.() ?? true, transfer};
+ const record: LightboxRecord = {shell: lightbox, modalOwner, originLeaf: parent?.originLeaf ?? options.originLeaf, parent, source, close, finish: finishClose, prepare: () => options.beforeClose?.() ?? true, transfer};
  records.set(close, record);
  if (parent) {parent.shell.hidden = true; parent.shell.inert = true;}
  if (source) {source.holds++; source.panel.hidden = true; source.panel.inert = true;}
@@ -277,6 +292,10 @@ export function openLightbox(anchor: HTMLElement, options: LightboxOptions): Lig
 	ownerDocument.addEventListener('focusin', keepFocusInside, true);
 	activeLightboxes.set(ownerDocument, close);
 	try {
+  if (modalScope && modalApp) {
+   modalApp.keymap.pushScope(modalScope);
+   modalScopeActive = true;
+  }
 		const cleanup = options.render(lightbox, () => { void close(); });
 		if (isClosed) cleanup?.();
 		else contentCleanup = cleanup;

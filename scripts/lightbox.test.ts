@@ -147,3 +147,30 @@ test('pagehide drains all nested shells for that document',async()=>{
   for(const fn of [...listeners])fn();await tick();assert.deepEqual(order,['child','parent']);assert.equal(listeners.size,0);
  }finally{f.cleanup();}
 });
+
+test('modal preview owns a keyboard scope through pending/failed saves and nested cleanup', async () => {
+ const f=desktopFixture(), modal=f.doc.body.createDiv(), scopes:unknown[]=[], appScope={};
+ (f.anchor as any).closest=()=>modal;
+ f.doc.defaultView.app={scope:appScope,keymap:{pushScope:(s:unknown)=>scopes.push(s),popScope:(s:unknown)=>scopes.splice(scopes.indexOf(s),1)}};
+ let root:any,resolveSave!:(ok:boolean)=>void;
+ try {
+  const close=openLightbox(f.anchor,{title:'Parent',nativeView:true,beforeClose:()=>new Promise<boolean>(r=>resolveSave=r),render:el=>{root=el;return null;}});
+  assert.equal(scopes.length,1);assert.equal(root.classes.has('is-modal-owned'),true);
+  const pending=close();assert.equal(scopes.length,1);resolveSave(false);assert.equal(await pending,false);assert.equal(scopes.length,1);
+  const closeChild=openLightbox(root.createDiv(),{title:'Child',render:el=>{assert.equal((el as any).classes.has('is-modal-owned'),true);return null;}});
+  assert.equal(scopes.length,2);closeChild();closeChild();assert.equal(scopes.length,1);
+  const accepted=close();resolveSave(true);assert.equal(await accepted,true);assert.equal(scopes.length,0);assert.equal(f.doc.activeElement,f.anchor);
+ } finally {f.cleanup();}
+});
+test('modal preview render failure releases only its owner window keyboard scope', () => {
+ const a=desktopFixture(),b=fixture(),scopesA:unknown[]=[],scopesB:unknown[]=[];
+ for(const [f,scopes]of [[a,scopesA],[b,scopesB]] as const){
+  (f.anchor as any).closest=()=>f.doc.body;
+  f.doc.defaultView.app={scope:{},keymap:{pushScope:(s:unknown)=>scopes.push(s),popScope:(s:unknown)=>scopes.splice(scopes.indexOf(s),1)}};
+ }
+ try{
+  const closeB=openLightbox(b.anchor,{title:'B',render:()=>null});
+  assert.throws(()=>openLightbox(a.anchor,{title:'A',render:()=>{throw Error('mount');}}),/mount/);
+  assert.equal(scopesA.length,0);assert.equal(scopesB.length,1);closeB();assert.equal(scopesB.length,0);
+ }finally{a.cleanup();}
+});

@@ -1,3 +1,4 @@
+import { applyDesktopModalBackdrop } from './modal-backdrop';
 import { bindCreatorToolbarInteractionState } from './surface-interaction-state';
 import { PreparedTaskCreatorDraft, type PreparedTaskCreatorAdapter } from './task-creator-prepared-draft';
 import { openTableFilePropertyPicker } from './table/table-file-property-editor';
@@ -535,6 +536,7 @@ export class TaskCreatorModal extends Modal {
 	private templateButtonEl!: HTMLButtonElement;
 	private fieldButtonMap = new Map<TaskCreatorFieldKey, HTMLButtonElement>();
 	private cleanupInteractionState: (() => void) | null = null;
+	private backdropCleanup: (() => void) | null = null;
 	private nativeCloseButtonCleanup: (() => void) | null = null;
 	private suggestionState: SuggestionState | null = null;
 	private creatorPickerClose: (() => void) | null = null;
@@ -597,6 +599,8 @@ export class TaskCreatorModal extends Modal {
 		this.cleanupInteractionState?.();
 		this.cleanupInteractionState = null;
 		this.containerEl.addClass('operon-task-creator-modal-container');
+		this.backdropCleanup?.();
+		this.backdropCleanup = applyDesktopModalBackdrop(this.containerEl);
 		this.modalEl.addClass('operon-task-creator-modal');
 		this.nativeCloseButtonCleanup?.();
 		this.nativeCloseButtonCleanup = suppressNativeModalCloseButton(this.containerEl, this.modalEl);
@@ -642,6 +646,8 @@ export class TaskCreatorModal extends Modal {
 	}
 
 	onClose(): void {
+		this.backdropCleanup?.();
+		this.backdropCleanup = null;
 		this.cleanupInteractionState?.();
 		this.cleanupInteractionState = null;
   this.preparedClosed = true;
