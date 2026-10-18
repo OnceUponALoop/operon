@@ -1891,13 +1891,23 @@ export class OperonSettingsTab extends PluginSettingTab {
 	}
 
 	private buildTaskChipCardDefinition(pageId: TaskChipsSettingsPageId, name: string, singleRow: InterfaceIconRowSelection, aliases: string[]): SettingDefinition {
-		return { name, aliases, render: setting => {
-			setting.settingEl.empty();
-			setting.settingEl.removeClass('setting-item');
-			setting.settingEl.addClass('operon-task-chip-setting');
-			setting.settingEl.dataset.operonChipRow = `${pageId}:${'key' in singleRow ? singleRow.key : `action-${singleRow.action}`}`;
-			this.renderTaskChipsSettingsPageContent(pageId, setting.settingEl, { singleRow });
-		} };
+		const rowId = pageId === 'taskCreatorToolbar' ? undefined
+			: `operon:task-chip:${pageId}:${'key' in singleRow ? `field:${singleRow.key}` : `action:${singleRow.action}`}`;
+		// Obsidian 1.14+ uses explicit IDs to reconcile same-name settings.
+		// Keep names and aliases unchanged for native search and older hosts.
+		const definition: SettingDefinition & { id?: string } = {
+			...(rowId ? { id: rowId } : {}),
+			name,
+			aliases,
+			render: setting => {
+				setting.settingEl.empty();
+				setting.settingEl.removeClass('setting-item');
+				setting.settingEl.addClass('operon-task-chip-setting');
+				setting.settingEl.dataset.operonChipRow = `${pageId}:${'key' in singleRow ? singleRow.key : `action-${singleRow.action}`}`;
+				this.renderTaskChipsSettingsPageContent(pageId, setting.settingEl, { singleRow });
+			},
+		};
+		return definition;
 	}
 
 	private getTaskChipsDocsTargets(pageId: TaskChipsSettingsPageId): string[] {

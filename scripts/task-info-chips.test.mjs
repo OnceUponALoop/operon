@@ -9,7 +9,7 @@ import ts from 'typescript';
 const root=path.resolve(path.dirname(fileURLToPath(import.meta.url)),'..');
 const temp=mkdtempSync(path.join(tmpdir(),'operon-task-info-'));
 after(()=>rmSync(temp,{recursive:true,force:true}));
-await build({stdin:{contents:`export * from './src/types/settings'; export * from './src/ui/compact-task-layout'; export * from './src/core/task-info-chips'; export * from './src/ui/task-info-chip-action'; export * from './src/core/settings-backup-export'; export * from './src/core/settings-backup-preflight'; export * from './src/ui/table/table-field-catalog'; export {TFile} from 'obsidian';`,resolveDir:root},outfile:path.join(temp,'subject.mjs'),bundle:true,format:'esm',platform:'node',target:'node18',logLevel:'silent',alias:{obsidian:path.join(root,'scripts/test-support/obsidian.ts')}});
+await build({stdin:{contents:`export * from './src/types/settings'; export * from './src/ui/compact-task-layout'; export * from './src/core/task-info-chips'; export * from './src/ui/task-info-chip-action'; export * from './src/ui/custom-key-mapping-modal'; export * from './src/core/settings-backup-export'; export * from './src/core/settings-backup-preflight'; export * from './src/ui/table/table-field-catalog'; export {TFile} from 'obsidian';`,resolveDir:root},outfile:path.join(temp,'subject.mjs'),bundle:true,format:'esm',platform:'node',target:'node18',logLevel:'silent',alias:{obsidian:path.join(root,'scripts/test-support/obsidian.ts')}});
 const api=await import(pathToFileURL(path.join(temp,'subject.mjs')));
 const profiles=['inlineTask','filterTask','taskWikilinkOverlay','kanbanTask','taskCard','taskFinder'].map(s=>s+'CompactChips');
 const serialKey='taskInfo.projectSerial',sourceKey='taskInfo.source';
@@ -126,4 +126,73 @@ test('Settings Search and list labels recognize only catalog IDs, not Creator fi
 test('source keyboard activation stays native but cannot activate parent row',()=>{
  const chip=new El();api.bindTaskInfoSourceAction(chip,()=>{}, {vault:{}},()=>null);
  for(const key of ['Enter',' ']){let stopped=false,prevented=false;chip.events.keydown({key,stopPropagation(){stopped=true;},preventDefault(){prevented=true;}});assert.equal(stopped,true);assert.equal(prevented,false);}
+});
+
+const chipPages = ['inlineTaskChips', 'filterTaskChips', 'taskWikilinkOverlayChips', 'kanbanTaskChips', 'taskCardChips', 'taskFinderChips'];
+// Obsidian 1.14+ prefers explicit id; names remain the labels in global search.
+function hostRowIdentity(row) {
+ return row.id ? `id:${row.id}` : `name:${row.name}`;
+}
+for (const pageId of chipPages) {
+ test(`${pageId}: same-name Custom Keys keep search, labels and rerender identity separate`, () => {
+  const customMappings = [['source', 'Source'], ['projectSerial', 'Project Serial'], ['action-0', 'Source']].map(([canonicalKey, visiblePropertyName]) => {
+   // Each is independently valid; the third tests field/action identity separation.
+   const result = api.buildCustomKeyMappingFromDraft({canonicalKey, visiblePropertyName, type: 'text', showInChips: true}, api.DEFAULT_SETTINGS.keyMappings);
+   assert.equal(result.ok, true); return result.mapping;
+  });
+  const settings = api.migrateSettings({keyMappings: [...api.DEFAULT_SETTINGS.keyMappings, ...customMappings.slice(0, 2)]});
+  const before = JSON.stringify(settings);
+  const label = method('src/ui/settings-tab.ts', 'getInlineTaskCompactChipLabel', {...api,
+   getCustomFieldMapping: (mappings, key) => mappings.find(mapping => mapping.canonicalKey === key && mapping.isSystem === false),
+   getCustomFieldLabel: mapping => mapping.visiblePropertyName,
+  });
+  const define = method('src/ui/settings-tab.ts', 'buildTaskChipCardDefinition', {});
+  const rendered = [];
+  const ctx = {settings, renderTaskChipsSettingsPageContent(page, element, {singleRow}) {
+   assert.equal(page, pageId);
+   element.textContent = label.call(this, singleRow.key);
+   rendered.push(singleRow.key);
+  }};
+  const keys = [serialKey, 'projectSerial', sourceKey, 'source'];
+  let previous = new Map();
+  for (const order of [keys, [...keys].reverse(), [sourceKey, serialKey, 'source', 'projectSerial']]) {
+   const snapshot = JSON.stringify(settings);
+   const rows = order.map(key => define.call(ctx, pageId, label.call(ctx, key), {key}, [key]));
+   assert.deepEqual(rows.map(row => row.name), order.map(key => label.call(ctx, key)));
+   assert.deepEqual(rows.map(row => row.aliases), order.map(key => [key]));
+   assert.equal(new Set(rows.map(row => hostRowIdentity(row))).size, keys.length);
+   for (const query of ['source', 'project serial']) {
+    const hits = rows.filter(row => [row.name, ...(row.aliases ?? [])].some(text => text.toLowerCase().includes(query)));
+    assert.equal(hits.length, 2);
+   }
+   const next = new Map();
+   rows.forEach((row, i) => {
+    const identity = hostRowIdentity(row), key = order[i];
+    if (previous.has(identity)) assert.equal(previous.get(identity), key);
+    const element = {dataset: {}, textContent: '', empty() {this.textContent='';}, removeClass() {}, addClass() {}};
+    row.render({settingEl:element});
+    assert.equal(element.textContent, label.call(ctx, key));
+    assert.equal(element.dataset.operonChipRow, `${pageId}:${key}`);
+    assert.equal(rendered.at(-1), key);
+    next.set(identity, key);
+   });
+   previous = next;
+   assert.equal(JSON.stringify(settings), snapshot);
+   // Visibility and icon-only changes must not change the row identity or target.
+   for (const profile of profiles) settings[profile] = settings[profile].map(item => ({...item, visible: !item.visible, iconOnly: !item.iconOnly}));
+  }
+  const field = define.call(ctx, pageId, 'Source', {key:'action-0'}, ['action-0']);
+  const action = define.call(ctx, pageId, 'Source', {action:0}, []);
+  assert.notEqual(hostRowIdentity(field), hostRowIdentity(action));
+  // Constructing definitions and rerendering perform no settings mutation.
+  const finalState = JSON.stringify(settings);
+  define.call(ctx, pageId, 'Source', {key:sourceKey}, [sourceKey]);
+  assert.equal(JSON.stringify(settings), finalState);
+  assert.notEqual(finalState, before); // Only the explicit test edits above changed preferences.
+ });
+}
+test('Creator definitions retain their existing names and rendering metadata', () => {
+ const define = method('src/ui/settings-tab.ts', 'buildTaskChipCardDefinition', {});
+ const row = define.call({}, 'taskCreatorToolbar', 'Type', {key:'taskType'}, ['taskType']);
+ assert.equal(row.name, 'Type');assert.equal(row.id, undefined);assert.deepEqual(row.aliases, ['taskType']);
 });
