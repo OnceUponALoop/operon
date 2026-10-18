@@ -88,7 +88,7 @@ export function showTaskNotePopover(options: TaskNotePopoverOptions): TextFieldP
 		sessionKey: `task-text:${operonId}:note`,
 		allowEmptyCommit: true,
 		editor: {
-			kind: 'compact-markdown',
+			kind: 'compact-markdown', openLinksInLightbox: true,
 			sourcePath: options.sourcePath,
 			textPolicy: 'task-note',
 		},

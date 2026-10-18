@@ -1,3 +1,4 @@
+import { taskTextLinkEditorExtension } from './task-text-link-editor';
 import { Platform, TFile, normalizePath, type App } from 'obsidian';
 import { Prec, type Extension } from '@codemirror/state';
 import { EditorView } from '@codemirror/view';
@@ -25,6 +26,7 @@ import { compactMarkdownUnderlineExtension } from './compact-markdown-underline-
 export interface CompactMarkdownEditorSurfaceOptions {
 	app: App;
 	sourceValue: string;
+ openLinksInLightbox?: boolean;
 	sourcePath?: string;
 	placeholder?: string;
 	ariaLabel: string;
@@ -305,6 +307,7 @@ function createEmbeddedBackend(input: CompactEditorBackendInput): CompactEditorB
 			ariaMultiline: input.options.textPolicy === 'task-note',
 			additionalExtensions: [
 				compactEditorSurfaceScopeExtension,
+    ...(input.options.openLinksInLightbox ? [taskTextLinkEditorExtension(input.options.app, view => ({from: 0, to: view.state.doc.length, sourcePath: input.sourcePath}))] : []),
 				compactMarkdownUnderlineExtension,
 				eventExtension,
 			],

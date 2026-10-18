@@ -152,7 +152,7 @@ export class TaskCardControls extends Component {
     const mode = repeatMode; repeatMode = undefined;
     return this.deps.run(this.id, allowed, () => this.deps.updateSurfaceFields?.(this.id, payload, task, allowed, mode) ?? false);
    };
-   const row = buildCompactCardChipRow(task, { ...callbacks, getTaskById: id => this.deps.getTask(id) ?? undefined, surface: surface?.menuSurface ?? 'taskCard', canMutate: allowed,
+   const row = buildCompactCardChipRow(task, { ...callbacks, getAllTasks: () => this.deps.getAllTasks(), getTaskById: id => this.deps.getTask(id) ?? undefined, surface: surface?.menuSurface ?? 'taskCard', canMutate: allowed,
     updateField: (_id, key, value) => commit({ [key]: value }),
     updateFields: (id, value) => surface ? commit(value) : this.run(() => callbacks.updateFields?.(id, value)),
     updateRepeatSeriesInlineCompletionMode: (id, mode) => { if (surface) repeatMode = mode; else void this.run(() => callbacks.updateRepeatSeriesInlineCompletionMode?.(id, mode)); },
@@ -183,7 +183,7 @@ export class TaskCardControls extends Component {
   showTextFieldPopover({ app: this.deps.app, anchor, title: t('taskEditor', 'description'),
    initialValue: task.description, taskColor: task.fieldValues.taskColor,
    sessionKey: `canvas-task-description:${this.id}`, lifecycleOwner: this.root, rebindCommitOnReopen: true,
-   editor: { kind: 'compact-markdown', sourcePath: task.primary.filePath },
+   editor: { kind: 'compact-markdown', openLinksInLightbox: true, sourcePath: task.primary.filePath },
    onCommit: value => this.deps.run(this.id, allowed, () => surface
     ? this.deps.updateSurfaceFields?.(this.id, { _description: value }, task, allowed) ?? false
     : this.deps.chips.updateField?.(this.id, '_description', value)),

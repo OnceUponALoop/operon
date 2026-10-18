@@ -1,3 +1,4 @@
+import { taskDescriptionOpening } from '../task-text-link-opening';
 import { calendarNavigationLabels, showCalendarMonthPicker } from './calendar-month-picker';
 import { registerFilterDayRefresh } from '../../core/filter-day-refresh';
 import { getScopedTrackerSessions, getTimeScopedFieldValues } from '../../core/time-scope-values';
@@ -8251,6 +8252,7 @@ export class CalendarView extends ItemView {
 			renderCompactTaskMarkdown(title, {
 				app: this.app,
 				value: titleText,
+    bindLink: taskDescriptionOpening(this.app, () => this.indexer.getTask(task.operonId)),
 				sourcePath: task.primary.filePath,
 				mode: 'interactive',
 				containerClassName: 'operon-task-description-markdown',
@@ -11855,6 +11857,7 @@ export class CalendarView extends ItemView {
 			renderCompactTaskMarkdown(titleEl, {
 				app: this.app,
 				value: titleText,
+    bindLink: taskDescriptionOpening(this.app, () => this.indexer.getTask(item.taskId)),
 				sourcePath: item.sourceTask.primary.filePath,
 				mode: 'interactive',
 				containerClassName: 'operon-task-description-markdown',

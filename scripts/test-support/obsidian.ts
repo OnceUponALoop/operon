@@ -63,6 +63,33 @@ export class MarkdownRenderChild extends Component {
 	}
 }
 
+export class WorkspaceTabs {
+ parent = null;
+ children: any[] = [];
+ containerEl: any;
+ tabsContainerEl: any;
+ currentTab = 0;
+ component = { unloaded: false, unload() { this.unloaded = true; } };
+ constructor(private workspace: any) {
+  this.containerEl = workspace.containerEl.createDiv('workspace-tabs');
+  this.containerEl.createDiv('workspace-tab-header-container');
+  this.tabsContainerEl = this.containerEl.createDiv('workspace-tab-container');
+ }
+ getRoot(): any { return this; }
+ getContainer(): any { return this.workspace; }
+ selectTabIndex(index: number) { this.currentTab = index; }
+ removeChild(leaf: any) {
+  if (this.children.length === 1) this.workspace.lastTabGroupStacked = false;
+  this.children = this.children.filter(item => item !== leaf); leaf.parent = null;
+  leaf.containerEl.remove();
+ }
+ recomputeChildrenDimensions() { for (const leaf of this.children) this.tabsContainerEl.appendChild(leaf.containerEl); }
+ insertChild(_index: number, leaf: any) {
+  this.children.push(leaf); leaf.parent = this;
+  this.tabsContainerEl.appendChild(leaf.containerEl);
+ }
+}
+
 export class WorkspaceLeaf {
 	app: App;
 	view: unknown = null;

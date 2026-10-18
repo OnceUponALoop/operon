@@ -9,7 +9,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### New
 
-- Added optional **Source chips** to all six task chip profiles, showing the source file and Inline task line with direct navigation outside Task Finder. On Obsidian 1.14+, Source and Project Serial settings remain separate from same-named Custom Keys during search, reordering, and visibility changes.
+- Added a shared **desktop lightbox** for web pages, media, and editable Markdown, Bases, and Operon Tables, using their normal views and save behavior without adding background tabs or changing your tab layout.
+- Added **nested previews** that preserve the previous view and Description/Note drafts, with controls to close, open in a new tab, open to the right, or open below. Unfinished drafts and failed saves stay protected before moving to another tab or split.
+- Added optional **Source chips** to all six task chip profiles, showing the source file and Inline task line. Desktop clicks preview the source at the task location, while Cmd/Ctrl-click opens it in a new tab; Task Finder remains non-interactive and mobile navigation is unchanged. On Obsidian 1.14+, Source and Project Serial settings remain separate from same-named Custom Keys during search, reordering, and visibility changes.
 - Added a **year and month picker** to the desktop Calendar sidebar and toolbar, making it easier to jump to another month while preserving the focused day where possible.
 - Added **Repeat reference date** filter conditions for saved dates, including relative dates and empty values; changing the date through the Table Repeat picker updates matching results.
 - Added a **Repeat reference date** column to Tables, showing the saved date in your preferred format and opening the Repeat picker for editing; tasks without a saved reference date keep an empty cell.
@@ -17,6 +19,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Improved
 
+- Made supported **task chip and Table links** open consistently in the desktop lightbox, including media, Parent Task, and existing wikilinks in Type and Text/List values; ordinary values and missing wikilinks retain their pickers, and clicking outside a Table link still edits the cell.
+- Extended the same opening behavior to **task description links and Description/Note popovers** across supported task views. Cmd/Ctrl-click opens a focused tab; local links follow Page Preview preferences, and media keeps its quick hover preview with single-click opening.
+- Refined **lightbox layout** with a narrower Markdown/web view, wider Base/Table views, inset content frames, and four matching controls beside the content; Operon Table presets and Gantt remain usable inside the preview.
 - **Project Serial chips** can now be reordered, hidden, and shown as icons alongside other task chips; existing serials remain visible first by default, while Task Finder keeps both information chips non-interactive.
 - **Add subtask actions** now offer both File and Inline subtasks for File tasks, while Inline tasks keep the Inline action, consistently across all five task chip profiles.
 
@@ -50,6 +55,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Validation
 
+- Desktop lightbox opening, lifecycle, and interaction checks passed **189/189** focused tests, **14/14** shell tests, **8/8** web tests, **24/24** layout checks, and **12/12** editor/draft browser checks.
 - Source and Project Serial chip settings, navigation, and interaction checks passed **48/48** focused tests, **6/6** Settings Search and redraw scenarios, and **22/22** browser checks across six profiles.
 - Subtask chip routing and interaction protections passed **23/23** focused tests across File and Inline tasks.
 
@@ -65,7 +71,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Task Creator repeat editing and template protection checks passed **16/16** focused tests.
 - External calendar compatibility and refresh checks passed **67/67** focused tests.
-- Full local Plugin checks, production build, release guard, and code review passed, along with **5,161/5,161** local regression tests.
+- Full local Plugin checks, production build, release guard, and code review passed, along with **5,170/5,170** local regression tests.
 
 ## [4.0.1] - 2026-10-14
 

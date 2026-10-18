@@ -32,6 +32,8 @@ const { formatTableRepeatValue, parseRepeatRule, formatRepeatRuleSummaryI18n, is
 
 // Execute the real TypeScript methods with lightweight host adapters; no Obsidian UI is opened.
 function compile(file, name, deps = {}, className) {
+ deps = { Platform: { isDesktopApp: true }, embedTableCellOpeners: new WeakMap(),
+  isDesktopOpeningChip: key => { assert.ok(['repeat', 'repeatOccurrenceDate'].includes(key)); return false; }, ...deps };
  const source = read(file), ast = ts.createSourceFile(file, source, ts.ScriptTarget.Latest, true);
  const nodes = className ? ast.statements.find(n => ts.isClassDeclaration(n) && n.name.text === className).members : ast.statements;
  const node = nodes.find(n => n.name?.getText(ast) === name);
@@ -84,7 +86,7 @@ const decorate = compile(viewFile, 'decorateEditableTaskCell', {
 function harness(value = raw) {
  pickerCalls.length = 0;
  const commits = [], cell = new Element();
- const subject = { app: {}, callbacks: { onUpdateTaskFields() {} }, indexer: { getAllTasks: () => [task] }, pendingCellKey: null,
+ const subject = { tableCellOpeners: new WeakMap(), app: {}, callbacks: { onUpdateTaskFields() {} }, indexer: { getAllTasks: () => [task] }, pendingCellKey: null,
  syncPendingCellState() {}, closeActivePicker() {}, commitTaskCellUpdate: (el, target, key, cellKey, payload) => commits.push(payload),
  openInlineTextPopover() { assert.fail('Repeat must not use text editing'); } };
  const target = { ...task, fieldValues: { ...task.fieldValues, repeat: value } };
@@ -294,7 +296,7 @@ function referenceHarness(embedded, value = referenceValue, editable = true, wri
   syncEmbedTablePendingCellState() {}, closeEmbedTableActivePicker() {},
   commitEmbedTableCellUpdate: (instance, deps, cell, task, key, cellKey, payload) => commits.push({ key, payload }),
  };
- const host = { app: {}, indexer: { getAllTasks: () => [target] }, callbacks: writable ? { onUpdateTaskFields() {} } : {},
+ const host = { tableCellOpeners: new WeakMap(), app: {}, indexer: { getAllTasks: () => [target] }, callbacks: writable ? { onUpdateTaskFields() {} } : {},
   syncPendingCellState() {}, closeActivePicker() {},
   commitTaskCellUpdate: (cell, task, key, cellKey, payload) => commits.push({ key, payload }),
  };

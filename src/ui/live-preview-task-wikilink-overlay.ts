@@ -1,3 +1,4 @@
+import { taskDescriptionOpening } from './task-text-link-opening';
 import { identifyInlineTaskPart, rememberInlineTaskDom, reconcileInlineTaskDom } from './inline-retained-dom';
 import { getTaskIconActionLabel } from '../core/task-icon-action';
 import {
@@ -389,6 +390,7 @@ class TaskWikilinkLabelWidget extends WidgetType {
 			renderCompactTaskMarkdown(label, {
 				app: this.callbacks.app,
 				value: description,
+    bindLink: taskDescriptionOpening(this.callbacks.app, () => this.callbacks.getAllTasks().find(task => task.operonId === this.resolved.task.operonId)),
 				sourcePath: this.resolved.task.primary.filePath,
 				mode: 'interactive',
 				containerClassName: 'operon-task-wikilink-label-markdown',

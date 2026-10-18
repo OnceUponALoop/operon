@@ -1,3 +1,4 @@
+import { NativeLightboxLifecycle, trackLightboxTableCallbacks } from '../src/ui/native-lightbox-lifecycle';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { createRequire } from 'node:module';
@@ -74,18 +75,20 @@ export function registerSelectedTextWriteTests(test: (name: string, run: () => P
   return {task,host,writer,read,reindex,getContent:()=>content,setContent:(v:string)=>{content=v;},getWrites:()=>writes,
    save:async(value:string,options:any={})=>{const payload={customText:value};const prepared=await prepare.call(host,task,payload,options);if(prepared===false)return false;return writer.writeTaskFields(task.operonId,payload,{mode:'merge',reindex:'none',touchAncestors:false,...prepared});}};
  }
- for(const surface of ['standalone','embedded'])for(const format of ['inline','yaml'] as const)for(const [kind,value] of Object.entries({short:'hello',long:'long text '.repeat(1500),multiline:'first\r\nsecond\n[[Note|Alias]]'})) {
+ for(const surface of ['standalone','embedded','lightbox'])for(const format of ['inline','yaml'] as const)for(const [kind,value] of Object.entries({short:'hello',long:'long text '.repeat(1500),multiline:'first\r\nsecond\n[[Note|Alias]]'})) {
   test(`W034 normalized Table ${surface} ${format} ${kind} records native Text`,()=>withYaml(async()=>{
    const f=fixture(format,true);const originalMappings=f.host.settings.keyMappings;notices.length=0;
    const bridge={settings:f.host.settings,indexer:{getTask:()=>f.task},normalizeTableTaskFieldsWritebackPayload:normalizeTable,
     commitTableTaskFieldsAndRefresh:commitTable,withTableMutationRefresh:async(run:()=>Promise<boolean>)=>run(),
     updateDirectTaskFieldsAndRefresh:updateDirect,
     updateTaskFieldsAndRefresh:async(id:string,payload:Record<string,string>,options:any)=>{assert.equal(id,f.task.operonId);assert.equal(options.tableCommittedSource,true);assert.equal(options.directEdit.targetId,id);return f.save(payload.customText,{expectedFieldValues:{customText:'old'}});}};
-   const update=(id:string,payload:Record<string,string>)=>updateTable.call(bridge,id,payload);
+   const directUpdate=(id:string,payload:Record<string,string>)=>updateTable.call(bridge,id,payload);
+   const leaf:any={view:{getViewType:()=> 'operon-table-file-view'}};const lifecycle=surface==='lightbox'?new NativeLightboxLifecycle(f.host.app,leaf):null;
+   const update=trackLightboxTableCallbacks(leaf,{onUpdateTaskFields:directUpdate}).onUpdateTaskFields!;
    const state:any={pendingCellKey:null,callbacks:{onUpdateTaskFields:update},syncPendingCellState:()=>{},closeActivePicker:()=>{},clearRenderedPendingCellState:()=>{},queuePendingCellFocusRestore:()=>{}};
    const cell={dataset:{editFocusKey:'text'}};
-   const result=surface==='standalone'?await standaloneCommit.call(state,cell,f.task,'customText','text',{customText:value}):await embeddedCommit(state,{updateTaskFields:update},cell,f.task,'customText','text',{customText:value});
-   assert.equal(result,true);assert.deepEqual(notices,[]);assert.equal(state.pendingCellKey,null);assert.equal(f.read(),value);assert.equal(f.getWrites(),1);
+   const result=surface!=='embedded'?await standaloneCommit.call(state,cell,f.task,'customText','text',{customText:value}):await embeddedCommit(state,{updateTaskFields:update},cell,f.task,'customText','text',{customText:value});
+   assert.equal(result,true);if(lifecycle){assert.equal(await lifecycle.prepare(),true);lifecycle.dispose();}assert.deepEqual(notices,[]);assert.equal(state.pendingCellKey,null);assert.equal(f.read(),value);assert.equal(f.getWrites(),1);
    if(format==='inline'){assert.notEqual(f.host.settings.keyMappings,originalMappings);assert.deepEqual(f.host.settings.keyMappings,originalMappings);}
    await f.reindex();assert.equal(f.task.fieldValues.customText,value);
   }));

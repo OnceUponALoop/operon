@@ -47,6 +47,7 @@ import { applyPropertyPoolTask, propertyPoolExpectedFields, propertyPoolPeriodic
 import type { PropertyPoolFavorite } from './src/core/property-value-pool';
 import { indentNewInlineSubtask } from './src/core/task-creator-target-resolver';
 import { disposeWebLightboxes } from './src/ui/web-lightbox';
+import { getNativeLightboxLeaves } from './src/ui/native-lightbox-lifecycle';
 import { refreshAssigneeChipImages, disposeAssigneeChipImages } from './src/ui/assignee-chip-image';
 import { normalizeTaskColorValue } from './src/core/task-color-value';
 import { iterateMarkdownFencedBlocks, type MarkdownFencedBlock } from './src/core/markdown-fenced-lines';
@@ -3662,10 +3663,11 @@ export default class OperonPlugin extends Plugin {
 	}
 
 	private refreshTableLeaves(presetId?: string, registryEntry?: TablePresetRegistryEntry<TFile> | null): void {
-		const leaves = [
+		const leaves = new Set([
 			...this.app.workspace.getLeavesOfType(OPERON_TABLE_VIEW_TYPE),
 			...this.app.workspace.getLeavesOfType(OPERON_TABLE_FILE_VIEW_TYPE),
-		];
+			...getNativeLightboxLeaves(this.app).filter(leaf => leaf.view instanceof OperonTableView),
+		]);
 		for (const leaf of leaves) {
 			const tableView = leaf.view instanceof OperonTableView ? leaf.view : null;
 			const isFileView = tableView?.getViewType() === OPERON_TABLE_FILE_VIEW_TYPE;

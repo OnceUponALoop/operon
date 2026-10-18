@@ -1,7 +1,8 @@
+import { taskDescriptionOpening } from './task-text-link-opening';
 import { isTaskInfoChipKey } from '../core/task-info-chips';
 import { bindTaskInfoSourceAction } from './task-info-chip-action';
 import { getTimeScopeSignature, replaceTaskTimeScope } from '../core/time-scope-values';
-import { bindLinksChipKeyboard, handleLinksChipClick } from './links-chip-action';
+import { bindDesktopChipOpening } from './links-chip-action';
 import { identifyInlineTaskPart, registerInlineTaskDomRefresh, rememberInlineTaskDom, reconcileInlineTaskDom } from './inline-retained-dom';
 import { bindAssigneeChipImage } from './assignee-chip-image';
 import { getTaskIconActionLabel } from '../core/task-icon-action';
@@ -612,6 +613,7 @@ function renderTaskDescription(
 	const rendered = renderCompactTaskMarkdown(descriptionEl, {
 		app: callbacks.app,
 		value: description,
+  bindLink: taskDescriptionOpening(callbacks.app, () => callbacks.getAllTasks().find(current => current.operonId === task.operonId)),
 		sourcePath: task.primary.filePath,
 		mode: 'interactive',
 		containerClassName: 'operon-reading-task-description-markdown',
@@ -687,6 +689,21 @@ function attachReadingChipAction(
 	taskColor?: string | null,
  getCurrent?: () => { task: IndexedTask; callbacks: ReadingTaskRowCallbacks },
 ): void {
+
+ const currentCallbacks = () => getCurrent?.().callbacks ?? callbacks;
+ if (bindDesktopChipOpening(chip, entry, {
+  app: callbacks.app, getSettings: () => currentCallbacks().getSettings(),
+  getTask: () => currentCallbacks().getAllTasks().find(candidate => candidate.operonId === task.operonId),
+  getTaskById: id => currentCallbacks().getAllTasks().find(candidate => candidate.operonId === id),
+  getAllTasks: () => currentCallbacks().getAllTasks(),
+  picker: current => ({ onCommit: payload => {
+   const live = currentCallbacks();
+   const normalized = Object.fromEntries(Object.entries(payload).map(([key, value]) => [key, Array.isArray(value) ? value.join('; ') : value]));
+   if (live.updateFields) void live.updateFields(current.operonId, normalized);
+   else for (const [key, value] of Object.entries(normalized)) void live.updateField(current.operonId, key, value);
+   onCommit?.();
+  } }),
+ })) return;
 	if (entry.key === 'taskInfo.projectSerial') return;
 	if (entry.key === 'taskInfo.source') {
 		bindTaskInfoSourceAction(chip, () => { const current = getCurrent?.() ?? { task, callbacks };
@@ -699,14 +716,9 @@ function attachReadingChipAction(
 
 	let tagPickerOpen = false;
 	let statusPickerOpen = false;
-	bindLinksChipKeyboard(chip, entry.key);
 	chip.addEventListener('click', (event) => {
 		event.preventDefault();
 		event.stopPropagation();
-		if (handleLinksChipClick(callbacks.app, chip, entry, event)) {
-			onCommit?.();
-			return;
-		}
 		if (entry.key !== 'tags' && entry.key !== 'status' && entry.iconOnly && shouldOpenIconOnlyChipPreview(chip)) {
 			openIconOnlyChipPreview(chip);
 			return;

@@ -1,3 +1,4 @@
+import { taskDescriptionOpening } from './task-text-link-opening';
 import { identifyInlineTaskPart, rememberInlineTaskDom, reconcileInlineTaskDom } from './inline-retained-dom';
 import { cleanupOperonRenderRoot } from './render-root-cleanup';
 import { getTaskIconActionLabel } from '../core/task-icon-action';
@@ -973,6 +974,7 @@ function createTaskFileLinkLabel(
 	renderCompactTaskMarkdown(label, {
 		app: callbacks.app,
 		value: description,
+  bindLink: taskDescriptionOpening(callbacks.app, () => callbacks.getAllTasks().find(task => task.operonId === resolved.task.operonId)),
 		sourcePath: resolved.task.primary.filePath,
 		mode: 'interactive',
 		containerClassName: 'operon-task-wikilink-label-markdown',

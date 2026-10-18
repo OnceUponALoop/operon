@@ -1,6 +1,8 @@
+import { iterateMarkdownLinesOutsideFences } from '../core/markdown-fenced-lines';
+import { taskTextLinkEditorExtension } from './task-text-link-editor';
 import { isTaskInfoChipKey } from '../core/task-info-chips';
 import { bindTaskInfoSourceAction } from './task-info-chip-action';
-import { bindLinksChipKeyboard, handleLinksChipClick } from './links-chip-action';
+import { bindDesktopChipOpening } from './links-chip-action';
 import { identifyInlineTaskPart, rememberInlineTaskDom, reconcileInlineTaskDom } from './inline-retained-dom';
 import { bindAssigneeChipImage } from './assignee-chip-image';
 import { isValidOperonId } from '../core/id-generator';
@@ -1027,7 +1029,19 @@ export function operonLivePreviewConcealExtension(callbacks: LivePreviewCallback
 			this.destroyed = true;
 		}
 	});
-	return [field, contextBridge];
+	const descriptionLinks = taskTextLinkEditorExtension(callbacks.app, (view, position) => {
+  if (!isLivePreview(view.state)) return null;
+  const line = view.state.doc.lineAt(position);
+  const outsideFences = iterateMarkdownLinesOutsideFences(view.state.doc.toString(), true);
+  let executable = false;
+  for (const [number] of outsideFences) {if (number === line.number - 1) {executable = true; break;} if (number >= line.number) break;}
+  if (!executable) return null;
+  const path = callbacks.getFilePath(view);
+  const task = parseTaskLine(line.text, line.number - 1, path, callbacks.getSettings().keyMappings);
+  if (!task || (!task.operonId && task.fields.length === 0)) return null;
+  return {from: line.from + task.descriptionRange.from, to: line.from + task.descriptionRange.to, sourcePath: path};
+ });
+ return [field, contextBridge, descriptionLinks];
 }
 
 function isMarkdownFenceLine(line: string): boolean {
@@ -1094,6 +1108,7 @@ export function buildMetadataTailRenderSignature(
 		.map(entry => [
 			entry.key,
 			entry.label,
+			entry.rawValue ?? '',
 			entry.icon,
 			entry.iconOnly,
 			entry.interactive,
@@ -1241,6 +1256,24 @@ function attachLivePreviewChipAction(
 	task: ParsedTask,
 	onCommit?: () => void,
 ): void {
+
+ if (bindDesktopChipOpening(chip, entry, {
+  app: callbacks.app, getSettings: callbacks.getSettings, getAllTasks: callbacks.getAllTasks,
+  getTask: () => {
+   const current = callbacks.getAllTasks().find(candidate => candidate.operonId === task.operonId);
+   return current ? { ...current, fieldValues: Object.fromEntries(Object.entries(getLivePreviewCurrentFieldValues(task, view, callbacks)).filter((item): item is [string, string] => typeof item[1] === 'string')) } : null;
+  },
+  getTaskById: id => callbacks.getAllTasks().find(candidate => candidate.operonId === id),
+  picker: current => ({ anchor: snapshotLivePreviewAnchor(chip), retainInputFocus: true,
+   onCommit: payload => {
+    const normalized = Object.fromEntries(Object.entries(payload).map(([key, value]) => [key, Array.isArray(value) ? value.join('; ') : value]));
+    const cursor = getLivePreviewDescriptionEndCursor(task, view, callbacks);
+    if (callbacks.updateFields) void callbacks.updateFields(current.operonId, normalized, cursor);
+    else for (const [key, value] of Object.entries(normalized)) void callbacks.updateField(current.operonId, key, value, cursor);
+    onCommit?.();
+   },
+  }),
+ })) return;
 	if (entry.key === 'taskInfo.projectSerial') return;
 	if (entry.key === 'taskInfo.source') {
 		bindTaskInfoSourceAction(chip, () => { if (task.operonId) void callbacks.onContextualAction?.(task.operonId, 'jumpToSource'); }, callbacks.app, () => callbacks.getAllTasks().find(current => current.operonId === task.operonId));
@@ -1249,7 +1282,6 @@ function attachLivePreviewChipAction(
 
 	let tagPickerOpen = false;
 	let statusPickerOpen = false;
-	bindLinksChipKeyboard(chip, entry.key);
 	if (entry.key === 'status') {
 		chip.addEventListener('mousedown', event => {
 			event.preventDefault();
@@ -1259,10 +1291,6 @@ function attachLivePreviewChipAction(
 	chip.addEventListener('click', (event) => {
 		event.preventDefault();
 		event.stopPropagation();
-		if (handleLinksChipClick(callbacks.app, chip, entry, event)) {
-			onCommit?.();
-			return;
-		}
 		if (entry.key !== 'tags' && entry.key !== 'status' && entry.iconOnly && shouldOpenIconOnlyChipPreview(chip)) {
 			openIconOnlyChipPreview(chip);
 			return;

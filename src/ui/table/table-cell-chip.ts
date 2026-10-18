@@ -48,6 +48,7 @@ export interface TableCellChipRenderOptions {
 	workflowStatusIdentityIndex?: WorkflowStatusIdentityIndex;
 	accentValue?: string;
 	locationResolver?: TableLocationCellResolver | null;
+	bindOpening?: (chip: HTMLElement, rawValue: string) => boolean;
 	onLocationPreview?: (trigger: HTMLElement, visual: TableLocationCellVisual) => void;
 	onExternalLinkModifierActivate?: (trigger: HTMLElement, link: ExternalLinkValue) => void;
 }
@@ -97,7 +98,7 @@ export function renderTableCellChips(
 					: 'overflow',
 			});
 		}
-		bindTableTaskMediaChipActivation(chip, key, item.rawValue, options);
+		if (!options.bindOpening?.(chip, item.rawValue)) bindTableTaskMediaChipActivation(chip, key, item.rawValue, options);
 	}
 }
 
@@ -364,7 +365,7 @@ export function renderTableCellChipContent(
 	if (key !== 'taskIcon') {
 		chip.setText(displayValue);
 		const parentTaskId = key === 'parentTask' ? (options.accentValue ?? value).trim() : '';
-		if (parentTaskId && options.taskLookup?.getTask(parentTaskId)) {
+		if (parentTaskId && !options.bindOpening && options.taskLookup?.getTask(parentTaskId)) {
 			bindTableParentTaskTooltip(
 				chip,
 				displayValue,
@@ -392,7 +393,8 @@ function renderTableExternalLinkChip(
 	options: TableCellChipRenderOptions,
 ): void {
 	const desktopLinks = Platform.isDesktopApp && !!options.app;
-	if (desktopLinks) bindLinksChipKeyboard(chip, 'links');
+	const sharedOpening = !!options.bindOpening;
+	if (desktopLinks && !sharedOpening) bindLinksChipKeyboard(chip, 'links');
 	chip.addClass('operon-table-external-link-chip');
 	renderTableValueIconChipContent(chip, link.displayValue, options.settings ? getTableTaskField('links', options.settings)?.icon ?? 'link' : 'link', 'link');
 	bindOperonHoverTooltip(chip, {
@@ -403,6 +405,8 @@ function renderTableExternalLinkChip(
 		taskColor: null,
 		preferredHorizontal: 'center',
 	});
+
+	if (sharedOpening) return;
 
 	chip.addEventListener('pointerdown', event => {
 		if (event.button !== 0 || (!desktopLinks && !isTaskSourceOpenModifierClick(event))) return;

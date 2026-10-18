@@ -5903,7 +5903,7 @@ button.operon-task-media-hover-toolbar:hover {
 	background: var(--color-base-00);
 }
 
-.operon-task-media-lightbox img {
+.operon-task-media-lightbox.is-image > img {
 	display: block;
 	max-width: 100%;
 	max-height: 100%;
@@ -5915,11 +5915,11 @@ button.operon-task-media-hover-toolbar:hover {
 	cursor: zoom-in;
 }
 
-.operon-task-media-lightbox.is-zoomed img {
+.operon-task-media-lightbox.is-image.is-zoomed > img {
 	cursor: grab;
 }
 
-.operon-task-media-lightbox.is-dragging img {
+.operon-task-media-lightbox.is-image.is-dragging > img {
 	cursor: grabbing;
 }
 
@@ -34809,7 +34809,7 @@ body .modal.operon-table-preset-settings-modal button.operon-table-preset-column
 .operon-task-card-header { display: flex; align-items: flex-start; gap: 8px; }
 .operon-task-card-status { display: flex; align-items: center; flex: none; height: 1lh; color: var(--text-muted); }
 .operon-task-card-status svg { width: 20px; height: 20px; }
-.operon-task-card button.operon-task-card-title {
+.operon-task-card .operon-task-card-title {
 	display: block;
 	flex: 1;
 	min-width: 0;
@@ -34829,14 +34829,14 @@ body .modal.operon-table-preset-settings-modal button.operon-table-preset-column
 	user-select: text;
 	cursor: pointer;
 }
-.operon-task-card button.operon-task-card-title:hover { color: var(--text-normal); }
-.operon-task-card button.operon-task-card-title:focus-visible { outline: 2px solid var(--interactive-accent); outline-offset: 3px; }
+.operon-task-card .operon-task-card-title:hover { color: var(--text-normal); }
+.operon-task-card .operon-task-card-title:focus-visible { outline: 2px solid var(--interactive-accent); outline-offset: 3px; }
 /* Canvas descriptions support click editing and native card dragging. */
-.operon-task-card-canvas-node .operon-task-card button.operon-task-card-title {
+.operon-task-card-canvas-node .operon-task-card .operon-task-card-title {
  user-select: none;
  cursor: grab;
 }
-.operon-task-card-canvas-node .operon-task-card button.operon-task-card-title:hover {
+.operon-task-card-canvas-node .operon-task-card .operon-task-card-title:hover {
  color: var(--text-normal);
  background: transparent;
 }
@@ -34885,7 +34885,7 @@ body .modal.operon-table-preset-settings-modal button.operon-table-preset-column
 .canvas-node[data-operon-task-card-excalidraw] .canvas-node-content .markdown-embed-content > .markdown-preview-view::before,
 .canvas-node[data-operon-task-card-excalidraw] .canvas-node-content .markdown-embed-content > .markdown-preview-view::after { display: none; }
 .canvas-node[data-operon-task-card-excalidraw] .canvas-node-content .markdown-embed-content > .markdown-preview-view > .markdown-preview-sizer { flex: none; }
-.canvas-node[data-operon-task-card-excalidraw] .operon-task-card button.operon-task-card-title {
+.canvas-node[data-operon-task-card-excalidraw] .operon-task-card .operon-task-card-title {
  white-space: nowrap; overflow: hidden; text-overflow: ellipsis; overflow-wrap: normal;
 }
 /* Resolve shared card tokens locally; native harvested Markdown variables may be empty while loading. */
@@ -35077,6 +35077,93 @@ body .operon-canvas-task-pool .operon-canvas-task-pool-meta button:hover { color
 	position: relative;
 }
 .operon-web-lightbox-host > .workspace-leaf-content { width: 100%; height: 100%; }
+
+/* Native file views retain their own toolbar, editor and theme rules. */
+.operon-native-lightbox-host {
+ width: 90vw;
+ height: 85vh;
+ max-width: calc(100vw - 96px);
+ max-height: calc(100vh - 96px);
+ position: relative;
+ overflow: hidden;
+ background: var(--background-primary);
+ border-radius: 12px;
+}
+.operon-native-lightbox-host > .workspace-leaf-content { width: 100%; height: 100%; }
+
+/* Markdown follows the web width; Base and Table retain the wider native host. */
+.operon-native-lightbox-host:has(> .operon-lightbox-tabs > .workspace-tab-container > .workspace-leaf > .workspace-leaf-content[data-type="markdown"]) {
+ width: min(1200px, 90vw);
+ max-width: 90vw;
+}
+
+
+/* The native lightbox owns a private tab group; user tab groups are untouched. */
+.operon-lightbox-tabs.workspace-tabs { width: 100%; height: 100%; min-width: 0; }
+.operon-lightbox-tabs > .workspace-tab-header-container { display: none; }
+.operon-lightbox-tabs > .workspace-tab-container { width: 100%; height: 100%; }
+
+/* Keep file-view framing explicit inside the isolated lightbox, not theme-dependent. */
+.operon-lightbox-tabs > .workspace-tab-container > .workspace-leaf > .workspace-leaf-content:is([data-type="bases"], [data-type="operon-table-view"], [data-type="operon-table-file-view"]) > .view-content {
+ padding: var(--size-4-3, 12px);
+ overflow: hidden;
+}
+.operon-lightbox-tabs > .workspace-tab-container > .workspace-leaf > .workspace-leaf-content[data-type="bases"] {
+ --bases-table-container-border-radius: 6px;
+}
+.operon-lightbox-tabs > .workspace-tab-container > .workspace-leaf > .workspace-leaf-content:is([data-type="bases"], [data-type="operon-table-view"], [data-type="operon-table-file-view"]) > .view-content > :is(.operon-table-root, .bases-view) {
+ border-radius: 6px;
+}
+.operon-lightbox-tabs > .workspace-tab-container > .workspace-leaf > .workspace-leaf-content:is([data-type="operon-table-view"], [data-type="operon-table-file-view"]) > .view-content > .operon-table-root {
+ overflow: hidden;
+}
+
+/* File Table can retain its constructor-time DOM identity; size its content by flex. */
+.operon-lightbox-tabs > .workspace-tab-container > .workspace-leaf > .workspace-leaf-content:is([data-type="operon-table-view"], [data-type="operon-table-file-view"]) > .view-content {
+ flex: 1;
+ min-height: 0;
+ height: auto;
+}
+.operon-task-media-lightbox.has-content-controls .operon-task-media-lightbox-control {
+ position: absolute;
+ left: var(--operon-lightbox-control-left, calc(100% - 52px));
+ right: auto;
+ top: var(--operon-lightbox-control-top, 16px);
+ display: flex;
+ align-items: center;
+ justify-content: center;
+ width: 36px;
+ height: 36px;
+ padding: 0;
+ color: var(--text-normal);
+ background: var(--background-primary);
+ border: 1px solid var(--background-modifier-border);
+ border-radius: var(--operon-lightbox-control-radius, 12px);
+ box-shadow: var(--shadow-s);
+ z-index: 1;
+}
+.operon-task-media-lightbox.has-content-controls .operon-task-media-lightbox-tab {
+ top: calc(var(--operon-lightbox-control-top, 16px) + 44px);
+}
+.operon-task-media-lightbox.has-content-controls .operon-task-media-lightbox-control:hover {
+ background: var(--background-modifier-hover);
+}
+.operon-task-media-lightbox.has-content-controls .operon-task-media-lightbox-control:focus-visible {
+ outline: 2px solid var(--interactive-accent);
+ outline-offset: 2px;
+}
+
+/* Suspended previews retain native editors and drafts without intercepting input. */
+.operon-task-media-lightbox[hidden], .operon-text-field-popover-panel[hidden] { display: none; }
+.operon-task-media-lightbox.has-content-controls .operon-task-media-lightbox-split {
+ top: calc(var(--operon-lightbox-control-top, 16px) + 88px);
+}
+.operon-task-media-lightbox.has-content-controls .operon-task-media-lightbox-split-below {
+ top: calc(var(--operon-lightbox-control-top, 16px) + 132px);
+}
+
+/* Host menus and Page Preview use Obsidian's own overlay layers. */
+.operon-task-media-lightbox:is(.is-native, .is-web) { z-index: var(--layer-popover); }
 
 .operon-task-media-lightbox-title[hidden] { display: none; }
 

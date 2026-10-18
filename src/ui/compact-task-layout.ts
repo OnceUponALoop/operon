@@ -1,7 +1,7 @@
 import { isTaskInfoChipKey, TASK_INFO_CHIPS, formatTaskInfoSource, getTaskInfoSourceIcon } from '../core/task-info-chips';
 import type { ProjectSerialDisplay } from '../core/project-serials';
 import { getTimeScopedFieldValues } from '../core/time-scope-values';
-import { type App, setIcon } from 'obsidian';
+import { type App, Platform, setIcon } from 'obsidian';
 import { createOwnerElement } from '../core/dom-compat';
 import { getConfiguredKeyMappingIcon } from '../core/key-mapping-icons';
 import { calculateNextRepeatDate, parseRepeatRule, type RepeatRule } from '../core/repeat-rule';
@@ -113,6 +113,8 @@ const COMPACT_INTERNAL_VISIBLE_KEYS = ['operonId', 'datetimeModified', 'taskColo
 
 export interface InlineTaskCompactChipEntry {
 	key: string;
+	/** Original list member, never a truncated display label. */
+	rawValue?: string;
 	label: string;
 	icon: string;
 	iconOnly: boolean;
@@ -287,7 +289,7 @@ export function buildInlineTaskCompactChipEntries(
 				const fullLabel = parentTask.description?.trim() || t('taskEditor', 'untitledTask');
 				const label = truncateCompactLabel(fullLabel);
 				const linkTarget = parentTask.primary.format === 'yaml' ? parentTask.primary.filePath : null;
-				const entry = createEntry(settings, key, label, item?.iconOnly === true, 'default', !!linkTarget, linkTarget);
+				const entry = createEntry(settings, key, label, item?.iconOnly === true, 'default', Platform.isDesktopApp || !!linkTarget, linkTarget);
 				if (label !== fullLabel) {
 					entry.tooltipTitle = t('taskEditor', 'parentTask');
 					entry.tooltipContent = fullLabel;
@@ -369,29 +371,29 @@ export function buildInlineTaskCompactChipEntries(
 			}
 			case 'assignees': {
 				for (const rawValue of splitTaskListValue(fieldValues['assignees'])) {
-					entries.push(createEntry(
+					entries.push({ ...createEntry(
 						settings,
 						key,
 						formatAssigneeDisplay(rawValue),
 						item?.iconOnly === true,
 						'default',
-						!!extractWikiLinkTarget(rawValue),
+						Platform.isDesktopApp || !!extractWikiLinkTarget(rawValue),
 						extractWikiLinkTarget(rawValue),
-					));
+					), rawValue });
 				}
 				break;
 			}
 			case 'contexts': {
 				for (const rawValue of splitTaskListValue(fieldValues['contexts'])) {
-					entries.push(createEntry(
+					entries.push({ ...createEntry(
 						settings,
 						key,
 						formatContextDisplay(rawValue),
 						item?.iconOnly === true,
 						'default',
-						!!extractWikiLinkTarget(rawValue),
+						Platform.isDesktopApp || !!extractWikiLinkTarget(rawValue),
 						extractWikiLinkTarget(rawValue),
-					));
+					), rawValue });
 				}
 				break;
 			}
@@ -421,7 +423,11 @@ export function buildInlineTaskCompactChipEntries(
 			}
 			case 'taskType': {
 				const value = fieldValues['taskType']?.trim();
-				if (value) entries.push(createEntry(settings, key, value, item?.iconOnly === true, 'default', true));
+				if (value) {
+     const entry = createEntry(settings, key, value, item?.iconOnly === true, 'default', true);
+     if (Platform.isDesktopApp) entry.previewLinkTarget = parseCompactWikiLinkValue(value)?.linkTarget;
+     entries.push(entry);
+    }
 				break;
 			}
 			case 'taskImage': {
@@ -523,7 +529,7 @@ function createTaskMediaCompactChipEntry(
 		label,
 		iconOnly,
 		'default',
-		reference.isOpenable,
+		Platform.isDesktopApp || reference.isOpenable,
 		isLocalReference ? reference.target : null,
 		reference.kind === 'http-url' ? reference.target : null,
 		rawValue,
@@ -618,6 +624,7 @@ function pushCustomChipEntries(
 			const displayValue = wikiLink?.displayValue ?? value;
 			const label = truncateCompactLabel(displayValue);
 			const entry = createCustomEntry(mapping, label, iconOnly, wikiLink?.linkTarget ?? null);
+			entry.rawValue = value;
 			if (label !== displayValue) {
 				entry.tooltipTitle = getCustomFieldLabel(mapping);
 				entry.tooltipContent = displayValue;
@@ -945,7 +952,7 @@ interface CompactWikiLinkValue {
 	displayValue: string;
 }
 
-function parseCompactWikiLinkValue(rawValue: string): CompactWikiLinkValue | null {
+export function parseCompactWikiLinkValue(rawValue: string): CompactWikiLinkValue | null {
 	const trimmed = rawValue.trim();
 	const match = /^!?\[\[([^\]]+)\]\]$/u.exec(trimmed);
 	if (!match) return null;

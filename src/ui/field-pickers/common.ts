@@ -235,7 +235,7 @@ export function snapshotFloatingRectAnchor(anchorEl: HTMLElement): DOMRect {
 	return snapshot;
 }
 
-function getFloatingRectAnchorOwner(anchor: HTMLElement | DOMRect): HTMLElement | null {
+export function getFloatingRectAnchorOwner(anchor: HTMLElement | DOMRect): HTMLElement | null {
 	return (anchor as OwnedFloatingRect)[FLOATING_RECT_ANCHOR_OWNER] ?? null;
 }
 
@@ -252,6 +252,8 @@ function resolveRect(anchor: HTMLElement | DOMRect): DOMRect {
 }
 
 export function resolveSurfaceFloatingHostOptions(anchorEl: HTMLElement): FloatingHostOptions {
+	const lightboxHost = asHTMLElement(anchorEl.closest('.operon-native-lightbox-host'), anchorEl);
+	if (lightboxHost) return { floatingHost: lightboxHost, floatingScrollHost: getOwnerWindow(lightboxHost), constrainToFloatingHost: true };
 	const pagePreviewHost = asHTMLElement(anchorEl.closest('.hover-popover, .popover.hover-popover'), anchorEl);
  if (!pagePreviewHost) {
   const excalidraw = anchorEl.closest('[data-operon-task-card-excalidraw]')?.closest('.view-content');
@@ -281,6 +283,8 @@ function resolveHostContext(anchor: HTMLElement | DOMRect, options: FloatingHost
 	const anchorEl = asHTMLElement(anchor);
 	const rectAnchorOwnerEl = anchorEl ? null : getFloatingRectAnchorOwner(anchor);
 	if (rectAnchorOwnerEl) {
+		const lightbox = asHTMLElement(rectAnchorOwnerEl.closest('.operon-native-lightbox-host'), rectAnchorOwnerEl);
+		if (lightbox) return { host: lightbox, constrainToHost: true, scrollHost: getOwnerWindow(lightbox) };
 		return {
 			host: getOwnerBody(rectAnchorOwnerEl),
 			constrainToHost: false,
@@ -716,6 +720,7 @@ export function createFloatingPanel(
 			&& options.shouldHandleEscape?.(event) !== false
 			&& isTopMostFloatingPanel(record)
 		) {
+			if (panel.closest('.operon-native-lightbox-host')) { event.preventDefault(); event.stopPropagation(); }
 			requestClose('escape');
 		}
 	};

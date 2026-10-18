@@ -75,9 +75,9 @@ test('source click shields caret and resolves latest task; removed task/file is 
 });
 const read=f=>readFileSync(path.join(root,f),'utf8');
 function fn(file,name,deps={}){const tree=ts.createSourceFile(file,read(file),ts.ScriptTarget.Latest,true);const node=tree.statements.find(n=>ts.isFunctionDeclaration(n)&&n.name?.text===name);assert.ok(node,name);const js=ts.transpileModule(node.getText(tree).replace(/^export /,''),{compilerOptions:{target:ts.ScriptTarget.ES2022}}).outputText;return new Function(...Object.keys(deps),`${js};return ${name}`)(...Object.values(deps));}
-for(const surface of ['live','reading','overlay','card'])for(const key of [sourceKey,serialKey])test(`${surface}: ${key} has exactly its specified navigation behavior`,()=>{
+for(const surface of ['live','reading','overlay','card'])for(const key of [sourceKey,serialKey])test(`${surface}: ${key} preserves legacy/mobile navigation behavior`,()=>{
  const chip=new El(),calls=[];let current=task();const callbacks={app:{vault:{getAbstractFileByPath:p=>new api.TFile(p)}},getAllTasks:()=>current?[current]:[],getTaskById:()=>current,onContextualAction:(...a)=>calls.push(a),onAction:(...a)=>calls.push(a)};
- const deps={bindTaskInfoSourceAction:api.bindTaskInfoSourceAction,buildKanbanTaskActionContext:()=>({surface:'taskCard'})};
+ const deps={bindDesktopChipOpening:()=>false,bindTaskInfoSourceAction:api.bindTaskInfoSourceAction,buildKanbanTaskActionContext:()=>({surface:'taskCard'})};
  const names={live:['live-preview-conceal','attachLivePreviewChipAction'],reading:['reading-task-row','attachReadingChipAction'],overlay:['task-wikilink-overlay-chips','attachOverlayChipAction'],card:['compact-card-chips','attachKanbanChipAction']};const [file,name]=names[surface];const bind=fn(`src/ui/${file}.ts`,name,deps),entry={key,iconOnly:true};let blocked=false;
  if(surface==='live')bind(chip,entry,{},current.fieldValues,null,callbacks,[],current);
  if(surface==='reading')bind(chip,entry,current,callbacks,undefined,null,()=>({task:current??task(),callbacks}));

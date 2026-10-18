@@ -1,6 +1,6 @@
 import { isTaskInfoChipKey } from '../core/task-info-chips';
 import { bindTaskInfoSourceAction } from './task-info-chip-action';
-import { bindLinksChipKeyboard, handleLinksChipClick } from './links-chip-action';
+import { bindDesktopChipOpening, isDesktopOpeningChip } from './links-chip-action';
 import { bindAssigneeChipImage } from './assignee-chip-image';
 import { App, setIcon } from 'obsidian';
 import { createOwnerElement, getOwnerWindow } from '../core/dom-compat';
@@ -63,6 +63,7 @@ export interface CompactCardChipRowCallbacks {
 	updateSubtasks?: (operonId: string, subtaskIds: string[]) => void;
 	updateDependencyField?: (operonId: string, field: 'blocking' | 'blockedBy', value: string) => void;
 	openEditor?: (operonId: string) => void | Promise<void>;
+	getAllTasks?: () => IndexedTask[];
 	getTaskById?: (operonId: string) => IndexedTask | undefined;
 	openNotePopover?: (anchor: HTMLElement, task: IndexedTask) => void;
 }
@@ -170,7 +171,7 @@ export function buildCompactCardChipRow(
 		)
 		: null;
 	for (const rawEntry of entries) {
-		const allowNavigation = options.allowReadOnlyNavigation === true && !!(rawEntry.key === 'taskInfo.source' || rawEntry.linkTarget || rawEntry.externalUrl || rawEntry.locationCoordinate);
+		const allowNavigation = options.allowReadOnlyNavigation === true && !!(rawEntry.key === 'taskInfo.source' || (isDesktopOpeningChip(rawEntry.key, settings) && (rawEntry.previewLinkTarget || rawEntry.key === 'parentTask')) || rawEntry.linkTarget || rawEntry.externalUrl || rawEntry.locationCoordinate);
   const entry = readOnly && !allowNavigation ? { ...rawEntry, interactive: false } : rawEntry;
 		const chip = createInlineTaskCompactChipElement(entry, `${options.classPrefix}-chip operon-task-chip`, { owner: chipStrip });
 		bindAssigneeChipImage(chip, entry, callbacks.app, task.primary.filePath, settings.assigneeImageProperty);
@@ -181,7 +182,7 @@ export function buildCompactCardChipRow(
 			bindAdaptiveIconOnlyExpansion(chip, entry.label, taskColor ?? null, {
 				showTooltip: !isCompactTaskMediaChipKey(entry.key),
 			});
-			if (!readOnly || allowNavigation) attachKanbanChipAction(chip, entry, task, callbacks, options.allTasks, options.isTargetReadOnly, () => closeIconOnlyChipPreview(chip));
+			if (!readOnly || allowNavigation) attachKanbanChipAction(chip, entry, task, callbacks, options.allTasks, options.isTargetReadOnly, () => closeIconOnlyChipPreview(chip), !readOnly);
 			if (!readOnly && entry.externalUrl) bindExternalLinkContextMenu(chip, entry.externalUrl, entry.externalRawValue);
 			if (entry.tooltipContent) bindKanbanChipTooltip(chip, entry, taskColor);
 			if (((readOnly && !allowNavigation) || !entry.interactive) && entry.key !== 'taskInfo.projectSerial') bindIconOnlyChipPreview(chip);
@@ -191,7 +192,7 @@ export function buildCompactCardChipRow(
 		}
 
 		if ((!readOnly || allowNavigation) && entry.interactive) {
-			attachKanbanChipAction(chip, entry, task, callbacks, options.allTasks, options.isTargetReadOnly);
+			attachKanbanChipAction(chip, entry, task, callbacks, options.allTasks, options.isTargetReadOnly, undefined, !readOnly);
 		}
 		if (isTaskInfoChipKey(entry.key)) {
 			bindOperonHoverTooltip(chip, { title: entry.tooltipTitle, content: entry.tooltipContent, taskColor });
@@ -387,7 +388,18 @@ function attachKanbanChipAction(
 	allTasks: IndexedTask[],
  isTargetReadOnly?: (target: HTMLElement) => boolean,
 	onCommit?: () => void,
+ canEdit = true,
 ): void {
+
+ if (bindDesktopChipOpening(chip, entry, {
+  app: callbacks.app, getSettings: callbacks.getSettings,
+  getTask: () => callbacks.getTaskById?.(task.operonId), getTaskById: id => callbacks.getTaskById?.(id),
+  getAllTasks: () => callbacks.getAllTasks?.() ?? allTasks.map(item => callbacks.getTaskById?.(item.operonId)).filter((item): item is IndexedTask => !!item),
+  canActivate: () => !isTargetReadOnly?.(chip),
+  picker: current => !canEdit || callbacks.canMutate?.() === false || (!callbacks.updateField && !callbacks.updateFields) ? null : {
+   onCommit: payload => { commitKanbanChipPayload(current, payload, callbacks); onCommit?.(); },
+  },
+ })) return;
 	if (entry.key === 'taskInfo.projectSerial') return;
 	if (entry.key === 'taskInfo.source') {
 		bindTaskInfoSourceAction(chip, () => { if (!isTargetReadOnly?.(chip)) void callbacks.onAction?.(task.operonId, 'jumpToSource', buildKanbanTaskActionContext(task, callbacks)); }, callbacks.app, () => callbacks.getTaskById?.(task.operonId));
@@ -396,15 +408,10 @@ function attachKanbanChipAction(
 
 	let tagPickerOpen = false;
 	let statusPickerOpen = false;
-	bindLinksChipKeyboard(chip, entry.key);
 	chip.addEventListener('click', (event) => {
 		if (isTargetReadOnly?.(chip)) return;
 		event.preventDefault();
 		event.stopPropagation();
-		if (handleLinksChipClick(callbacks.app, chip, entry, event)) {
-			onCommit?.();
-			return;
-		}
 		if (entry.key !== 'tags' && entry.key !== 'status' && entry.iconOnly && shouldOpenIconOnlyChipPreview(chip)) {
 			openIconOnlyChipPreview(chip);
 			return;

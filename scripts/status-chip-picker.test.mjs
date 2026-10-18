@@ -17,7 +17,7 @@ function fixture(surface,{iconOnly=false,format='inline',blocked=false,noWriter=
  const chip={listeners:{},addEventListener(k,fn){this.listeners[k]=fn;},click(){this.listeners.click({preventDefault(){},stopPropagation(){}});}};
  const callbacks={app:{},getSettings:()=>({}),getAllTasks:()=>[latest],getTaskById:()=>latest,canMutate:()=>mutable,updateField:(...args)=>writes.push(args)};
  if(noWriter)delete callbacks.updateField;
- const deps={bindLinksChipKeyboard(){},handleLinksChipClick:()=>false,shouldOpenIconOnlyChipPreview:()=>true,openIconOnlyChipPreview:()=>preview++,openTaskFieldPicker:o=>{opened.push(o);return()=>o.onClose?.();},getLivePreviewCurrentFieldValues:()=>task.fieldValues,getLivePreviewDescriptionEndCursor:()=>17,snapshotLivePreviewAnchor:()=>({left:1,top:2,width:10,height:10}),getKanbanDirectChipManualDatePickerOptions:()=>undefined};
+ const deps={bindDesktopChipOpening:()=>false,shouldOpenIconOnlyChipPreview:()=>true,openIconOnlyChipPreview:()=>preview++,openTaskFieldPicker:o=>{opened.push(o);return()=>o.onClose?.();},getLivePreviewCurrentFieldValues:()=>task.fieldValues,getLivePreviewDescriptionEndCursor:()=>17,snapshotLivePreviewAnchor:()=>({left:1,top:2,width:10,height:10}),getKanbanDirectChipManualDatePickerOptions:()=>undefined};
  deps.commitKanbanChipPayload=extract('compact-card-chips','commitKanbanChipPayload');
  deps.openKanbanTaskFieldPicker=extract('compact-card-chips','openKanbanTaskFieldPicker',deps);
  const entry={key,label:'Project.Active',iconOnly};const committed=()=>commits++;
