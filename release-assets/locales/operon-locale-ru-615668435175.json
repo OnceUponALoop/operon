@@ -1,8 +1,8 @@
 {
   "schemaVersion": 1,
   "locale": "ru",
-  "keyCount": 3661,
-  "keyFingerprint": "7a54994578a98011b1ac0bb7cdbd7a0759a8e468fea647aacc1382a37307a053",
+  "keyCount": 3662,
+  "keyFingerprint": "b42256065b994a9ab7d1a5f2f0bb968399f3b9d204c8ee20d6f345937c0c56f0",
   "translations": {
     "buttons": {
       "addFileSubtask": "Добавить файловую подзадачу",
@@ -3624,6 +3624,7 @@
       "taskProgress": "Прогресс задачи",
       "terminalDateConflict": "Одновременно можно установить только одну терминальную дату.",
       "terminalDateWorkflowResolveFailed": "Не удалось определить статус рабочего процесса для выбранной терминальной даты.",
+      "textPickerCurrentValue": "Текущее значение",
       "timeActual": "Фактически",
       "timeDelta": "Дельта",
       "timeDuration": "Длительность",
@@ -3706,5 +3707,5 @@
       "toggleDescendantPreview": "Переключить предпросмотр потомков"
     }
   },
-  "sourceVersion": "eeb5885db3cfc1d894db4eec988a291807f9e28180142e76c724be7c9b5a8bcc"
+  "sourceVersion": "dfd8cb3647eaec5b3017286954f42889dc316a9c829b6e04222c56f7fee75051"
 }

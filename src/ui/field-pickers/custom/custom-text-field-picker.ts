@@ -1,3 +1,5 @@
+import { bindOperonHoverTooltip, cleanupOperonHoverTooltips } from '../../operon-hover-tooltip';
+import { setAccessibleLabelWithoutTooltip } from '../../accessibility-label';
 import { t } from '../../../core/i18n';
 import { createButton, focusFloatingInput } from '../common';
 import { getOwnerWindow } from '../../../core/dom-compat';
@@ -6,6 +8,8 @@ import { createCustomFieldPanel, type CustomScalarFieldPickerOptions } from './c
 export interface CustomTextFieldPickerOptions extends CustomScalarFieldPickerOptions<'text'> {
  rankEmptyCandidates?: (candidates: readonly string[]) => string[];
 	candidates: string[];
+	separateCurrentValue?: boolean;
+	editMultilineValue?: (onClose: () => void) => () => void;
 }
 
 export function showCustomTextFieldPicker(
@@ -13,7 +17,11 @@ export function showCustomTextFieldPicker(
 	options: CustomTextFieldPickerOptions,
 ): () => void {
 	let completed = false;
+	let transitioning = false;
+	let editorClose: (() => void) | undefined;
 	const { panel, close } = createCustomFieldPanel(anchor, options, () => {
+		cleanupOperonHoverTooltips(panel);
+		if (transitioning) return;
 		if (!completed) options.onCancel?.();
 		options.onClose?.();
 	});
@@ -21,18 +29,42 @@ export function showCustomTextFieldPicker(
 	const title = panel.createDiv('operon-floating-title');
 	title.textContent = options.label;
 
+	let currentButton: HTMLButtonElement | undefined;
+	if (options.separateCurrentValue && options.value) {
+		const current = panel.createDiv('operon-custom-text-picker-current');
+		current.createDiv({ cls: 'operon-custom-text-picker-current-label', text: t('taskEditor', 'textPickerCurrentValue') });
+		currentButton = createButton('', 'operon-custom-field-picker-option operon-custom-text-picker-current-value', current);
+		current.appendChild(currentButton);
+		currentButton.createSpan({ text: formatCustomTextDisplayValue(options.value) });
+		setAccessibleLabelWithoutTooltip(currentButton, options.value);
+		bindOperonHoverTooltip(currentButton, { content: options.value, taskColor: null });
+	}
 	const input = panel.createEl('input');
 	input.type = 'text';
 	input.className = 'operon-floating-input operon-custom-field-picker-input operon-custom-text-picker-input';
 	input.placeholder = options.placeholder ?? options.label;
-	input.value = options.value ?? '';
+	input.value = options.separateCurrentValue ? '' : options.value ?? '';
+	currentButton?.addEventListener('click', () => {
+		if (/[\r\n\u2028\u2029]/u.test(options.value ?? '') && options.editMultilineValue) {
+			transitioning = true;
+			close();
+			editorClose = options.editMultilineValue(() => options.onClose?.());
+			return;
+		}
+		input.value = options.value ?? '';
+		activeIndex = 0;
+		renderSuggestions();
+		focusFloatingInput(input);
+		input.select();
+	});
 
 	const list = panel.createDiv('operon-custom-field-picker-suggestions operon-custom-text-picker-suggestions');
 	const actions = panel.createDiv('operon-floating-actions operon-custom-text-picker-actions');
 	const countLabel = actions.createDiv('operon-custom-text-picker-count');
 	actions.appendChild(countLabel);
 	let matches: string[] = [];
-	let activeIndex = 0;
+	let activeIndex = options.separateCurrentValue ? -1 : 0;
+	let explicitKeyboardSelection = false;
 
 	const commit = (value: string): void => {
 		const trimmed = value.trim();
@@ -45,6 +77,7 @@ export function showCustomTextFieldPicker(
 	const renderSuggestions = (): void => {
 		list.replaceChildren();
 		const query = input.value.trim().toLocaleLowerCase();
+		saveButton.disabled = !!options.separateCurrentValue && !query;
 		matches = uniqueCustomTextCandidates(options.candidates)
 			.filter(candidate => !query || buildCustomTextSearchText(candidate).includes(query));
 		if (!query && options.rankEmptyCandidates) matches = options.rankEmptyCandidates(matches);
@@ -53,6 +86,7 @@ export function showCustomTextFieldPicker(
 
 		for (const [index, match] of matches.entries()) {
 			const item = createButton(formatCustomTextDisplayValue(match), 'operon-custom-field-picker-option operon-custom-text-picker-option', list);
+			if (options.separateCurrentValue) item.classList.add('operon-custom-text-picker-option--search');
 			if (index === activeIndex) item.classList.add('is-active');
 			item.addEventListener('mousemove', () => setActiveIndex(index));
 			item.addEventListener('mousedown', event => {
@@ -72,13 +106,16 @@ export function showCustomTextFieldPicker(
 	};
 
 	input.addEventListener('input', () => {
-		if (options.rankEmptyCandidates && !input.value.trim()) activeIndex = 0;
+		explicitKeyboardSelection = false;
+		if (options.separateCurrentValue) activeIndex = input.value.trim() ? 0 : -1;
+		else if (options.rankEmptyCandidates && !input.value.trim()) activeIndex = 0;
 		renderSuggestions();
 	});
 	input.addEventListener('keydown', event => {
 		if (event.key === 'ArrowDown') {
 			if (matches.length === 0) return;
 			event.preventDefault();
+			explicitKeyboardSelection = true;
 			activeIndex = Math.min(activeIndex + 1, matches.length - 1);
 			renderSuggestions();
 			return;
@@ -86,12 +123,14 @@ export function showCustomTextFieldPicker(
 		if (event.key === 'ArrowUp') {
 			if (matches.length === 0) return;
 			event.preventDefault();
+			explicitKeyboardSelection = true;
 			activeIndex = Math.max(activeIndex - 1, 0);
 			renderSuggestions();
 			return;
 		}
 		if (event.key === 'Enter') {
 			event.preventDefault();
+			if (options.separateCurrentValue && !input.value.trim() && !explicitKeyboardSelection) return;
 			commit(matches[activeIndex] ?? input.value);
 		}
 	});
@@ -113,10 +152,11 @@ export function showCustomTextFieldPicker(
 
 	renderSuggestions();
 	getOwnerWindow(input).requestAnimationFrame(() => {
+		if (transitioning) return;
 		focusFloatingInput(input);
 		input.select();
 	});
-	return close;
+	return () => editorClose ? editorClose() : close();
 }
 
 export function uniqueCustomTextCandidates(candidates: readonly string[]): string[] {

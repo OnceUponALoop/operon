@@ -22,7 +22,6 @@ import { encodeFilePropertyColumnKey, isEmptyFilePropertyValue, isSupportedRawYa
 import { createVaultFilePropertySnapshot, createCachedTableFilePropertyTypeResolver, getTableFilePropertyTypeIcon, type TableFilePropertyField } from './table/table-file-property';
 import { bindPropertyReadOnlyWarning, propertyReadOnlyWarningText } from './property-readonly-warning';
 import { openTableFilePropertyPicker } from './table/table-file-property-editor';
-import { showTextFieldPopover } from './text-field-popover';
 import { showSearchableFieldPicker } from './field-pickers/searchable-field-picker';
 import { App, Component, MarkdownRenderer, Setting, Notice, getIcon, setIcon, stringifyYaml, TFile, Platform } from 'obsidian';
 import { OperonIndexer } from '../indexer/indexer';
@@ -3818,11 +3817,11 @@ export class TaskEditorContent {
 			const epoch = ++this.propertyInteractionEpoch;
 			value.addClass('is-picker-open');
 			let closePicker: (() => void) | null = null;
-			closePicker = showTextFieldPopover({
-				app: this.app, anchor: value, title: this.getWorkflowPickerLabel(key),
-				initialValue: this.fieldValues[key] ?? '', allowEmptyCommit: true,
-				lifecycleOwner: value, editor: { kind: 'compact-markdown', sourcePath: this.existingTask?.filePath ?? '' },
-				onCommit: text => this.commitWorkflowActionPayload({ [key]: text }),
+			closePicker = openTaskFieldPicker({
+				app: this.app, anchor: value, settings: this.settings, allTasks: this.indexer.getAllTasks(),
+				canonicalKey: key, currentFieldValues: { ...this.fieldValues }, currentTags: [...this.tags],
+				sourcePath: this.existingTask?.filePath ?? '', multilineEditorOwner: value,
+				onCommit: payload => this.commitWorkflowActionPayload(payload),
 				onClose: () => {
 					if (this.workflowActionPickerClose !== closePicker) return;
 					this.workflowActionPickerClose = null; value.removeClass('is-picker-open');

@@ -1,8 +1,8 @@
 {
   "schemaVersion": 1,
   "locale": "zh-TW",
-  "keyCount": 3661,
-  "keyFingerprint": "7a54994578a98011b1ac0bb7cdbd7a0759a8e468fea647aacc1382a37307a053",
+  "keyCount": 3662,
+  "keyFingerprint": "b42256065b994a9ab7d1a5f2f0bb968399f3b9d204c8ee20d6f345937c0c56f0",
   "translations": {
     "buttons": {
       "addFileSubtask": "新增檔案子任務",
@@ -3624,6 +3624,7 @@
       "taskProgress": "任務進度",
       "terminalDateConflict": "一次只能設定一個終止日期。",
       "terminalDateWorkflowResolveFailed": "無法為所選的終止日期解析工作流狀態。",
+      "textPickerCurrentValue": "目前值",
       "timeActual": "實際",
       "timeDelta": "差值",
       "timeDuration": "時長",
@@ -3706,5 +3707,5 @@
       "toggleDescendantPreview": "切換子任務預覽"
     }
   },
-  "sourceVersion": "b9ce25e010ac46d3ae84ecd9ebe1f16f5c9e0bdfb3f671a7f3f9c09ff1be109d"
+  "sourceVersion": "fd974cf69f51d3418b57f1ff48bac236a6fdb38d01e27e4e8559103399c4b28e"
 }

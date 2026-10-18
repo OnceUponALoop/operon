@@ -2663,6 +2663,7 @@
 		"invalidReminder": "Invalid reminder"
 	},
 	"taskEditor": {
+    "textPickerCurrentValue": "Current value",
 		"creatorInlineTemplateProperties": "For inline tasks, properties from this template are added to the task. The template’s body text is not included.",
 		"creatorMetadataChanged": "Property rules changed. Reopen Task Creator to review them before creating.",
 		"creatorParentPreviewChanged": "The destination changed inherited values. Review the updated selections and create again.",

@@ -3225,6 +3225,7 @@ export class OperonTableView extends FileView {
 		cellKey: string,
 		payloadKey: string,
 		allowEmptyCommit = false,
+		preserveLineBreaks = false,
 	): void {
 		if (this.pendingCellKey !== null) return;
 		this.closeActivePicker();
@@ -3276,6 +3277,7 @@ export class OperonTableView extends FileView {
 				lifecycleOwner: this.contentEl,
 				editor: {
 					kind: 'compact-markdown',
+					textPolicy: preserveLineBreaks ? 'task-note' : 'single-line',
 					sourcePath: task.primary.filePath,
 				},
 				onCommit: commitValue,
@@ -3866,6 +3868,10 @@ export class OperonTableView extends FileView {
 				sourcePath: task.primary.filePath,
 				taskFormat: task.primary.format,
 				manualDatePicker: getTableManualDatePickerOptions(key, renderState.settings),
+				onEditMultilineText: rawValue => {
+					this.openInlineTextPopover(cell, task, key, rawValue, fieldLabel, cellKey, key, true, true);
+					return this.activePickerClose ?? (() => {});
+				},
 				onCommit: payload => {
 					const normalizedPayload = normalizeTablePickerPayload(payload);
 					if (Object.keys(normalizedPayload).length === 0) return;

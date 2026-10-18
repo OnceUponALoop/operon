@@ -11,7 +11,7 @@ import type { TaskMarkdownSource } from './task-markdown-source';
 import { App, normalizePath, parseYaml, stringifyYaml, TFile, TFolder } from 'obsidian';
 import { OperonIndexer } from '../indexer/indexer';
 
-import { findInlinePropertyTask, patchInlineProperties, readInlinePropertyProjection, type InlinePropertyProjection, type InlinePropertyChange } from './inline-property-source';
+import { findInlinePropertyTask, patchInlineProperties, readInlinePropertyProjection, readParsedInlinePropertyProjection, type InlinePropertyProjection, type InlinePropertyChange } from './inline-property-source';
 import { resolveInlinePropertyDefinition, type InlinePropertyDefinition, type InlinePropertyDefinitions } from './inline-property-definitions';
 import { parseListValue, parseTaskLine } from './parser';
 import { serializeTask } from './serializer';
@@ -1263,6 +1263,12 @@ export class TaskWriter {
 		return Object.entries(expectedValues).every(([expectedKey, expectedValue]) => {
 			if (expectedKey === '_checkbox') return parsed.checkbox === expectedValue;
 			if (expectedKey === '_tags') return this.expectedTagsMatch(parsed.tags, expectedValue);
+			const mapping = this.keyMappings.find(candidate => candidate.canonicalKey === expectedKey);
+			if (mapping?.isSystem === false && mapping.type === 'text') {
+				const property = readParsedInlinePropertyProjection(parsed, { [mapping.visiblePropertyName]: 'text' },
+					this.keyMappings, this.hooks.getInlinePropertyDefinitions?.()).properties[0];
+				return (property.state === 'valid' || property.state === 'missing') && (property.value ?? '') === expectedValue;
+			}
 			const field = parsed.fields.find(candidate => candidate.key === expectedKey);
 			return (field?.value ?? '') === expectedValue;
 		});
@@ -1413,7 +1419,10 @@ export class TaskWriter {
                 protectedFields.add(mapping.canonicalKey);
                 if (!Object.prototype.hasOwnProperty.call(values, mapping.canonicalKey)) continue;
                 const matches = parsed.fields.filter(field => field.key === mapping.canonicalKey);
-                if (matches.length !== 1 || values[mapping.canonicalKey] !== matches[0].value)
+                const currentValue = mapping.type === 'text'
+                    ? readParsedInlinePropertyProjection(parsed, { [mapping.visiblePropertyName]: 'text' }, mappings, definitions).properties[0].value
+                    : matches[0]?.value;
+                if (matches.length !== 1 || values[mapping.canonicalKey] !== currentValue)
                     return { ok: false, content, fallbackReason: 'inline-native-value-required' };
                 delete values[mapping.canonicalKey];
             }

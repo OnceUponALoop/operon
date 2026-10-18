@@ -1330,6 +1330,7 @@ interface DirectTaskEditContext {
 }
 
 interface TaskFieldsUpdateOptions {
+ inlinePropertyDraft?: readonly InlinePropertyChange[];
  tableCommittedSource?: boolean;
  ownedDrawingSources?: readonly InlineMarkdownSource[];
  directEdit?: DirectTaskEditContext;
@@ -34048,6 +34049,7 @@ export default class OperonPlugin extends Plugin {
 					format: 'inline',
 					lineNumber: task.primary.lineNumber,
 					fieldValues: payload,
+					inlinePropertyDraft: options.inlinePropertyDraft,
 					...(renderSource ? {} : { expectedCheckbox: task.checkbox, expectedFieldValues: options.expectedFieldValues }),
 				}],
 			);
@@ -34592,7 +34594,8 @@ export default class OperonPlugin extends Plugin {
 	private renderDirectInlineFieldEdit(task: IndexedTask, content: string, payload: Record<string, string>, options: TaskFieldsUpdateOptions): string | null {
 		const fields = options.mode === 'replace' ? this.parentLinkReplacementPayload(task, payload) : payload;
 		const rendered = this.writer.renderGuardedTaskSourceContent(task.primary.filePath, content, [{ operonId: task.operonId,
-			format: 'inline', lineNumber: task.primary.lineNumber, fieldValues: fields, expectedFieldValues: options.expectedFieldValues }]);
+			format: 'inline', lineNumber: task.primary.lineNumber, fieldValues: fields, expectedFieldValues: options.expectedFieldValues,
+			inlinePropertyDraft: options.inlinePropertyDraft }]);
 		return rendered.ok ? rendered.content : null;
 	}
 
@@ -34650,6 +34653,42 @@ export default class OperonPlugin extends Plugin {
 			}
 			this.setStatusCyclePerfChangedKeys(options.statusCycleTrace, Object.keys(normalizedPayload));
 			this.logStatusCyclePerfStage(options.statusCycleTrace, 'normalize', normalizeStartedAt);
+
+		// UI Text edits use the existing typed transaction for vault-v1 inline fields.
+		// Do not relax the legacy writer's rejection of native property changes.
+		if (task.primary.format === 'inline') {
+			const mappings = this.settings.keyMappings;
+			const mappingSnapshot = JSON.stringify(mappings);
+			const textMappings = mappings.filter(mapping => mapping.isSystem === false && mapping.type === 'text'
+				&& Object.prototype.hasOwnProperty.call(normalizedPayload, mapping.canonicalKey));
+			if (textMappings.length) {
+				try {
+					const definitions = this.storage.getCommittedInlinePropertyDefinitions();
+					const nativeMappings = textMappings.filter(mapping => resolveInlinePropertyDefinition(
+						mapping.visiblePropertyName, 'text', mappings, definitions).encoding === 'vault-v1');
+					if (nativeMappings.length) {
+						const file = this.app.vault.getAbstractFileByPath(task.primary.filePath);
+						if (!(file instanceof TFile)) return false;
+						const content = await this.app.vault.read(file);
+						const parsed = findInlinePropertyTask(content, file.path, operonId, mappings)?.parsed;
+						if (!parsed) return false;
+						const projection = readParsedInlinePropertyProjection(parsed,
+							Object.fromEntries(nativeMappings.map(mapping => [mapping.visiblePropertyName, 'text' as const])), mappings, definitions);
+						if (projection.properties.some(property => {
+							const mapping = nativeMappings.find(item => item.visiblePropertyName === property.sourceName)!;
+							return !['valid', 'missing'].includes(property.state)
+								|| (task.fieldValues[mapping.canonicalKey] ?? '') !== (property.value ?? '');
+						})) return false;
+						const prepared = prepareMappedInlineProperties(content, file.path, operonId,
+							nativeMappings.map(mapping => ({ field: mapping.canonicalKey,
+								value: normalizedPayload[mapping.canonicalKey] || undefined })), mappings, definitions);
+						const canCommit = options.canCommit;
+						options = { ...options, inlinePropertyDraft: prepared.changes,
+							canCommit: () => JSON.stringify(this.settings.keyMappings) === mappingSnapshot && canCommit?.() !== false };
+					}
+				} catch { return false; }
+			}
+		}
 
 			const writerStartedAt = options.statusCycleTrace ? enginePerfNow() : 0;
 			const precommittedAggregateIds = new Set<string>();
@@ -34735,6 +34774,7 @@ export default class OperonPlugin extends Plugin {
 		if (!wroteTask) {
 			wroteTask = await this.writer.writeTaskFields(operonId, normalizedPayload, {
 				mode,
+				inlinePropertyDraft: options.inlinePropertyDraft,
                 expectedFieldValues: parentLinkExpected
                     ? { ...parentLinkExpected, ...options.expectedFieldValues }
                     : options.expectedFieldValues, canCommit: options.canCommit,

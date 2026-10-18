@@ -1,8 +1,8 @@
 {
   "schemaVersion": 1,
   "locale": "it",
-  "keyCount": 3661,
-  "keyFingerprint": "7a54994578a98011b1ac0bb7cdbd7a0759a8e468fea647aacc1382a37307a053",
+  "keyCount": 3662,
+  "keyFingerprint": "b42256065b994a9ab7d1a5f2f0bb968399f3b9d204c8ee20d6f345937c0c56f0",
   "translations": {
     "buttons": {
       "addFileSubtask": "Aggiungi sotto-attività-file",
@@ -3624,6 +3624,7 @@
       "taskProgress": "Avanzamento attività",
       "terminalDateConflict": "Può essere impostata una sola data terminale alla volta.",
       "terminalDateWorkflowResolveFailed": "Impossibile risolvere lo stato del flusso di lavoro per la data terminale selezionata.",
+      "textPickerCurrentValue": "Valore attuale",
       "timeActual": "Effettivo",
       "timeDelta": "Delta",
       "timeDuration": "Durata",
@@ -3706,5 +3707,5 @@
       "toggleDescendantPreview": "Alterna anteprima discendenti"
     }
   },
-  "sourceVersion": "db1bafb0a7d13b42112c23c7eb1a61904e620b4d25e2dd00ddd857e436110682"
+  "sourceVersion": "9aa60b731816817b0f20349328efeaf62e70e6c1f7b8c48f0d64610f1eb9cca2"
 }

@@ -1,8 +1,8 @@
 {
   "schemaVersion": 1,
   "locale": "de",
-  "keyCount": 3661,
-  "keyFingerprint": "7a54994578a98011b1ac0bb7cdbd7a0759a8e468fea647aacc1382a37307a053",
+  "keyCount": 3662,
+  "keyFingerprint": "b42256065b994a9ab7d1a5f2f0bb968399f3b9d204c8ee20d6f345937c0c56f0",
   "translations": {
     "buttons": {
       "addFileSubtask": "Datei-Unteraufgabe hinzufügen",
@@ -3624,6 +3624,7 @@
       "taskProgress": "Aufgabenfortschritt",
       "terminalDateConflict": "Es kann nur ein Enddatum gleichzeitig gesetzt werden.",
       "terminalDateWorkflowResolveFailed": "Der Arbeitsablaufstatus für das ausgewählte Enddatum konnte nicht aufgelöst werden.",
+      "textPickerCurrentValue": "Aktueller Wert",
       "timeActual": "Tatsächlich",
       "timeDelta": "Differenz",
       "timeDuration": "Dauer",
@@ -3706,5 +3707,5 @@
       "toggleDescendantPreview": "Vorschau untergeordneter Aufgaben umschalten"
     }
   },
-  "sourceVersion": "3d8dfe7c43a25844eb8bd272ac563851f69dc04ea2c50c8591653bfa231dcc2e"
+  "sourceVersion": "0027e53ccaaaf4603b34dbd0ca3bbf2ebf6a0005e1937958583a2ea997aa2f7a"
 }

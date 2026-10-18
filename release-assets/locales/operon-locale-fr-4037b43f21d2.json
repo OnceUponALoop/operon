@@ -1,8 +1,8 @@
 {
   "schemaVersion": 1,
   "locale": "fr",
-  "keyCount": 3661,
-  "keyFingerprint": "7a54994578a98011b1ac0bb7cdbd7a0759a8e468fea647aacc1382a37307a053",
+  "keyCount": 3662,
+  "keyFingerprint": "b42256065b994a9ab7d1a5f2f0bb968399f3b9d204c8ee20d6f345937c0c56f0",
   "translations": {
     "buttons": {
       "addFileSubtask": "Ajouter une sous-tâche-fichier",
@@ -3624,6 +3624,7 @@
       "taskProgress": "Progression de la tâche",
       "terminalDateConflict": "Une seule date terminale peut être définie à la fois.",
       "terminalDateWorkflowResolveFailed": "Impossible de résoudre le statut du workflow pour la date terminale sélectionnée.",
+      "textPickerCurrentValue": "Valeur actuelle",
       "timeActual": "Réel",
       "timeDelta": "Delta",
       "timeDuration": "Durée",
@@ -3706,5 +3707,5 @@
       "toggleDescendantPreview": "Basculer l'aperçu des descendants"
     }
   },
-  "sourceVersion": "e2b3033a5deada179f0be55737521bdd9e07ab5ddb099ca1b02bad17746bdd00"
+  "sourceVersion": "26fe47ee1351e4911c097e47f141dcca877ad18c4ed23de50d4d1ba6f7ce8a3d"
 }

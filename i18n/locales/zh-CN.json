@@ -2663,6 +2663,7 @@
 		"invalidReminder": "无效提醒"
 	},
 	"taskEditor": {
+    "textPickerCurrentValue": "当前值",
 		"creatorInlineTemplateProperties": "对于行内任务，此模板的属性会添加到任务中，但不会包含模板正文。",
 		"creatorMetadataChanged": "属性规则已更改。请重新打开 Task Creator，在创建前检查。",
 		"creatorParentPreviewChanged": "目标位置更改了继承值。请检查更新后的选择，然后再次创建。",

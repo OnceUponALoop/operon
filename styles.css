@@ -3209,6 +3209,28 @@ body .operon-searchable-option-picker-panel .operon-searchable-option-picker-ite
 	text-align: left;
 }
 
+.operon-custom-field-picker .operon-custom-text-picker-option--search {
+ display: block;
+}
+
+.operon-custom-text-picker-current-value {
+ width: 100%;
+ min-width: 0;
+ text-align: left;
+}
+
+.operon-custom-text-picker-current-value > span:not(.operon-sr-only) {
+ display: block;
+ overflow: hidden;
+ white-space: nowrap;
+ text-overflow: ellipsis;
+}
+
+.operon-custom-text-picker-current-label {
+ color: var(--text-muted);
+ margin-bottom: 4px;
+}
+
 .operon-custom-text-picker-suggestions {
 	max-height: calc((33px * 7) + (4px * 6) + 8px);
 	overflow-y: auto;

@@ -2663,6 +2663,7 @@
 		"invalidReminder": "Recordatorio no válido"
 	},
 	"taskEditor": {
+    "textPickerCurrentValue": "Valor actual",
 		"creatorInlineTemplateProperties": "En las tareas inline, las propiedades de esta plantilla se añaden a la tarea. El texto del cuerpo de la plantilla no se incluye.",
 		"creatorMetadataChanged": "Las reglas de propiedades cambiaron. Vuelve a abrir Task Creator para revisarlas antes de crear.",
 		"creatorParentPreviewChanged": "El destino cambió los valores heredados. Revisa las selecciones actualizadas y vuelve a crear.",

@@ -1,8 +1,8 @@
 {
   "schemaVersion": 1,
   "locale": "tr",
-  "keyCount": 3661,
-  "keyFingerprint": "7a54994578a98011b1ac0bb7cdbd7a0759a8e468fea647aacc1382a37307a053",
+  "keyCount": 3662,
+  "keyFingerprint": "b42256065b994a9ab7d1a5f2f0bb968399f3b9d204c8ee20d6f345937c0c56f0",
   "translations": {
     "buttons": {
       "addFileSubtask": "Dosya Tipi Alt Görev Ekle",
@@ -3624,6 +3624,7 @@
       "taskProgress": "İlerleme",
       "terminalDateConflict": "Aynı anda yalnızca bir sonlandırma tarihi ayarlanabilir.",
       "terminalDateWorkflowResolveFailed": "Seçilen sonlandırma tarihi için iş akışı durumu belirlenemedi.",
+      "textPickerCurrentValue": "Mevcut değer",
       "timeActual": "Gerçek",
       "timeDelta": "Fark",
       "timeDuration": "Süre",
@@ -3706,5 +3707,5 @@
       "toggleDescendantPreview": "Alt görev önizlemesini aç/kapat"
     }
   },
-  "sourceVersion": "1bee05376f2827685c479a93fadc0c92bbf401fdb0a7043f8ba5969d3321db76"
+  "sourceVersion": "26c6a90d5922a56f28bdd1c7c7842a437a59c3df7170f4daa6f40e8cf7c3af65"
 }

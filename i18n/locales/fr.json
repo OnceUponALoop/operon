@@ -2663,6 +2663,7 @@
 		"invalidReminder": "Rappel non valide"
 	},
 	"taskEditor": {
+    "textPickerCurrentValue": "Valeur actuelle",
 		"creatorInlineTemplateProperties": "Pour les tâches inline, les propriétés de ce modèle sont ajoutées à la tâche. Le texte du corps du modèle n’est pas inclus.",
 		"creatorMetadataChanged": "Les règles des propriétés ont changé. Rouvrez Task Creator pour les vérifier avant la création.",
 		"creatorParentPreviewChanged": "La destination a modifié les valeurs héritées. Vérifiez les sélections mises à jour et relancez la création.",

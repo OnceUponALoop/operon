@@ -38,7 +38,7 @@ import { createCompactTaskMarkdownTooltipContent } from '../operon-hover-tooltip
 import { showSearchableOptionPicker } from '../field-pickers/searchable-option-picker';
 import { resolveSurfaceFloatingHostOptions } from '../field-pickers/common';
 import { showTextFieldPopover } from '../text-field-popover';
-import { buildTableFilePropertyTextMutation, resolveTableTextEditRoute } from './table-text-edit-route';
+import { buildTableFilePropertyTextMutation } from './table-text-edit-route';
 
 export interface TableFilePropertyUpdateRequest {
  sourceFormat?: 'yaml' | 'inline';
@@ -110,7 +110,8 @@ export function openTableFilePropertyPicker(options: {
 		onRemove: remove,
 		onClose: options.onClose,
 	};
-	const normalizedValue = options.cellValue.normalizedValue;
+	const normalizedValue = options.field.type === 'text' && typeof options.cellValue.rawValue === 'string'
+		? options.cellValue.rawValue : options.cellValue.normalizedValue;
 	switch (options.field.type) {
 		case 'checkbox':
 			return showSearchableOptionPicker(options.anchor, {
@@ -173,30 +174,32 @@ export function openTableFilePropertyPicker(options: {
 			});
 		case 'text':
 		default:
-			if (options.textEditRoute === 'popover' || (options.textEditRoute !== 'picker' && resolveTableTextEditRoute(normalizedValue, true) === 'popover')) {
-				return showTextFieldPopover({
-					app: options.app,
-					anchor: options.anchor,
-					title: options.label,
-					initialValue: normalizedValue,
-					allowEmptyCommit: true,
-					sessionKey: options.sessionKey,
-					lifecycleOwner: options.lifecycleOwner,
-					onFocusReturn: options.onFocusReturn,
-					editor: {
-						kind: 'compact-markdown',
-						sourcePath: options.sourcePath,
-					},
-					onCommit: value => {
-						options.onMutation(buildTableFilePropertyTextMutation(value));
-					},
-					onClose: options.onClose,
-				});
-			}
 			return showCustomTextFieldPicker(options.anchor, {
 				...common,
 				type: 'text',
 				value: normalizedValue,
+				separateCurrentValue: true,
+				editMultilineValue: onClose => {
+					return showTextFieldPopover({
+						app: options.app,
+						anchor: options.anchor,
+						title: options.label,
+						initialValue: normalizedValue,
+						allowEmptyCommit: true,
+						sessionKey: options.sessionKey,
+						lifecycleOwner: options.lifecycleOwner,
+						onFocusReturn: options.onFocusReturn,
+						editor: {
+							kind: 'compact-markdown',
+							sourcePath: options.sourcePath,
+							textPolicy: 'task-note',
+						},
+						onCommit: value => {
+							options.onMutation(buildTableFilePropertyTextMutation(value));
+						},
+						onClose,
+					});
+				},
 				candidates: [...options.candidates],
 				onCommit: (_key, value) => options.onMutation({ kind: 'set', value }),
 			});

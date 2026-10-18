@@ -4597,6 +4597,10 @@ function decorateEmbedTableEditableTaskCell(
 			sourcePath: task.primary.filePath,
 			taskFormat: task.primary.format,
 			manualDatePicker: getTableManualDatePickerOptions(key, renderState.settings),
+			onEditMultilineText: rawValue => {
+				openEmbedTableInlineTextPopover(activeInstance, deps, cell, task, key, rawValue, fieldLabel, cellKey, key, true, true);
+				return activeInstance.activePickerClose ?? (() => {});
+			},
 			onCommit: payload => {
 				const normalizedPayload = normalizeTablePickerPayload(payload);
 				if (Object.keys(normalizedPayload).length === 0) return;
@@ -4961,6 +4965,7 @@ function openEmbedTableInlineTextPopover(
 	cellKey: string,
 	payloadKey: string,
 	allowEmptyCommit = false,
+	preserveLineBreaks = false,
 ): void {
 	if (instance.pendingCellKey !== null) return;
 	closeEmbedTableActivePicker(instance);
@@ -5012,6 +5017,7 @@ function openEmbedTableInlineTextPopover(
 			lifecycleOwner: instance.el,
 			editor: {
 				kind: 'compact-markdown',
+				textPolicy: preserveLineBreaks ? 'task-note' : 'single-line',
 				sourcePath: task.primary.filePath,
 			},
 			onCommit: commitValue,
