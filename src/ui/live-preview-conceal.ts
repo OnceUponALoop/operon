@@ -58,7 +58,7 @@ import {
 	shouldOpenIconOnlyChipPreview,
 } from './icon-only-chip-preview';
 import { t } from '../core/i18n';
-import { resolveSubtaskActionIcon, resolveSubtaskActionLabelKey } from '../core/subtask-action';
+import { resolveSubtaskChipKinds, resolveSubtaskActionIconForKind, resolveSubtaskActionLabelKeyForKind } from '../core/subtask-action';
 import type { InlineRepeatCompletionMode } from '../storage/repeat-series-store';
 import { openTaskFieldPicker } from './task-field-picker-dispatch';
 import { getCustomFieldMapping, isProjectedCustomFieldType } from './custom-field-surfaces';
@@ -89,7 +89,7 @@ export interface LivePreviewCallbacks {
 	hasSubtasks?: (taskId: string) => boolean;
 	isTaskTracking?: (taskId: string) => boolean;
 	toggleTimer?: (taskId: string) => void | Promise<void>;
-	requestSubtask?: (operonId: string) => void | Promise<void>;
+	requestSubtask?: (operonId: string, requestedKind?: 'inline') => void | Promise<void>;
 	updateFields?: (operonId: string, payload: Record<string, string>, restoreCursor?: LivePreviewCursorRestoreRequest) => void | boolean | Promise<void | boolean>;
 	updateSubtasks?: (operonId: string, subtaskIds: string[]) => void;
 	updateDependencyField?: (operonId: string, field: 'blocking' | 'blockedBy', value: string) => void;
@@ -571,28 +571,31 @@ export class MetadataTailWidget extends WidgetType {
 
 		const isTerminal = terminalVisualState !== null;
 		if (!isTerminal && operonId && this.callbacks.requestSubtask && this.callbacks.getSettings().inlineTaskShowSubtaskAction) {
-			const subtaskLabel = t('buttons', resolveSubtaskActionLabelKey(this.indexedTask));
-			const subtaskButton = createOwnerElement(actions, 'button');
-			subtaskButton.type = 'button';
-			subtaskButton.className = 'operon-live-preview-edit operon-live-preview-action operon-task-chip-action';
-			setIcon(subtaskButton, resolveSubtaskActionIcon(this.indexedTask));
-			setAccessibleLabelWithoutTooltip(subtaskButton, subtaskLabel);
-			bindOperonHoverTooltip(subtaskButton, {
-				content: subtaskLabel,
-				taskColor,
-			});
-			if (taskColor) subtaskButton.setCssProps({
-				'--operon-live-hover-border': taskColor,
-				'--operon-task-chip-hover-accent': taskColor,
-			});
-			bindLivePreviewChipHoverState(subtaskButton);
-			subtaskButton.addEventListener('click', (event) => {
-				event.preventDefault();
-				event.stopPropagation();
-				void this.callbacks.requestSubtask?.(operonId);
-			});
-			identifyInlineTaskPart(subtaskButton, 'subtask', subtaskButton.outerHTML.replace(/operon-accessible-label-\d+/g, 'operon-accessible-label'));
-		actions.appendChild(subtaskButton);
+			for (const kind of resolveSubtaskChipKinds(this.indexedTask)) {
+				const subtaskLabel = t('buttons', resolveSubtaskActionLabelKeyForKind(kind));
+				const subtaskButton = createOwnerElement(actions, 'button');
+				subtaskButton.type = 'button';
+				subtaskButton.className = 'operon-live-preview-edit operon-live-preview-action operon-task-chip-action';
+				setIcon(subtaskButton, resolveSubtaskActionIconForKind(kind));
+				setAccessibleLabelWithoutTooltip(subtaskButton, subtaskLabel);
+				bindOperonHoverTooltip(subtaskButton, {
+					content: subtaskLabel,
+					taskColor,
+				});
+				if (taskColor) subtaskButton.setCssProps({
+					'--operon-live-hover-border': taskColor,
+					'--operon-task-chip-hover-accent': taskColor,
+				});
+				bindLivePreviewChipHoverState(subtaskButton);
+				subtaskButton.addEventListener('mousedown', event => { event.preventDefault(); event.stopPropagation(); });
+				subtaskButton.addEventListener('click', (event) => {
+					event.preventDefault();
+					event.stopPropagation();
+					void this.callbacks.requestSubtask?.(operonId, kind === 'inline' ? 'inline' : undefined);
+				});
+				identifyInlineTaskPart(subtaskButton, kind === resolveSubtaskChipKinds(this.indexedTask)[0] ? 'subtask' : 'subtask-inline', subtaskButton.outerHTML.replace(/operon-accessible-label-\d+/g, 'operon-accessible-label'));
+				actions.appendChild(subtaskButton);
+			}
 		}
 
 		if (!isTerminal && operonId && this.callbacks.onContextualAction && this.callbacks.getSettings().inlineTaskShowPinAction) {

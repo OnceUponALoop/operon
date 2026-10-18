@@ -130,7 +130,7 @@ export class FilterView extends ItemView {
 	private getRepeatSkipSignature?: () => string;
 	private getRepeatSeriesInlineCompletionMode?: (repeatSeriesId: string) => InlineRepeatCompletionMode;
 	private updateRepeatSeriesInlineCompletionMode?: (operonId: string, mode: InlineRepeatCompletionMode) => void | Promise<void>;
-	private requestSubtask?: (operonId: string) => void | Promise<void>;
+	private requestSubtask?: (operonId: string, requestedKind?: 'inline') => void | Promise<void>;
 	private onContextualAction: ContextualMenuActionHandler | null = null;
 	private isTaskTracking?: (taskId: string) => boolean;
 	private toggleTimer?: (taskId: string) => void | Promise<void>;
@@ -188,7 +188,7 @@ export class FilterView extends ItemView {
 		getRepeatSkipSignature?: () => string,
 		getRepeatSeriesInlineCompletionMode?: (repeatSeriesId: string) => InlineRepeatCompletionMode,
 		updateRepeatSeriesInlineCompletionMode?: (operonId: string, mode: InlineRepeatCompletionMode) => void | Promise<void>,
-		requestSubtask?: (operonId: string) => void | Promise<void>,
+		requestSubtask?: (operonId: string, requestedKind?: 'inline') => void | Promise<void>,
 		onContextualAction?: ContextualMenuActionHandler,
 		pinnedCache?: PinnedCache,
 		isTaskTracking?: (taskId: string) => boolean,

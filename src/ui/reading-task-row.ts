@@ -45,7 +45,7 @@ import {
 } from './icon-only-chip-preview';
 import { t } from '../core/i18n';
 import { createOwnerElement, getOwnerWindow } from '../core/dom-compat';
-import { resolveSubtaskActionIcon, resolveSubtaskActionLabelKey } from '../core/subtask-action';
+import { resolveSubtaskChipKinds, resolveSubtaskActionIconForKind, resolveSubtaskActionLabelKeyForKind } from '../core/subtask-action';
 import { resolveTaskDateToneColor } from '../core/task-date-tone';
 import { resolveTaskStatusIconColor } from '../core/task-color-source';
 import type { InlineRepeatCompletionMode } from '../storage/repeat-series-store';
@@ -75,7 +75,7 @@ export interface ReadingTaskRowCallbacks {
 	isTaskPinned?: (taskId: string) => boolean;
 	isTaskTracking?: (taskId: string) => boolean;
 	toggleTimer?: (taskId: string) => void | Promise<void>;
-	requestSubtask?: (operonId: string) => void | Promise<void>;
+	requestSubtask?: (operonId: string, requestedKind?: 'inline') => void | Promise<void>;
 	updateFields?: (operonId: string, payload: Record<string, string>) => void | boolean | Promise<void | boolean>;
 	updateSubtasks?: (operonId: string, subtaskIds: string[]) => void;
 	updateDependencyField?: (operonId: string, field: 'blocking' | 'blockedBy', value: string) => void;
@@ -456,23 +456,25 @@ export function buildReadingTaskRowElement(
 	const showEditAction = !readOnly && (options?.showEditAction ?? true);
 
 	if (!isTerminal && callbacks.requestSubtask && showSubtaskAction) {
-		const subtaskLabel = t('buttons', resolveSubtaskActionLabelKey(task));
-		const subtaskButton = el('button', 'operon-live-preview-edit operon-reading-task-edit operon-live-preview-action operon-task-chip-action', row);
-		subtaskButton.type = 'button';
-		setIcon(subtaskButton, resolveSubtaskActionIcon(task));
-		setAccessibleLabelWithoutTooltip(subtaskButton, subtaskLabel);
-		bindOperonHoverTooltip(subtaskButton, {
-			content: subtaskLabel,
-			taskColor,
-		});
-		subtaskButton.addEventListener('click', (event) => {
-			event.preventDefault();
-			event.stopPropagation();
-			void callbacks.requestSubtask?.(task.operonId);
-		});
-		if (taskColor) subtaskButton.style.setProperty('--operon-live-hover-border', taskColor);
-		identifyInlineTaskPart(subtaskButton, 'subtask', subtaskButton.outerHTML.replace(/operon-accessible-label-\d+/g, 'operon-accessible-label'));
-		actions.appendChild(subtaskButton);
+		for (const kind of resolveSubtaskChipKinds(task)) {
+			const subtaskLabel = t('buttons', resolveSubtaskActionLabelKeyForKind(kind));
+			const subtaskButton = el('button', 'operon-live-preview-edit operon-reading-task-edit operon-live-preview-action operon-task-chip-action', row);
+			subtaskButton.type = 'button';
+			setIcon(subtaskButton, resolveSubtaskActionIconForKind(kind));
+			setAccessibleLabelWithoutTooltip(subtaskButton, subtaskLabel);
+			bindOperonHoverTooltip(subtaskButton, {
+				content: subtaskLabel,
+				taskColor,
+			});
+			subtaskButton.addEventListener('click', (event) => {
+				event.preventDefault();
+				event.stopPropagation();
+				void callbacks.requestSubtask?.(task.operonId, kind === 'inline' ? 'inline' : undefined);
+			});
+			if (taskColor) subtaskButton.style.setProperty('--operon-live-hover-border', taskColor);
+			identifyInlineTaskPart(subtaskButton, kind === resolveSubtaskChipKinds(task)[0] ? 'subtask' : 'subtask-inline', subtaskButton.outerHTML.replace(/operon-accessible-label-\d+/g, 'operon-accessible-label'));
+			actions.appendChild(subtaskButton);
+		}
 	}
 
 	if (!readOnly) {

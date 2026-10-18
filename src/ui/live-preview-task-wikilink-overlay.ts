@@ -39,7 +39,7 @@ import {
 import { bindOperonHoverTooltip, createCompactTaskMarkdownTooltipContent } from './operon-hover-tooltip';
 import { setAccessibleLabelWithoutTooltip } from './accessibility-label';
 import { buildTaskWikilinkOverlayChipContainer, getTaskWikilinkOverlayChipSignature } from './task-wikilink-overlay-chips';
-import { resolveSubtaskActionIcon, resolveSubtaskActionLabelKey } from '../core/subtask-action';
+import { resolveSubtaskActionIcon, resolveSubtaskActionLabelKey, resolveSubtaskChipKinds, resolveSubtaskActionIconForKind, resolveSubtaskActionLabelKeyForKind } from '../core/subtask-action';
 import { scanTaskWikiLinksInLine, type TaskWikiLinkMatch } from './task-wikilink-scanner';
 import { bindTaskTitleLinkPreview } from './compact-chip-link-preview';
 import {
@@ -64,7 +64,7 @@ export interface LivePreviewTaskWikilinkCallbacks {
 	hasSubtasks?: (taskId: string) => boolean;
 	isTaskTracking?: (taskId: string) => boolean;
 	toggleTimer?: (taskId: string) => void | Promise<void>;
-	requestSubtask?: (operonId: string) => void | Promise<void>;
+	requestSubtask?: (operonId: string, requestedKind?: 'inline') => void | Promise<void>;
 	getRepeatSkipDates?: (repeatSeriesId: string) => string[];
 	getProjectSerialDisplay?: (operonId: string, task?: IndexedTask) => ProjectSerialDisplay | null;
 	updateField?: (operonId: string, key: string, value: string) => void | boolean | Promise<void | boolean>;
@@ -277,25 +277,27 @@ class TaskWikilinkTrailingWidget extends WidgetType {
 		}
 
 		if (!isTerminal && settings.taskWikilinkOverlayShowSubtaskAction && this.callbacks.requestSubtask) {
-			const subtaskLabel = t('buttons', resolveSubtaskActionLabelKey(this.task));
-			const subtaskButton = createOwnerElement(wrap, 'button');
-			subtaskButton.type = 'button';
-			subtaskButton.className = 'operon-live-preview-edit operon-live-preview-action operon-task-wikilink-overlay-action operon-task-chip-action';
-			subtaskButton.setCssProps({ '--operon-live-hover-border': this.visuals.hoverColor });
-			setIcon(subtaskButton, resolveSubtaskActionIcon(this.task));
-			setAccessibleLabelWithoutTooltip(subtaskButton, subtaskLabel);
-			bindOperonHoverTooltip(subtaskButton, {
-				content: subtaskLabel,
-				taskColor: this.visuals.hoverColor,
-				preferredHorizontal: 'right',
-			});
-			subtaskButton.addEventListener('mousedown', stopEvent);
-			subtaskButton.addEventListener('click', (event) => {
-				stopEvent(event);
-				void this.callbacks.requestSubtask?.(this.task.operonId);
-			});
-			identifyInlineTaskPart(subtaskButton, 'subtask', subtaskButton.outerHTML.replace(/operon-accessible-label-\d+/g, 'operon-accessible-label'));
-			wrap.appendChild(subtaskButton);
+			for (const kind of resolveSubtaskChipKinds(this.task)) {
+				const subtaskLabel = t('buttons', resolveSubtaskActionLabelKeyForKind(kind));
+				const subtaskButton = createOwnerElement(wrap, 'button');
+				subtaskButton.type = 'button';
+				subtaskButton.className = 'operon-live-preview-edit operon-live-preview-action operon-task-wikilink-overlay-action operon-task-chip-action';
+				subtaskButton.setCssProps({ '--operon-live-hover-border': this.visuals.hoverColor });
+				setIcon(subtaskButton, resolveSubtaskActionIconForKind(kind));
+				setAccessibleLabelWithoutTooltip(subtaskButton, subtaskLabel);
+				bindOperonHoverTooltip(subtaskButton, {
+					content: subtaskLabel,
+					taskColor: this.visuals.hoverColor,
+					preferredHorizontal: 'right',
+				});
+				subtaskButton.addEventListener('mousedown', stopEvent);
+				subtaskButton.addEventListener('click', (event) => {
+					stopEvent(event);
+					void this.callbacks.requestSubtask?.(this.task.operonId, kind === 'inline' ? 'inline' : undefined);
+				});
+				identifyInlineTaskPart(subtaskButton, kind === resolveSubtaskChipKinds(this.task)[0] ? 'subtask' : 'subtask-inline', subtaskButton.outerHTML.replace(/operon-accessible-label-\d+/g, 'operon-accessible-label'));
+				wrap.appendChild(subtaskButton);
+			}
 		}
 
 		const button = createOwnerElement(wrap, 'button');

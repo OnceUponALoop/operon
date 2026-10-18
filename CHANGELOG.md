@@ -16,6 +16,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Improved
 
+- **Add subtask actions** now offer both File and Inline subtasks for File tasks, while Inline tasks keep the Inline action, consistently across all five task chip profiles.
+
 - **Mobile Task Creator** now wraps property icons onto additional rows instead of scrolling sideways, keeping their sizes and template previews while making controls and pickers accessible with the keyboard open.
 
 - **Status chips** now open the status picker consistently across editable task surfaces, with the current value selected for immediate typing; checkbox and cycle commands keep their existing behavior.
@@ -46,6 +48,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Validation
 
+- Subtask chip routing and interaction protections passed **23/23** focused tests across File and Inline tasks.
+
 - Task Creator draft and template checks passed **48/48** focused tests, plus **24/24** mobile layout and picker scenarios across Inline and File modes.
 
 - Status chip routing, picker focus, icons, and interaction checks passed **26/26** focused tests, plus **4/4** light/dark and narrow/wide browser checks.
@@ -58,7 +62,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Task Creator repeat editing and template protection checks passed **16/16** focused tests.
 - External calendar compatibility and refresh checks passed **67/67** focused tests.
-- Full local Plugin checks, production build, release guard, and code review passed, along with **5,152/5,152** local regression tests.
+- Full local Plugin checks, production build, release guard, and code review passed, along with **5,153/5,153** local regression tests.
 
 ## [4.0.1] - 2026-10-14
 

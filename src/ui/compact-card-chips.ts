@@ -8,7 +8,7 @@ import { getConfiguredKeyMappingIcon } from '../core/key-mapping-icons';
 import { normalizeTaskFieldColor } from '../core/task-color-source';
 import { t } from '../core/i18n';
 import { localNow } from '../core/local-time';
-import { resolveSubtaskActionIcon, resolveSubtaskActionLabelKey } from '../core/subtask-action';
+import { resolveSubtaskChipKinds, resolveSubtaskActionIconForKind, resolveSubtaskActionLabelKeyForKind } from '../core/subtask-action';
 import { resolveTaskDateToneColor } from '../core/task-date-tone';
 import { IndexedTask } from '../types/fields';
 import { findStatusDef, Pipeline } from '../types/pipeline';
@@ -84,6 +84,7 @@ export interface CompactCardChipRowOptions {
 }
 
 interface KanbanTaskActionChip {
+	requestedSubtaskKind?: 'inline';
 	actionId: ContextualMenuActionId;
 	icon: string;
 	label: string;
@@ -243,10 +244,11 @@ function buildKanbanTaskActionChips(
 	const canToggleTimer = !!callbacks.toggleTimer || canRunActions;
 	const isTerminal = task.checkbox !== 'open';
 	if (canRunActions && profile.subtask && !isTerminal) {
-		chips.push({
+		for (const kind of resolveSubtaskChipKinds(task)) chips.push({
 			actionId: 'createSubtask',
-			icon: resolveSubtaskActionIcon(task),
-			label: t('buttons', resolveSubtaskActionLabelKey(task)),
+			requestedSubtaskKind: kind === 'inline' ? 'inline' : undefined,
+			icon: resolveSubtaskActionIconForKind(kind),
+			label: t('buttons', resolveSubtaskActionLabelKeyForKind(kind)),
 		});
 	}
 	if (canRunActions && profile.checkbox) {
@@ -350,6 +352,7 @@ function createKanbanTaskActionChipElement(
 				buildKanbanTaskActionContext(task, callbacks),
 				{
 					actionAnchor: chip,
+					requestedSubtaskKind: action.requestedSubtaskKind,
 					actionAnchorRect: chip.getBoundingClientRect(),
 				},
 			);

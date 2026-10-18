@@ -18629,7 +18629,7 @@ export default class OperonPlugin extends Plugin {
 				this.openSubtasksForTaskId(id);
 			},
 			createSubtask: async (id) => {
-				await this.requestSubtaskForParentId(id, invocation?.canMutate, context.surface === 'excalidrawTask' ? file => !this.isExcalidrawTaskSource(file) : undefined);
+				await this.requestSubtaskForParentId(id, invocation?.canMutate, context.surface === 'excalidrawTask' ? file => !this.isExcalidrawTaskSource(file) : undefined, invocation?.requestedSubtaskKind);
 			},
 			openCheckboxes: async (id, actionAnchor, actionAnchorRect) => {
 				await this.openCheckboxesForTaskId(id, actionAnchor, actionAnchorRect, true, invocation?.canMutate);
@@ -22940,8 +22940,8 @@ export default class OperonPlugin extends Plugin {
 				updateRepeatSeriesInlineCompletionMode: (operonId: string, mode: InlineRepeatCompletionMode) => {
 					void this.applyInlineRepeatCompletionModeIfRequested(this.indexer.getTask(operonId), mode);
 				},
-				requestSubtask: (operonId: string) => {
-					void this.requestSubtaskForParentId(operonId);
+				requestSubtask: (operonId: string, requestedKind?: 'inline') => {
+					void this.requestSubtaskForParentId(operonId, undefined, undefined, requestedKind);
 				},
 					onContextualAction: (
 						taskId: string,
@@ -23223,8 +23223,8 @@ export default class OperonPlugin extends Plugin {
 				toggleTimer: async (taskId) => {
 					await this.toggleTimerForTask(taskId, 'command');
 				},
-				requestSubtask: (operonId) => {
-					void this.requestSubtaskForParentId(operonId);
+				requestSubtask: (operonId, requestedKind) => {
+					void this.requestSubtaskForParentId(operonId, undefined, undefined, requestedKind);
 				},
 				updateFields: (
 					operonId: string,
@@ -23299,8 +23299,8 @@ export default class OperonPlugin extends Plugin {
 				toggleTimer: async (taskId) => {
 					await this.toggleTimerForTask(taskId, 'command');
 				},
-				requestSubtask: (operonId) => {
-					void this.requestSubtaskForParentId(operonId);
+				requestSubtask: (operonId, requestedKind) => {
+					void this.requestSubtaskForParentId(operonId, undefined, undefined, requestedKind);
 				},
 				getRepeatSkipDates: (repeatSeriesId: string) => this.storage.repeatSeries.getSkipDates(repeatSeriesId),
 			}));
@@ -23384,8 +23384,8 @@ export default class OperonPlugin extends Plugin {
 				toggleTimer: async (taskId: string) => {
 					await this.toggleTimerForTask(taskId, 'command');
 				},
-				requestSubtask: (operonId: string) => {
-					void this.requestSubtaskForParentId(operonId);
+				requestSubtask: (operonId: string, requestedKind?: 'inline') => {
+					void this.requestSubtaskForParentId(operonId, undefined, undefined, requestedKind);
 				},
 				getRepeatSkipDates: (repeatSeriesId: string) => this.storage.repeatSeries.getSkipDates(repeatSeriesId),
 			};
@@ -23538,8 +23538,8 @@ export default class OperonPlugin extends Plugin {
 					toggleTimer: async (taskId: string) => {
 						await this.toggleTimerForTask(taskId, 'command');
 					},
-					requestSubtask: (operonId: string) => {
-						void this.requestSubtaskForParentId(operonId);
+					requestSubtask: (operonId: string, requestedKind?: 'inline') => {
+						void this.requestSubtaskForParentId(operonId, undefined, undefined, requestedKind);
 					},
 						updateFields: async (operonId: string, payload: Record<string, string>) => {
 							await this.updateDirectTaskFieldsAndRefresh(operonId, payload);
@@ -23761,7 +23761,7 @@ export default class OperonPlugin extends Plugin {
 		};
 	}
 
-	private async requestSubtaskForParentId(operonId: string, canCommit?: () => boolean, acceptFile?: (file: TFile) => boolean): Promise<void> {
+	private async requestSubtaskForParentId(operonId: string, canCommit?: () => boolean, acceptFile?: (file: TFile) => boolean, requestedKind?: 'inline'): Promise<void> {
 		if (this.redirectDuplicateOperonIdAction(operonId)) return;
 		const indexed = this.indexer.getTask(operonId);
 		if (!indexed) {
@@ -23774,6 +23774,7 @@ export default class OperonPlugin extends Plugin {
 			const parsedFieldValues = Object.fromEntries(parentTask.fields.map(field => [field.key, field.value]));
 			await this.handleSubtaskRequest({
 				parentOperonId: operonId,
+				requestedKind,
 				canCommit, acceptFile,
 				parentDescription: parentTask.description,
 				parentFieldValues: {
