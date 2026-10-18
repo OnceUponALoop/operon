@@ -1,8 +1,8 @@
 {
   "schemaVersion": 1,
   "locale": "fr",
-  "keyCount": 3662,
-  "keyFingerprint": "b42256065b994a9ab7d1a5f2f0bb968399f3b9d204c8ee20d6f345937c0c56f0",
+  "keyCount": 3665,
+  "keyFingerprint": "ada8cc9ffb7d54b230ddbcd9a814617c87841a90d6e645bdf5034f4c5282259c",
   "translations": {
     "buttons": {
       "addFileSubtask": "Ajouter une sous-tâche-fichier",
@@ -2900,6 +2900,9 @@
       "weeklyNoteTemplateDesc": "Modèle Markdown utilisé lors de la création. Laisser vide pour une note vierge.",
       "weeklyNoteTemplatePlaceholder": "ex. 10 Horizon/Templates/Weekly.md",
       "workspaceTweaksAddPropertiesExcludedFolder": "Ajouter un dossier exclu",
+      "workspaceTweaksBackgroundDimming": "Assombrissement du fond",
+      "workspaceTweaksBackgroundDimmingDefault": "70% — Par défaut",
+      "workspaceTweaksBackgroundDimmingDesc": "Choisissez l’assombrissement initial des aperçus et du créateur, du chercheur et de l’éditeur de tâches Operon sur ordinateur. Chaque couche ajoute 5 points de pourcentage, jusqu’à 90 %. Les fenêtres autonomes du filtre dynamique de sous-tâches utilisent aussi ce réglage.",
       "workspaceTweaksCollapseProperties": "Collapse Properties by Default",
       "workspaceTweaksCollapsePropertiesDesc": "Replie les Properties d'Obsidian à l'ouverture des notes correspondantes ; la portée et les dossiers exclus ci-dessous contrôlent où cela s'applique.",
       "workspaceTweaksCompactSidebarTabIcons": "Compact Sidebar Tab Icons",
@@ -3707,5 +3710,5 @@
       "toggleDescendantPreview": "Basculer l'aperçu des descendants"
     }
   },
-  "sourceVersion": "0dea5228089694c8ab53db13c6f37ac44f4683bc94a1487e5a8b10d0ed44a41f"
+  "sourceVersion": "984aa6b3cdaff417792637cdd5d13779e80085579116338805fbc3304156379e"
 }

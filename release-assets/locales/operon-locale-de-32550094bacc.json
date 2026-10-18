@@ -1,8 +1,8 @@
 {
   "schemaVersion": 1,
   "locale": "de",
-  "keyCount": 3662,
-  "keyFingerprint": "b42256065b994a9ab7d1a5f2f0bb968399f3b9d204c8ee20d6f345937c0c56f0",
+  "keyCount": 3665,
+  "keyFingerprint": "ada8cc9ffb7d54b230ddbcd9a814617c87841a90d6e645bdf5034f4c5282259c",
   "translations": {
     "buttons": {
       "addFileSubtask": "Datei-Unteraufgabe hinzufügen",
@@ -2900,6 +2900,9 @@
       "weeklyNoteTemplateDesc": "Markdown-Vorlage für neue Wochennotizen. Für eine leere Notiz leer lassen.",
       "weeklyNoteTemplatePlaceholder": "z. B. 10 Horizon/Templates/Weekly.md",
       "workspaceTweaksAddPropertiesExcludedFolder": "Ausgeschlossenen Ordner hinzufügen",
+      "workspaceTweaksBackgroundDimming": "Hintergrundabdunklung",
+      "workspaceTweaksBackgroundDimmingDefault": "70% — Standard",
+      "workspaceTweaksBackgroundDimmingDesc": "Wähle die anfängliche Abdunklung für Operon-Lightboxes und Aufgabenerstellung, -suche und -editor auf dem Desktop. Jede weitere Ebene erhöht sie um 5 Prozentpunkte, bis maximal 90 %. Eigenständige Fenster des dynamischen Unteraufgabenfilters verwenden diese Einstellung ebenfalls.",
       "workspaceTweaksCollapseProperties": "Collapse Properties by Default",
       "workspaceTweaksCollapsePropertiesDesc": "Klappt Obsidian Properties ein, wenn passende Notizen geöffnet werden; Scope und ausgeschlossene Ordner darunter steuern, wo es gilt.",
       "workspaceTweaksCompactSidebarTabIcons": "Compact Sidebar Tab Icons",
@@ -3707,5 +3710,5 @@
       "toggleDescendantPreview": "Vorschau untergeordneter Aufgaben umschalten"
     }
   },
-  "sourceVersion": "400d85a47a58e66a216218a158d963751fdcead712c9a6c75a1bac576f330b71"
+  "sourceVersion": "d44387559e66dc74904841bf320f81b5a72d2d64a444e5f744c2cd8d3057a73d"
 }

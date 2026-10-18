@@ -1,8 +1,8 @@
 {
   "schemaVersion": 1,
   "locale": "zh-TW",
-  "keyCount": 3662,
-  "keyFingerprint": "b42256065b994a9ab7d1a5f2f0bb968399f3b9d204c8ee20d6f345937c0c56f0",
+  "keyCount": 3665,
+  "keyFingerprint": "ada8cc9ffb7d54b230ddbcd9a814617c87841a90d6e645bdf5034f4c5282259c",
   "translations": {
     "buttons": {
       "addFileSubtask": "新增檔案子任務",
@@ -2900,6 +2900,9 @@
       "weeklyNoteTemplateDesc": "新建週記使用的 Markdown 模板。留空則建立空白筆記。",
       "weeklyNoteTemplatePlaceholder": "例如 10 Horizon/Templates/Weekly.md",
       "workspaceTweaksAddPropertiesExcludedFolder": "新增排除的資料夾",
+      "workspaceTweaksBackgroundDimming": "背景暗化",
+      "workspaceTweaksBackgroundDimmingDefault": "70% — 預設",
+      "workspaceTweaksBackgroundDimmingDesc": "選擇桌面版 Operon 預覽及任務建立、搜尋和編輯視窗的初始背景暗化程度。每增加一層提高5個百分點，最高90%。 獨立的動態子任務篩選視窗也使用此設定。",
       "workspaceTweaksCollapseProperties": "預設摺疊屬性",
       "workspaceTweaksCollapsePropertiesDesc": "在匹配的筆記開啟時摺疊 Obsidian 屬性；使用下方的範圍和排除資料夾來控制其應用位置。",
       "workspaceTweaksCompactSidebarTabIcons": "緊湊側邊欄標籤圖示",
@@ -3707,5 +3710,5 @@
       "toggleDescendantPreview": "切換子任務預覽"
     }
   },
-  "sourceVersion": "abc4146c65619615b8f60087865df627dce08201cdea34486ede343a010efc16"
+  "sourceVersion": "f6700a988aaecc8a5785eb6f28be5bef1c3563bb26d36aadd7b00b05a77f6696"
 }

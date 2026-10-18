@@ -1,3 +1,4 @@
+import { registerDesktopBackdrop, isDesktopBackdropDescendant } from './modal-backdrop';
 import { Notice, Platform, Scope, setIcon, type App, type WorkspaceLeaf } from 'obsidian';
 import { asHTMLElement, getOwnerBody, getOwnerDocument, getOwnerWindow, isHTMLElement } from '../core/dom-compat';
 import { t } from '../core/i18n';
@@ -65,7 +66,7 @@ function recordFor(anchor: HTMLElement): LightboxRecord | undefined {
  const close = activeLightboxes.get(getOwnerDocument(anchor));
  const record = close && records.get(close);
  const source = sourceFor(anchor);
- return record && (record.shell.contains(anchor) || !!source?.owner && record.shell.contains(source.owner)) ? record : undefined;
+ return record && (record.shell.contains(anchor) || isDesktopBackdropDescendant(anchor, record.shell) || !!source?.owner && record.shell.contains(source.owner)) ? record : undefined;
 }
 export function getLightboxOrigin(anchor: HTMLElement): WorkspaceLeaf | undefined {
  return recordFor(anchor)?.originLeaf;
@@ -123,6 +124,7 @@ export function openLightbox(anchor: HTMLElement, options: LightboxOptions): Lig
 	const hasNativeOverlay = (): boolean => !!options.nativeView && Array.from(ownerDocument.querySelectorAll(nativeOverlays))
 		.some(el => !existingOverlays.has(el) && el !== lightbox && !lightbox.contains(el));
 	const lightbox = getOwnerBody(anchor).createDiv('operon-task-media-lightbox');
+ const releaseBackdrop = registerDesktopBackdrop(lightbox);
 	if (options.className) lightbox.addClass(options.className);
  if (modalOwner) lightbox.addClass('is-modal-owned');
 	if (Platform.isDesktopApp) lightbox.addClass('has-content-controls');
@@ -191,6 +193,7 @@ export function openLightbox(anchor: HTMLElement, options: LightboxOptions): Lig
     modalScopeActive = false;
     modalApp?.keymap.popScope(modalScope);
    }
+			releaseBackdrop();
 			lightbox.remove();
 			options.onDispose?.();
 			if (activeLightboxes.get(ownerDocument) === close) {

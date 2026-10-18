@@ -1,8 +1,8 @@
 {
   "schemaVersion": 1,
   "locale": "pt-BR",
-  "keyCount": 3662,
-  "keyFingerprint": "b42256065b994a9ab7d1a5f2f0bb968399f3b9d204c8ee20d6f345937c0c56f0",
+  "keyCount": 3665,
+  "keyFingerprint": "ada8cc9ffb7d54b230ddbcd9a814617c87841a90d6e645bdf5034f4c5282259c",
   "translations": {
     "buttons": {
       "addFileSubtask": "Adicionar subtarefa em arquivo",
@@ -2900,6 +2900,9 @@
       "weeklyNoteTemplateDesc": "Modelo Markdown usado quando Operon cria uma Nota Semanal. Deixe vazio para uma nota em branco.",
       "weeklyNoteTemplatePlaceholder": "ex.: Templates/Nota Semanal",
       "workspaceTweaksAddPropertiesExcludedFolder": "Adicionar pasta excluída",
+      "workspaceTweaksBackgroundDimming": "Escurecimento do fundo",
+      "workspaceTweaksBackgroundDimmingDefault": "70% — Padrão",
+      "workspaceTweaksBackgroundDimmingDesc": "Escolha o escurecimento inicial das prévias e do criador, localizador e editor de tarefas do Operon no desktop. Cada camada adiciona 5 pontos percentuais, até 90%. As janelas independentes do filtro dinâmico de subtarefas também usam esta configuração.",
       "workspaceTweaksCollapseProperties": "Colapsar propriedades por padrão",
       "workspaceTweaksCollapsePropertiesDesc": "Colapsa as propriedades Obsidian quando notas correspondentes estão abertas; use o escopo e as pastas excluídas abaixo para controlar onde isso se aplica.",
       "workspaceTweaksCompactSidebarTabIcons": "Ícones Compactos na Barra Lateral",
@@ -3707,5 +3710,5 @@
       "toggleDescendantPreview": "Alternar visualização descendente"
     }
   },
-  "sourceVersion": "5b2401c713ae9b62ddbd20050c2f28351e2e31232a5270b21b6418f4d68ed7a7"
+  "sourceVersion": "c3c75b93c872460d639c40851cbbbc9edbbaba26c8864ffb9ab6e6342dd3e32a"
 }

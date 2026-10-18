@@ -1,8 +1,8 @@
 {
   "schemaVersion": 1,
   "locale": "it",
-  "keyCount": 3662,
-  "keyFingerprint": "b42256065b994a9ab7d1a5f2f0bb968399f3b9d204c8ee20d6f345937c0c56f0",
+  "keyCount": 3665,
+  "keyFingerprint": "ada8cc9ffb7d54b230ddbcd9a814617c87841a90d6e645bdf5034f4c5282259c",
   "translations": {
     "buttons": {
       "addFileSubtask": "Aggiungi sotto-attività-file",
@@ -2900,6 +2900,9 @@
       "weeklyNoteTemplateDesc": "Modello Markdown per le nuove note. Lascia vuoto per una nota vuota.",
       "weeklyNoteTemplatePlaceholder": "es. 10 Horizon/Templates/Weekly.md",
       "workspaceTweaksAddPropertiesExcludedFolder": "Aggiungi cartella esclusa",
+      "workspaceTweaksBackgroundDimming": "Oscuramento dello sfondo",
+      "workspaceTweaksBackgroundDimmingDefault": "70% — Predefinito",
+      "workspaceTweaksBackgroundDimmingDesc": "Scegli l’oscuramento iniziale delle anteprime e del creatore, cercatore ed editor di attività Operon su desktop. Ogni livello aggiunge 5 punti percentuali, fino al 90%. Anche le finestre autonome del filtro dinamico delle sottoattività usano questa impostazione.",
       "workspaceTweaksCollapseProperties": "Comprimi Proprietà per impostazione predefinita",
       "workspaceTweaksCollapsePropertiesDesc": "Comprimi le Proprietà di Obsidian quando si aprono le note corrispondenti; usa l'ambito e le cartelle escluse qui sotto per controllare dove si applica.",
       "workspaceTweaksCompactSidebarTabIcons": "Icone schede barra laterale compatte",
@@ -3707,5 +3710,5 @@
       "toggleDescendantPreview": "Alterna anteprima discendenti"
     }
   },
-  "sourceVersion": "bd362d1e18141e69096dedab2ff663c10d67be2299e3b5d089f0f57d65a08c81"
+  "sourceVersion": "907e09ec57ed3b9750c6f650f3d0a23cc0dd06e4b61cc318e4bca381654e66c2"
 }

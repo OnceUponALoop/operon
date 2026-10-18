@@ -1,3 +1,4 @@
+import { updateDesktopBackdropDimming, disposeDesktopBackdrops } from './src/ui/modal-backdrop';
 import { tasksConversionProtectedLines } from './src/core/tasks-conversion-scope';
 import { TasksConversionSettings } from './src/ui/tasks-conversion-settings';
 import { TasksConversionController } from './src/ui/tasks-conversion-controller';
@@ -23830,6 +23831,7 @@ export default class OperonPlugin extends Plugin {
 	}
 
 	private applyWorkspaceTweaks(): void {
+  updateDesktopBackdropDimming(this.settings.workspaceTweaksBackgroundDimming);
 		for (const doc of this.getWorkspaceTweakDocuments()) {
 			this.workspaceTweakBodyDocuments.add(doc);
 			doc.body.classList.toggle(WORKSPACE_TWEAK_HIDE_SCROLLBARS_CLASS, this.settings.workspaceTweaksHideScrollbars);
@@ -23846,6 +23848,7 @@ export default class OperonPlugin extends Plugin {
 	}
 
 	private removeWorkspaceTweakBodyClasses(): void {
+  disposeDesktopBackdrops();
 		for (const doc of this.getWorkspaceTweakDocuments()) {
 			this.workspaceTweakBodyDocuments.add(doc);
 		}

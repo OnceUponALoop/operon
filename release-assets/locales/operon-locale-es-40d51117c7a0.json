@@ -1,8 +1,8 @@
 {
   "schemaVersion": 1,
   "locale": "es",
-  "keyCount": 3662,
-  "keyFingerprint": "b42256065b994a9ab7d1a5f2f0bb968399f3b9d204c8ee20d6f345937c0c56f0",
+  "keyCount": 3665,
+  "keyFingerprint": "ada8cc9ffb7d54b230ddbcd9a814617c87841a90d6e645bdf5034f4c5282259c",
   "translations": {
     "buttons": {
       "addFileSubtask": "Añadir subtarea de archivo",
@@ -2900,6 +2900,9 @@
       "weeklyNoteTemplateDesc": "Plantilla Markdown para notas nuevas. Déjala vacía para una nota en blanco.",
       "weeklyNoteTemplatePlaceholder": "p. ej. 10 Horizon/Templates/Weekly.md",
       "workspaceTweaksAddPropertiesExcludedFolder": "Añadir carpeta excluida",
+      "workspaceTweaksBackgroundDimming": "Oscurecimiento del fondo",
+      "workspaceTweaksBackgroundDimmingDefault": "70% — Predeterminado",
+      "workspaceTweaksBackgroundDimmingDesc": "Elige el oscurecimiento inicial de las vistas previas y del creador, buscador y editor de tareas de Operon en escritorio. Cada capa adicional suma 5 puntos porcentuales, hasta un máximo del 90%. Las ventanas independientes del filtro dinámico de subtareas también usan este ajuste.",
       "workspaceTweaksCollapseProperties": "Contraer Properties por defecto",
       "workspaceTweaksCollapsePropertiesDesc": "Contraer las Properties de Obsidian cuando se abren notas coincidentes; usar el ámbito y las carpetas excluidas de abajo para controlar dónde se aplica.",
       "workspaceTweaksCompactSidebarTabIcons": "Iconos de pestaña compactos en la barra lateral",
@@ -3707,5 +3710,5 @@
       "toggleDescendantPreview": "Alternar vista previa de descendientes"
     }
   },
-  "sourceVersion": "3631833f724be45fdca88769091ec6a13307cebb9aad8b885df2e2df9369fcbf"
+  "sourceVersion": "31b7ea2eaa308b8146fddaa5989b08fbf034f2271d141a303648293186dc5061"
 }

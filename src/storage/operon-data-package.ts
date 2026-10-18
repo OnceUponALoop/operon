@@ -50,6 +50,7 @@ export type VersionedStoreSlice<T> = T & {
 export type WorkspaceTweaksPackageSettings = Pick<
 	OperonSettings,
 	| 'workspaceTweaksHideScrollbars'
+	| 'workspaceTweaksBackgroundDimming'
 	| 'workspaceTweaksCollapseProperties'
 	| 'workspaceTweaksPropertiesScope'
 	| 'workspaceTweaksPropertiesExcludedFolders'
@@ -146,6 +147,7 @@ export const OPERON_DATA_PACKAGE_OWNED_SETTINGS_KEYS = [
 	'filterTaskShowSubtaskAction',
 	'filterTaskShowPlainCheckboxAction',
 	'workspaceTweaksHideScrollbars',
+	'workspaceTweaksBackgroundDimming',
 	'workspaceTweaksCollapseProperties',
 	'workspaceTweaksPropertiesScope',
 	'workspaceTweaksPropertiesExcludedFolders',
@@ -678,6 +680,7 @@ export function buildOperonDataPackageFromSettings(
 			workspaceTweaks: {
 				version: 1,
 				workspaceTweaksHideScrollbars: normalized.workspaceTweaksHideScrollbars,
+				workspaceTweaksBackgroundDimming: normalized.workspaceTweaksBackgroundDimming,
 				workspaceTweaksCollapseProperties: normalized.workspaceTweaksCollapseProperties,
 				workspaceTweaksPropertiesScope: normalized.workspaceTweaksPropertiesScope,
 				workspaceTweaksPropertiesExcludedFolders: cloneUnknown(normalized.workspaceTweaksPropertiesExcludedFolders),

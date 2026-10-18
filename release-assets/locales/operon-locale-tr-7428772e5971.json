@@ -1,8 +1,8 @@
 {
   "schemaVersion": 1,
   "locale": "tr",
-  "keyCount": 3662,
-  "keyFingerprint": "b42256065b994a9ab7d1a5f2f0bb968399f3b9d204c8ee20d6f345937c0c56f0",
+  "keyCount": 3665,
+  "keyFingerprint": "ada8cc9ffb7d54b230ddbcd9a814617c87841a90d6e645bdf5034f4c5282259c",
   "translations": {
     "buttons": {
       "addFileSubtask": "Dosya Tipi Alt Görev Ekle",
@@ -2900,6 +2900,9 @@
       "weeklyNoteTemplateDesc": "Operon haftalık not oluştururken kullanılan Markdown şablonu. Boş not için boş bırakın.",
       "weeklyNoteTemplatePlaceholder": "örn. 10 Horizon/Templates/Weekly.md",
       "workspaceTweaksAddPropertiesExcludedFolder": "Hariç klasör ekle",
+      "workspaceTweaksBackgroundDimming": "Arka plan karartması",
+      "workspaceTweaksBackgroundDimmingDefault": "%70 — Varsayılan",
+      "workspaceTweaksBackgroundDimmingDesc": "Masaüstü Operon lightbox, Görev Oluşturucu, Bulucu ve Düzenleyici için başlangıç karartmasını seçin. Her ek katman 5 yüzde puan ekler; üst sınır %90’dır. Bağımsız Dinamik Alt Görev Filtresi pencereleri de bu ayarı kullanır.",
       "workspaceTweaksCollapseProperties": "Collapse Properties by Default",
       "workspaceTweaksCollapsePropertiesDesc": "Kapsama uyan notlar açıldığında Obsidian Properties bölümünü kapatır; nerede uygulanacağını aşağıdaki kapsam ve hariç klasörlerle belirleyebilirsin.",
       "workspaceTweaksCompactSidebarTabIcons": "Compact Sidebar Tab Icons",
@@ -3707,5 +3710,5 @@
       "toggleDescendantPreview": "Alt görev önizlemesini aç/kapat"
     }
   },
-  "sourceVersion": "eb076886b01d5f50473f39a2662b2fbaaa6dc6f0fd9ab544e52bedaa703bb5b4"
+  "sourceVersion": "9983fafcadb19ce9b0929b4e4fce0077038a62d7e0821e4979c2e603cbd509e1"
 }

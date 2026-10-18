@@ -13,13 +13,13 @@ const bundle = await build({ stdin: { contents: "export * from './src/ui/modal-b
 const browser = await chromium.launch({headless:true, ...(process.env.OPERON_TEST_BROWSER ? {executablePath:process.env.OPERON_TEST_BROWSER} : {})});
 let scenarios = 0;
 try {
- for (const surface of ['creator','finder','editor']) for (const dark of [false,true]) for (const width of [460,1440]) for (const desktop of [false,true]) {
+ for (const surface of ['creator','finder','editor','subtasks']) for (const dark of [false,true]) for (const width of [460,1440]) for (const desktop of [false,true]) {
   const page = await browser.newPage({viewport:{width,height:800}});
   try {
    await page.setContent(`<style>
 *{box-sizing:border-box}body{margin:0;--layer-modal:50;--layer-popover:30;--layer-menu:65;--radius-m:12px;--background-primary:${dark?'#222':'#fff'};--background-secondary:#777;--text-normal:${dark?'#eee':'#222'};--text-muted:#888;--background-modifier-cover:rgba(30,40,50,.3);--background-modifier-border:#888;--interactive-accent:#a36}
 .modal-container{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;z-index:var(--layer-modal)}.modal-bg{position:absolute;inset:0;width:100%;height:100%;background:var(--background-modifier-cover);opacity:.6;backdrop-filter:blur(2px)}.modal{position:relative;background:var(--background-primary);padding:16px}.modal-content{overflow:auto}.modal-close-button{position:absolute;right:4px;top:4px}button,input,textarea{min-height:28px} .rows{height:120px}
-</style><style>${css}</style><button id="outside">Open</button><div id="owner" class="modal-container operon-task-${surface}-modal-container"><div class="modal-bg"></div><div id="modal" class="modal operon-task-${surface}-modal"><div class="modal-close-button">Existing control</div><div class="modal-content"><div class="${surface==='editor'?'operon-task-editor-shell':''}"><input id="draft" value="Unsaved draft"><button id="picker-anchor">Property/template</button><div class="rows"></div><textarea id="note">Note draft</textarea><button id="cancel">Existing Cancel</button></div></div></div></div>`);
+</style><style>${css}</style><button id="outside">Open</button><div id="owner" class="modal-container operon-${surface==='subtasks'?'subtasks-filter':'task-'+surface}-modal-container"><div class="modal-bg" style="opacity:0.85"></div><div id="modal" class="modal operon-${surface==='subtasks'?'subtasks-filter':'task-'+surface}-modal"><div class="modal-close-button">Existing control</div><div class="modal-content"><div class="${surface==='editor'?'operon-task-editor-shell':''}"><input id="draft" value="Unsaved draft"><button id="picker-anchor">Property/template</button><div class="rows"></div><textarea id="note">Note draft</textarea><button id="cancel">Existing Cancel</button></div></div></div></div>`);
    await page.evaluate(()=>{
     document.win=window;window.activeDocument=document;window.activeWindow=window;
     Object.defineProperty(Node.prototype,'doc',{get(){return this.ownerDocument||document;}});Object.defineProperty(Node.prototype,'win',{get(){return this.doc.defaultView;}});
@@ -45,7 +45,7 @@ try {
    },{desktop,surface});
    if(surface==='editor'&&width===1440)assert.ok(result.widths[1]>result.widths[0],'File Body really expands the modal');
    assert.deepEqual(result.before,result.after);assert.ok(result.parity);assert.ok(result.childUnchanged);assert.ok(result.isolated);assert.ok(result.controlsUnchanged);assert.ok(result.noRail);
-   assert.deepEqual(result.effect,desktop?['rgba(0, 0, 0, 0.82)','1','none']:result.original);
+   assert.deepEqual(result.effect,desktop?['rgba(0, 0, 0, 0.7)','1','none']:result.original);
    assert.deepEqual(result.selection,['draft',2,5,'Unsaved draft']);
    // Real shared picker and lightbox helpers must still use the existing hosts and focus path.
    await page.evaluate(()=>{
@@ -63,7 +63,7 @@ try {
    });
    await page.locator('#note').focus();
    await page.evaluate(()=>{window.previewClosed=0;window.closePreview=Subject.openLightbox(document.getElementById('note'),{title:'Preview',className:'is-native',nativeView:true,onDispose(){window.previewClosed++;},render(shell){shell.createDiv('operon-task-media-lightbox-content operon-native-lightbox-host').createEl('button',{text:'Content'});return null;}});});
-   assert.equal(await page.evaluate(()=>getComputedStyle(document.querySelector('.operon-task-media-lightbox')).backgroundColor),'rgba(0, 0, 0, 0.82)');
+   assert.equal(await page.evaluate(()=>getComputedStyle(document.querySelector('.operon-task-media-lightbox')).backgroundColor),desktop?'rgba(0, 0, 0, 0.75)':'rgba(0, 0, 0, 0.82)');
    if(desktop){
     const layers=await page.evaluate(()=>{
      const shell=document.querySelector('.operon-task-media-lightbox'),button=shell.querySelector('.operon-task-media-lightbox-content button'),r=button.getBoundingClientRect();
@@ -92,6 +92,78 @@ try {
    await page.keyboard.press('Escape');
    if(desktop)assert.deepEqual(await page.evaluate(()=>[window.parentCloses,scopeStack.length]),[0,1]);
    assert.deepEqual(await page.evaluate(()=>[window.previewClosed,document.activeElement.id,document.getElementById('note').value]),[1,'note','Note draft']);
+   if(desktop){
+    // Native Modal.open overwrites opacity after onOpen; the helper must correct it before paint.
+    await page.evaluate(()=>document.querySelector('#owner > .modal-bg').style.opacity='0.85');
+    assert.equal(await page.locator('#owner > .modal-bg').evaluate(e=>getComputedStyle(e).opacity),'1');
+    for(const base of [50,60,70,80,90]){
+     await page.evaluate(base=>Subject.updateDesktopBackdropDimming(base),base);
+     const expected=level=>`rgba(0, 0, 0, ${Math.min(90,base+5*(level-1))/100})`;
+     assert.equal(await page.locator('#owner > .modal-bg').evaluate(e=>getComputedStyle(e).backgroundColor),expected(1));
+     await page.evaluate(()=>{window.chain=[];window.nextAnchor=document.getElementById('note');});
+     for(let depth=2;depth<=7;depth++){
+      await page.evaluate(()=>{
+       let shell;const close=Subject.openLightbox(window.nextAnchor,{title:'Nested',className:'is-native',render(el){shell=el;window.nextAnchor=el.createEl('button',{text:'Next'});return null;}});
+       window.chain.push({shell,close});
+      });
+      assert.equal(await page.evaluate(()=>getComputedStyle(chain.at(-1).shell).backgroundColor),expected(depth));
+      assert.equal(await page.locator('#owner > .modal-bg').evaluate(e=>getComputedStyle(e).backgroundColor),'rgba(0, 0, 0, 0)');
+      if(depth===3){
+       await page.evaluate(()=>Subject.updateDesktopBackdropDimming(80));
+       assert.equal(await page.evaluate(()=>getComputedStyle(chain.at(-1).shell).backgroundColor),'rgba(0, 0, 0, 0.9)');
+       await page.evaluate(base=>Subject.updateDesktopBackdropDimming(base),base);
+      }
+
+     }
+     for(let depth=7;depth>=2;depth--){
+      await page.evaluate(async()=>await chain.pop().close());
+      assert.equal(await page.evaluate(()=>getComputedStyle(chain.length?chain.at(-1).shell:document.querySelector('#owner > .modal-bg')).backgroundColor),expected(depth-1));
+     }
+    }
+    // Modal above a lightbox shares the chain; owner removal is cleaned even without onClose.
+    await page.evaluate(()=>{
+     Subject.updateDesktopBackdropDimming(70);
+     window.outerClose=Subject.openLightbox(document.getElementById('note'),{title:'Outer',render(el){el.createEl('button',{text:'Next'});return null;}});
+     window.extra=document.body.createDiv('modal-container');extra.createDiv('modal-bg');window.releaseExtra=Subject.applyDesktopModalBackdrop(extra);
+    });
+    assert.equal(await page.evaluate(()=>getComputedStyle(extra.firstElementChild).backgroundColor),'rgba(0, 0, 0, 0.8)');
+    await page.evaluate(()=>extra.remove());
+    assert.equal(await page.evaluate(()=>getComputedStyle(document.querySelector('.operon-task-media-lightbox:not([hidden])')).backgroundColor),'rgba(0, 0, 0, 0.75)');
+    await page.evaluate(()=>{releaseExtra();outerClose();});
+    // Explicit ancestry through a newly opened modal must preserve the outer native preview.
+    await page.evaluate(()=>{
+     window.outerClose=Subject.openLightbox(document.getElementById('note'),{title:'Outer',render(el){el.createEl('button',{text:'Outer'});return null;}});
+     window.extra=document.body.createDiv('modal-container');extra.createDiv('modal-bg');window.extraAnchor=extra.createEl('button',{text:'Modal link'});window.releaseExtra=Subject.applyDesktopModalBackdrop(extra);
+     window.modalChild=Subject.openLightbox(extraAnchor,{title:'Modal child',render(el){el.createEl('button',{text:'Child'});return null;}});
+    });
+    assert.equal(await page.evaluate(()=>document.querySelectorAll('.operon-task-media-lightbox').length),2);
+    assert.equal(await page.evaluate(()=>getComputedStyle(document.querySelector('.operon-task-media-lightbox:not([hidden])')).backgroundColor),'rgba(0, 0, 0, 0.85)');
+    await page.evaluate(()=>{modalChild();releaseExtra();extra.remove();outerClose();});
+    // A second document starts at depth one, independent from this document's modal.
+    const foreign=await page.evaluate(()=>{
+     const frame=document.createElement('iframe');document.body.appendChild(frame);
+     const shell=frame.contentDocument.createElement('div');frame.contentDocument.body.appendChild(shell);
+     const clean=Subject.registerDesktopBackdrop(shell);
+     const own=getComputedStyle(document.querySelector('#owner > .modal-bg')).backgroundColor;
+     const other=frame.contentWindow.getComputedStyle(shell).getPropertyValue('--operon-focus-backdrop').trim();
+     frame.contentWindow.dispatchEvent(new Event('pagehide'));
+     clean();frame.remove();return{own,other};
+    });
+    assert.deepEqual(foreign,{own:'rgba(0, 0, 0, 0.7)',other:'rgba(0, 0, 0, 0.7)'});
+    // Retained failed/pending saves keep their layer until actual close succeeds.
+    await page.evaluate(()=>{window.saveAllowed=false;window.guarded=Subject.openLightbox(document.getElementById('note'),{title:'Pending',beforeClose:()=>Promise.resolve(saveAllowed),render(el){el.createEl('button',{text:'Save'});return null;}});});
+    assert.equal(await page.evaluate(()=>guarded()),false);
+    assert.equal(await page.evaluate(()=>getComputedStyle(document.querySelector('.operon-task-media-lightbox')).backgroundColor),'rgba(0, 0, 0, 0.75)');
+    await page.evaluate(async()=>{saveAllowed=true;await guarded();});
+    // Unload followed by a new registration must not be invalidated by an old cleanup.
+    await page.evaluate(()=>{
+     Subject.disposeDesktopBackdrops();window.freshRelease=Subject.applyDesktopModalBackdrop(document.getElementById('owner'));release();window.release=freshRelease;
+     Subject.updateDesktopBackdropDimming(60);
+    });
+    assert.equal(await page.locator('#owner > .modal-bg').evaluate(e=>getComputedStyle(e).backgroundColor),'rgba(0, 0, 0, 0.6)');
+    await page.evaluate(()=>Subject.updateDesktopBackdropDimming(70));
+
+   }
    for(const height of [320,900]){
     await page.setViewportSize({width,height});
     assert.equal(await page.evaluate(()=>{const r=document.querySelector('#owner > .modal-bg').getBoundingClientRect();return r.left<=0&&r.top<=0&&r.right>=innerWidth&&r.bottom>=innerHeight;}),true);

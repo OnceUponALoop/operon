@@ -1,8 +1,8 @@
 {
   "schemaVersion": 1,
   "locale": "ja",
-  "keyCount": 3662,
-  "keyFingerprint": "b42256065b994a9ab7d1a5f2f0bb968399f3b9d204c8ee20d6f345937c0c56f0",
+  "keyCount": 3665,
+  "keyFingerprint": "ada8cc9ffb7d54b230ddbcd9a814617c87841a90d6e645bdf5034f4c5282259c",
   "translations": {
     "buttons": {
       "addFileSubtask": "ファイルサブタスクを追加",
@@ -2900,6 +2900,9 @@
       "weeklyNoteTemplateDesc": "新規ノート用 Markdown テンプレート。空のノートには空欄にします。",
       "weeklyNoteTemplatePlaceholder": "例 10 Horizon/Templates/Weekly.md",
       "workspaceTweaksAddPropertiesExcludedFolder": "除外フォルダーを追加",
+      "workspaceTweaksBackgroundDimming": "背景の暗さ",
+      "workspaceTweaksBackgroundDimmingDefault": "70% — 既定",
+      "workspaceTweaksBackgroundDimmingDesc": "デスクトップ版Operonのプレビューとタスク作成・検索・編集画面の背景の暗さを選択します。画面を重ねるごとに5ポイント増え、最大90%になります。 独立した動的サブタスクフィルター画面にもこの設定が適用されます。",
       "workspaceTweaksCollapseProperties": "プロパティをデフォルトで折りたたむ",
       "workspaceTweaksCollapsePropertiesDesc": "一致するノートが開いたときに Obsidian のプロパティを折りたたみます。適用範囲は、以下の範囲と除外フォルダーで制御します。",
       "workspaceTweaksCompactSidebarTabIcons": "コンパクトなサイドバータブアイコン",
@@ -3707,5 +3710,5 @@
       "toggleDescendantPreview": "子孫プレビューを切り替え"
     }
   },
-  "sourceVersion": "5ed4fbf2bc2d43afc9737cba9e29652e496c89b68fb46a7c82e24f02d8e8c991"
+  "sourceVersion": "66f93e99ff1e4b60a54efd67ca9fdb2141143956633e75dfcf8b021097d024b7"
 }

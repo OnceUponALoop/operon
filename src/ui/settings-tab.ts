@@ -1,3 +1,4 @@
+import { BACKGROUND_DIMMING_OPTIONS, normalizeBackgroundDimming } from '../core/background-dimming';
 import { TASK_INFO_CHIPS, isTaskInfoChipKey } from '../core/task-info-chips';
 import { FileSuggest } from './file-suggest';
 import { syncCustomPropertyType } from '../core/custom-property-type-sync';
@@ -838,6 +839,7 @@ const SETTINGS_SEARCH_DOM_REFRESH_KEYS = new Set<OperonSettingSearchKey>([
 
 const SETTINGS_SEARCH_WORKSPACE_TWEAK_KEYS = new Set<OperonSettingSearchKey>([
 	'workspaceTweaksHideScrollbars',
+	'workspaceTweaksBackgroundDimming',
 	'workspaceTweaksCollapseProperties',
 	'workspaceTweaksPropertiesScope',
 	'workspaceTweaksCompactSidebarTabIcons',
@@ -859,6 +861,7 @@ const SETTINGS_SEARCH_OPTION_NUMBER_KEYS = new Set<OperonSettingSearchKey>([
 	'duplicateAlertDelaySeconds',
 	'taskFinderRecentModifiedDays',
 	'taskFinderVisibleResultCount',
+	'workspaceTweaksBackgroundDimming',
 	'pinnedDockGridCols',
 	'flowTimePauseMinutes',
 	'flowTimeDefaultSessionMinutes',
@@ -1218,6 +1221,14 @@ export class OperonSettingsTab extends PluginSettingTab {
 			return;
 		}
 		const normalized = this.normalizeSettingsSearchControlValue(entry, value);
+  if (entry.key === 'workspaceTweaksBackgroundDimming') {
+   const previous = this.settings.workspaceTweaksBackgroundDimming;
+   this.settings.workspaceTweaksBackgroundDimming = normalizeBackgroundDimming(Number(value));
+   try { await this.saveSettings(); }
+   catch (error) { this.settings.workspaceTweaksBackgroundDimming = previous; this.updateNativeSettingsDefinitions(); throw error; }
+   this.applySettingsSearchAfterSaveEffects(entry.key);
+   return;
+  }
   if (entry.key.startsWith('contextualMenu')) {
    if (this.contextMenuSaving) return;
    await this.storage.updateSettings({ [entry.key]: normalized, contextualMenuActionOrder: resolveContextualMenuActionOrder(this.settings.contextualMenuActionOrder, this.settings.contextualMenuActionAllowlist) });
@@ -2016,6 +2027,7 @@ export class OperonSettingsTab extends PluginSettingTab {
 			type: 'group', cls: 'operon-workspace-tweaks-settings-group',
 			heading: t('settings', 'workspaceTweaksWorkspaceSection'),
 			items: this.compactSettingsSearchDefinitions([hideScrollbars,
+    this.buildSettingsSearchSettingDefinition(entries, 'workspaceTweaksBackgroundDimming'),
 				this.buildSettingsSearchSettingDefinition(entries, 'workspaceTweaksCompactSidebarTabIcons')]),
 		}, {
 			type: 'group', cls: 'operon-workspace-tweaks-settings-group',
@@ -3237,6 +3249,7 @@ export class OperonSettingsTab extends PluginSettingTab {
 		if (key === 'duplicateAlertDelaySeconds') return [...DUPLICATE_ALERT_DELAY_SECONDS_OPTIONS];
 		if (key === 'upcomingDays') return [1, 2, 3, 4, 5, 6, 7];
 		if (key === 'taskFinderRecentModifiedDays') return [1, 2, 3, 4, 5, 6, 7];
+		if (key === 'workspaceTweaksBackgroundDimming') return [...BACKGROUND_DIMMING_OPTIONS];
 		if (key === 'taskFinderVisibleResultCount') return [3, 4, 5, 6, 7, 8, 9];
 		if (key === 'pinnedDockGridCols') return [2, 3, 4, 5];
 		if (key === 'flowTimePauseMinutes') return [...FLOW_TIME_PAUSE_MINUTE_OPTIONS];
@@ -3590,6 +3603,7 @@ export class OperonSettingsTab extends PluginSettingTab {
  }
 
 	private getSettingsSearchDropdownOptions(key: OperonSettingSearchKey): Record<string, string> {
+  if (key === 'workspaceTweaksBackgroundDimming') return Object.fromEntries(BACKGROUND_DIMMING_OPTIONS.map(value => [String(value), value === 70 ? t('settings', 'workspaceTweaksBackgroundDimmingDefault') : `${value}%`]));
 		if (key === 'calendarTimeGridScale') {
 			return Object.fromEntries(CALENDAR_TIME_GRID_SCALE_OPTIONS.map(scale => [String(scale), `${this.formatCalendarTimeGridScaleLabel(scale)}x`]));
 		}
@@ -4643,6 +4657,15 @@ export class OperonSettingsTab extends PluginSettingTab {
 				},
 			},
 		);
+
+		this.renderBoundDropdownSetting(workspaceSection, t('settings', 'workspaceTweaksBackgroundDimming'), t('settings', 'workspaceTweaksBackgroundDimmingDesc'), 'workspaceTweaksBackgroundDimming', {
+   value: String(this.settings.workspaceTweaksBackgroundDimming),
+   dropdownOptions: Object.entries(this.getSettingsSearchDropdownOptions('workspaceTweaksBackgroundDimming')).map(([value, label]) => ({value, label})),
+   normalize: value => normalizeBackgroundDimming(Number(value)),
+   onAfterChange: () => this.applyPendingSettingsChange(),
+   rollbackOnError: true,
+   errorContext: 'settings background dimming change failed',
+  });
 
 		const propertiesSection = renderNativeSettingsGroupedSection(
 			containerEl,
