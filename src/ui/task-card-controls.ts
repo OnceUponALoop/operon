@@ -109,7 +109,7 @@ export class TaskCardControls extends Component {
   this.icon.setAttribute('aria-disabled', String(!this.canChangeStatus() || !this.canInteract()));
   const source: TaskProgressSource = { getTask: this.deps.getTask, getChildIds: this.deps.getChildIds };
   const summary = resolveTaskProgressDescendantSummary(task, source);
-  const signature = JSON.stringify([taskColor, settings.keyMappings, settings.pipelines, settings.priorities, settings.timeFormat, task, settings.taskCardCompactChips, settings.taskCardItemOrder,
+  const signature = JSON.stringify([taskColor, settings.keyMappings, settings.pipelines, settings.priorities, settings.timeFormat, task, this.deps.chips.getProjectSerialDisplay?.(this.id, task), settings.taskCardCompactChips, settings.taskCardItemOrder,
    settings.taskCardShowTaskProgress, settings.taskCardShowCheckboxProgress, settings.taskCardShowChips,
    settings.taskCardShowPlayAction, settings.taskCardShowPinAction, settings.taskCardShowNoteAction,
    settings.taskCardShowSubtaskAction, settings.taskCardShowPlainCheckboxAction,
@@ -152,12 +152,13 @@ export class TaskCardControls extends Component {
     const mode = repeatMode; repeatMode = undefined;
     return this.deps.run(this.id, allowed, () => this.deps.updateSurfaceFields?.(this.id, payload, task, allowed, mode) ?? false);
    };
-   const row = buildCompactCardChipRow(task, { ...callbacks, surface: surface?.menuSurface ?? 'taskCard', canMutate: allowed,
+   const row = buildCompactCardChipRow(task, { ...callbacks, getTaskById: id => this.deps.getTask(id) ?? undefined, surface: surface?.menuSurface ?? 'taskCard', canMutate: allowed,
     updateField: (_id, key, value) => commit({ [key]: value }),
     updateFields: (id, value) => surface ? commit(value) : this.run(() => callbacks.updateFields?.(id, value)),
     updateRepeatSeriesInlineCompletionMode: (id, mode) => { if (surface) repeatMode = mode; else void this.run(() => callbacks.updateRepeatSeriesInlineCompletionMode?.(id, mode)); },
     toggleTimer: id => this.run(() => callbacks.toggleTimer?.(id, allowed)).then(() => undefined),
     onAction: (id, action, context, invocation) => {
+     if (action === 'jumpToSource') return this.deps.onAction(id, action, context, invocation);
      if (action === 'checkboxes') { this.openCheckboxes(invocation?.actionAnchor ?? this.icon); return; }
      return this.run(() => this.deps.onAction(id, action, context, { ...invocation, canMutate: allowed })).then(() => undefined);
     },

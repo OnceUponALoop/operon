@@ -1,3 +1,4 @@
+import { formatTaskInfoSource } from '../../core/task-info-chips';
 import { getTimeScopedFieldValues } from '../../core/time-scope-values';
 import type { OperonIndexer } from '../../indexer/indexer';
 import type { IndexedTask } from '../../types/fields';
@@ -114,14 +115,11 @@ export function compareTableSourceOrder(left: IndexedTask, right: IndexedTask): 
 }
 
 export function formatTableTaskSource(task: IndexedTask): string {
-	const line = task.primary.format === 'inline' ? `:${task.primary.lineNumber + 1}` : '';
-	return `${task.primary.filePath}${line}`;
+	return formatTaskInfoSource(task);
 }
 
 export function formatCompactTableTaskSource(task: IndexedTask): string {
-	const fileName = getFileName(task.primary.filePath);
-	const line = task.primary.format === 'inline' ? `:${task.primary.lineNumber + 1}` : '';
-	return `${fileName}${line}`;
+	return formatTaskInfoSource(task, true);
 }
 
 export function getTableTaskDataTypeValue(task: IndexedTask): TaskDataType {

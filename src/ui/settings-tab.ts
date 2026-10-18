@@ -1,3 +1,4 @@
+import { TASK_INFO_CHIPS, isTaskInfoChipKey } from '../core/task-info-chips';
 import { FileSuggest } from './file-suggest';
 import { syncCustomPropertyType } from '../core/custom-property-type-sync';
 import { getNativePropertyIndex } from '../indexer/native-property-index';
@@ -6800,7 +6801,7 @@ export class OperonSettingsTab extends PluginSettingTab {
 		if (target === 'creator' && TASK_CREATOR_TOOLBAR_FIELD_KEY_SET.has(key)) return true;
 		if (target === 'editorWorkflow' && TASK_EDITOR_WORKFLOW_PICKER_KEY_SET.has(key)) return true;
 		if (target === 'editorMobile' && TASK_EDITOR_MOBILE_CORE_TOOL_KEY_SET.has(key)) return true;
-		if (target === 'chips' && INLINE_TASK_COMPACT_CHIP_KEY_SET.has(key)) return true;
+		if (target === 'chips' && (isTaskInfoChipKey(key) || INLINE_TASK_COMPACT_CHIP_KEY_SET.has(key))) return true;
 		return getManagedCustomFieldOptionMapping(key, this.settings.keyMappings) !== null;
 	}
 
@@ -6930,7 +6931,7 @@ export class OperonSettingsTab extends PluginSettingTab {
 			},
 			getLabel: key => this.getInlineTaskCompactChipLabel(key),
 			getIcon: key => this.getInlineTaskCompactChipIcon(key),
-			getCanonicalLabel: key => `{{${key}:: }}`,
+			getCanonicalLabel: key => isTaskInfoChipKey(key) ? '' : `{{${key}:: }}`,
 			iconOnlyButtonLabel: t('settings', 'compactChipIconOnly'),
 			actionTogglesTitle: t('settings', 'inlineTaskActionsSection'),
 			getVisibilityToggleLabel: label => t('settings', 'compactChipVisibilityToggle', { label }),
@@ -7000,7 +7001,7 @@ export class OperonSettingsTab extends PluginSettingTab {
 			},
 			getLabel: key => this.getInlineTaskCompactChipLabel(key),
 			getIcon: key => this.getInlineTaskCompactChipIcon(key),
-			getCanonicalLabel: key => `{{${key}:: }}`,
+			getCanonicalLabel: key => isTaskInfoChipKey(key) ? '' : `{{${key}:: }}`,
 			getVisibilityToggleLabel: label => t('settings', 'compactChipVisibilityToggle', { label }),
 			save: () => this.saveSettings(),
 		});
@@ -7029,7 +7030,7 @@ export class OperonSettingsTab extends PluginSettingTab {
 			},
 			getLabel: key => this.getInlineTaskCompactChipLabel(key),
 			getIcon: key => this.getInlineTaskCompactChipIcon(key),
-			getCanonicalLabel: key => `{{${key}:: }}`,
+			getCanonicalLabel: key => isTaskInfoChipKey(key) ? '' : `{{${key}:: }}`,
 			iconOnlyButtonLabel: t('settings', 'compactChipIconOnly'),
 			actionTogglesTitle: t('settings', 'taskWikilinkOverlayActionsSection'),
 			getVisibilityToggleLabel: label => t('settings', 'compactChipVisibilityToggle', { label }),
@@ -7163,6 +7164,7 @@ export class OperonSettingsTab extends PluginSettingTab {
 	}
 
 	private getInlineTaskCompactChipLabel(key: string): string {
+		if (isTaskInfoChipKey(key)) return TASK_INFO_CHIPS[key].label;
 		const customMapping = getCustomFieldMapping(this.settings.keyMappings, key);
 		if (customMapping) return getCustomFieldLabel(customMapping);
 		if (key === 'tags') return t('settings', 'chipTags');
@@ -7172,6 +7174,7 @@ export class OperonSettingsTab extends PluginSettingTab {
 	}
 
 	private getInlineTaskCompactChipIcon(key: string): string {
+		if (isTaskInfoChipKey(key)) return key === 'taskInfo.projectSerial' ? getConfiguredKeyMappingIcon('operonId', this.settings.keyMappings) || TASK_INFO_CHIPS[key].icon : TASK_INFO_CHIPS[key].icon;
 		const customMapping = getCustomFieldMapping(this.settings.keyMappings, key);
 		if (customMapping) return getCustomFieldIcon(customMapping);
 		const mapping = this.settings.keyMappings.find(candidate => candidate.canonicalKey === key);
@@ -13001,7 +13004,7 @@ export class OperonSettingsTab extends PluginSettingTab {
 			},
 			getLabel: key => this.getInlineTaskCompactChipLabel(key),
 			getIcon: key => this.getInlineTaskCompactChipIcon(key),
-			getCanonicalLabel: key => `{{${key}:: }}`,
+			getCanonicalLabel: key => isTaskInfoChipKey(key) ? '' : `{{${key}:: }}`,
 			iconOnlyButtonLabel: t('settings', 'compactChipIconOnly'),
 			actionTogglesTitle: t('settings', 'filterTaskActionsSection'),
 			getVisibilityToggleLabel: label => t('settings', 'compactChipVisibilityToggle', { label }),
@@ -13082,7 +13085,7 @@ export class OperonSettingsTab extends PluginSettingTab {
 				},
 				getLabel: key => this.getInlineTaskCompactChipLabel(key),
 				getIcon: key => this.getInlineTaskCompactChipIcon(key),
-				getCanonicalLabel: key => `{{${key}:: }}`,
+				getCanonicalLabel: key => isTaskInfoChipKey(key) ? '' : `{{${key}:: }}`,
 				iconOnlyButtonLabel: t('settings', 'compactChipIconOnly'),
 				actionTogglesTitle: t('settings', profile === 'taskCard' ? 'taskCardActionsSection' : 'kanbanTaskActionsSection'),
 				getVisibilityToggleLabel: label => t('settings', 'compactChipVisibilityToggle', { label }),

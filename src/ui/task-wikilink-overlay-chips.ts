@@ -1,3 +1,6 @@
+import { isTaskInfoChipKey } from '../core/task-info-chips';
+import type { ContextualMenuActionHandler } from '../core/contextual-menu-engine';
+import { bindTaskInfoSourceAction } from './task-info-chip-action';
 import { identifyInlineTaskPart } from './inline-retained-dom';
 import { bindLinksChipKeyboard, handleLinksChipClick } from './links-chip-action';
 import { bindAssigneeChipImage } from './assignee-chip-image';
@@ -31,10 +34,10 @@ import {
 	shouldOpenIconOnlyChipPreview,
 } from './icon-only-chip-preview';
 import { t } from '../core/i18n';
-import { createProjectSerialChipElement } from './project-serial-chip';
 import { openTaskFieldPicker } from './task-field-picker-dispatch';
 
 interface TaskWikilinkOverlayChipRenderCallbacks {
+	onContextualAction?: ContextualMenuActionHandler;
 	app: App;
 	getSettings: () => OperonSettings;
 	getAllTasks: () => IndexedTask[];
@@ -63,7 +66,7 @@ export function getTaskWikilinkOverlayChipSignature(
 		allTasks,
 		settings.taskWikilinkOverlayCompactChips,
 		locationIndex?.resolve,
-		{ app, repeatSkipDateResolver: getRepeatSkipDates },
+		{ task, projectSerialDisplay: getProjectSerialDisplay?.(task.operonId, task), app, repeatSkipDateResolver: getRepeatSkipDates },
 	).map(entry => [
 		entry.key,
 		entry.label,
@@ -118,21 +121,14 @@ export function buildTaskWikilinkOverlayChipContainer(
 		callbacks.getAllTasks(),
 		settings.taskWikilinkOverlayCompactChips,
 		locationResolver,
-		{ app: callbacks.app, repeatSkipDateResolver: callbacks.getRepeatSkipDates },
+		{ task, projectSerialDisplay: callbacks.getProjectSerialDisplay?.(task.operonId, task), app: callbacks.app, repeatSkipDateResolver: callbacks.getRepeatSkipDates },
 	);
-	const projectSerialDisplay = callbacks.getProjectSerialDisplay?.(task.operonId, task) ?? null;
-	if (entries.length === 0 && !projectSerialDisplay) return null;
+	if (entries.length === 0) return null;
 
 	const taskColor = normalizeTaskColor(task.fieldValues['taskColor']);
 	const statusColor = lookupStatusColor(task.fieldValues['status'], settings.pipelines);
 	const row = createOwnerElement(callbacks.owner, 'span');
 	row.className = 'operon-task-wikilink-chip-row operon-task-chip-surface';
-	if (projectSerialDisplay) {
-		row.appendChild(createProjectSerialChipElement(projectSerialDisplay, 'operon-task-wikilink-chip operon-task-chip', {
-			keyMappings: settings.keyMappings,
-			owner: row,
-		}));
-	}
 
 	for (const rawEntry of entries) {
 		const entry = {
@@ -161,7 +157,7 @@ export function buildTaskWikilinkOverlayChipContainer(
 			if (entry.interactive) {
 				attachOverlayChipAction(chip, entry, callbacks, task, () => closeIconOnlyChipPreview(chip));
 			} else {
-				bindIconOnlyChipPreview(chip);
+				if (entry.key !== 'taskInfo.projectSerial') bindIconOnlyChipPreview(chip);
 			}
 			const previewLinkTarget = entry.previewLinkTarget ?? entry.linkTarget;
 			if (isCompactTaskMediaChipKey(entry.key)) {
@@ -182,7 +178,10 @@ export function buildTaskWikilinkOverlayChipContainer(
 		if (entry.interactive) {
 			attachOverlayChipAction(chip, entry, callbacks, task);
 		}
-		const node = entry.tooltipContent
+		if (isTaskInfoChipKey(entry.key)) {
+			bindOperonHoverTooltip(chip, { title: entry.tooltipTitle, content: entry.tooltipContent, taskColor });
+		}
+		const node = entry.tooltipContent && !isTaskInfoChipKey(entry.key)
 			? wrapWithOperonHoverTooltip(chip, {
 				title: entry.tooltipTitle ?? t('taskEditor', 'details'),
 				content: entry.tooltipContent,
@@ -214,6 +213,8 @@ function isOverlayChipInteractive(
 	entry: InlineTaskCompactChipEntry,
 	callbacks: TaskWikilinkOverlayChipRenderCallbacks,
 ): boolean {
+	if (entry.key === 'taskInfo.source') return !!callbacks.onContextualAction;
+	if (entry.key === 'taskInfo.projectSerial') return false;
 	return ((entry.key === 'taskType' || entry.key === 'tags' || entry.key === 'status') && !!callbacks.updateField)
 		|| !!entry.locationCoordinate
 		|| !!entry.linkTarget
@@ -227,6 +228,12 @@ function attachOverlayChipAction(
 	task: IndexedTask,
 	onCommit?: () => void,
 ): void {
+	if (entry.key === 'taskInfo.projectSerial') return;
+	if (entry.key === 'taskInfo.source') {
+		bindTaskInfoSourceAction(chip, () => { void callbacks.onContextualAction?.(task.operonId, 'jumpToSource'); }, callbacks.app, () => callbacks.getAllTasks().find(current => current.operonId === task.operonId));
+		return;
+	}
+
 	let tagPickerOpen = false;
 	let statusPickerOpen = false;
 	bindLinksChipKeyboard(chip, entry.key);

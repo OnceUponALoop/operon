@@ -1,3 +1,5 @@
+import { isTaskInfoChipKey } from '../core/task-info-chips';
+import { bindTaskInfoSourceAction } from './task-info-chip-action';
 import { bindLinksChipKeyboard, handleLinksChipClick } from './links-chip-action';
 import { bindAssigneeChipImage } from './assignee-chip-image';
 import { App, setIcon } from 'obsidian';
@@ -39,7 +41,6 @@ import {
 } from './icon-only-chip-preview';
 import { showLocationMapPreview } from './location-map-preview';
 import { bindOperonHoverTooltip, createCompactTaskMarkdownTooltipContent, wrapWithOperonHoverTooltip } from './operon-hover-tooltip';
-import { createProjectSerialChipElement } from './project-serial-chip';
 import { openTaskFieldPicker } from './task-field-picker-dispatch';
 import { getCustomFieldMapping, isProjectedCustomFieldType } from './custom-field-surfaces';
 import { setAccessibleLabelWithoutTooltip } from './accessibility-label';
@@ -140,13 +141,13 @@ export function buildCompactCardChipRow(
 		locationResolver,
 		{
 			app: callbacks.app,
+			task, projectSerialDisplay: callbacks.getProjectSerialDisplay?.(task.operonId, task),
 			repeatSkipDateResolver: callbacks.getRepeatSkipDates,
 			taskLookup,
 			workflowStatusIdentityIndex: options.workflowStatusIdentityIndex,
 		},
 	);
-	const projectSerialDisplay = callbacks.getProjectSerialDisplay?.(task.operonId, task) ?? null;
-	if (entries.length === 0 && !projectSerialDisplay && actionChips.length === 0) return null;
+	if (entries.length === 0 && actionChips.length === 0) return null;
 
 	const row = createOwnerElement(options.owner, 'div');
 	row.className = `${options.classPrefix}-chip-row operon-task-chip-surface`;
@@ -161,15 +162,6 @@ export function buildCompactCardChipRow(
 	const actionStrip = createOwnerElement(row, 'div');
 	actionStrip.className = `${options.classPrefix}-chip-actions`;
 
-	if (projectSerialDisplay) {
-		const serialChip = createProjectSerialChipElement(projectSerialDisplay, `${options.classPrefix}-chip operon-task-chip`, {
-			keyMappings: settings.keyMappings,
-			owner: chipStrip,
-		});
-		options.bindTarget?.(serialChip);
-		chipStrip.appendChild(serialChip);
-	}
-
 	const statusColor = entries.some(entry => entry.colorRole === 'status')
 		? lookupStatusColor(
 			task.fieldValues['status'],
@@ -178,7 +170,7 @@ export function buildCompactCardChipRow(
 		)
 		: null;
 	for (const rawEntry of entries) {
-		const allowNavigation = options.allowReadOnlyNavigation === true && !!(rawEntry.linkTarget || rawEntry.externalUrl || rawEntry.locationCoordinate);
+		const allowNavigation = options.allowReadOnlyNavigation === true && !!(rawEntry.key === 'taskInfo.source' || rawEntry.linkTarget || rawEntry.externalUrl || rawEntry.locationCoordinate);
   const entry = readOnly && !allowNavigation ? { ...rawEntry, interactive: false } : rawEntry;
 		const chip = createInlineTaskCompactChipElement(entry, `${options.classPrefix}-chip operon-task-chip`, { owner: chipStrip });
 		bindAssigneeChipImage(chip, entry, callbacks.app, task.primary.filePath, settings.assigneeImageProperty);
@@ -192,7 +184,7 @@ export function buildCompactCardChipRow(
 			if (!readOnly || allowNavigation) attachKanbanChipAction(chip, entry, task, callbacks, options.allTasks, options.isTargetReadOnly, () => closeIconOnlyChipPreview(chip));
 			if (!readOnly && entry.externalUrl) bindExternalLinkContextMenu(chip, entry.externalUrl, entry.externalRawValue);
 			if (entry.tooltipContent) bindKanbanChipTooltip(chip, entry, taskColor);
-			if ((readOnly && !allowNavigation) || !entry.interactive) bindIconOnlyChipPreview(chip);
+			if (((readOnly && !allowNavigation) || !entry.interactive) && entry.key !== 'taskInfo.projectSerial') bindIconOnlyChipPreview(chip);
 			if (!readOnly || options.allowReadOnlyNavigation) bindKanbanChipLinkPreview(chip, entry, callbacks, task);
 			chipStrip.appendChild(chip);
 			continue;
@@ -201,7 +193,10 @@ export function buildCompactCardChipRow(
 		if ((!readOnly || allowNavigation) && entry.interactive) {
 			attachKanbanChipAction(chip, entry, task, callbacks, options.allTasks, options.isTargetReadOnly);
 		}
-		const node = entry.tooltipContent
+		if (isTaskInfoChipKey(entry.key)) {
+			bindOperonHoverTooltip(chip, { title: entry.tooltipTitle, content: entry.tooltipContent, taskColor });
+		}
+		const node = entry.tooltipContent && !isTaskInfoChipKey(entry.key)
 			? wrapWithOperonHoverTooltip(chip, {
 				title: entry.tooltipTitle ?? t('taskEditor', 'details'),
 				content: entry.tooltipContent,
@@ -393,6 +388,12 @@ function attachKanbanChipAction(
  isTargetReadOnly?: (target: HTMLElement) => boolean,
 	onCommit?: () => void,
 ): void {
+	if (entry.key === 'taskInfo.projectSerial') return;
+	if (entry.key === 'taskInfo.source') {
+		bindTaskInfoSourceAction(chip, () => { if (!isTargetReadOnly?.(chip)) void callbacks.onAction?.(task.operonId, 'jumpToSource', buildKanbanTaskActionContext(task, callbacks)); }, callbacks.app, () => callbacks.getTaskById?.(task.operonId));
+		return;
+	}
+
 	let tagPickerOpen = false;
 	let statusPickerOpen = false;
 	bindLinksChipKeyboard(chip, entry.key);

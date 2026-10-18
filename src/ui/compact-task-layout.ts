@@ -1,3 +1,5 @@
+import { isTaskInfoChipKey, TASK_INFO_CHIPS, formatTaskInfoSource, getTaskInfoSourceIcon } from '../core/task-info-chips';
+import type { ProjectSerialDisplay } from '../core/project-serials';
 import { getTimeScopedFieldValues } from '../core/time-scope-values';
 import { type App, setIcon } from 'obsidian';
 import { createOwnerElement } from '../core/dom-compat';
@@ -77,6 +79,8 @@ export function createCompactTaskRenderContext(getAllTasks: () => IndexedTask[])
 }
 
 export interface CompactChipEntryBuildOptions {
+	task?: IndexedTask | null;
+	projectSerialDisplay?: ProjectSerialDisplay | null;
 	app?: App | null;
 	nowEpochMs?: number;
 	repeatSkipDateResolver?: RepeatSkipDateResolver;
@@ -210,6 +214,20 @@ export function buildInlineTaskCompactChipEntries(
 	const taskById = taskLookup.taskById;
 	for (const key of getInlineTaskCompactVisibleChipKeys(settings, chipItems)) {
 		const item = itemMap.get(key);
+		if (isTaskInfoChipKey(key)) {
+			const task = options?.task;
+			const serial = options?.projectSerialDisplay;
+			const label = key === 'taskInfo.source' ? (task ? formatTaskInfoSource(task, true) : '') : serial?.label;
+			if (!label) continue;
+			const content = key === 'taskInfo.source' && task ? formatTaskInfoSource(task) : label;
+			entries.push({
+				key, label, iconOnly: item?.iconOnly === true, colorRole: 'default', linkTarget: null,
+				icon: key === 'taskInfo.source' && task ? getTaskInfoSourceIcon(task) : getConfiguredKeyMappingIcon('operonId', settings.keyMappings) || 'fingerprint',
+				interactive: key === 'taskInfo.source', tooltipTitle: TASK_INFO_CHIPS[key].label,
+				tooltipContent: content, ariaLabel: `${TASK_INFO_CHIPS[key].label}: ${content}`,
+			});
+			continue;
+		}
 		const customMapping = getCustomFieldMapping(settings.keyMappings, key);
 		if (customMapping && isProjectedCustomFieldType(customMapping)) {
 			pushCustomChipEntries(entries, customMapping, fieldValues, settings, item?.iconOnly === true);
@@ -580,7 +598,7 @@ function isBuiltInCompactChipKey(key: string): key is InlineTaskCompactChipKey {
 }
 
 function isRenderableCompactSurfaceKey(settings: OperonSettings, key: string): boolean {
-	if (isBuiltInCompactChipKey(key)) return true;
+	if (isTaskInfoChipKey(key) || isBuiltInCompactChipKey(key)) return true;
 	const mapping = getCustomFieldMapping(settings.keyMappings, key);
 	return !!mapping && isProjectedCustomFieldType(mapping);
 }
@@ -740,7 +758,7 @@ export function createInlineTaskCompactChipElement(
 	options?: { forceFull?: boolean; owner?: Node | null },
 ): HTMLElement {
 	const iconOnly = entry.iconOnly && options?.forceFull !== true;
-	const tagName = entry.interactive && (!iconOnly || entry.reminderItem) ? 'button' : 'span';
+	const tagName = entry.interactive && (!iconOnly || entry.reminderItem || entry.key === 'taskInfo.source') ? 'button' : 'span';
 	const chip = createOwnerElement(options?.owner, tagName);
 	if (entry.interactive && tagName === 'button') {
 		(chip as HTMLButtonElement).type = 'button';
@@ -749,6 +767,8 @@ export function createInlineTaskCompactChipElement(
 		'operon-chip',
 		'operon-live-preview-chip',
 		'operon-inline-compact-chip',
+		entry.key === 'taskInfo.projectSerial' ? 'operon-project-serial-chip' : '',
+		isTaskInfoChipKey(entry.key) ? 'operon-task-info-chip' : '',
 		entry.linkTarget || entry.previewLinkTarget || entry.externalUrl ? 'is-linked' : '',
 		entry.locationCoordinate ? 'is-location' : '',
 		entry.reminderItem ? 'is-reminder' : '',

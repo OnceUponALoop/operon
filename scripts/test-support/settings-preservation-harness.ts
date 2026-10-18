@@ -47,6 +47,31 @@ export function sourcePackage(version: SourceVersion = '3.8.0'): OperonDataPacka
 
 /** Compare saved user choices while checking defaults of newly introduced fields separately. */
 export function assertPersonalSettingsPreserved(actual: OperonDataPackageV1, expected: OperonDataPackageV1): void {
+	// Only the two additive W034 defaults may appear in old sealed chip profiles.
+	// Keep every pre-existing choice and every other package byte under comparison.
+	expected = clone(expected);
+	for (const [afterDomain, beforeDomain] of [
+		[actual.settings, expected.settings],
+		[actual.ui.taskUiPreferences, expected.ui.taskUiPreferences],
+	] as const) {
+		const after = afterDomain as unknown as Record<string, unknown>;
+		const before = beforeDomain as unknown as Record<string, unknown>;
+		for (const profile of ['inlineTask', 'filterTask', 'taskWikilinkOverlay', 'kanbanTask', 'taskCard', 'taskFinder']) {
+			const key = `${profile}CompactChips`;
+			const previous = before[key] as { key: string; visible: boolean; iconOnly: boolean }[] | undefined;
+			const current = after[key] as typeof previous;
+			if (!Array.isArray(previous) || !Array.isArray(current)) continue;
+			for (const item of [
+				{ key: 'taskInfo.projectSerial', visible: true, iconOnly: false },
+				{ key: 'taskInfo.source', visible: false, iconOnly: false },
+			]) {
+				if (previous.some(entry => entry.key === item.key) || !current.some(entry => entry.key === item.key)) continue;
+				assert.deepEqual(current.find(entry => entry.key === item.key), item, `Unexpected new chip default: ${key}/${item.key}`);
+				if (item.key === 'taskInfo.projectSerial') previous.unshift(item);
+				else previous.push(item);
+			}
+		}
+	}
 	const slices = (value: OperonDataPackageV1): Record<string, unknown> => ({
 		schemaVersion: value.schemaVersion,
 		settings: withoutNewFields(value.settings, ['releaseNotesLastShownVersion', 'canvasPropertyPoolWidth', 'canvasPropertyPoolRows', 'canvasTaskCardWidth', 'excalidrawTaskCardWidth']),

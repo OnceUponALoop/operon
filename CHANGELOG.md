@@ -9,6 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### New
 
+- Added optional **Source chips** to all six task chip profiles, showing the source file and Inline task line with direct navigation outside Task Finder.
 - Added a **year and month picker** to the desktop Calendar sidebar and toolbar, making it easier to jump to another month while preserving the focused day where possible.
 - Added **Repeat reference date** filter conditions for saved dates, including relative dates and empty values; changing the date through the Table Repeat picker updates matching results.
 - Added a **Repeat reference date** column to Tables, showing the saved date in your preferred format and opening the Repeat picker for editing; tasks without a saved reference date keep an empty cell.
@@ -16,6 +17,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Improved
 
+- **Project Serial chips** can now be reordered, hidden, and shown as icons alongside other task chips; existing serials remain visible first by default, while Task Finder keeps both information chips non-interactive.
 - **Add subtask actions** now offer both File and Inline subtasks for File tasks, while Inline tasks keep the Inline action, consistently across all five task chip profiles.
 
 - **Mobile Task Creator** now wraps property icons onto additional rows instead of scrolling sideways, keeping their sizes and template previews while making controls and pickers accessible with the keyboard open.
@@ -48,6 +50,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Validation
 
+- Source and Project Serial chip settings, navigation, and interaction checks passed **41/41** focused tests and **22/22** browser checks across six profiles.
 - Subtask chip routing and interaction protections passed **23/23** focused tests across File and Inline tasks.
 
 - Task Creator draft and template checks passed **48/48** focused tests, plus **24/24** mobile layout and picker scenarios across Inline and File modes.
@@ -62,7 +65,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Task Creator repeat editing and template protection checks passed **16/16** focused tests.
 - External calendar compatibility and refresh checks passed **67/67** focused tests.
-- Full local Plugin checks, production build, release guard, and code review passed, along with **5,153/5,153** local regression tests.
+- Full local Plugin checks, production build, release guard, and code review passed, along with **5,155/5,155** local regression tests.
 
 ## [4.0.1] - 2026-10-14
 

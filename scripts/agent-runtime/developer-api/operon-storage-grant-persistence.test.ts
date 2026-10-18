@@ -178,6 +178,17 @@ const MULTI_CONSUMER_GRANT: DeveloperApiGrantPackageV1 = {
 
 /** Verify additive card defaults separately, preserving the pre-card sealed fixtures. */
 function stripTaskCardDefaults(data: OperonDataPackageV1, verify = false): void {
+ for (const key of ['inlineTaskCompactChips', 'filterTaskCompactChips', 'kanbanTaskCompactChips', 'taskFinderCompactChips', 'taskWikilinkOverlayCompactChips'] as const) {
+  const items = data.ui.taskUiPreferences[key];
+  if (!items) continue;
+  if (verify) {
+   for (const id of ['taskInfo.projectSerial', 'taskInfo.source']) assert.equal(items.filter(item => item.key === id).length, 1);
+   assert.deepEqual(items[0], { key: 'taskInfo.projectSerial', visible: true, iconOnly: false });
+   assert.deepEqual(items.at(-1), { key: 'taskInfo.source', visible: false, iconOnly: false });
+  }
+  data.ui.taskUiPreferences[key] = items.filter(item => item.key !== 'taskInfo.projectSerial' && item.key !== 'taskInfo.source');
+ }
+
  const excalidraw = data.ui.contextualMenu.contextualMenuSurfaceActionMatrix?.excalidrawTask;
  if (verify && excalidraw !== undefined) assert.deepEqual(excalidraw, DEFAULT_SETTINGS.contextualMenuSurfaceActionMatrix.excalidrawTask);
  delete data.ui.contextualMenu.contextualMenuSurfaceActionMatrix?.excalidrawTask;

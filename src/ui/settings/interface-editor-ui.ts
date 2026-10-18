@@ -432,6 +432,7 @@ function renderInterfaceIconRowListSection<
 				metaClassName: 'operon-compact-chip-row-meta',
 				actionsClassName: 'operon-compact-chip-row-actions',
 				renderMeta: metaEl => {
+					if (options.getCanonicalLabel?.(item.key) === '') return;
 					createSettingsListCardChip({
 						containerEl: metaEl,
 						label: options.getCanonicalLabel?.(item.key) ?? item.key,

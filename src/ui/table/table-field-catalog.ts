@@ -1,3 +1,4 @@
+import { TASK_INFO_CHIPS } from '../../core/task-info-chips';
 import type { NativePropertyReadOnlyReason } from '../../core/task-editor-native-properties';
 import { getConfiguredKeyMappingIcon } from '../../core/key-mapping-icons';
 import { getCurrentLang, t } from '../../core/i18n';
@@ -82,12 +83,12 @@ const SYNTHETIC_TABLE_FIELDS: Array<Omit<TableTaskField, 'aliases'>> = [
 	{ key: '__countdown', label: 'Countdown', type: 'datetime', group: 'scheduling', icon: 'hourglass', readonly: true },
 	{ key: TABLE_TASK_TREE_COLUMN_KEY, label: 'Task Tree', type: 'text', group: 'task', icon: 'list-tree', readonly: true },
 	{ key: TABLE_TASK_DATA_TYPE_COLUMN_KEY, label: 'Task Data Type', type: 'text', group: 'source', icon: 'database', readonly: true },
-	{ key: PROJECT_SERIAL_TABLE_FIELD_KEY, label: 'Project Serial', type: 'text', group: 'identity', icon: 'fingerprint', readonly: true },
+	{ key: PROJECT_SERIAL_TABLE_FIELD_KEY, label: TASK_INFO_CHIPS['taskInfo.projectSerial'].label, type: 'text', group: 'identity', icon: 'fingerprint', readonly: true },
 	{ key: 'description', label: 'Task', type: 'text', group: 'task', icon: 'list-todo', readonly: false },
 	{ key: 'checkbox', label: 'Checkbox', type: 'checkbox', group: 'workflow', icon: 'square-check-big', readonly: true },
 	{ key: CHECKBOX_PROGRESS_COLUMN_KEY, label: 'Checkbox Progress', type: 'number', group: 'workflow', icon: 'list-checks', readonly: true },
 	{ key: 'tags', label: 'Tags', type: 'tags', group: 'workflow', icon: 'hash', readonly: false },
-	{ key: 'source', label: 'Source', type: 'text', group: 'source', icon: 'file-search', readonly: true },
+	{ key: 'source', label: TASK_INFO_CHIPS['taskInfo.source'].label, type: 'text', group: 'source', icon: 'file-search', readonly: true },
 	{ key: 'sourcePath', label: 'Source path', type: 'text', group: 'source', icon: 'folder-input', readonly: true },
 	{ key: 'sourceLine', label: 'Source line', type: 'number', group: 'source', icon: 'list-ordered', readonly: true },
 	{ key: 'sourceFormat', label: 'Source format', type: 'text', group: 'source', icon: 'braces', readonly: true },

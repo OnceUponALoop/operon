@@ -1,3 +1,5 @@
+import { isTaskInfoChipKey } from '../core/task-info-chips';
+import { bindTaskInfoSourceAction } from './task-info-chip-action';
 import { bindLinksChipKeyboard, handleLinksChipClick } from './links-chip-action';
 import { identifyInlineTaskPart, rememberInlineTaskDom, reconcileInlineTaskDom } from './inline-retained-dom';
 import { bindAssigneeChipImage } from './assignee-chip-image';
@@ -47,7 +49,6 @@ import { bindCompactChipLinkPreview, bindTaskMediaChipPreview } from './compact-
 import { bindExternalLinkContextMenu, openExternalUrl } from './external-link-actions';
 import { showLocationMapPreview } from './location-map-preview';
 import { resolveTaskStatusIconColor } from '../core/task-color-source';
-import { createProjectSerialChipElement } from './project-serial-chip';
 import { operonEditorSurfaceScopeFacet } from './editor-augmentation-scope';
 import {
 	bindAdaptiveIconOnlyExpansion,
@@ -450,12 +451,7 @@ export class MetadataTailWidget extends WidgetType {
 
 		const settings = this.callbacks.getSettings();
 		const projectSerialDisplay = operonId ? this.callbacks.getProjectSerialDisplay?.(operonId) ?? null : null;
-		if (projectSerialDisplay) {
-			row.appendChild(createProjectSerialChipElement(projectSerialDisplay, 'operon-task-chip', {
-				keyMappings: settings.keyMappings,
-				owner: row,
-			}));
-		}
+
 		const locationResolver = shouldResolveLocationCompactChips(settings)
 			? getLocationPlaceIndex(this.callbacks.app, settings).resolve
 			: undefined;
@@ -468,6 +464,7 @@ export class MetadataTailWidget extends WidgetType {
 			locationResolver,
 			{
 				app: this.callbacks.app,
+				task: this.indexedTask, projectSerialDisplay,
 				repeatSkipDateResolver: this.callbacks.getRepeatSkipDates,
 				workflowStatusIdentityIndex: this.workflowStatusIdentityIndex,
 				taskLookup: renderContext.taskLookup,
@@ -514,7 +511,7 @@ export class MetadataTailWidget extends WidgetType {
 						() => closeIconOnlyChipPreview(chip),
 					);
 				} else {
-					bindIconOnlyChipPreview(chip);
+					if (entry.key !== 'taskInfo.projectSerial') bindIconOnlyChipPreview(chip);
 				}
 				const previewLinkTarget = entry.previewLinkTarget ?? entry.linkTarget;
 				if (isCompactTaskMediaChipKey(entry.key)) {
@@ -544,7 +541,10 @@ export class MetadataTailWidget extends WidgetType {
 				);
 			}
 
-			const chipNode = entry.tooltipContent
+			if (isTaskInfoChipKey(entry.key)) {
+				bindOperonHoverTooltip(chip, { title: entry.tooltipTitle, content: entry.tooltipContent, taskColor });
+			}
+			const chipNode = entry.tooltipContent && !isTaskInfoChipKey(entry.key)
 				? wrapWithOperonHoverTooltip(chip, {
 					title: entry.tooltipTitle ?? t('taskEditor', 'details'),
 					content: entry.tooltipContent,
@@ -1085,6 +1085,7 @@ export function buildMetadataTailRenderSignature(
 		: null;
 	const locationResolver = locationIndex?.resolve;
 	const entries = buildInlineTaskCompactChipEntries(fieldValues, tags, settings, tasks, undefined, locationResolver, {
+		task: indexedTask, projectSerialDisplay,
 		app: callbacks.app,
 		repeatSkipDateResolver: callbacks.getRepeatSkipDates,
 		workflowStatusIdentityIndex,
@@ -1240,6 +1241,12 @@ function attachLivePreviewChipAction(
 	task: ParsedTask,
 	onCommit?: () => void,
 ): void {
+	if (entry.key === 'taskInfo.projectSerial') return;
+	if (entry.key === 'taskInfo.source') {
+		bindTaskInfoSourceAction(chip, () => { if (task.operonId) void callbacks.onContextualAction?.(task.operonId, 'jumpToSource'); }, callbacks.app, () => callbacks.getAllTasks().find(current => current.operonId === task.operonId));
+		return;
+	}
+
 	let tagPickerOpen = false;
 	let statusPickerOpen = false;
 	bindLinksChipKeyboard(chip, entry.key);

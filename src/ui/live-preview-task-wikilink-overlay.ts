@@ -209,6 +209,7 @@ class TaskWikilinkTrailingWidget extends WidgetType {
 		}
 
 		const chipRow = buildTaskWikilinkOverlayChipContainer(this.task, {
+			onContextualAction: this.callbacks.onContextualAction,
 			app: this.callbacks.app,
 			getSettings: this.callbacks.getSettings,
 			getAllTasks: this.callbacks.getAllTasks,

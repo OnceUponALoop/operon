@@ -238,6 +238,7 @@ export function enhanceReadingTaskFileWikilinks(
 			}
 		}
 		const chipRow = buildTaskWikilinkOverlayChipContainer(resolved.task, {
+			onContextualAction: callbacks.onContextualAction,
 			app: callbacks.app,
 			getSettings: callbacks.getSettings,
 			getAllTasks: callbacks.getAllTasks,

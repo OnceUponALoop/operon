@@ -1,3 +1,5 @@
+import { isTaskInfoChipKey } from '../core/task-info-chips';
+import { bindTaskInfoSourceAction } from './task-info-chip-action';
 import { getTimeScopeSignature, replaceTaskTimeScope } from '../core/time-scope-values';
 import { bindLinksChipKeyboard, handleLinksChipClick } from './links-chip-action';
 import { identifyInlineTaskPart, registerInlineTaskDomRefresh, rememberInlineTaskDom, reconcileInlineTaskDom } from './inline-retained-dom';
@@ -34,7 +36,6 @@ import { bindCompactChipLinkPreview, bindTaskMediaChipPreview } from './compact-
 import { bindExternalLinkContextMenu, openExternalUrl } from './external-link-actions';
 import { showLocationMapPreview } from './location-map-preview';
 import type { ProjectSerialDisplay } from '../core/project-serials';
-import { createProjectSerialChipElement } from './project-serial-chip';
 import {
 	bindAdaptiveIconOnlyExpansion,
 	bindIconOnlyChipPreview,
@@ -144,7 +145,6 @@ export interface ReadingTaskRowOptions {
 	owner?: Node | null;
 	workflowStatusIdentityIndex?: WorkflowStatusIdentityIndex;
 	chipItems?: InlineTaskCompactChipItem[];
-	projectSerialPlacement?: 'head' | 'tail';
 	readOnly?: boolean;
 	/** Show normal controls, but route attempts to explicit identity repair. */
 	onBlockedAction?: () => void;
@@ -195,7 +195,7 @@ export function updateReadingInlineTaskRow(
   model, getTimeScopeSignature(model), preparedEntries,
   currentCallbacks.isTaskPinned?.(model.operonId), currentCallbacks.isTaskTracking?.(model.operonId),
   currentCallbacks.getProjectSerialDisplay?.(model.operonId, model),
-  options.readOnly, options.projectSerialPlacement, options.rowClassName,
+  options.readOnly, options.rowClassName,
   options.showPlayAction, options.showPinAction, options.showNoteAction, options.showSubtaskAction, options.showEditAction,
  ]);
  if (canRetain && previous && signature !== undefined && state.signature === signature && state.refreshSignature === options.refreshSignature
@@ -232,6 +232,7 @@ function prepareReadingTaskChips(
 		locationResolver,
 		{
 			app: callbacks.app,
+			task, projectSerialDisplay: callbacks.getProjectSerialDisplay?.(task.operonId, task),
 			repeatSkipDateResolver: callbacks.getRepeatSkipDates,
 			workflowStatusIdentityIndex,
 			taskLookup: options?.renderContext?.taskLookup,
@@ -331,13 +332,6 @@ export function buildReadingTaskRowElement(
 	}
 	identifyInlineTaskPart(iconButton, 'status-icon', iconButton.outerHTML.replace(/operon-accessible-label-\d+/g, 'operon-accessible-label'));
 	head.appendChild(iconButton);
-	const projectSerialDisplay = callbacks.getProjectSerialDisplay?.(task.operonId, task) ?? null;
-	const projectSerialPlacement = options?.projectSerialPlacement ?? 'tail';
-	if (projectSerialDisplay && projectSerialPlacement === 'head') {
-		head.appendChild(createProjectSerialChipElement(projectSerialDisplay, 'operon-reading-task-chip operon-task-chip', {
-			keyMappings: callbacks.getSettings().keyMappings,
-		}));
-	}
 
 	const description = el('div', 'operon-reading-task-description operon-task-description', row);
 	description.setAttribute('role', 'button');
@@ -371,12 +365,6 @@ export function buildReadingTaskRowElement(
 		isTerminal,
 	});
 
-	if (projectSerialDisplay && projectSerialPlacement === 'tail') {
-		tail.appendChild(createProjectSerialChipElement(projectSerialDisplay, 'operon-reading-task-chip operon-task-chip', {
-			keyMappings: callbacks.getSettings().keyMappings,
-		}));
-	}
-
 	const settings = callbacks.getSettings();
 	const entries = options?.preparedEntries ?? prepareReadingTaskChips(task, callbacks, options, workflowStatusIdentityIndex);
 	for (const entry of entries) {
@@ -402,7 +390,7 @@ export function buildReadingTaskRowElement(
 			if (renderEntry.interactive) {
 				attachReadingChipAction(chip, renderEntry, task, callbacks, () => closeIconOnlyChipPreview(chip), taskColor, options?.retainDom ? () => ({ task, callbacks }) : undefined);
 			} else {
-				bindIconOnlyChipPreview(chip);
+				if (entry.key !== 'taskInfo.projectSerial') bindIconOnlyChipPreview(chip);
 			}
 			const previewLinkTarget = renderEntry.previewLinkTarget ?? renderEntry.linkTarget;
 			if (isCompactTaskMediaChipKey(renderEntry.key)) {
@@ -422,7 +410,10 @@ export function buildReadingTaskRowElement(
 		if (renderEntry.interactive) {
 			attachReadingChipAction(chip, renderEntry, task, callbacks, undefined, taskColor, options?.retainDom ? () => ({ task, callbacks }) : undefined);
 		}
-		const chipNode = renderEntry.tooltipContent
+		if (isTaskInfoChipKey(renderEntry.key)) {
+			bindOperonHoverTooltip(chip, { title: renderEntry.tooltipTitle, content: renderEntry.tooltipContent, taskColor });
+		}
+		const chipNode = renderEntry.tooltipContent && !isTaskInfoChipKey(renderEntry.key)
 			? wrapWithOperonHoverTooltip(chip, {
 				title: renderEntry.tooltipTitle ?? t('taskEditor', 'details'),
 				content: renderEntry.tooltipContent,
@@ -696,6 +687,16 @@ function attachReadingChipAction(
 	taskColor?: string | null,
  getCurrent?: () => { task: IndexedTask; callbacks: ReadingTaskRowCallbacks },
 ): void {
+	if (entry.key === 'taskInfo.projectSerial') return;
+	if (entry.key === 'taskInfo.source') {
+		bindTaskInfoSourceAction(chip, () => { const current = getCurrent?.() ?? { task, callbacks };
+			void current.callbacks.onContextualAction?.(current.task.operonId, 'jumpToSource'); }, callbacks.app, () => {
+			const current = getCurrent?.() ?? { task, callbacks };
+			return current.callbacks.getAllTasks().find(candidate => candidate.operonId === current.task.operonId);
+		});
+		return;
+	}
+
 	let tagPickerOpen = false;
 	let statusPickerOpen = false;
 	bindLinksChipKeyboard(chip, entry.key);

@@ -5528,6 +5528,17 @@ body .operon-searchable-option-picker-panel .operon-searchable-option-picker-ite
 	--operon-task-chip-label-color: color-mix(in srgb, var(--text-error) 64%, var(--text-muted));
 }
 
+.operon-task-info-chip:not(.is-icon-only) {
+	max-width: 100%;
+	min-width: 0;
+}
+
+.operon-task-info-chip:not(.is-icon-only) .operon-inline-compact-chip-label {
+	overflow: hidden;
+	text-overflow: ellipsis;
+	white-space: nowrap;
+}
+
 .operon-project-serial-chip {
 	border-color: color-mix(in srgb, var(--interactive-accent) 28%, var(--background-modifier-border));
 	background: color-mix(in srgb, var(--interactive-accent) 7%, var(--background-primary));

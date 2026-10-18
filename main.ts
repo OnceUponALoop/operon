@@ -23583,7 +23583,6 @@ export default class OperonPlugin extends Plugin {
 								onBlockedAction: invalidSource ? () => {
 									void this.requestInvalidTaskIdRepair({ ...invalidSource, format: 'inline' });
 								} : undefined,
-								projectSerialPlacement: 'tail',
 								workflowStatusIdentityIndex,
 								renderContext,
 							});
