@@ -554,17 +554,14 @@ export class TaskCreatorModal extends Modal {
 	private initialDescriptionFocusTimers: WindowTimeoutHandle[] = [];
 	private initialDescriptionFocusInterrupted = false;
 	private ignoreOutsidePointerUntil = 0;
-	private toolbarOverflowFrame: number | null = null;
 	private mobilePickerOpenDepth = 0;
 	private indexUpdatesUnsubscribe: (() => void) | null = null;
 	private readonly resizeHandler = () => {
 		this.updateMobileViewportHeight();
 		this.refreshRenderedTextEditors();
-		this.scheduleToolbarOverflowState();
 	};
 	private readonly visualViewportHandler = () => {
 		this.updateMobileViewportHeight();
-		this.scheduleToolbarOverflowState();
 	};
 	private readonly mobilePickerOpenHandler = () => {
 		this.mobilePickerOpenDepth += 1;
@@ -573,7 +570,6 @@ export class TaskCreatorModal extends Modal {
 		this.mobilePickerOpenDepth = Math.max(0, this.mobilePickerOpenDepth - 1);
 		window.setTimeout(() => this.updateMobileViewportHeight(), 80);
 	};
-	private readonly toolbarScrollHandler = () => this.scheduleToolbarOverflowState();
 
 	constructor(app: App, options: TaskCreatorModalOptions) {
 		super(app);
@@ -667,11 +663,6 @@ export class TaskCreatorModal extends Modal {
 		this.containerEl.removeEventListener('mousedown', this.handleContainerPointerDown, true);
 		this.containerEl.removeEventListener('click', this.handleContainerPointerDown, true);
 		this.containerEl.removeEventListener('mousedown', this.handleInitialDescriptionFocusPointerDown, true);
-		this.toolsEl?.removeEventListener('scroll', this.toolbarScrollHandler);
-		if (this.toolbarOverflowFrame !== null) {
-			window.cancelAnimationFrame(this.toolbarOverflowFrame);
-			this.toolbarOverflowFrame = null;
-		}
 		this.containerEl.style.removeProperty('--operon-task-creator-mobile-viewport-height');
 		this.clearInitialDescriptionFocusGuard();
 		this.closeActivePicker();
@@ -746,7 +737,6 @@ export class TaskCreatorModal extends Modal {
 		this.reminderStripEl = body.createDiv('operon-task-creator-reminder-strip');
 		this.metadataRowEl = body.createDiv('operon-task-creator-toolbar');
 		this.toolsEl = this.metadataRowEl.createDiv('operon-task-creator-tools');
-		this.toolsEl.addEventListener('scroll', this.toolbarScrollHandler, { passive: true });
 		for (const key of this.getVisibleToolbarFieldOrder()) {
 			const button = this.toolsEl.createEl('button', {
 				cls: 'operon-task-creator-tool',
@@ -802,7 +792,6 @@ export class TaskCreatorModal extends Modal {
 		this.renderFieldButtons();
 		this.renderSubmitControls();
 		this.renderNoteVisibility();
-		this.scheduleToolbarOverflowState();
 	}
 
 	private handleDescriptionEditorKeydown(event: KeyboardEvent): boolean {
@@ -1186,25 +1175,6 @@ export class TaskCreatorModal extends Modal {
 		const height = window.visualViewport?.height ?? window.innerHeight;
 		if (!Number.isFinite(height) || height <= 0) return;
 		this.containerEl.style.setProperty('--operon-task-creator-mobile-viewport-height', `${Math.round(height)}px`);
-	}
-
-	private scheduleToolbarOverflowState(): void {
-		if (!Platform.isPhone || !this.metadataRowEl?.isConnected || !this.toolsEl?.isConnected) return;
-		if (this.toolbarOverflowFrame !== null) {
-			window.cancelAnimationFrame(this.toolbarOverflowFrame);
-		}
-		this.toolbarOverflowFrame = window.requestAnimationFrame(() => {
-			this.toolbarOverflowFrame = null;
-			this.updateToolbarOverflowState();
-		});
-	}
-
-	private updateToolbarOverflowState(): void {
-		if (!this.metadataRowEl?.isConnected || !this.toolsEl?.isConnected) return;
-		const maxScrollLeft = Math.max(0, this.toolsEl.scrollWidth - this.toolsEl.clientWidth);
-		const scrollLeft = this.toolsEl.scrollLeft;
-		this.metadataRowEl.toggleClass('is-scrollable-left', scrollLeft > 1);
-		this.metadataRowEl.toggleClass('is-scrollable-right', scrollLeft < maxScrollLeft - 1);
 	}
 
 	private syncSuggestions(): void {
@@ -1774,7 +1744,6 @@ export class TaskCreatorModal extends Modal {
    }
    // insertBefore only when order actually changes: focused controls retain their DOM identity.
    keys.forEach((key,index) => { const button = this.fieldButtonMap.get(key)!; if (this.toolsEl.children[index] !== button) this.toolsEl.insertBefore(button, this.toolsEl.children[index] ?? null); });
-   this.scheduleToolbarOverflowState();
   }
 		this.renderReminderDraftStrip();
 		for (const key of this.getVisibleToolbarFieldOrder()) {
