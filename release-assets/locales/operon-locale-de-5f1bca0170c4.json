@@ -1,8 +1,8 @@
 {
   "schemaVersion": 1,
   "locale": "de",
-  "keyCount": 3665,
-  "keyFingerprint": "ada8cc9ffb7d54b230ddbcd9a814617c87841a90d6e645bdf5034f4c5282259c",
+  "keyCount": 3668,
+  "keyFingerprint": "89abfabff951c621ad847d4150f0b655a92e0212977ff8be97c026dec5e0f0b0",
   "translations": {
     "buttons": {
       "addFileSubtask": "Datei-Unteraufgabe hinzufügen",
@@ -1117,6 +1117,9 @@
       "autoParentInlineSubtasksDesc": "Beim Erstellen einer Inline-Aufgabe innerhalb einer Datei-Aufgabe deren übergeordnete Aufgabe automatisch auf diese Datei-Aufgabe setzen.",
       "autoParentLinkedFileSubtasks": "Verknüpfte Datei-Unteraufgaben automatisch zuordnen",
       "autoParentLinkedFileSubtasksDesc": "Beim Erstellen einer verknüpften Datei-Aufgabe innerhalb einer Datei-Aufgabe deren übergeordnete Aufgabe automatisch auf diese Datei-Aufgabe setzen.",
+      "backgroundDimmingDecrease": "Hintergrund weniger abdunkeln",
+      "backgroundDimmingIncrease": "Hintergrund stärker abdunkeln",
+      "backgroundDimmingSaveFailed": "Die Hintergrundabdunklung konnte nicht gespeichert werden.",
       "calendarHoverActionClearDueDate": "Fälligkeitsdatum entfernen",
       "calendarHoverActionClearDueDateDesc": "Diese Aktion im Kalender-Hover-Menü anzeigen, wenn die aktuelle Aufgabe ein zu entfernendes Fälligkeitsdatum hat.",
       "calendarHoverActionJumpToSource": "Zur Quelle springen",
@@ -2901,7 +2904,7 @@
       "weeklyNoteTemplatePlaceholder": "z. B. 10 Horizon/Templates/Weekly.md",
       "workspaceTweaksAddPropertiesExcludedFolder": "Ausgeschlossenen Ordner hinzufügen",
       "workspaceTweaksBackgroundDimming": "Hintergrundabdunklung",
-      "workspaceTweaksBackgroundDimmingDefault": "70% — Standard",
+      "workspaceTweaksBackgroundDimmingDefault": "50% — Standard",
       "workspaceTweaksBackgroundDimmingDesc": "Wähle die anfängliche Abdunklung für Operon-Lightboxes und Aufgabenerstellung, -suche und -editor auf dem Desktop. Jede weitere Ebene erhöht sie um 5 Prozentpunkte, bis maximal 90 %. Eigenständige Fenster des dynamischen Unteraufgabenfilters verwenden diese Einstellung ebenfalls.",
       "workspaceTweaksCollapseProperties": "Collapse Properties by Default",
       "workspaceTweaksCollapsePropertiesDesc": "Klappt Obsidian Properties ein, wenn passende Notizen geöffnet werden; Scope und ausgeschlossene Ordner darunter steuern, wo es gilt.",
@@ -3710,5 +3713,5 @@
       "toggleDescendantPreview": "Vorschau untergeordneter Aufgaben umschalten"
     }
   },
-  "sourceVersion": "b46e381afd80f5d3932537af46b9a73bf131443ca39d707e9370223183f7222c"
+  "sourceVersion": "5e89f1dea8177a766a63cb7498c86dde044f6b0cd2e938c00564659e5287d763"
 }

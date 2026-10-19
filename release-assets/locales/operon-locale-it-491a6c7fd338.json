@@ -1,8 +1,8 @@
 {
   "schemaVersion": 1,
   "locale": "it",
-  "keyCount": 3665,
-  "keyFingerprint": "ada8cc9ffb7d54b230ddbcd9a814617c87841a90d6e645bdf5034f4c5282259c",
+  "keyCount": 3668,
+  "keyFingerprint": "89abfabff951c621ad847d4150f0b655a92e0212977ff8be97c026dec5e0f0b0",
   "translations": {
     "buttons": {
       "addFileSubtask": "Aggiungi sotto-attività-file",
@@ -1117,6 +1117,9 @@
       "autoParentInlineSubtasksDesc": "Quando crei un'attività in linea all'interno di un'attività-file, imposta automaticamente il suo genitore su quell'attività-file.",
       "autoParentLinkedFileSubtasks": "Assegna automaticamente il genitore alle sotto-attività-file collegate",
       "autoParentLinkedFileSubtasksDesc": "Quando crei un'attività-file collegata all'interno di un'attività-file, imposta automaticamente il suo genitore su quell'attività-file.",
+      "backgroundDimmingDecrease": "Riduci l’oscuramento dello sfondo",
+      "backgroundDimmingIncrease": "Aumenta l’oscuramento dello sfondo",
+      "backgroundDimmingSaveFailed": "Impossibile salvare l’oscuramento dello sfondo.",
       "calendarHoverActionClearDueDate": "Cancella data di scadenza",
       "calendarHoverActionClearDueDateDesc": "Mostra questa azione nel menu al passaggio del mouse del calendario quando l'attività attuale ha una data di scadenza da cancellare.",
       "calendarHoverActionJumpToSource": "Vai all'origine",
@@ -2901,7 +2904,7 @@
       "weeklyNoteTemplatePlaceholder": "es. 10 Horizon/Templates/Weekly.md",
       "workspaceTweaksAddPropertiesExcludedFolder": "Aggiungi cartella esclusa",
       "workspaceTweaksBackgroundDimming": "Oscuramento dello sfondo",
-      "workspaceTweaksBackgroundDimmingDefault": "70% — Predefinito",
+      "workspaceTweaksBackgroundDimmingDefault": "50% — Predefinito",
       "workspaceTweaksBackgroundDimmingDesc": "Scegli l’oscuramento iniziale delle anteprime e del creatore, cercatore ed editor di attività Operon su desktop. Ogni livello aggiunge 5 punti percentuali, fino al 90%. Anche le finestre autonome del filtro dinamico delle sottoattività usano questa impostazione.",
       "workspaceTweaksCollapseProperties": "Comprimi Proprietà per impostazione predefinita",
       "workspaceTweaksCollapsePropertiesDesc": "Comprimi le Proprietà di Obsidian quando si aprono le note corrispondenti; usa l'ambito e le cartelle escluse qui sotto per controllare dove si applica.",
@@ -3710,5 +3713,5 @@
       "toggleDescendantPreview": "Alterna anteprima discendenti"
     }
   },
-  "sourceVersion": "18c70ec6ec190d01f6b6322319ea06535146dae769c183b167520c05bce0062a"
+  "sourceVersion": "aa204e20562df2e06fbb553015c9cad5e27268d4469b0c9cf174b808371c8edc"
 }

@@ -1,5 +1,5 @@
 import { SettingsWritesSuspendedError } from './src/storage/operon-data-package-store';
-import { updateDesktopBackdropDimming, disposeDesktopBackdrops } from './src/ui/modal-backdrop';
+import { updateDesktopBackdropDimming, disposeDesktopBackdrops, bindDesktopBackdropDimmingPreference, subscribeDesktopBackdropDimming } from './src/ui/modal-backdrop';
 import { tasksConversionProtectedLines } from './src/core/tasks-conversion-scope';
 import { TasksConversionSettings } from './src/ui/tasks-conversion-settings';
 import { TasksConversionController } from './src/ui/tasks-conversion-controller';
@@ -16404,6 +16404,11 @@ export default class OperonPlugin extends Plugin {
 			onError: error => console.warn('Operon: failed to reconcile project serials after index mutation', error),
 		});
 		this.settings = this.storage.getSettings();
+  this.register(bindDesktopBackdropDimmingPreference({
+   get: () => this.settings.workspaceTweaksBackgroundDimming,
+   save: value => this.storage.updateSettings({ workspaceTweaksBackgroundDimming: value }),
+  }));
+  this.register(subscribeDesktopBackdropDimming(() => this.settingsTab?.refreshBackgroundDimmingState()));
 		this.register(bindLocationPickerDefaults(this.app, {
 			get: () => this.settings,
 			save: change => this.storage.saveLocationPickerDefault(change),

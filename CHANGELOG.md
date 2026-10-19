@@ -19,7 +19,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Improved
 
-- Added adjustable **Background dimming** under Tweaks → Workspace for all desktop lightboxes, Task Creator, Task Finder, Task Editor, and standalone Dynamic Subtasks Filter windows. Choose 50%, 60%, 70% (default), 80%, or 90%; each additional layer adds 5 percentage points up to 90%, without overlapping backdrops making it darker. Closing a layer restores the previous level while preserving drafts, controls, and layout; mobile, Editor filter popovers, and embedded filters are unchanged.
+- Added adjustable **Background dimming** under Tweaks → Workspace for all desktop lightboxes, Task Creator, Task Finder, Task Editor, and standalone Dynamic Subtasks Filter windows. Choose from 13 levels between 10% and 90%, with 50% as the default for new users and existing preferences preserved. Each additional layer adds 5 percentage points up to 90%, without overlapping backdrops making it darker; closing a layer restores the previous level. Mobile, Editor filter popovers, and embedded filters are unchanged.
+- Added **lightbox dimming controls** at the bottom of the existing action rail: + and − step through the available levels and save directly to Tweaks, while a compact numeric indicator shows the saved preference and provides the only dimming tooltip.
 - Made supported **task chip and Table links** open consistently in the desktop lightbox, including media, Parent Task, and existing wikilinks in Type and Text/List values; ordinary values and missing wikilinks retain their pickers, and clicking outside a Table link still edits the cell.
 - Extended the same opening behavior to **task description links and Description/Note popovers** across supported task views. Cmd/Ctrl-click opens a focused tab; local links follow Page Preview preferences, and media keeps its quick hover preview with single-click opening.
 - Refined **lightbox layout** with a narrower Markdown/web view, wider Base/Table views, inset content frames, and four matching controls beside the content; Operon Table presets and Gantt remain usable inside the preview.
@@ -57,7 +58,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Validation
 
-- Shared background dimming checks passed **16/16** focused tests and **32/32** browser scenarios covering settings, layer intensity, desktop modals and lightboxes, mobile boundaries, focus, and draft preservation.
+- Shared background dimming checks passed **31/31** focused tests and **32/32** browser scenarios covering settings, layer intensity, desktop modals and lightboxes, mobile boundaries, focus, and draft preservation.
 - Desktop lightbox opening, lifecycle, and interaction checks passed **189/189** focused tests, **16/16** shell tests, **8/8** web tests, **24/24** layout checks, and **12/12** editor/draft browser checks.
 - Source and Project Serial chip settings, navigation, and interaction checks passed **48/48** focused tests, **6/6** Settings Search and redraw scenarios, and **22/22** browser checks across six profiles.
 - Subtask chip routing and interaction protections passed **23/23** focused tests across File and Inline tasks.

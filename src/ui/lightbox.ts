@@ -1,4 +1,4 @@
-import { registerDesktopBackdrop, isDesktopBackdropDescendant } from './modal-backdrop';
+import { registerDesktopBackdrop, isDesktopBackdropDescendant, getDesktopBackdropDimming, canSaveDesktopBackdropDimming, stepDesktopBackdropDimming, subscribeDesktopBackdropDimming } from './modal-backdrop';
 import { Notice, Platform, Scope, setIcon, type App, type WorkspaceLeaf } from 'obsidian';
 import { asHTMLElement, getOwnerBody, getOwnerDocument, getOwnerWindow, isHTMLElement } from '../core/dom-compat';
 import { t } from '../core/i18n';
@@ -162,6 +162,30 @@ export function openLightbox(anchor: HTMLElement, options: LightboxOptions): Lig
   setAccessibleLabelWithoutTooltip(belowButton, 'Open below');
   bindOperonHoverTooltip(belowButton, {content: 'Open below', taskColor: null});
  }
+ let disposeDimmingControls: (() => void) | null = null;
+ if (Platform.isDesktopApp) {
+  const increase = lightbox.createEl('button', {cls: 'operon-task-media-lightbox-control operon-lightbox-dimming-control operon-lightbox-dimming-increase', attr: {type:'button'}});
+  const indicator = lightbox.createEl('output', {cls: 'operon-task-media-lightbox-control operon-lightbox-dimming-control operon-lightbox-dimming-value', attr: {'aria-live':'polite'}});
+  const decrease = lightbox.createEl('button', {cls: 'operon-task-media-lightbox-control operon-lightbox-dimming-control operon-lightbox-dimming-decrease', attr: {type:'button'}});
+  [increase, indicator, decrease].forEach((control, index) => control.style.setProperty('--operon-lightbox-dimming-index', String(index)));
+  setIcon(increase, 'plus'); setIcon(decrease, 'minus');
+  const increaseLabel = t('settings', 'backgroundDimmingIncrease');
+  const decreaseLabel = t('settings', 'backgroundDimmingDecrease');
+  setAccessibleLabelWithoutTooltip(increase, increaseLabel); setAccessibleLabelWithoutTooltip(decrease, decreaseLabel);
+  bindOperonHoverTooltip(indicator, {content:t('settings', 'workspaceTweaksBackgroundDimming'),taskColor:null});
+  const unsubscribe = subscribeDesktopBackdropDimming(() => {
+   const value = getDesktopBackdropDimming();
+   indicator.setText(String(value));
+   setAccessibleLabelWithoutTooltip(indicator, `${t('settings', 'workspaceTweaksBackgroundDimming')}: ${value}%`);
+   increase.disabled = !canSaveDesktopBackdropDimming() || value >= 90;
+   decrease.disabled = !canSaveDesktopBackdropDimming() || value <= 10;
+  });
+  const step = (direction: -1 | 1): void => {
+   void stepDesktopBackdropDimming(direction).catch(() => { new Notice(t('settings', 'backgroundDimmingSaveFailed')); });
+  };
+  increase.addEventListener('click', () => step(1)); decrease.addEventListener('click', () => step(-1));
+  disposeDimmingControls = () => { unsubscribe(); cleanupOperonHoverTooltips(indicator); };
+ }
  bindOperonHoverTooltip(closeButton, {content: t('buttons', 'close'), taskColor: null});
  let disposePosition: (() => void) | null = null;
  // A child preview must not inherit the underlying modal's Escape or Tab trap.
@@ -177,6 +201,7 @@ export function openLightbox(anchor: HTMLElement, options: LightboxOptions): Lig
 		if (isClosed) return true;
 		isClosed = true;
   disposePosition?.();
+  disposeDimmingControls?.();
   cleanupOperonHoverTooltips(closeButton);
   if (tabButton) cleanupOperonHoverTooltips(tabButton);
   if (splitButton) cleanupOperonHoverTooltips(splitButton);
@@ -346,13 +371,23 @@ function positionLightboxControls(lightbox: HTMLElement): (() => void) | null {
  const win = lightbox.ownerDocument.defaultView;
  if (!content || !win) return null;
  const controlCount = lightbox.querySelectorAll('.operon-task-media-lightbox-control').length;
- const railHeight = (controlCount - 1) * 44 + 36;
+ const dimmingCount = lightbox.querySelectorAll('.operon-lightbox-dimming-control').length;
  const position = (): void => {
   const rect = content.getBoundingClientRect();
   const width = win.innerWidth, height = win.innerHeight;
+  const size = Math.min(36, (height - 16 - 4 * (controlCount - 1)) / controlCount);
+  const step = Math.min(44, (height - 16 - size) / Math.max(1, controlCount - 1));
+  const railHeight = (controlCount - 1) * step + size;
+  lightbox.style.setProperty('--operon-lightbox-control-size', `${size}px`);
+  lightbox.style.setProperty('--operon-lightbox-control-step', `${step}px`);
   const left = rect.right + 8 + 36 <= width - 8 ? rect.right + 8 : rect.right - 44;
   lightbox.style.setProperty('--operon-lightbox-control-left', `${Math.max(8, Math.min(width - 44, left))}px`);
-  lightbox.style.setProperty('--operon-lightbox-control-top', `${Math.max(8, Math.min(height - railHeight - 8, rect.top + 8))}px`);
+  const top = Math.max(8, Math.min(height - railHeight - 8, rect.top + 8));
+  lightbox.style.setProperty('--operon-lightbox-control-top', `${top}px`);
+  const dimmingHeight = (dimmingCount - 1) * step + size;
+  const dimmingTop = Math.max(top + (controlCount - dimmingCount) * step,
+   Math.min(height - dimmingHeight - 8, rect.bottom - dimmingHeight - 8));
+  lightbox.style.setProperty('--operon-lightbox-dimming-top', `${dimmingTop}px`);
   const radius = win.getComputedStyle(content).borderTopRightRadius;
   lightbox.style.setProperty('--operon-lightbox-control-radius', Number.parseFloat(radius) > 0 ? radius : '12px');
  };

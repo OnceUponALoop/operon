@@ -3,9 +3,11 @@ export function lightboxFixture() {
  const doc: any = { activeElement: null, querySelectorAll() { return []; }, addEventListener(k: string, fn: (e: any) => void) { if (!listeners.has(k)) listeners.set(k, new Set()); listeners.get(k)!.add(fn); }, removeEventListener(k: string, fn: (e: any) => void) { listeners.get(k)?.delete(fn); } };
  class Element {
   ownerDocument = doc; children: Element[] = []; parent: Element | null = null; dataset: Record<string, string> = {}; attrs: Record<string, string> = {}; tagName = 'DIV'; id = ''; textContent = ''; connected = true;
-  style: Record<string, string> = {}; classes = new Set<string>();
+  private cssProperties: Record<string, string> = {};
+  style = {setProperty: (key: string, value: string) => { this.cssProperties[key] = value; }, getPropertyValue: (key: string) => this.cssProperties[key] ?? '', removeProperty: (key: string) => { const value = this.cssProperties[key]; delete this.cssProperties[key]; return value; }}; classes = new Set<string>();
   events = new Map<string, (event: any) => void>();
   get isConnected(): boolean { return this.connected && (!this.parent || this.parent.isConnected); }
+  setText(text: string) { this.textContent = text; this.children = []; }
   addClass(name: string) { for (const item of name.split(' ')) this.classes.add(item); }
   removeClass(name: string) { this.classes.delete(name); }
   toggleClass(name: string, yes: boolean) { if (yes) this.classes.add(name); else this.classes.delete(name); }
@@ -23,6 +25,7 @@ export function lightboxFixture() {
   focus() { doc.activeElement = this; }
   remove() { this.connected = false; }
  }
+ doc.getElementById = (id: string) => doc.body.querySelectorAll().find((el: Element) => el.id === id) ?? null;
  doc.defaultView = { HTMLElement: Element, innerWidth:1200, innerHeight:900, setTimeout, clearTimeout, addEventListener() {}, removeEventListener() {} }; doc.win = { createSpan: () => new Element() }; doc.body = new Element();
  const anchor = doc.body.createDiv(); anchor.focus();
  return { doc, anchor: anchor as unknown as HTMLElement, listeners, emit: (key: string, event: any) => [...(listeners.get(key) ?? [])].forEach(fn => fn(event)) };

@@ -179,7 +179,7 @@ const MULTI_CONSUMER_GRANT: DeveloperApiGrantPackageV1 = {
 /** Verify additive card defaults separately, preserving the pre-card sealed fixtures. */
 function stripTaskCardDefaults(data: OperonDataPackageV1, verify = false): void {
  // Preserve the sealed legacy fixture while checking the additive visual preference separately.
- if (verify) assert.equal(data.ui.workspaceTweaks.workspaceTweaksBackgroundDimming, 70);
+ if (verify) assert.equal(data.ui.workspaceTweaks.workspaceTweaksBackgroundDimming, 50);
  Reflect.deleteProperty(data.ui.workspaceTweaks, 'workspaceTweaksBackgroundDimming');
  for (const key of ['inlineTaskCompactChips', 'filterTaskCompactChips', 'kanbanTaskCompactChips', 'taskFinderCompactChips', 'taskWikilinkOverlayCompactChips'] as const) {
   const items = data.ui.taskUiPreferences[key];

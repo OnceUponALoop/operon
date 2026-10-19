@@ -1,8 +1,8 @@
 {
   "schemaVersion": 1,
   "locale": "ru",
-  "keyCount": 3665,
-  "keyFingerprint": "ada8cc9ffb7d54b230ddbcd9a814617c87841a90d6e645bdf5034f4c5282259c",
+  "keyCount": 3668,
+  "keyFingerprint": "89abfabff951c621ad847d4150f0b655a92e0212977ff8be97c026dec5e0f0b0",
   "translations": {
     "buttons": {
       "addFileSubtask": "Добавить файловую подзадачу",
@@ -1117,6 +1117,9 @@
       "autoParentInlineSubtasksDesc": "При создании встроенной задачи внутри файловой задачи автоматически назначать её родителем эту файловую задачу.",
       "autoParentLinkedFileSubtasks": "Автоматическое назначение родителя для связанных файловых подзадач",
       "autoParentLinkedFileSubtasksDesc": "При создании связанной файловой задачи внутри файловой задачи автоматически назначать её родителем эту файловую задачу.",
+      "backgroundDimmingDecrease": "Уменьшить затемнение фона",
+      "backgroundDimmingIncrease": "Увеличить затемнение фона",
+      "backgroundDimmingSaveFailed": "Не удалось сохранить затемнение фона.",
       "calendarHoverActionClearDueDate": "Очистить срок выполнения",
       "calendarHoverActionClearDueDateDesc": "Показывать это действие в меню при наведении в календаре, если у текущей задачи есть срок выполнения для очистки.",
       "calendarHoverActionJumpToSource": "Перейти к источнику",
@@ -2901,7 +2904,7 @@
       "weeklyNoteTemplatePlaceholder": "напр. 10 Horizon/Templates/Weekly.md",
       "workspaceTweaksAddPropertiesExcludedFolder": "Добавить исключённую папку",
       "workspaceTweaksBackgroundDimming": "Затемнение фона",
-      "workspaceTweaksBackgroundDimmingDefault": "70% — По умолчанию",
+      "workspaceTweaksBackgroundDimmingDefault": "50% — По умолчанию",
       "workspaceTweaksBackgroundDimmingDesc": "Выберите начальное затемнение для предпросмотра и окон создания, поиска и редактирования задач Operon на компьютере. Каждый дополнительный слой добавляет 5 процентных пунктов, максимум 90%. Отдельные окна динамического фильтра подзадач также используют эту настройку.",
       "workspaceTweaksCollapseProperties": "Сворачивать свойства по умолчанию",
       "workspaceTweaksCollapsePropertiesDesc": "Сворачивать свойства Obsidian при открытии подходящих заметок; используйте область и исключённые папки ниже, чтобы указать, где это применяется.",
@@ -3710,5 +3713,5 @@
       "toggleDescendantPreview": "Переключить предпросмотр потомков"
     }
   },
-  "sourceVersion": "7eea8983b5475222bc965004d034356c8818345ac45efb7060bda523209e03fb"
+  "sourceVersion": "812f8af0b5b6f0dc1cb4609a365bc8ab9bf5934e738cfc278c79d6b5405cd4f0"
 }

@@ -1,5 +1,5 @@
 import { Platform } from 'obsidian';
-import { normalizeBackgroundDimming } from '../core/background-dimming';
+import { BACKGROUND_DIMMING_OPTIONS, normalizeBackgroundDimming } from '../core/background-dimming';
 
 interface Surface {
  element: HTMLElement;
@@ -14,9 +14,59 @@ interface BackdropState {
  onPageHide: () => void;
 }
 const states = new Map<Document, BackdropState>();
-let baseDimming = 70;
+let baseDimming = 50;
 const modalReleases = new WeakMap<HTMLElement, () => void>();
 const colorProperty = '--operon-focus-backdrop';
+
+interface DimmingPreference { get: () => number; save: (value: number) => Promise<void> }
+let dimmingPreference: DimmingPreference | null = null;
+let dimmingSaveQueue: Promise<unknown> = Promise.resolve();
+const dimmingListeners = new Set<() => void>();
+function notifyDimmingListeners(): void { for (const listener of dimmingListeners) listener(); }
+
+/** Share the existing settings write path between Tweaks and preview controls. */
+export function bindDesktopBackdropDimmingPreference(preference: DimmingPreference): () => void {
+ dimmingPreference = preference;
+ updateDesktopBackdropDimming(preference.get());
+ return () => {
+  if (dimmingPreference !== preference) return;
+  dimmingPreference = null;
+  notifyDimmingListeners();
+ };
+}
+export function getDesktopBackdropDimming(): number { return baseDimming; }
+export function canSaveDesktopBackdropDimming(): boolean { return dimmingPreference !== null; }
+export function subscribeDesktopBackdropDimming(listener: () => void): () => void {
+ dimmingListeners.add(listener);
+ listener();
+ return () => { dimmingListeners.delete(listener); };
+}
+function requestDimmingChange(resolve: (current: number) => number): Promise<boolean> {
+ const preference = dimmingPreference;
+ if (!preference) return Promise.resolve(false);
+ const run = dimmingSaveQueue.then(async () => {
+  if (dimmingPreference !== preference) return true;
+  const current = normalizeBackgroundDimming(preference.get());
+  const next = normalizeBackgroundDimming(resolve(current));
+  try {
+   if (next !== current) await preference.save(next);
+  } finally {
+   if (dimmingPreference === preference) updateDesktopBackdropDimming(preference.get());
+  }
+  return true;
+ });
+ dimmingSaveQueue = run.catch(() => undefined);
+ return run;
+}
+export function saveDesktopBackdropDimming(value: number): Promise<boolean> {
+ return requestDimmingChange(() => value);
+}
+export function stepDesktopBackdropDimming(direction: -1 | 1): Promise<boolean> {
+ return requestDimmingChange(current => {
+  const index = BACKGROUND_DIMMING_OPTIONS.findIndex(value => value === current);
+  return BACKGROUND_DIMMING_OPTIONS[Math.max(0, Math.min(BACKGROUND_DIMMING_OPTIONS.length - 1, index + direction))];
+ });
+}
 
 function restore(surface: Surface): void {
  if (surface.originalColor) surface.element.style.setProperty(colorProperty, surface.originalColor);
@@ -52,6 +102,7 @@ function refresh(state: BackdropState): void {
 export function updateDesktopBackdropDimming(value: unknown): void {
  baseDimming = normalizeBackgroundDimming(value);
  for (const state of states.values()) refresh(state);
+ notifyDimmingListeners();
 }
 export function disposeDesktopBackdrops(): void {
  for (const state of states.values()) {
@@ -61,7 +112,11 @@ export function disposeDesktopBackdrops(): void {
   state.surfaces.length = 0;
  }
  states.clear();
- baseDimming = 70;
+ dimmingPreference = null;
+ dimmingSaveQueue = Promise.resolve();
+ baseDimming = 50;
+ notifyDimmingListeners();
+ dimmingListeners.clear();
 }
 
 /** Each existing shell supplies its own backdrop; no new overlay or event handling is added. */

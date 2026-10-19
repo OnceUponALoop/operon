@@ -1,8 +1,8 @@
 {
   "schemaVersion": 1,
   "locale": "es",
-  "keyCount": 3665,
-  "keyFingerprint": "ada8cc9ffb7d54b230ddbcd9a814617c87841a90d6e645bdf5034f4c5282259c",
+  "keyCount": 3668,
+  "keyFingerprint": "89abfabff951c621ad847d4150f0b655a92e0212977ff8be97c026dec5e0f0b0",
   "translations": {
     "buttons": {
       "addFileSubtask": "Añadir subtarea de archivo",
@@ -1117,6 +1117,9 @@
       "autoParentInlineSubtasksDesc": "Al crear una tarea en línea dentro de una tarea de archivo, establecer automáticamente su tarea principal como esa tarea de archivo.",
       "autoParentLinkedFileSubtasks": "Asignar automáticamente la tarea principal a las subtareas de archivo enlazadas",
       "autoParentLinkedFileSubtasksDesc": "Al crear una tarea de archivo enlazada dentro de una tarea de archivo, establecer automáticamente su tarea principal como esa tarea de archivo.",
+      "backgroundDimmingDecrease": "Reducir el oscurecimiento del fondo",
+      "backgroundDimmingIncrease": "Aumentar el oscurecimiento del fondo",
+      "backgroundDimmingSaveFailed": "No se pudo guardar el oscurecimiento del fondo.",
       "calendarHoverActionClearDueDate": "Borrar fecha de vencimiento",
       "calendarHoverActionClearDueDateDesc": "Mostrar esta acción en el menú al pasar el cursor en el calendario cuando la tarea actual tenga una fecha de vencimiento para borrar.",
       "calendarHoverActionJumpToSource": "Saltar al origen",
@@ -2901,7 +2904,7 @@
       "weeklyNoteTemplatePlaceholder": "p. ej. 10 Horizon/Templates/Weekly.md",
       "workspaceTweaksAddPropertiesExcludedFolder": "Añadir carpeta excluida",
       "workspaceTweaksBackgroundDimming": "Oscurecimiento del fondo",
-      "workspaceTweaksBackgroundDimmingDefault": "70% — Predeterminado",
+      "workspaceTweaksBackgroundDimmingDefault": "50% — Predeterminado",
       "workspaceTweaksBackgroundDimmingDesc": "Elige el oscurecimiento inicial de las vistas previas y del creador, buscador y editor de tareas de Operon en escritorio. Cada capa adicional suma 5 puntos porcentuales, hasta un máximo del 90%. Las ventanas independientes del filtro dinámico de subtareas también usan este ajuste.",
       "workspaceTweaksCollapseProperties": "Contraer Properties por defecto",
       "workspaceTweaksCollapsePropertiesDesc": "Contraer las Properties de Obsidian cuando se abren notas coincidentes; usar el ámbito y las carpetas excluidas de abajo para controlar dónde se aplica.",
@@ -3710,5 +3713,5 @@
       "toggleDescendantPreview": "Alternar vista previa de descendientes"
     }
   },
-  "sourceVersion": "bc724f6ed8a919b6c721db99501fd3136a512641e2ac5b8c6807efd64e07429c"
+  "sourceVersion": "11bdd841d2926f317763a1c2fd16170c0544ec36fa6c1d3a6c1ad0c72454f1a4"
 }

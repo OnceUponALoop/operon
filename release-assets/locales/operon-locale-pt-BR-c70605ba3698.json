@@ -1,8 +1,8 @@
 {
   "schemaVersion": 1,
   "locale": "pt-BR",
-  "keyCount": 3665,
-  "keyFingerprint": "ada8cc9ffb7d54b230ddbcd9a814617c87841a90d6e645bdf5034f4c5282259c",
+  "keyCount": 3668,
+  "keyFingerprint": "89abfabff951c621ad847d4150f0b655a92e0212977ff8be97c026dec5e0f0b0",
   "translations": {
     "buttons": {
       "addFileSubtask": "Adicionar subtarefa em arquivo",
@@ -1117,6 +1117,9 @@
       "autoParentInlineSubtasksDesc": "Ao criar uma tarefa inline dentro de uma tarefa em arquivo, seu pai será automaticamente definido como essa tarefa em arquivo.",
       "autoParentLinkedFileSubtasks": "Subtarefas vinculadas a arquivos com pai automático",
       "autoParentLinkedFileSubtasksDesc": "Ao criar uma tarefa em arquivo vinculada dentro de uma tarefa em arquivo, defina automaticamente a tarefa em arquivo externa como tarefa pai.",
+      "backgroundDimmingDecrease": "Diminuir o escurecimento do fundo",
+      "backgroundDimmingIncrease": "Aumentar o escurecimento do fundo",
+      "backgroundDimmingSaveFailed": "Não foi possível salvar o escurecimento do fundo.",
       "calendarHoverActionClearDueDate": "Limpar data de vencimento",
       "calendarHoverActionClearDueDateDesc": "Mostrar esta ação no menu pop-up do calendário quando a tarefa atual tiver uma data de vencimento para limpar.",
       "calendarHoverActionJumpToSource": "Ir para a origem",
@@ -2901,7 +2904,7 @@
       "weeklyNoteTemplatePlaceholder": "ex.: Templates/Nota Semanal",
       "workspaceTweaksAddPropertiesExcludedFolder": "Adicionar pasta excluída",
       "workspaceTweaksBackgroundDimming": "Escurecimento do fundo",
-      "workspaceTweaksBackgroundDimmingDefault": "70% — Padrão",
+      "workspaceTweaksBackgroundDimmingDefault": "50% — Padrão",
       "workspaceTweaksBackgroundDimmingDesc": "Escolha o escurecimento inicial das prévias e do criador, localizador e editor de tarefas do Operon no desktop. Cada camada adiciona 5 pontos percentuais, até 90%. As janelas independentes do filtro dinâmico de subtarefas também usam esta configuração.",
       "workspaceTweaksCollapseProperties": "Colapsar propriedades por padrão",
       "workspaceTweaksCollapsePropertiesDesc": "Colapsa as propriedades Obsidian quando notas correspondentes estão abertas; use o escopo e as pastas excluídas abaixo para controlar onde isso se aplica.",
@@ -3710,5 +3713,5 @@
       "toggleDescendantPreview": "Alternar visualização descendente"
     }
   },
-  "sourceVersion": "0ad43088545598f5838faa0b748be8eecaa102f168b539da5ec7102b6b74161b"
+  "sourceVersion": "a3c0b9c07beb8f20bc9a221d76e51f70d5b56cc5113060da3d51f0d57caf8b30"
 }

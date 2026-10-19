@@ -35143,8 +35143,10 @@ body .operon-canvas-task-pool .operon-canvas-task-pool-meta button:hover { color
  display: flex;
  align-items: center;
  justify-content: center;
- width: 36px;
- height: 36px;
+ width: var(--operon-lightbox-control-size, 36px);
+ height: var(--operon-lightbox-control-size, 36px);
+ min-width: 0;
+ min-height: 0;
  padding: 0;
  color: var(--text-normal);
  background: var(--background-primary);
@@ -35154,9 +35156,9 @@ body .operon-canvas-task-pool .operon-canvas-task-pool-meta button:hover { color
  z-index: 1;
 }
 .operon-task-media-lightbox.has-content-controls .operon-task-media-lightbox-tab {
- top: calc(var(--operon-lightbox-control-top, 16px) + 44px);
+ top: calc(var(--operon-lightbox-control-top, 16px) + var(--operon-lightbox-control-step, 44px));
 }
-.operon-task-media-lightbox.has-content-controls .operon-task-media-lightbox-control:hover {
+.operon-task-media-lightbox.has-content-controls .operon-task-media-lightbox-control:hover:not(:disabled) {
  background: var(--background-modifier-hover);
 }
 .operon-task-media-lightbox.has-content-controls .operon-task-media-lightbox-control:focus-visible {
@@ -35167,10 +35169,22 @@ body .operon-canvas-task-pool .operon-canvas-task-pool-meta button:hover { color
 /* Suspended previews retain native editors and drafts without intercepting input. */
 .operon-task-media-lightbox[hidden], .operon-text-field-popover-panel[hidden] { display: none; }
 .operon-task-media-lightbox.has-content-controls .operon-task-media-lightbox-split {
- top: calc(var(--operon-lightbox-control-top, 16px) + 88px);
+ top: calc(var(--operon-lightbox-control-top, 16px) + 2 * var(--operon-lightbox-control-step, 44px));
 }
 .operon-task-media-lightbox.has-content-controls .operon-task-media-lightbox-split-below {
- top: calc(var(--operon-lightbox-control-top, 16px) + 132px);
+ top: calc(var(--operon-lightbox-control-top, 16px) + 3 * var(--operon-lightbox-control-step, 44px));
+}
+
+.operon-task-media-lightbox.has-content-controls .operon-lightbox-dimming-control {
+ top: calc(var(--operon-lightbox-dimming-top, calc(100% - 132px)) + var(--operon-lightbox-dimming-index) * var(--operon-lightbox-control-step, 44px));
+}
+.operon-task-media-lightbox.has-content-controls .operon-lightbox-dimming-value {
+ font-size: var(--font-ui-smaller);
+ font-variant-numeric: tabular-nums;
+}
+.operon-task-media-lightbox.has-content-controls .operon-lightbox-dimming-control:disabled {
+ color: var(--text-faint);
+ cursor: default;
 }
 
 /* Host menus and Page Preview use Obsidian's own overlay layers. */

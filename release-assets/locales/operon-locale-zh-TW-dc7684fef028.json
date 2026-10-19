@@ -1,8 +1,8 @@
 {
   "schemaVersion": 1,
   "locale": "zh-TW",
-  "keyCount": 3665,
-  "keyFingerprint": "ada8cc9ffb7d54b230ddbcd9a814617c87841a90d6e645bdf5034f4c5282259c",
+  "keyCount": 3668,
+  "keyFingerprint": "89abfabff951c621ad847d4150f0b655a92e0212977ff8be97c026dec5e0f0b0",
   "translations": {
     "buttons": {
       "addFileSubtask": "新增檔案子任務",
@@ -1117,6 +1117,9 @@
       "autoParentInlineSubtasksDesc": "在檔案任務內建立行內任務時，自動將其父任務設為該檔案任務。",
       "autoParentLinkedFileSubtasks": "自動為關聯檔案子任務設定父任務",
       "autoParentLinkedFileSubtasksDesc": "在檔案任務內建立關聯檔案任務時，自動將其父任務設為該檔案任務。",
+      "backgroundDimmingDecrease": "減少背景暗化",
+      "backgroundDimmingIncrease": "增加背景暗化",
+      "backgroundDimmingSaveFailed": "無法儲存背景暗化設定。",
       "calendarHoverActionClearDueDate": "清除截止日期",
       "calendarHoverActionClearDueDateDesc": "噹噹前任務有可清除的截止日期時，在日曆懸停選單中顯示此操作。",
       "calendarHoverActionJumpToSource": "跳轉到源",
@@ -2901,7 +2904,7 @@
       "weeklyNoteTemplatePlaceholder": "例如 10 Horizon/Templates/Weekly.md",
       "workspaceTweaksAddPropertiesExcludedFolder": "新增排除的資料夾",
       "workspaceTweaksBackgroundDimming": "背景暗化",
-      "workspaceTweaksBackgroundDimmingDefault": "70% — 預設",
+      "workspaceTweaksBackgroundDimmingDefault": "50% — 預設",
       "workspaceTweaksBackgroundDimmingDesc": "選擇桌面版 Operon 預覽及任務建立、搜尋和編輯視窗的初始背景暗化程度。每增加一層提高5個百分點，最高90%。 獨立的動態子任務篩選視窗也使用此設定。",
       "workspaceTweaksCollapseProperties": "預設摺疊屬性",
       "workspaceTweaksCollapsePropertiesDesc": "在匹配的筆記開啟時摺疊 Obsidian 屬性；使用下方的範圍和排除資料夾來控制其應用位置。",
@@ -3710,5 +3713,5 @@
       "toggleDescendantPreview": "切換子任務預覽"
     }
   },
-  "sourceVersion": "aaa015b273e5263775fa0e16b348227496bf6faeed6304ac35ff334184cc7250"
+  "sourceVersion": "fd2894f9fabc76927ce8bc73e11edcbdfbe5db65ae1afba5dafbacde0342b04f"
 }

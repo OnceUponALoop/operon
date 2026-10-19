@@ -1,8 +1,8 @@
 {
   "schemaVersion": 1,
   "locale": "zh-CN",
-  "keyCount": 3665,
-  "keyFingerprint": "ada8cc9ffb7d54b230ddbcd9a814617c87841a90d6e645bdf5034f4c5282259c",
+  "keyCount": 3668,
+  "keyFingerprint": "89abfabff951c621ad847d4150f0b655a92e0212977ff8be97c026dec5e0f0b0",
   "translations": {
     "buttons": {
       "addFileSubtask": "添加文件子任务",
@@ -1117,6 +1117,9 @@
       "autoParentInlineSubtasksDesc": "在文件任务内创建行内任务时，自动将其父任务设为该文件任务。",
       "autoParentLinkedFileSubtasks": "自动为关联文件子任务设置父任务",
       "autoParentLinkedFileSubtasksDesc": "在文件任务内创建关联文件任务时，自动将其父任务设为该文件任务。",
+      "backgroundDimmingDecrease": "减少背景暗化",
+      "backgroundDimmingIncrease": "增加背景暗化",
+      "backgroundDimmingSaveFailed": "无法保存背景暗化设置。",
       "calendarHoverActionClearDueDate": "清除截止日期",
       "calendarHoverActionClearDueDateDesc": "当当前任务有可清除的截止日期时，在日历悬停菜单中显示此操作。",
       "calendarHoverActionJumpToSource": "跳转到源",
@@ -2901,7 +2904,7 @@
       "weeklyNoteTemplatePlaceholder": "例如 10 Horizon/Templates/Weekly.md",
       "workspaceTweaksAddPropertiesExcludedFolder": "添加排除的文件夹",
       "workspaceTweaksBackgroundDimming": "背景暗化",
-      "workspaceTweaksBackgroundDimmingDefault": "70% — 默认",
+      "workspaceTweaksBackgroundDimmingDefault": "50% — 默认",
       "workspaceTweaksBackgroundDimmingDesc": "选择桌面版 Operon 预览及任务创建、查找和编辑窗口的初始背景暗化程度。每增加一层提高5个百分点，最高90%。 独立的动态子任务筛选窗口也使用此设置。",
       "workspaceTweaksCollapseProperties": "默认折叠属性",
       "workspaceTweaksCollapsePropertiesDesc": "在匹配的笔记打开时折叠 Obsidian 属性；使用下方的范围和排除文件夹来控制其应用位置。",
@@ -3710,5 +3713,5 @@
       "toggleDescendantPreview": "切换子任务预览"
     }
   },
-  "sourceVersion": "0ccafdb37580db042fe3d4daae7905d56f26111d7b926ceecfb324bcc00fb34b"
+  "sourceVersion": "2950f4b298b6982ac59c2560c6d38943cdb567cb5590b48e36f0c33d1864744f"
 }

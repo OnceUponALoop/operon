@@ -54,7 +54,7 @@ export function assertPersonalSettingsPreserved(actual: OperonDataPackageV1, exp
  // Old sealed fixtures stay immutable; all existing explicit values remain under exact comparison.
  if (!Object.prototype.hasOwnProperty.call(expected.ui.workspaceTweaks, 'workspaceTweaksBackgroundDimming')
   && Object.prototype.hasOwnProperty.call(actual.ui.workspaceTweaks, 'workspaceTweaksBackgroundDimming')) {
-  assert.equal(actual.ui.workspaceTweaks.workspaceTweaksBackgroundDimming, 70);
+  assert.equal(actual.ui.workspaceTweaks.workspaceTweaksBackgroundDimming, 50);
   actual = clone(actual);
   Reflect.deleteProperty(actual.ui.workspaceTweaks, 'workspaceTweaksBackgroundDimming');
  }

@@ -2348,7 +2348,7 @@ export const DEFAULT_SETTINGS: OperonSettings = {
 	filterTaskShowPlainCheckboxAction: true,
 
 	workspaceTweaksHideScrollbars: false,
-	workspaceTweaksBackgroundDimming: 70,
+	workspaceTweaksBackgroundDimming: 50,
 	workspaceTweaksCollapseProperties: false,
 	workspaceTweaksPropertiesScope: 'operon-file-tasks',
 	workspaceTweaksPropertiesExcludedFolders: [],

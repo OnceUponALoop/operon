@@ -1,8 +1,8 @@
 {
   "schemaVersion": 1,
   "locale": "fr",
-  "keyCount": 3665,
-  "keyFingerprint": "ada8cc9ffb7d54b230ddbcd9a814617c87841a90d6e645bdf5034f4c5282259c",
+  "keyCount": 3668,
+  "keyFingerprint": "89abfabff951c621ad847d4150f0b655a92e0212977ff8be97c026dec5e0f0b0",
   "translations": {
     "buttons": {
       "addFileSubtask": "Ajouter une sous-tâche-fichier",
@@ -1117,6 +1117,9 @@
       "autoParentInlineSubtasksDesc": "Lors de la création d'une tâche en ligne à l'intérieur d'une tâche-fichier, définir automatiquement son parent sur cette tâche-fichier.",
       "autoParentLinkedFileSubtasks": "Rattacher automatiquement les sous-tâches-fichiers liées",
       "autoParentLinkedFileSubtasksDesc": "Lors de la création d'une tâche-fichier liée à l'intérieur d'une tâche-fichier, définir automatiquement son parent sur cette tâche-fichier.",
+      "backgroundDimmingDecrease": "Réduire l’assombrissement du fond",
+      "backgroundDimmingIncrease": "Augmenter l’assombrissement du fond",
+      "backgroundDimmingSaveFailed": "Impossible d’enregistrer l’assombrissement du fond.",
       "calendarHoverActionClearDueDate": "Effacer la date d'échéance",
       "calendarHoverActionClearDueDateDesc": "Afficher cette action dans le menu de survol du calendrier lorsque la tâche actuelle a une date d'échéance à effacer.",
       "calendarHoverActionJumpToSource": "Aller à la source",
@@ -2901,7 +2904,7 @@
       "weeklyNoteTemplatePlaceholder": "ex. 10 Horizon/Templates/Weekly.md",
       "workspaceTweaksAddPropertiesExcludedFolder": "Ajouter un dossier exclu",
       "workspaceTweaksBackgroundDimming": "Assombrissement du fond",
-      "workspaceTweaksBackgroundDimmingDefault": "70% — Par défaut",
+      "workspaceTweaksBackgroundDimmingDefault": "50% — Par défaut",
       "workspaceTweaksBackgroundDimmingDesc": "Choisissez l’assombrissement initial des aperçus et du créateur, du chercheur et de l’éditeur de tâches Operon sur ordinateur. Chaque couche ajoute 5 points de pourcentage, jusqu’à 90 %. Les fenêtres autonomes du filtre dynamique de sous-tâches utilisent aussi ce réglage.",
       "workspaceTweaksCollapseProperties": "Collapse Properties by Default",
       "workspaceTweaksCollapsePropertiesDesc": "Replie les Properties d'Obsidian à l'ouverture des notes correspondantes ; la portée et les dossiers exclus ci-dessous contrôlent où cela s'applique.",
@@ -3710,5 +3713,5 @@
       "toggleDescendantPreview": "Basculer l'aperçu des descendants"
     }
   },
-  "sourceVersion": "0bf08c1f4cd714cd1b4b1b6cb823c8b7ce637ad0620058eaa9e0292661c0a5db"
+  "sourceVersion": "01b326117460a65b4ad78b765721ef25a131a018dd94190f52aa911068d2627e"
 }
