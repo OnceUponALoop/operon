@@ -175,3 +175,45 @@ test('Session History Source label uses the shared Open Source translation witho
  const label=extract('time-session-history-view','getTimeSessionHistorySecondaryTaskActionAriaLabel',{t:(_section,key)=>key});
  assert.equal(label('openTaskEditor'),'contextualMenuActionJumpToSource');assert.equal(label('jumpToSource'),'trackerClickOpenTaskEditor');
 });
+
+function cardSourceFixture({mac=true,desktop=true}={}) {
+ const platform={isMacOS:mac,isDesktopApp:desktop},preview=[],native=[],editors=[];let ready='ready',current=true,refreshed=0;
+ const cards={deps:{getSettings:()=>({keyMappings:[]}),controls:{onAction:(...args)=>preview.push(args)},openSource:id=>native.push(id),openEditor:id=>editors.push(id)},resolve:()=>({state:ready}),refresh:()=>refreshed++};
+ const activate=extractTable('task-card-embed','activate',{Platform:platform},true);
+ cards.activate=(...args)=>activate.call(cards,...args);
+ const modifier=extract('task-source-open-modifier','isTaskSourceOpenModifierClick',{Platform:platform});
+ const models=extract('task-selection-controls','taskSelectionControls',{
+  CONTEXTUAL_MENU_ACTIONS:[{id:'openEditor'},{id:'jumpToSource'}],getContextualMenuActionIcon:()=> 'arrow-up-right',getContextualMenuActionLabel:()=> 'Open Source',
+  isTaskSourceOpenModifierClick:modifier,t:()=>'',
+ })({cards:{...cards,deps:{...cards.deps,controls:undefined}},taskId:'card-id',current:()=>current,writable:()=>false,isBusy:()=>false,setBusy(){throw Error('navigation cannot mutate');}});
+ return {platform,cards,models,preview,native,editors,ready:value=>ready=value,current:value=>current=value,refreshed:()=>refreshed};
+}
+for(const mac of [true,false])for(const nativeClick of [true,false])for(const kind of ['normal','modifier','keyboard'])test(`card selection Source ${mac?'Mac':'Ctrl'}/${nativeClick?'Excalidraw native':'Canvas'}/${kind} opens once in the correct route`,()=>{
+ const f=cardSourceFixture({mac}),model=f.models.find(m=>m.id==='operon-task-jumpToSource'),listeners=[],cleanups=[];
+ const button={ownerDocument:{name:'secondary'},setAttribute(){},classList:{toggle(){}},disabled:false};
+ if(nativeClick)listeners.push({capture:false,callback:()=>model.run()});
+ const life={register:fn=>cleanups.push(fn),registerDomEvent:(_button,type,callback,capture)=>{listeners.push({type,capture:!!capture,callback});}};
+ extract('task-selection-controls','bindTaskSelectionControl',{setAccessibleLabelWithoutTooltip(){},bindOperonHoverTooltip(){},cleanupOperonHoverTooltips(){}})(button,model,life,{nativeClick});
+ let stopped=false;const event={detail:kind==='keyboard'?0:1,metaKey:mac&&kind==='modifier',ctrlKey:!mac&&kind==='modifier',preventDefault(){},stopPropagation(){},stopImmediatePropagation(){stopped=true;}};
+ for(const listener of [...listeners].sort((a,b)=>Number(b.capture)-Number(a.capture))){if(stopped)break;if(!listener.type||listener.type==='click')listener.callback(event);}
+ assert.equal(f.preview.length,kind==='modifier'?0:1);assert.equal(f.native.length,kind==='modifier'?1:0);
+ if(f.preview.length)assert.deepEqual(f.preview[0],['card-id','jumpToSource',undefined,{actionAnchor:button}]);
+ assert.equal(f.editors.length,0);
+});
+test('card Source rejects stale selection, missing and duplicate tasks while readonly navigation and editor remain available',()=>{
+ const f=cardSourceFixture(),source=f.models.find(m=>m.id==='operon-task-jumpToSource'),editor=f.models.find(m=>m.id==='operon-task-openEditor'),anchor={};
+ f.current(false);source.run(anchor);assert.equal(f.preview.length,0);f.current(true);
+ for(const state of ['missing','duplicate','loading']){f.ready(state);source.run(anchor);assert.equal(f.preview.length,0);}
+ assert.equal(f.refreshed(),3);f.ready('ready');source.run(anchor);assert.equal(f.preview.length,1);
+ editor.run(anchor);assert.deepEqual(f.editors,['card-id']);assert.deepEqual(f.native,[]);
+});
+test('mobile and modifier Card activation retain the original native source callback',()=>{
+ const f=cardSourceFixture({desktop:false});f.models.find(m=>m.id==='operon-task-jumpToSource').run({});
+ assert.deepEqual(f.native,['card-id']);assert.deepEqual(f.preview,[]);
+ f.platform.isDesktopApp=true;f.cards.activate('card-id',true);assert.deepEqual(f.native,['card-id','card-id']);assert.deepEqual(f.preview,[]);
+});
+test('Excalidraw Editor native action is not intercepted by the Source binding',()=>{
+ const listeners=[];const button={setAttribute(){},classList:{toggle(){}},disabled:false};
+ extract('task-selection-controls','bindTaskSelectionControl',{setAccessibleLabelWithoutTooltip(){},bindOperonHoverTooltip(){},cleanupOperonHoverTooltips(){}})(button,{id:'operon-task-openEditor',title:'Editor',unavailable:false,run(){throw Error('native owns this action');}}, {register(){},registerDomEvent:(_button,type)=>listeners.push(type)},{nativeClick:true});
+ assert.deepEqual(listeners,['pointerdown','keydown']);
+});

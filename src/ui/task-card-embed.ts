@@ -361,10 +361,12 @@ export class TaskCardEmbeds {
   const result = resolveTaskCard(this.deps, id); this.refreshResolutions?.set(id, result); return result;
  }
 
-	activate(id: string, newTab: boolean): void {
+	activate(id: string, newTab: boolean, sourceAnchor?: HTMLElement): void {
 		// Re-resolve after any rename, deletion or duplicate conflict since the last render.
 		if (this.resolve(id).state !== 'ready') { this.refresh(); return; }
-		if (newTab) this.deps.openSource(id);
+		if (newTab && sourceAnchor && Platform.isDesktopApp && this.deps.controls) {
+			void this.deps.controls.onAction(id, 'jumpToSource', undefined, { actionAnchor: sourceAnchor });
+		} else if (newTab) this.deps.openSource(id);
 		else this.deps.openEditor(id);
 	}
 
