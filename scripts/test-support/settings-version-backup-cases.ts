@@ -1,4 +1,4 @@
-import { OperonDataPackageStore } from '../../src/storage/operon-data-package-store';
+import { OperonDataPackageStore, SettingsWritesSuspendedError } from '../../src/storage/operon-data-package-store';
 import { buildOperonStoragePaths } from '../../src/storage/operon-storage-paths';
 import { DEFAULT_SETTINGS } from '../../src/types/settings';
 import assert from 'node:assert/strict';
@@ -388,3 +388,56 @@ for(const fault of ['changed-during-check','unreadable-during-check','changed-be
   });
  });
 }
+
+add('settings pause emits one cause-aware warning and retains the write lock', async () => {
+ await use(async fixture => {
+  const storage=fixture.createStorage();await storage.initialize();
+  const warnings: unknown[][]=[];const warn=console.warn;
+  try {
+   console.warn=(...args:unknown[])=>{warnings.push(args);};
+   for(let i=0;i<5;i++)storage.suspendCanonicalSettingsWrites('required backup failed');
+   assert.equal(warnings.length,1);
+   assert.equal(storage.canRunTablePresetFileRecovery(),false);
+   const attempts=fixture.canonicalAttempts;
+   for(let i=0;i<3;i++)await assert.rejects(storage.saveSettings(),SettingsWritesSuspendedError);
+   assert.equal(fixture.canonicalAttempts,attempts);
+   storage.suspendCanonicalSettingsWrites('different read failure');assert.equal(warnings.length,2);
+   storage.resumeCanonicalSettingsWrites();assert.equal(storage.canPersistSettings(),true);
+   storage.suspendCanonicalSettingsWrites('required backup failed');assert.equal(warnings.length,3);
+  } finally {console.warn=warn;}
+ });
+});
+add('failed required version backup reports one warning with its original cause',async()=>{
+ await use(async fixture=>{
+  const write=fixture.adapter.write;fixture.adapter.write=async(path,raw)=>{if(path.endsWith('/pending.tmp'))throw new Error('disk unavailable');await write(path,raw);};
+  const warnings:unknown[][]=[];const warn=console.warn;
+  try{
+   console.warn=(...args:unknown[])=>{warnings.push(args);};
+   const storage=fixture.createStorage(undefined,'3.9.2');await storage.initialize();
+   assert.equal(storage.canPersistSettings(),false);assert.equal(storage.canRunTablePresetFileRecovery(),false);
+   assert.equal(warnings.length,1);assert.match(String(warnings[0][0]),/settings saving is paused/);
+   assert.match(JSON.stringify(warnings[0][1]),/Automatic settings backup could not be verified/);
+   assert.ok((warnings[0][1] as {cause?:unknown}).cause instanceof Error);
+   assert.equal(fixture.canonicalAttempts,0);assertBytesEqual(fixture.raw(),fixture.initialRaw);
+  }finally{console.warn=warn;}
+ });
+});
+
+add('repeated unreadable reloads preserve one warning and recover through the existing reload path',async()=>{
+ await use(async fixture=>{
+  let notices=0;const storage=fixture.createStorage(()=>{notices++;});await storage.initialize();
+  const read=fixture.adapter.read;const before=fixture.raw();const attempts=fixture.canonicalAttempts;
+  const warnings:unknown[][]=[];const warn=console.warn;
+  try{
+   console.warn=(...args:unknown[])=>{warnings.push(args);};
+   fixture.adapter.read=async path=>{if(path===fixture.canonicalPath)throw new Error('read unavailable');return read(path);};
+   for(let i=0;i<5;i++)await storage.reloadCanonicalSettingsPackage();
+   assert.equal(warnings.length,1);assert.equal(notices,1);assert.equal(storage.canPersistSettings(),false);
+   assert.equal(storage.canRunTablePresetFileRecovery(),false);assert.equal(fixture.canonicalAttempts,attempts);
+   assertBytesEqual(fixture.raw(),before);
+   fixture.adapter.read=read;await storage.reloadCanonicalSettingsPackage();assert.equal(storage.canPersistSettings(),true);
+   fixture.adapter.read=async path=>{if(path===fixture.canonicalPath)throw new Error('read unavailable');return read(path);};
+   await storage.reloadCanonicalSettingsPackage();assert.equal(warnings.length,2);assert.equal(notices,2);
+  }finally{fixture.adapter.read=read;console.warn=warn;}
+ });
+});

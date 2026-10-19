@@ -2487,7 +2487,7 @@
       "settingsPageTrackerDesc": "Verlauf der Erfassungssitzungen, Statusleisten-Timer, FlowTime-Verhalten und Aufteilung von Erfassungssitzungen.",
       "settingsPageTweaksDesc": "Optionale visuelle Workspace-Helfer für Scrollbars, Properties und Side-Dock-Tab-Symbole.",
       "settingsPageUpcomingDesc": "Tagesgruppen und Anzeigeeinstellungen.",
-      "settingsWriteProtected": "Operon konnte Ihre Einstellungen nicht sicher lesen oder speichern. Zum Schutz Ihrer Daten wurde der Speichervorgang gestoppt.",
+      "settingsWriteProtected": "Das Speichern der Einstellungen ist pausiert. Details findest du in der Konsole.",
       "showPlainCheckboxConvertIcon": "Kontrollkästchen-zu-Operon-Symbol auf klassischen Aufgabenzeilen anzeigen",
       "showPlainCheckboxConvertIconDesc": "Nur Live-Vorschau. Zeigt beim Überfahren ein Quadrat-Plus-Symbol für einfache Kontrollkästchen-Zeilen an, die zu Operon erweitert werden können.",
       "showTasksEmojiConvertIcon": "Tasks-zu-Operon-Symbol auf klassischen Aufgabenzeilen anzeigen",
@@ -3710,5 +3710,5 @@
       "toggleDescendantPreview": "Vorschau untergeordneter Aufgaben umschalten"
     }
   },
-  "sourceVersion": "d44387559e66dc74904841bf320f81b5a72d2d64a444e5f744c2cd8d3057a73d"
+  "sourceVersion": "b46e381afd80f5d3932537af46b9a73bf131443ca39d707e9370223183f7222c"
 }

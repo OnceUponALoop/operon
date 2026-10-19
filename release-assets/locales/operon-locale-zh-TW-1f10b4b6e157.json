@@ -2487,7 +2487,7 @@
       "settingsPageTrackerDesc": "時間追蹤歷史、狀態列計時器、FlowTime 行為和會話拆分。",
       "settingsPageTweaksDesc": "針對捲軸、屬性和側邊停靠標籤圖示的可選工作區級視覺輔助。",
       "settingsPageUpcomingDesc": "每日分組與顯示偏好。",
-      "settingsWriteProtected": "Operon 無法安全地讀取或儲存您的設定。為保護您的資料，已停止儲存。",
+      "settingsWriteProtected": "設定儲存已暫停。請查看主控台瞭解詳情。",
       "showPlainCheckboxConvertIcon": "在經典任務行上顯示覆選框轉 Operon 圖示",
       "showPlainCheckboxConvertIconDesc": "僅限即時預覽。在可升級為 Operon 的普通核取方塊行上，懸停時顯示一個加號方塊圖示。",
       "showTasksEmojiConvertIcon": "在經典任務行上顯示 Tasks 轉 Operon 圖示",
@@ -3710,5 +3710,5 @@
       "toggleDescendantPreview": "切換子任務預覽"
     }
   },
-  "sourceVersion": "f6700a988aaecc8a5785eb6f28be5bef1c3563bb26d36aadd7b00b05a77f6696"
+  "sourceVersion": "aaa015b273e5263775fa0e16b348227496bf6faeed6304ac35ff334184cc7250"
 }

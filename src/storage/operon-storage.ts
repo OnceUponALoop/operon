@@ -61,6 +61,7 @@ import {
 } from './operon-data-package';
 import {
 	OperonDataPackageStore,
+	SettingsWritesSuspendedError,
 	type OperonDataPackageReloadStage,
 	type OperonDataPackageReloadDiagnostics,
 	type OperonPipelineTaxonomyDiagnostics,
@@ -1057,7 +1058,7 @@ export class OperonStorage {
 		}
 		if (!this.dataPackageStore.canPersist()) {
 			if (_options.forceRecoveredWrite === false) return;
-			throw new Error(`Operon settings writes are suspended: ${this.dataPackageStore.getWriteSuspensionReason() ?? 'data.json could not be preserved safely'}`);
+			throw new SettingsWritesSuspendedError(`Operon settings writes are suspended: ${this.dataPackageStore.getWriteSuspensionReason() ?? 'data.json could not be preserved safely'}`);
 		}
 		if (this.settings.pipelines.length === 0) {
 			throw new Error('Operon requires at least one configured pipeline');
@@ -1975,7 +1976,7 @@ export class OperonStorage {
 		};
 	}
 	canRunTablePresetFileRecovery(): boolean {
-		return this.tablePresetRecovery.health !== 'degraded' || this.isRescannableTablePresetDegradation();
+		return this.canPersistSettings() && (this.tablePresetRecovery.health !== 'degraded' || this.isRescannableTablePresetDegradation());
 	}
 	private isRescannableTablePresetDegradation(): boolean {
 		const fileLevel = this.tablePresetRecovery.code === 'table-file-missing'

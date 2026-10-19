@@ -1,3 +1,4 @@
+import { SettingsWritesSuspendedError } from './src/storage/operon-data-package-store';
 import { updateDesktopBackdropDimming, disposeDesktopBackdrops } from './src/ui/modal-backdrop';
 import { tasksConversionProtectedLines } from './src/core/tasks-conversion-scope';
 import { TasksConversionSettings } from './src/ui/tasks-conversion-settings';
@@ -3476,6 +3477,10 @@ export default class OperonPlugin extends Plugin {
 	private async reloadCanonicalSettingsFromStorage(mode: 'background' | 'manual'): Promise<void> {
 		try {
 			const result = await this.refreshCanonicalSettingsSingleFlight();
+			if (!this.storage.canPersistSettings()) {
+				if (mode === 'manual') new Notice(t('settings', 'settingsWriteProtected'));
+				return;
+			}
 			const taxonomyDiagnostics = result.diagnostics.pipelineTaxonomy;
 			if (result.failed) {
 				console.warn('Operon: canonical settings reload warning', result.diagnostics);
@@ -3503,6 +3508,10 @@ export default class OperonPlugin extends Plugin {
 				console.warn('Operon: canonical settings reload warning', result.diagnostics);
 			}
 		} catch (error) {
+			if (error instanceof SettingsWritesSuspendedError) {
+				if (mode === 'manual') new Notice(t('settings', 'settingsWriteProtected'));
+				return;
+			}
 			console.warn('Operon: canonical settings reload failed', error);
 			if (mode === 'manual') {
 				new Notice(t('notifications', 'settingsReloadFailed'));
@@ -3544,7 +3553,7 @@ export default class OperonPlugin extends Plugin {
 		}
 		const hasFileBackedTablePresetAuthority = this.settings.tablePresetFileBindings.length > 0
 			|| this.settings.tablePresetFileInitialized;
-		if (result.changed || hasFileBackedTablePresetAuthority) {
+		if (this.storage.canPersistSettings() && (result.changed || hasFileBackedTablePresetAuthority)) {
 			await this.refreshTablePresetRegistry({ adoptUnbound: true, persistBindings: true });
 			if (this.storage.getTablePresetRecoveryDiagnostics().health !== 'degraded') {
 				await this.ensureCanonicalTablePresetBootstrap();
@@ -15560,41 +15569,44 @@ export default class OperonPlugin extends Plugin {
 			}
 		} catch (error) {
 			startupAuthorityCurrent = false;
-			const recoveryEvidence = error instanceof TableFileV5MigrationError
-				? await inspectTableFileV5MigrationRecoveryEvidence(this.app.vault.adapter, this.app.vault.configDir)
-				: await inspectTableFileV3MigrationRecoveryEvidence(this.app.vault.adapter, this.app.vault.configDir);
-			this.storage.markTablePresetDegraded(
-				'table-file-invalid',
-				error instanceof TableFileV3MigrationError || error instanceof TableFileV5MigrationError ? error.code : 'unexpected-recovery-error',
-				{
-					affectedPaths: recoveryEvidence.affectedPaths,
-					repairBackupPath: recoveryEvidence.backupRootPath,
-				},
-			);
-			console.warn('Operon: Table recovery was isolated; plugin startup will continue', error);
+			if (!(error instanceof SettingsWritesSuspendedError)) {
+				const recoveryEvidence = error instanceof TableFileV5MigrationError
+					? await inspectTableFileV5MigrationRecoveryEvidence(this.app.vault.adapter, this.app.vault.configDir)
+					: await inspectTableFileV3MigrationRecoveryEvidence(this.app.vault.adapter, this.app.vault.configDir);
+				this.storage.markTablePresetDegraded(
+					'table-file-invalid',
+					error instanceof TableFileV3MigrationError || error instanceof TableFileV5MigrationError ? error.code : 'unexpected-recovery-error',
+					{
+						affectedPaths: recoveryEvidence.affectedPaths,
+						repairBackupPath: recoveryEvidence.backupRootPath,
+					},
+				);
+				console.warn('Operon: Table recovery was isolated; plugin startup will continue', error);
+			}
 			try {
 				await this.refreshTablePresetRegistry({ adoptUnbound: false, persistBindings: false, reconcileFileNames: false });
 			} catch (refreshError) {
 				console.warn('Operon: degraded Table registry refresh failed; startup will continue', refreshError);
 			}
-			if (!(error instanceof TableFileV3MigrationError) && !(error instanceof TableFileV5MigrationError)) {
-				console.warn('Operon: unexpected Table recovery failure was contained', error);
-			}
 		}
 		try {
-			if (!startupAuthorityCurrent || this.storage.getTablePresetRecoveryDiagnostics().health !== 'ready') {
+			if (this.storage.canPersistSettings() && (!startupAuthorityCurrent || this.storage.getTablePresetRecoveryDiagnostics().health !== 'ready')) {
 				await this.reconcileCanonicalTablePresetFileAuthority();
 			}
 		} catch (error) {
-			this.storage.markTablePresetDegraded('table-file-invalid', 'authority-reconciliation-failed');
-			console.warn('Operon: canonical Table file authority reconciliation failed; startup will continue', error);
+			if (!(error instanceof SettingsWritesSuspendedError)) {
+				this.storage.markTablePresetDegraded('table-file-invalid', 'authority-reconciliation-failed');
+				console.warn('Operon: canonical Table file authority reconciliation failed; startup will continue', error);
+			}
 		}
-		if (this.storage.getTablePresetRecoveryDiagnostics().health !== 'degraded') {
+		if (this.storage.canPersistSettings() && this.storage.getTablePresetRecoveryDiagnostics().health !== 'degraded') {
 			try {
 				await this.ensureCanonicalTablePresetBootstrap();
 			} catch (error) {
-				this.storage.markTablePresetDegraded('table-file-invalid', 'bootstrap-failed');
-				console.warn('Operon: Table bootstrap failed; startup will continue', error);
+				if (!(error instanceof SettingsWritesSuspendedError)) {
+					this.storage.markTablePresetDegraded('table-file-invalid', 'bootstrap-failed');
+					console.warn('Operon: Table bootstrap failed; startup will continue', error);
+				}
 			}
 		}
 		this.registerTablePresetFileWatchers();
@@ -15814,6 +15826,8 @@ export default class OperonPlugin extends Plugin {
 	}
 
 	private async refreshTablePresetRegistry(options: { adoptUnbound?: boolean; persistBindings?: boolean; reconcileFileNames?: boolean } = {}): Promise<void> {
+		// Use the existing read-only registry path while settings writes are paused.
+		if (!this.storage.canPersistSettings()) options = { adoptUnbound: false, persistBindings: false, reconcileFileNames: false };
 		const previousSnapshot = this.tablePresetRegistry.getSnapshot();
 		const previousOrderSignature = this.settings.tablePresetOrderIds.join('\u0000');
 		await this.tablePresetRegistry.refresh();

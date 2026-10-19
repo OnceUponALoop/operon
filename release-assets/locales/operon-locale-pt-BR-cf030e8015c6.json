@@ -2487,7 +2487,7 @@
       "settingsPageTrackerDesc": "Histórico de rastreamento de tempo, timer na barra de status, comportamento FlowTime e divisão de sessão.",
       "settingsPageTweaksDesc": "Auxiliares visuais opcionais no nível do espaço de trabalho para barras de rolagem, Propriedades e ícones de abas do painel lateral.",
       "settingsPageUpcomingDesc": "Grupos diários e preferências de exibição.",
-      "settingsWriteProtected": "O Operon não conseguiu ler ou salvar suas configurações com segurança. O salvamento foi interrompido para proteger seus dados.",
+      "settingsWriteProtected": "O salvamento das configurações está pausado. Consulte o console para mais detalhes.",
       "showPlainCheckboxConvertIcon": "Mostrar ícone de caixa de seleção para Operon nas linhas clássicas de tarefas",
       "showPlainCheckboxConvertIconDesc": "Apenas Pré-visualização ao vivo. Exibe um ícone de quadrado mais ao passar o mouse em linhas simples de caixa de seleção que podem ser atualizadas para Operon.",
       "showTasksEmojiConvertIcon": "Mostrar ícone de Tarefa para Operon nas linhas clássicas de tarefas",
@@ -3710,5 +3710,5 @@
       "toggleDescendantPreview": "Alternar visualização descendente"
     }
   },
-  "sourceVersion": "c3c75b93c872460d639c40851cbbbc9edbbaba26c8864ffb9ab6e6342dd3e32a"
+  "sourceVersion": "0ad43088545598f5838faa0b748be8eecaa102f168b539da5ec7102b6b74161b"
 }

@@ -2487,7 +2487,7 @@
       "settingsPageTrackerDesc": "Historial de registro de tiempo, temporizador de la barra de estado, comportamiento de FlowTime y división de sesiones.",
       "settingsPageTweaksDesc": "Ayudas visuales opcionales a nivel de espacio de trabajo para barras de desplazamiento, Properties e iconos de pestaña del panel lateral.",
       "settingsPageUpcomingDesc": "Grupos diarios y preferencias de visualización.",
-      "settingsWriteProtected": "Operon no pudo leer o guardar tus ajustes de forma segura. Se detuvo el guardado para proteger tus datos.",
+      "settingsWriteProtected": "El guardado de ajustes está en pausa. Consulta la consola para ver los detalles.",
       "showPlainCheckboxConvertIcon": "Mostrar el icono casilla-a-Operon en las líneas de tarea clásicas",
       "showPlainCheckboxConvertIconDesc": "Solo Live Preview. Muestra un icono de cuadrado con más al pasar el cursor sobre las líneas de casilla simples que se pueden actualizar a Operon.",
       "showTasksEmojiConvertIcon": "Mostrar el icono Tasks-a-Operon en las líneas de tarea clásicas",
@@ -3710,5 +3710,5 @@
       "toggleDescendantPreview": "Alternar vista previa de descendientes"
     }
   },
-  "sourceVersion": "31b7ea2eaa308b8146fddaa5989b08fbf034f2271d141a303648293186dc5061"
+  "sourceVersion": "bc724f6ed8a919b6c721db99501fd3136a512641e2ac5b8c6807efd64e07429c"
 }

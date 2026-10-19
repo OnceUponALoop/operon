@@ -2487,7 +2487,7 @@
       "settingsPageTrackerDesc": "時間記録の履歴、ステータスバーのタイマー、FlowTime の動作、セッションの分割。",
       "settingsPageTweaksDesc": "スクロールバー、プロパティ、サイドドックのタブアイコン用のオプションのワークスペースレベルの視覚的な補助。",
       "settingsPageUpcomingDesc": "日ごとのグループと表示設定。",
-      "settingsWriteProtected": "Operonは設定を安全に読み込み、または保存できませんでした。データを保護するため、保存を停止しました。",
+      "settingsWriteProtected": "設定の保存を一時停止しています。詳細はコンソールを確認してください。",
       "showPlainCheckboxConvertIcon": "クラシックなタスク行にチェックボックス→Operon アイコンを表示",
       "showPlainCheckboxConvertIconDesc": "ライブプレビューのみ。Operon にアップグレードできるプレーンなチェックボックス行にホバー時にプラス（四角）アイコンを表示します。",
       "showTasksEmojiConvertIcon": "クラシックなタスク行に Tasks→Operon アイコンを表示",
@@ -3710,5 +3710,5 @@
       "toggleDescendantPreview": "子孫プレビューを切り替え"
     }
   },
-  "sourceVersion": "66f93e99ff1e4b60a54efd67ca9fdb2141143956633e75dfcf8b021097d024b7"
+  "sourceVersion": "5694e7b9096bf504f86abef67a2d047ab09bf97d7634caf8ac0298449021593d"
 }

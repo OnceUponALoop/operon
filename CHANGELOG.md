@@ -48,6 +48,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Distinguished **Daily and Weekly Notes** format and folder setting names, preventing duplicate-setting warnings when Obsidian redraws settings while preserving saved values.
 - Fixed **automatic settings backup conflicts**, including those caused by synchronization, blocking settings saves and Table startup; existing backups are preserved and automatic backup creation pauses with a clear console message, while settings-file safety checks remain active.
+- Fixed repeated **settings warnings** during startup and tab changes: a saving pause is now reported once per cause and is no longer described as a damaged Table configuration, while genuine Table file errors remain visible.
 - Fixed **Task Creator repeat editing** so saving or clearing updates immediately, reference dates and Count settings are preserved for Inline and File tasks, and cancelled edits leave the draft unchanged.
 - Fixed certain **Outlook all-day yearly events** missing from URL and vault-local ICS calendars when the calendar’s timezone confirms that the recurrence end matches the event’s start.
 - Fixed **Dynamic File Task Filter** appearing inside normal Markdown table cells and the **Task Editor file body**, while preserving inline task features.
@@ -66,14 +67,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Status chip routing, picker focus, icons, and interaction checks passed **26/26** focused tests, plus **4/4** light/dark and narrow/wide browser checks.
 - Priority picker icon, fallback, and selection checks passed **8/8** focused tests.
 - Periodic-note settings, search, and redraw checks passed **12/12** focused tests.
-- Automatic settings backup and synchronization-conflict checks passed **78/78** focused tests.
+- Automatic settings backup, synchronization-conflict, and repeated-warning checks passed **81/81** focused tests; startup and reload classification passed **12/12** additional tests.
 - Task tag chip routing, editing, and write protection checks passed **15/15** focused tests.
 - Calendar year/month navigation checks passed **15/15** focused tests and **24/24** browser scenarios.
 - Repeat picker appearance and interaction checks passed **48/48** browser scenarios across Task Creator and Task Editor.
 
 - Task Creator repeat editing and template protection checks passed **16/16** focused tests.
 - External calendar compatibility and refresh checks passed **67/67** focused tests.
-- Full local Plugin checks, production build, release guard, and code review passed, along with **5,172/5,172** local regression tests.
+- Full local Plugin checks, production build, release guard, and code review passed, along with **5,176/5,176** local regression tests.
 
 ## [4.0.1] - 2026-10-14
 

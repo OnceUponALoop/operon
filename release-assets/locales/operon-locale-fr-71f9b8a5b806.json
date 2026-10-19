@@ -2487,7 +2487,7 @@
       "settingsPageTrackerDesc": "Historique du suivi du temps, minuteur de la barre d'état, comportement FlowTime et fractionnement des sessions.",
       "settingsPageTweaksDesc": "Aides visuelles optionnelles au niveau du workspace pour les barres de défilement, Properties et les icônes d'onglets du side dock.",
       "settingsPageUpcomingDesc": "Groupes quotidiens et préférences d’affichage.",
-      "settingsWriteProtected": "Operon n’a pas pu lire ou enregistrer vos paramètres en toute sécurité. L’enregistrement a été arrêté pour protéger vos données.",
+      "settingsWriteProtected": "L’enregistrement des paramètres est en pause. Consultez la console pour les détails.",
       "showPlainCheckboxConvertIcon": "Afficher l'icône de conversion des cases à cocher vers Operon sur les lignes de tâche classiques",
       "showPlainCheckboxConvertIconDesc": "Aperçu en direct uniquement. Affiche une icône carré-plus au survol pour les lignes de case à cocher simples qui peuvent être transformées en Operon.",
       "showTasksEmojiConvertIcon": "Afficher l'icône de conversion Tasks vers Operon sur les lignes de tâche classiques",
@@ -3710,5 +3710,5 @@
       "toggleDescendantPreview": "Basculer l'aperçu des descendants"
     }
   },
-  "sourceVersion": "984aa6b3cdaff417792637cdd5d13779e80085579116338805fbc3304156379e"
+  "sourceVersion": "0bf08c1f4cd714cd1b4b1b6cb823c8b7ce637ad0620058eaa9e0292661c0a5db"
 }

@@ -6163,7 +6163,7 @@
       "Time tracking history, status bar timer, FlowTime behavior, and session splitting.",
       "Optional workspace-level visual helpers for scrollbars, Properties, and side dock tab icons.",
       "Upcoming task dates, daily groups, and display preferences.",
-      "Operon could not safely read or save your settings. Saving was stopped to protect your data.",
+      "Settings saving is paused. Check the console for details.",
       "Show checkbox-to-Operon icon on classic task lines",
       "Live Preview only. Shows a square-plus icon on hover for plain checkbox lines that can be upgraded to Operon.",
       "Show Tasks-to-Operon icon on classic task lines",

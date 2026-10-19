@@ -535,7 +535,9 @@ async function assertStartupMigrationLane(): Promise<void> {
 	} finally {
 		console.warn = warnBeforeReadFailure;
 	}
-	assert.match(String(readFailureWarnings[0]?.[0] ?? ''), /Failed to load data\.json/u);
+	assert.equal(readFailureWarnings.length, 1);
+	assert.match(String(readFailureWarnings[0]?.[0] ?? ''), /settings saving is paused/u);
+	assert.match(JSON.stringify(readFailureWarnings[0]?.[1]), /data.json could not be read safely/u);
 	assert.equal(restartReadFailureStore.canPersist(), false, 'restart read failure must suspend writes');
 	assert.equal(restartReadFailureData.saveCalls, 0, 'restart read failure must not rewrite canonical data');
 

@@ -2487,7 +2487,7 @@
       "settingsPageTrackerDesc": "Cronologia del monitoraggio del tempo, timer nella barra di stato, comportamento FlowTime e suddivisione delle sessioni.",
       "settingsPageTweaksDesc": "Aiuti visivi opzionali a livello di area di lavoro per barre di scorrimento, Proprietà e icone delle schede del pannello laterale.",
       "settingsPageUpcomingDesc": "Gruppi giornalieri e preferenze di visualizzazione.",
-      "settingsWriteProtected": "Operon non ha potuto leggere o salvare le impostazioni in sicurezza. Il salvataggio è stato interrotto per proteggere i tuoi dati.",
+      "settingsWriteProtected": "Il salvataggio delle impostazioni è in pausa. Consulta la console per i dettagli.",
       "showPlainCheckboxConvertIcon": "Mostra icona casella-a-Operon sulle righe di attività classiche",
       "showPlainCheckboxConvertIconDesc": "Solo Anteprima in tempo reale. Mostra un'icona quadrato-più al passaggio del mouse per le righe con casella di controllo semplice che possono essere aggiornate a Operon.",
       "showTasksEmojiConvertIcon": "Mostra icona Tasks-a-Operon sulle righe di attività classiche",
@@ -3710,5 +3710,5 @@
       "toggleDescendantPreview": "Alterna anteprima discendenti"
     }
   },
-  "sourceVersion": "907e09ec57ed3b9750c6f650f3d0a23cc0dd06e4b61cc318e4bca381654e66c2"
+  "sourceVersion": "18c70ec6ec190d01f6b6322319ea06535146dae769c183b167520c05bce0062a"
 }

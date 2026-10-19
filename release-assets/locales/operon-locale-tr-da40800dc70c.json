@@ -2487,7 +2487,7 @@
       "settingsPageTrackerDesc": "Zaman takibi geçmişi, durum çubuğu sayacı, FlowTime davranışı ve oturum bölme.",
       "settingsPageTweaksDesc": "Scrollbars, Properties ve side dock tab ikonları için isteğe bağlı workspace görsel yardımcıları.",
       "settingsPageUpcomingDesc": "Günlük gruplar ve görünüm ayarları.",
-      "settingsWriteProtected": "Operon ayarlarınızı güvenle okuyamadı veya kaydedemedi. Verilerinizi korumak için kayıt durduruldu.",
+      "settingsWriteProtected": "Ayar kaydı duraklatıldı. Ayrıntılar için konsolu kontrol edin.",
       "showPlainCheckboxConvertIcon": "Klasik görev satırlarında onay kutusunu Operon'a dönüştürme simgesini göster",
       "showPlainCheckboxConvertIconDesc": "Yalnızca Canlı Önizleme'de. Operon'a yükseltilebilen düz onay kutusu satırlarında üzerine gelince kare + simgesi gösterir.",
       "showTasksEmojiConvertIcon": "Klasik görev satırlarında Tasks-to-Operon simgesini göster",
@@ -3710,5 +3710,5 @@
       "toggleDescendantPreview": "Alt görev önizlemesini aç/kapat"
     }
   },
-  "sourceVersion": "9983fafcadb19ce9b0929b4e4fce0077038a62d7e0821e4979c2e603cbd509e1"
+  "sourceVersion": "f9e697ce11ad1fbdfcb9d124222a5ebed4e88041e9a1a993248c85c8f9e0210d"
 }

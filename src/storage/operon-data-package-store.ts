@@ -48,6 +48,9 @@ import {
 import { isSafeVaultRelativeFolderPath } from '../core/settings-folder-rules';
 import { TABLE_PRESET_MANIFEST_VERSION } from './table-preset-manifest';
 
+/** A known settings pause is distinct from a Table file or reload failure. */
+export class SettingsWritesSuspendedError extends Error {}
+
 export interface OperonPluginDataAccess {
 	loadData(): Promise<unknown>;
 	saveData(data: unknown): Promise<void>;
@@ -180,7 +183,7 @@ export class OperonDataPackageStore {
 	private dataPackageSignature = '';
 	// Only disk observations establish this precondition; normalization never does.
 	private canonicalSource: string | null | undefined;
-	private suspensionNotified = false;
+	private suspensionNotified: string | null = null;
 	private versionBackupBlocked = false;
 	private backupConflictReported = false;
 	private saveQueue: Promise<void> = Promise.resolve();
@@ -237,8 +240,7 @@ export class OperonDataPackageStore {
 			} catch (error) {
 				if (await this.isIsolatedBackupConflict(error)) this.versionBackupBlocked = false;
 				else {
-					console.warn('Operon: automatic settings backup verification failed', error);
-					if (!this.writesSuspended) this.suspendWrites('Automatic settings backup could not be verified; restart after resolving the storage problem');
+					if (!this.writesSuspended) this.suspendWrites('Automatic settings backup could not be verified; restart after resolving the storage problem', error);
 				}
 			}
 		}
@@ -555,7 +557,7 @@ export class OperonDataPackageStore {
 		return this.writeSuspensionReason;
 	}
 
-	suspendWrites(reason: string): void {
+	suspendWrites(reason: string, cause?: unknown): void {
 		const nextReason = reason.trim() || 'Canonical data package writes were suspended';
 		if (this.unsupportedTaskCreationProfilePackage) {
 			this.suspensionBeforeUnsupportedTaskCreationProfilePackage = {
@@ -574,7 +576,7 @@ export class OperonDataPackageStore {
 		this.writesSuspended = true;
 		this.writeSuspensionReason = nextReason;
 		this.writeSuspensionRequiresExplicitRecovery = true;
-		this.notifyWriteSuspension();
+		this.notifyWriteSuspension(cause);
 	}
 
 	resumeWrites(): void {
@@ -590,7 +592,7 @@ export class OperonDataPackageStore {
 		this.writesSuspended = false;
 		this.writeSuspensionReason = null;
 		this.writeSuspensionRequiresExplicitRecovery = false;
-		this.suspensionNotified = false;
+		this.suspensionNotified = null;
 	}
 
 	async backupCanonicalDataPackage(raw?: unknown): Promise<string> {
@@ -1326,10 +1328,9 @@ export class OperonDataPackageStore {
 			}
 			this.canonicalSource = source;
 			return raw;
-		} catch {
+		} catch (error) {
 			this.canonicalSource = undefined;
-			console.warn('Operon: Failed to load data.json; settings writes are paused to protect existing data');
-			this.suspendWritesUntilReload('data.json could not be read safely');
+			this.suspendWritesUntilReload('data.json could not be read safely', error);
 			return null;
 		}
 	}
@@ -1354,7 +1355,8 @@ export class OperonDataPackageStore {
 		const raw = await this.loadExistingPackage();
 		if (!raw) {
 			this.canonicalSource = undefined;
-			this.suspendWritesUntilReload('Canonical settings could not be reloaded safely');
+			// loadExistingPackage already reports a failed read; keep that cause stable.
+			if (!this.writesSuspended) this.suspendWritesUntilReload('Canonical settings could not be reloaded safely');
 			diagnostics.malformedPackage = true;
 			diagnostics.warnings.push('Canonical settings are missing, invalid or unavailable');
 			return null;
@@ -1480,7 +1482,7 @@ export class OperonDataPackageStore {
 	private assertWritesAllowed(allowReloadRecovery = false): void {
 		const suspended = this.writesSuspended && (!allowReloadRecovery || this.writeSuspensionRequiresExplicitRecovery);
 		if (suspended || this.versionBackupBlocked || this.canonicalSource === undefined) {
-			throw new Error(`Operon data package writes are suspended: ${this.writeSuspensionReason ?? 'data.json could not be read safely'}`);
+			throw new SettingsWritesSuspendedError(`Operon data package writes are suspended: ${this.writeSuspensionReason ?? 'data.json could not be read safely'}`);
 		}
 	}
 
@@ -1546,8 +1548,7 @@ export class OperonDataPackageStore {
 					if (!await this.isIsolatedBackupConflict(error)) {
 						// The canonical creation is verified; only subsequent writes are blocked.
 						this.versionBackupBlocked = true;
-						console.warn('Operon: initial settings version backup failed', error);
-						this.suspendWrites('Initial settings version could not be recorded; restart after resolving the storage problem');
+						this.suspendWrites('Initial settings version could not be recorded; restart after resolving the storage problem', error);
 					}
 				}
 			}
@@ -1589,18 +1590,20 @@ export class OperonDataPackageStore {
 		return run;
 	}
 
-	private suspendWritesUntilReload(reason: string): void {
+	private suspendWritesUntilReload(reason: string, cause?: unknown): void {
 		// A later read failure must never downgrade an uncertain write or explicit recovery lock.
 		if (this.writeSuspensionRequiresExplicitRecovery) return;
 		this.writesSuspended = true;
 		this.writeSuspensionReason = reason;
 		this.writeSuspensionRequiresExplicitRecovery = false;
-		this.notifyWriteSuspension();
+		this.notifyWriteSuspension(cause);
 	}
 
-	private notifyWriteSuspension(): void {
-		if (this.suspensionNotified) return;
-		this.suspensionNotified = true;
+	private notifyWriteSuspension(cause?: unknown): void {
+		const reason = this.writeSuspensionReason ?? 'data.json could not be read safely';
+		if (this.suspensionNotified === reason) return;
+		this.suspensionNotified = reason;
+		console.warn('Operon: settings saving is paused; Table setup requiring settings saves will wait.', { reason, ...(cause === undefined ? {} : { cause }) });
 		try { this.onWritesSuspended?.(); } catch { /* Notification failure cannot enable writes. */ }
 	}
 
