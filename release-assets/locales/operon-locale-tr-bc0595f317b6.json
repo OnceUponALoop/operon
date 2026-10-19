@@ -1278,8 +1278,8 @@
       "contextualMenuActionCreateSubtaskDesc": "Mevcut görev için alt görev oluşturulabiliyorsa bu eylemi bağlamsal menü içinde göster.",
       "contextualMenuActionFixedReminder": "Sabit hatırlatıcı",
       "contextualMenuActionFixedReminderDesc": "Mevcut görev açıksa ve sabit hatırlatıcı seçicisini açabiliyorsa bu eylemi bağlamsal menü içinde göster.",
-      "contextualMenuActionJumpToSource": "Kaynağa git",
-      "contextualMenuActionJumpToSourceDesc": "Mevcut öğe kaynak notuna gidebiliyorsa bu eylemi bağlamsal menü içinde göster.",
+      "contextualMenuActionJumpToSource": "Kaynağı aç",
+      "contextualMenuActionJumpToSourceDesc": "Mevcut öğe kaynak notunu açabiliyorsa bu eylemi bağlamsal menü içinde göster.",
       "contextualMenuActionMarkDone": "Görevi bitir",
       "contextualMenuActionMarkDoneDesc": "Mevcut öğe bitirilebiliyorsa bu eylemi bağlamsal menü içinde göster.",
       "contextualMenuActionOpenEditor": "Editörü aç",
@@ -3713,5 +3713,5 @@
       "toggleDescendantPreview": "Alt görev önizlemesini aç/kapat"
     }
   },
-  "sourceVersion": "aecac34f1c061c45067a7df801b0262fefe401a660790954411e670bac151c19"
+  "sourceVersion": "5a7cedf9826b9fa0e0596f101ccefb50d9c5e430a41781e1520e4b926ad121c5"
 }

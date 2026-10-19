@@ -109,3 +109,40 @@ test('Table Markdown renderer opt-in delegates once and never installs its legac
  append(parent,{type:'wikilink',target:'B.md',label:'Alias'},{mode:'interactive',bindLink:(_anchor,node)=>{delegated++;assert.equal(node.target,'B.md');}});
  assert.equal(delegated,1);assert.equal(legacy,0);assert.equal(parent.children[0].events.size,0);
 });
+
+function extractMainSourceAction(deps) {
+ const source=readFileSync('main.ts','utf8'),ast=ts.createSourceFile('main.ts',source,ts.ScriptTarget.Latest,true);
+ const cls=ast.statements.find(n=>ts.isClassDeclaration(n)&&n.name?.text==='OperonPlugin');
+ const method=cls.members.find(n=>n.name?.getText(ast)==='handleContextualMenuAction');
+ const js=ts.transpileModule(`class Harness {${method.getText(ast)}}`,{compilerOptions:{target:ts.ScriptTarget.ES2022}}).outputText;
+ return new Function(...Object.keys(deps),`${js};return Harness.prototype.handleContextualMenuAction;`)(...Object.values(deps));
+}
+for(const desktop of [true,false])test(`context menu Source routes ${desktop?'desktop through shared preview':'mobile through existing navigation'} without mutations`,async()=>{
+ const anchor={ownerDocument:{name:'secondary'}},body={},calls=[],platform={isDesktopApp:desktop};
+ let task={operonId:'task',primary:{filePath:'A.md',format:'inline'},fieldValues:{}};
+ const handler=extractMainSourceAction({Platform:platform,Notice:class{constructor(){throw Error('navigation must remain allowed');}},getActiveDocument:()=>({body}),
+  executeContextualMenuAction:async(context,action,deps)=>{assert.equal(action,'jumpToSource');await deps.jumpToSource(context.taskId);},
+  resolveChipOpening:(entry,context)=>{assert.equal(entry.key,'taskInfo.source');return context.getTask();},
+  activateResolvedOpening:async(actual,context,event)=>{assert.equal(actual,anchor);assert.equal(event,undefined);assert.equal(context.resolve(),task);const latest={...task,primary:{filePath:'Moved.md',format:'inline'}};task=latest;assert.equal(context.resolve(),latest);calls.push('lightbox');},
+ });
+ const host={app:{},settings:{},indexer:{getTask:()=>task,getAllTasks:()=>[task]},navigateToTask:current=>{assert.equal(current,task);calls.push('native');}};
+ await handler.call(host,'task','jumpToSource',{taskId:'task'},{actionAnchor:anchor,canMutate:()=>false});
+ assert.deepEqual(calls,[desktop?'lightbox':'native']);
+ task=null;await handler.call(host,'task','jumpToSource',{taskId:'task'},{actionAnchor:anchor});assert.equal(calls.length,1);
+});
+for(const actionId of ['jumpToSource','openEditor'])for(const origin of ['trigger','host'])test(`context menu ${actionId} retains ${origin==='trigger'?'trigger':'custom host'} ownership after closing`,()=>{
+ let click,invocation;const source={isConnected:true,ownerDocument:{name:'secondary'}};
+ const label={textContent:'Open Source'},button={dataset:{},createSpan(){},getBoundingClientRect:()=>({left:4}),querySelector:()=>label,addEventListener:(name,fn)=>{if(name==='click')click=fn;}};
+ const menu={children:[],querySelectorAll:()=>[],insertBefore:child=>menu.children.push(child)};
+ const controller={activeTrigger:origin==='trigger'?source:null,options:{getHost:()=>source},hide(){this.activeTrigger=null;button.isConnected=false;}};
+ const update=extractTable('contextual-hover-menu','updateActions',{getOwnerDocument:()=>({win:{createEl:()=>button}}),getOwnerBody:()=>({}),setIcon(){},setAccessibleLabelWithoutTooltip(){}},true);
+ update.call(controller,menu,{taskId:'task',actions:[{id:actionId,icon:'arrow-up-right',label:'Open Source'}],onAction:(_id,_action,_context,value)=>{invocation=value;}});
+ click({preventDefault(){},stopPropagation(){}});
+ assert.equal(invocation.actionAnchor,actionId==='jumpToSource'?source:button);assert.equal(button.isConnected,false);
+});
+test('Open Source retains the saved context-menu action identity and localized labels',()=>{
+ const english=JSON.parse(readFileSync('i18n/locales/en.json','utf8'));
+ const turkish=JSON.parse(readFileSync('i18n/locales/tr.json','utf8'));
+ assert.equal(english.settings.contextualMenuActionJumpToSource,'Open Source');assert.equal(turkish.settings.contextualMenuActionJumpToSource,'Kaynağı aç');
+ assert.match(readFileSync('src/core/contextual-menu-engine.ts','utf8'),/id: 'jumpToSource',\s+labelKey: 'contextualMenuActionJumpToSource'/);
+});

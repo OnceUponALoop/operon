@@ -308,6 +308,7 @@ import {
 import { cleanupOperonRenderRoot } from './src/ui/render-root-cleanup';
 import { requestCloseAllTextFieldPopovers } from './src/ui/text-field-popover';
 import { hideTaskContextualHoverMenu } from './src/ui/contextual-hover-menu';
+import { activateResolvedOpening, resolveChipOpening } from './src/ui/links-chip-action';
 import {
 	WindowTimeoutHandle,
 	asHTMLElement,
@@ -18672,7 +18673,20 @@ export default class OperonPlugin extends Plugin {
 			jumpToSource: async (id) => {
 				const indexedTask = this.indexer.getTask(id);
 				if (!indexedTask) return;
-				this.navigateToTask(indexedTask);
+				if (!Platform.isDesktopApp) { this.navigateToTask(indexedTask); return; }
+				const anchor = invocation?.actionAnchor ?? calendarLeaf?.view.containerEl ?? getActiveDocument().body;
+				const openingContext = {
+					app: this.app,
+					getSettings: () => this.settings,
+					getTask: () => this.indexer.getTask(id),
+					getTaskById: (taskId: string) => this.indexer.getTask(taskId),
+					getAllTasks: () => this.indexer.getAllTasks(),
+					picker: () => null,
+				};
+				await activateResolvedOpening(anchor, {
+					...openingContext,
+					resolve: () => resolveChipOpening({ key: 'taskInfo.source' }, openingContext),
+				});
 			},
 			setAsTracked: async (id, start, end) => {
 				const added = await this.timeTracker.addSession(id, start, end, canCommit);

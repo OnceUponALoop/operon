@@ -1278,8 +1278,8 @@
       "contextualMenuActionCreateSubtaskDesc": "噹噹前任務可以建立子任務時，在右鍵選單中顯示此操作。",
       "contextualMenuActionFixedReminder": "固定提醒",
       "contextualMenuActionFixedReminderDesc": "當目前任務尚未完成且可以開啟固定提醒選擇器時，在右鍵選單中顯示此操作。",
-      "contextualMenuActionJumpToSource": "跳轉到源",
-      "contextualMenuActionJumpToSourceDesc": "噹噹前專案可以跳轉到其源筆記時，在右鍵選單中顯示此操作。",
+      "contextualMenuActionJumpToSource": "開啟來源",
+      "contextualMenuActionJumpToSourceDesc": "當目前項目可以開啟其來源筆記時，在右鍵選單中顯示此操作。",
       "contextualMenuActionMarkDone": "標記完成",
       "contextualMenuActionMarkDoneDesc": "噹噹前專案可以被標記為已完成時，在右鍵選單中顯示此操作。",
       "contextualMenuActionOpenEditor": "開啟編輯器",
@@ -3713,5 +3713,5 @@
       "toggleDescendantPreview": "切換子任務預覽"
     }
   },
-  "sourceVersion": "fd2894f9fabc76927ce8bc73e11edcbdfbe5db65ae1afba5dafbacde0342b04f"
+  "sourceVersion": "5966589edd8eb70cd331e88f39392ce52bd2defbca4226389e16fd94856c7cb9"
 }

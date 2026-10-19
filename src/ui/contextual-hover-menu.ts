@@ -157,7 +157,10 @@ export class ContextualHoverMenuController {
 					event.preventDefault(); event.stopPropagation();
 					const current = this.activeOptions;
 					if (!current?.actions.some(entry => entry.id === action.id)) return;
-					const invocation = { actionAnchor: target, actionAnchorRect: target.getBoundingClientRect() };
+					const actionAnchor = action.id === 'jumpToSource'
+						? this.activeTrigger ?? current.followAnchor ?? current.themeTarget ?? current.host ?? this.options.getHost?.() ?? getOwnerBody(target)
+						: target;
+					const invocation = { actionAnchor, actionAnchorRect: target.getBoundingClientRect() };
 					this.hide(true);
 					void current.onAction(current.taskId, action.id, current.context, invocation);
 				});

@@ -112,7 +112,11 @@ export interface ResolvedOpeningContext {
  stopPointerDown?: boolean;
 }
 
-export async function activateResolvedOpening(chip: HTMLElement, context: ResolvedOpeningContext, event: MouseEvent): Promise<void> {
+export async function activateResolvedOpening(
+ chip: HTMLElement,
+ context: ResolvedOpeningContext,
+ event: Pick<MouseEvent, 'button' | 'type' | 'detail' | 'metaKey' | 'ctrlKey'> = { button: 0, type: 'click', detail: 0, metaKey: false, ctrlKey: false },
+): Promise<void> {
  const external = event.button === 1 && event.type === 'auxclick';
  if ((event.button !== 0 && !external) || event.detail > 1 || context.canActivate?.() === false) return;
  try {

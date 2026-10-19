@@ -2,6 +2,8 @@ import assert from 'node:assert/strict';
 import { test } from 'node:test';
 import { Platform, TFile } from 'obsidian';
 import { lightboxFixture } from './test-support/lightbox-dom';
+import { activateResolvedOpening, resolveChipOpening } from '../src/ui/links-chip-action';
+import { DEFAULT_SETTINGS } from '../src/types/settings';
 import { openLightbox } from '../src/ui/lightbox';
 import { openLightboxTarget, resolveLightboxFile } from '../src/ui/lightbox-opening';
 import { disposeWebLightboxes, flushLightboxMarkdown, openWebLightbox, prepareLightboxTab } from '../src/ui/web-lightbox';
@@ -507,4 +509,17 @@ test('opening externally preserves an existing native preview and does not flush
   await openLightboxTarget(f.app,f.anchor,{kind:'web',url:'https://example.com/'},'external');
   assert.deepEqual(f.stats(),before);assert.equal(shell.isConnected,true);assert.equal(opened.length,1);
  }finally{f.cleanup();}
+});
+
+for (const format of ['yaml', 'inline']) test(`context menu Source activation without a mouse event opens ${format} in a lightbox`, async()=>{
+ const f=fixture();try{
+  const task:any={operonId:'abcdefg',primary:{filePath:f.file.path,format,lineNumber:99},fieldValues:{},tags:[]};
+  f.app.vault.getAbstractFileByPath=(path:string)=>path===f.file.path?f.file:null;
+  f.stored('heading\n- [ ] Child {{operonId:: abcdefg}}');
+  const context={app:f.app,getSettings:()=>DEFAULT_SETTINGS,getTask:()=>task,getTaskById:()=>task,getAllTasks:()=>[task],picker:()=>null};
+  await activateResolvedOpening(f.anchor,{...context,resolve:()=>resolveChipOpening({key:'taskInfo.source'},context)});await tick();
+  assert.ok(f.doc.body.querySelectorAll().some((node:any)=>node.classes.has('operon-task-media-lightbox')));
+  assert.equal(f.view.file,f.file);assert.equal(f.opens.length,1);assert.equal(f.opens[0].active,false);
+  assert.equal(f.opens[0].eState.line,format==='inline'?1:undefined);assert.equal(f.stats().saves,0);
+ }finally{f.cleanup();await tick();}
 });

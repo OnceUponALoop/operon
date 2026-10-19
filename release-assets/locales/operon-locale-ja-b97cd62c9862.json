@@ -1278,8 +1278,8 @@
       "contextualMenuActionCreateSubtaskDesc": "現在のタスクがサブタスクを作成できる場合に、このアクションをコンテキストメニューに表示します。",
       "contextualMenuActionFixedReminder": "固定リマインダー",
       "contextualMenuActionFixedReminderDesc": "現在のタスクが未完了で固定リマインダーのピッカーを開ける場合に、このアクションをコンテキストメニューに表示します。",
-      "contextualMenuActionJumpToSource": "ソースへジャンプ",
-      "contextualMenuActionJumpToSourceDesc": "現在の項目がソースノートへジャンプできる場合に、このアクションをコンテキストメニューに表示します。",
+      "contextualMenuActionJumpToSource": "ソースを開く",
+      "contextualMenuActionJumpToSourceDesc": "現在の項目がソースノートを開ける場合に、このアクションをコンテキストメニューに表示します。",
       "contextualMenuActionMarkDone": "完了にする",
       "contextualMenuActionMarkDoneDesc": "現在の項目が完了としてマークできる場合に、このアクションをコンテキストメニューに表示します。",
       "contextualMenuActionOpenEditor": "エディターを開く",
@@ -3713,5 +3713,5 @@
       "toggleDescendantPreview": "子孫プレビューを切り替え"
     }
   },
-  "sourceVersion": "3103eb51e5ba50457e8fd85f7f7d0224524af05a6252e39c15ad755a8f815de2"
+  "sourceVersion": "0b4128c130ecc2aab6add531d499edddd148886fe20be9f0bb9e16ec409813a3"
 }

@@ -1278,8 +1278,8 @@
       "contextualMenuActionCreateSubtaskDesc": "Mostra questa azione nel menu contestuale quando l'attività attuale può creare una sotto-attività.",
       "contextualMenuActionFixedReminder": "Promemoria fisso",
       "contextualMenuActionFixedReminderDesc": "Mostra questa azione nel menu contestuale quando l'attività attuale è aperta e può aprire il selettore di promemoria fisso.",
-      "contextualMenuActionJumpToSource": "Vai all'origine",
-      "contextualMenuActionJumpToSourceDesc": "Mostra questa azione nel menu contestuale quando l'elemento attuale può andare alla sua nota di origine.",
+      "contextualMenuActionJumpToSource": "Apri origine",
+      "contextualMenuActionJumpToSourceDesc": "Mostra questa azione nel menu contestuale quando l'elemento attuale può aprire la sua nota di origine.",
       "contextualMenuActionMarkDone": "Completa",
       "contextualMenuActionMarkDoneDesc": "Mostra questa azione nel menu contestuale quando l'elemento attuale può essere contrassegnato come completato.",
       "contextualMenuActionOpenEditor": "Apri editor",
@@ -3713,5 +3713,5 @@
       "toggleDescendantPreview": "Alterna anteprima discendenti"
     }
   },
-  "sourceVersion": "aa204e20562df2e06fbb553015c9cad5e27268d4469b0c9cf174b808371c8edc"
+  "sourceVersion": "64f03cb6008a405e3ee5ef67e07afacd1f15922e1f949d54d53d1e3f89af380c"
 }

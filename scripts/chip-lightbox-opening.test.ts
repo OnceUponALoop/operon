@@ -6,7 +6,7 @@ import { Platform, TFile, Notice } from 'obsidian';
 import { readFileSync } from 'node:fs';
 import { lightboxFixture } from './test-support/lightbox-dom';
 import { pickerCalls } from './test-support/chip-opening-picker';
-import { bindDesktopChipOpening, handleLinksChipClick, resolveChipOpening, isDesktopOpeningChip } from '../src/ui/links-chip-action';
+import { bindDesktopChipOpening, handleLinksChipClick, resolveChipOpening, isDesktopOpeningChip, activateResolvedOpening } from '../src/ui/links-chip-action';
 import { buildInlineTaskCompactChipEntries } from '../src/ui/compact-task-layout';
 import { bindTaskTextOpening } from '../src/ui/task-text-link-opening';
 import { DEFAULT_SETTINGS } from '../src/types/settings';
@@ -379,4 +379,15 @@ test('legacy Table Links opening shares the explicit external mode without chang
   handleLinksChipClick(f.app,f.anchor,{key:'links',externalUrl:'https://example.com/legacy'},middle());await tick();
   assert.deepEqual(f.external,[['https://example.com/legacy','_external','noopener']]);assert.deepEqual(f.calls,[]);
  }finally{f.cleanup();}
+});
+
+test('context menu Source activation retains missing-file and ambiguous-inline protections',async()=>{
+ const f=fixture();try{
+  const context={...f.context,resolve:()=>resolveChipOpening(entry('taskInfo.source'),f.context)};
+  f.files.delete('A.md');await activateResolvedOpening(f.anchor,context);
+  assert.equal(f.calls.length,0);assert.deepEqual(f.notices,['Link target not found.']);
+  f.files.set('A.md',new (TFile as any)('A.md'));f.task().primary.format='inline';
+  f.content('- [ ] One {{operonId:: abcdefg}}\n- [ ] Two {{operonId:: abcdefg}}');
+  await activateResolvedOpening(f.anchor,context);assert.equal(f.calls.length,0);assert.equal(f.writes(),0);
+ }finally{f.cleanup();await tick();}
 });

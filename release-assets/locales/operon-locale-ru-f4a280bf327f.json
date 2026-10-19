@@ -1278,8 +1278,8 @@
       "contextualMenuActionCreateSubtaskDesc": "Показывать это действие в контекстном меню, если текущая задача может создать подзадачу.",
       "contextualMenuActionFixedReminder": "Фиксированное напоминание",
       "contextualMenuActionFixedReminderDesc": "Показывать это действие в контекстном меню, если текущая задача открыта и может открыть выбор фиксированного напоминания.",
-      "contextualMenuActionJumpToSource": "Перейти к источнику",
-      "contextualMenuActionJumpToSourceDesc": "Показывать это действие в контекстном меню, если текущий элемент может перейти к своей исходной заметке.",
+      "contextualMenuActionJumpToSource": "Открыть источник",
+      "contextualMenuActionJumpToSourceDesc": "Показывать это действие в контекстном меню, если текущий элемент может открыть свою исходную заметку.",
       "contextualMenuActionMarkDone": "Отметить выполненной",
       "contextualMenuActionMarkDoneDesc": "Показывать это действие в контекстном меню, если текущий элемент можно отметить как завершённый.",
       "contextualMenuActionOpenEditor": "Открыть редактор",
@@ -3713,5 +3713,5 @@
       "toggleDescendantPreview": "Переключить предпросмотр потомков"
     }
   },
-  "sourceVersion": "812f8af0b5b6f0dc1cb4609a365bc8ab9bf5934e738cfc278c79d6b5405cd4f0"
+  "sourceVersion": "3511fb3e709d096d6cfc4cc4eb82a3a9d0a85bf75de4a36be5c36192dade3b71"
 }

@@ -1278,8 +1278,8 @@
       "contextualMenuActionCreateSubtaskDesc": "Diese Aktion im Kontextmenü anzeigen, wenn für die aktuelle Aufgabe eine Unteraufgabe erstellt werden kann.",
       "contextualMenuActionFixedReminder": "Feste Erinnerung",
       "contextualMenuActionFixedReminderDesc": "Diese Aktion im Kontextmenü anzeigen, wenn die aktuelle Aufgabe offen ist und den Picker für feste Erinnerungen öffnen kann.",
-      "contextualMenuActionJumpToSource": "Zur Quelle springen",
-      "contextualMenuActionJumpToSourceDesc": "Diese Aktion im Kontextmenü anzeigen, wenn das aktuelle Element zu seiner Quellnotiz springen kann.",
+      "contextualMenuActionJumpToSource": "Quelle öffnen",
+      "contextualMenuActionJumpToSourceDesc": "Diese Aktion im Kontextmenü anzeigen, wenn das aktuelle Element seine Quellnotiz öffnen kann.",
       "contextualMenuActionMarkDone": "Als erledigt markieren",
       "contextualMenuActionMarkDoneDesc": "Diese Aktion im Kontextmenü anzeigen, wenn das aktuelle Element als erledigt markiert werden kann.",
       "contextualMenuActionOpenEditor": "Editor öffnen",
@@ -3713,5 +3713,5 @@
       "toggleDescendantPreview": "Vorschau untergeordneter Aufgaben umschalten"
     }
   },
-  "sourceVersion": "5e89f1dea8177a766a63cb7498c86dde044f6b0cd2e938c00564659e5287d763"
+  "sourceVersion": "d884ceac5e613130099a2d57602e292c6b1afd1b1c4f60edb164abea060f055e"
 }

@@ -1278,8 +1278,8 @@
       "contextualMenuActionCreateSubtaskDesc": "Afficher cette action dans le menu contextuel lorsque la tâche actuelle peut créer une sous-tâche.",
       "contextualMenuActionFixedReminder": "Rappel fixe",
       "contextualMenuActionFixedReminderDesc": "Afficher cette action dans le menu contextuel lorsque la tâche actuelle est ouverte et peut ouvrir le sélecteur de rappel fixe.",
-      "contextualMenuActionJumpToSource": "Aller à la source",
-      "contextualMenuActionJumpToSourceDesc": "Afficher cette action dans le menu contextuel lorsque l'élément actuel peut accéder à sa note source.",
+      "contextualMenuActionJumpToSource": "Ouvrir la source",
+      "contextualMenuActionJumpToSourceDesc": "Afficher cette action dans le menu contextuel lorsque l’élément actuel peut ouvrir sa note source.",
       "contextualMenuActionMarkDone": "Marquer comme terminée",
       "contextualMenuActionMarkDoneDesc": "Afficher cette action dans le menu contextuel lorsque l'élément actuel peut être marqué comme terminé.",
       "contextualMenuActionOpenEditor": "Ouvrir l'éditeur",
@@ -3713,5 +3713,5 @@
       "toggleDescendantPreview": "Basculer l'aperçu des descendants"
     }
   },
-  "sourceVersion": "01b326117460a65b4ad78b765721ef25a131a018dd94190f52aa911068d2627e"
+  "sourceVersion": "a54141699e052ed29afa0b639acad4717f0ccc8d854c496261a201426d00c713"
 }

@@ -1278,8 +1278,8 @@
       "contextualMenuActionCreateSubtaskDesc": "当当前任务可以创建子任务时，在右键菜单中显示此操作。",
       "contextualMenuActionFixedReminder": "固定提醒",
       "contextualMenuActionFixedReminderDesc": "当当前任务未完成且可以打开固定提醒选择器时，在右键菜单中显示此操作。",
-      "contextualMenuActionJumpToSource": "跳转到源",
-      "contextualMenuActionJumpToSourceDesc": "当当前项目可以跳转到其源笔记时，在右键菜单中显示此操作。",
+      "contextualMenuActionJumpToSource": "打开来源",
+      "contextualMenuActionJumpToSourceDesc": "当当前项目可以打开其来源笔记时，在右键菜单中显示此操作。",
       "contextualMenuActionMarkDone": "标记完成",
       "contextualMenuActionMarkDoneDesc": "当当前项目可以被标记为已完成时，在右键菜单中显示此操作。",
       "contextualMenuActionOpenEditor": "打开编辑器",
@@ -3713,5 +3713,5 @@
       "toggleDescendantPreview": "切换子任务预览"
     }
   },
-  "sourceVersion": "2950f4b298b6982ac59c2560c6d38943cdb567cb5590b48e36f0c33d1864744f"
+  "sourceVersion": "679e64fb00f26aebe64b446590e8b146ca8a7f69471a3808a97a0299c6838167"
 }

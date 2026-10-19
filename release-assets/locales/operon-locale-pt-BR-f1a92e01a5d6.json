@@ -1278,8 +1278,8 @@
       "contextualMenuActionCreateSubtaskDesc": "Exibir esta ação no menu contextual quando a tarefa atual puder criar uma subtarefa.",
       "contextualMenuActionFixedReminder": "Lembrete Fixo",
       "contextualMenuActionFixedReminderDesc": "Exibir esta ação no menu contextual quando a tarefa atual estiver aberta e puder abrir o seletor de lembrete fixo.",
-      "contextualMenuActionJumpToSource": "Ir para a origem",
-      "contextualMenuActionJumpToSourceDesc": "Mostrar esta ação no menu de contexto quando o item atual puder saltar para sua nota de origem.",
+      "contextualMenuActionJumpToSource": "Abrir origem",
+      "contextualMenuActionJumpToSourceDesc": "Mostrar esta ação no menu de contexto quando o item atual puder abrir sua nota de origem.",
       "contextualMenuActionMarkDone": "Marcar como concluído",
       "contextualMenuActionMarkDoneDesc": "Exibir esta ação no menu contextual quando o item atual puder ser marcado como concluído.",
       "contextualMenuActionOpenEditor": "Abrir editor",
@@ -3713,5 +3713,5 @@
       "toggleDescendantPreview": "Alternar visualização descendente"
     }
   },
-  "sourceVersion": "a3c0b9c07beb8f20bc9a221d76e51f70d5b56cc5113060da3d51f0d57caf8b30"
+  "sourceVersion": "15b457000a294a66c45fbcf76a902d0dcdbda151cc4fc5300795de0d5579603d"
 }
