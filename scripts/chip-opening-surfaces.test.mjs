@@ -146,3 +146,32 @@ test('Open Source retains the saved context-menu action identity and localized l
  assert.equal(english.settings.contextualMenuActionJumpToSource,'Open Source');assert.equal(turkish.settings.contextualMenuActionJumpToSource,'Kaynağı aç');
  assert.match(readFileSync('src/core/contextual-menu-engine.ts','utf8'),/id: 'jumpToSource',\s+labelKey: 'contextualMenuActionJumpToSource'/);
 });
+
+for(const format of ['yaml','inline'])for(const initial of ['openTaskEditor','jumpToSource'])test(`Session History ${format}/${initial}: source keeps its anchor while editor and current setting stay independent`,()=>{
+ const sourceCalls=[],editorCalls=[],settings={trackerTaskDescriptionClickAction:initial};
+ const task={operonId:'history-task',primary:{format,filePath:'A.md',lineNumber:99}},description={ownerDocument:{name:'secondary'}};
+ const host={callbacks:{getSettings:()=>settings,navigateToTask:(...args)=>sourceCalls.push(args),openTaskEditor:id=>editorCalls.push(id)}};
+ let click;const button={addEventListener:(name,fn)=>{if(name==='click')click=fn;},ownerDocument:description.ownerDocument};
+ const render=extractTable('time-session-history-view','renderSecondaryTaskAction',{setIcon(){},setAccessibleLabelWithoutTooltip(){},getTimeSessionHistorySecondaryTaskActionAriaLabel:()=> 'Open Source'},true);
+ const describe=extractTable('time-session-history-view','handleTaskDescriptionClick',{},true);
+ render.call(host,{createEl:()=>button},task);click({preventDefault(){},stopPropagation(){}});
+ describe.call(host,task,description);
+ assert.deepEqual(sourceCalls,[[task,initial==='openTaskEditor'?button:description]]);assert.deepEqual(editorCalls,['history-task']);
+ settings.trackerTaskDescriptionClickAction=initial==='openTaskEditor'?'jumpToSource':'openTaskEditor';
+ click({preventDefault(){},stopPropagation(){}});
+ assert.equal(sourceCalls.length,initial==='openTaskEditor'?1:2);assert.equal(editorCalls.length,initial==='openTaskEditor'?2:1);
+});
+test('Session History source callback delegates to the existing Open Source action with current identity and owner',async()=>{
+ const source=readFileSync('main.ts','utf8'),ast=ts.createSourceFile('main.ts',source,ts.ScriptTarget.Latest,true);
+ let create;const visit=node=>{if(ts.isNewExpression(node)&&node.expression.getText(ast)==='TimeSessionHistoryView')create=node;ts.forEachChild(node,visit);};visit(ast);assert.ok(create);
+ const callback=create.arguments[3].properties.find(n=>n.name?.getText(ast)==='navigateToTask').initializer;
+ const js=ts.transpileModule(`const create=function(){return ${callback.getText(ast)};};return create.call(this);`,{compilerOptions:{target:ts.ScriptTarget.ES2022}}).outputText;
+ const calls=[],host={handleContextualMenuAction:async(...args)=>calls.push(args),navigateToTask(){throw Error('legacy History navigation');}};
+ const navigate=new Function(js).call(host),anchor={ownerDocument:{name:'secondary'}};
+ navigate({operonId:'history-task',primary:{filePath:'Old.md',lineNumber:99}},anchor);await Promise.resolve();
+ assert.deepEqual(calls,[['history-task','jumpToSource',undefined,{actionAnchor:anchor}]]);
+});
+test('Session History Source label uses the shared Open Source translation without changing the Editor action',()=>{
+ const label=extract('time-session-history-view','getTimeSessionHistorySecondaryTaskActionAriaLabel',{t:(_section,key)=>key});
+ assert.equal(label('openTaskEditor'),'contextualMenuActionJumpToSource');assert.equal(label('jumpToSource'),'trackerClickOpenTaskEditor');
+});

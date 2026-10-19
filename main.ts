@@ -17528,7 +17528,9 @@ export default class OperonPlugin extends Plugin {
 				this.timeTracker,
 				{
 					cycleStatus: (operonId) => this.handleTaskIconClick(operonId),
-					navigateToTask: (task) => { this.navigateToTask(task); },
+					navigateToTask: (task, anchor) => {
+						void this.handleContextualMenuAction(task.operonId, 'jumpToSource', undefined, { actionAnchor: anchor });
+					},
 						navigateToDailyNote: (dateKey) => {
 							runAsyncAction('time history daily note navigation failed', () => this.app.workspace.openLinkText(dateKey, '', false));
 						},
