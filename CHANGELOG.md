@@ -9,47 +9,35 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### New
 
-- Added a shared **desktop lightbox** for web pages, media, and editable Markdown, Bases, and Operon Tables, using their normal views and save behavior without adding background tabs or changing your tab layout.
-- Added **nested previews** that preserve the previous view and Description/Note drafts, with controls to close, open in a new tab, open to the right, or open below. Unfinished drafts and failed saves stay protected before moving to another tab or split.
-- Added optional **Source chips** to all six task chip profiles, showing the source file and Inline task line. Desktop clicks preview the source at the task location, while Cmd/Ctrl-click opens it in a new tab; Task Finder remains non-interactive and mobile navigation is unchanged. On Obsidian 1.14+, Source and Project Serial settings remain separate from same-named Custom Keys during search, reordering, and visibility changes.
-- Added a **year and month picker** to the desktop Calendar sidebar and toolbar, making it easier to jump to another month while preserving the focused day where possible.
-- Added **Repeat reference date** filter conditions for saved dates, including relative dates and empty values; changing the date through the Table Repeat picker updates matching results.
-- Added a **Repeat reference date** column to Tables, showing the saved date in your preferred format and opening the Repeat picker for editing; tasks without a saved reference date keep an empty cell.
+- Added a shared **desktop lightbox** for web pages, media, and editable Markdown, Bases, and Operon Tables, using their normal views and save behavior. Markdown/web previews use a narrower frame, while Base/Table previews offer more space; Table presets and Gantt remain available without changing your workspace tab layout.
+- Added **nested previews** that preserve the previous view and Description/Note drafts, with four upper controls to close, open in a new tab, open to the right, or open below. Unfinished drafts and failed saves stay protected before moving to another tab or split.
+- Added optional **Source chips** to all six task chip profiles, showing the source file and Inline task line; they start hidden and open the source through the shared desktop preview behavior. Task Finder chips remain informational and mobile navigation is unchanged. On Obsidian 1.14+, Source and Project Serial settings avoid collisions with same-named Custom Keys during search, reordering, and visibility changes.
+- Added a **year and month picker** to the desktop Calendar sidebar and toolbar, with date-format-aware year/date buttons, clear selection highlights, and a **Go to today** action; changing months preserves the focused day where possible.
+- Added **Repeat reference date** columns and filter conditions, including relative dates and empty values. Tables show saved dates in your preferred format, show empty cells when no date is saved, and open the Repeat picker for editing; changes update matching filter results.
 - Added **vault-local ICS calendars** as read-only external calendar sources, with automatic updates when files change and continued support for URL subscriptions.
 
 ### Improved
 
-- Added adjustable **Background dimming** under Tweaks → Workspace for all desktop lightboxes, Task Creator, Task Finder, Task Editor, and standalone Dynamic Subtasks Filter windows. Choose from 13 levels between 10% and 90%, with 50% as the default for new users and existing preferences preserved. Each additional layer adds 5 percentage points up to 90%, without overlapping backdrops making it darker; closing a layer restores the previous level. Mobile, Editor filter popovers, and embedded filters are unchanged.
-- Added **lightbox dimming controls** at the bottom of the existing action rail: + and − step through the available levels and save directly to Tweaks, while a compact numeric indicator shows the saved preference and provides the only dimming tooltip.
-- Made supported **task chip and Table links** open consistently in the desktop lightbox, including media, Parent Task, and existing wikilinks in Type and Text/List values; ordinary values and missing wikilinks retain their pickers, and clicking outside a Table link still edits the cell.
-- Extended the same opening behavior to **task description links and Description/Note popovers** across supported task views. Cmd/Ctrl-click opens a focused tab; local links follow Page Preview preferences, and media keeps its quick hover preview with single-click opening.
-- Added **middle-click opening in the system browser** for desktop HTTP/HTTPS links that use the lightbox, including Links chips, Tables, and supported Description/Note text and popovers. This also works with Web Viewer disabled, while regular and Cmd/Ctrl-click behavior, drafts, and editing stay unchanged.
-- Refined **lightbox layout** with a narrower Markdown/web view, wider Base/Table views, inset content frames, and four matching controls beside the content; Operon Table presets and Gantt remain usable inside the preview.
-- **Project Serial chips** can now be reordered, hidden, and shown as icons alongside other task chips; existing serials remain visible first by default, while Task Finder keeps both information chips non-interactive.
+- Added adjustable **Background dimming** under Tweaks → Workspace for desktop lightboxes, Task Creator, Finder, Editor, and standalone Dynamic Subtasks Filter modals. Choose from 13 levels between 10% and 90%, with a 50% default for new users and saved preferences preserved. Each nested layer adds 5 percentage points up to 90%; closing it restores the previous level. A separate lower control group shows the saved level and lets you step up or down, saving directly to Tweaks. Mobile, Editor filter popovers, and embedded filters are unchanged.
+- Unified **desktop link opening** across supported task chips, Tables, task descriptions, and Description/Note popovers: normal clicks open the lightbox, Cmd/Ctrl-click opens an Obsidian tab, and middle-click opens HTTP/HTTPS links in the system browser, even with Web Viewer disabled. Web previews require Web Viewer; local modifier-hover follows Page Preview preferences, and media retains hover previews with single-click opening. Parent Task, Source, and existing Type/Text/List wikilinks use the shared preview flow; ordinary values and missing wikilinks retain their pickers, and Table editing remains available outside links.
+- **Project Serial chips** can now be reordered, hidden, and shown as icons on supported surfaces, remaining visible first by default. Serial chips stay informational everywhere; Task Finder also keeps Source chips non-interactive.
 - **Add subtask actions** now offer both File and Inline subtasks for File tasks, while Inline tasks keep the Inline action, consistently across all five task chip profiles.
-
 - **Mobile Task Creator** now wraps property icons onto additional rows instead of scrolling sideways, keeping their sizes and template previews while making controls and pickers accessible with the keyboard open.
-
 - **Status chips** now open the status picker consistently across editable task surfaces, with the current value selected for immediate typing; checkbox and cycle commands keep their existing behavior.
-- **Status pickers** now show configured icons in their status colors, retain colored dots as a fallback, and provide clearer hover feedback that disappears when the pointer leaves without clipping the highlight at list edges.
-- **Priority pickers** now show configured priority icons in their selected colors across task surfaces, keeping colored dots when no usable icon is configured.
+- **Status and Priority pickers** now show configured icons in their selected colors, with colored dots as a fallback. Status hover highlights clear when the pointer leaves and remain visible without clipped edges.
 - **Type, Custom Keys Text, and Vault Properties Text pickers** now show the current value above an empty search field, making all suggestions available immediately across task chips and Tables; click the current value to edit it.
 - Made **Text property editing** consistent across standalone and embedded Tables, preserving long and multiline values for Inline and File tasks while keeping save and conflict protections.
 - **Operon task tag chips** now open the task’s tag picker for direct editing, keeping normal Markdown tag behavior and existing editing protections unchanged.
-- Calendar navigation now follows your **date format** with separate year and date buttons; the date button clearly indicates **Go to today**, and the picker uses neutral controls with matching selection borders and underlines.
-- Made **Repeat picker selections** clearer with accent-colored underlines and stronger borders, plus matching Summary and Save borders, while keeping text neutral and controls compact.
-
+- Made **Repeat picker selections** clearer with accent-colored underlines, stronger borders, and matching Summary/Save controls, while keeping text neutral and controls compact.
 - Made **Sync now** fetch fresh external calendar contents, allowing previously empty cached results to recover while automatic refreshes retain conditional HTTP caching.
 - Made **Table repeat cells** easier to read with bordered repeat icons, human-readable descriptions in detailed mode, and matching cell colors and hover states; clicking a cell now opens the Repeat picker instead of a text editor.
 - Made **desktop Task Editor on phones** more compact, with consistent control sizes, single-line property values, and aligned section headings.
-- Replaced **Add session** text with a **clock-plus icon** in the desktop Task Editor, while keeping its tooltip and accessible label.
-- Added the task title to **Add session**, making it easier to see which task the new session belongs to.
-- Made **Add session** and **Edit session** more compact, with equal-width Start and End labels beside the date fields, controls matching the footer height, and less empty space below the duration.
+- Made **Add/Edit session** dialogs more compact, with equal-width Start/End labels and consistently sized controls. The desktop Task Editor’s **Add session** action now uses a clock-plus icon with a tooltip and accessible label; its dialog also shows the task title.
 
 ### Fixed
 
 - Distinguished **Daily and Weekly Notes** format and folder setting names, preventing duplicate-setting warnings when Obsidian redraws settings while preserving saved values.
-- Fixed **automatic settings backup conflicts**, including those caused by synchronization, blocking settings saves and Table startup; existing backups are preserved and automatic backup creation pauses with a clear console message, while settings-file safety checks remain active.
+- **Automatic settings backup conflicts**, including those caused by synchronization, no longer block settings saves or Table startup. Existing backups are preserved, automatic backup creation pauses with a clear console message, and settings-file safety checks remain active.
 - Fixed repeated **settings warnings** during startup and tab changes: a saving pause is now reported once per cause and is no longer described as a damaged Table configuration, while genuine Table file errors remain visible.
 - Fixed **Task Creator repeat editing** so saving or clearing updates immediately, reference dates and Count settings are preserved for Inline and File tasks, and cancelled edits leave the draft unchanged.
 - Fixed certain **Outlook all-day yearly events** missing from URL and vault-local ICS calendars when the calendar’s timezone confirms that the recurrence end matches the event’s start.
@@ -59,23 +47,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Validation
 
-- Shared background dimming checks passed **31/31** focused tests and **32/32** browser scenarios covering settings, layer intensity, desktop modals and lightboxes, mobile boundaries, focus, and draft preservation.
-- Desktop lightbox opening, lifecycle, and interaction checks passed **208/208** focused tests, **16/16** shell tests, **8/8** web tests, **24/24** layout checks, and **30/30** editor/draft browser checks.
-- Source and Project Serial chip settings, navigation, and interaction checks passed **48/48** focused tests, **6/6** Settings Search and redraw scenarios, and **22/22** browser checks across six profiles.
-- Subtask chip routing and interaction protections passed **23/23** focused tests across File and Inline tasks.
-
-- Task Creator draft and template checks passed **48/48** focused tests, plus **24/24** mobile layout and picker scenarios across Inline and File modes.
-
-- Status chip routing, picker focus, icons, and interaction checks passed **26/26** focused tests, plus **4/4** light/dark and narrow/wide browser checks.
-- Priority picker icon, fallback, and selection checks passed **8/8** focused tests.
-- Periodic-note settings, search, and redraw checks passed **12/12** focused tests.
-- Automatic settings backup, synchronization-conflict, and repeated-warning checks passed **81/81** focused tests; startup and reload classification passed **12/12** additional tests.
-- Task tag chip routing, editing, and write protection checks passed **15/15** focused tests.
-- Calendar year/month navigation checks passed **15/15** focused tests and **24/24** browser scenarios.
-- Repeat picker appearance and interaction checks passed **48/48** browser scenarios across Task Creator and Task Editor.
-
-- Task Creator repeat editing and template protection checks passed **16/16** focused tests.
-- External calendar compatibility and refresh checks passed **67/67** focused tests.
 - Full local Plugin checks, production build, release guard, and code review passed, along with **5,176/5,176** local regression tests.
 
 ## [4.0.1] - 2026-10-14
