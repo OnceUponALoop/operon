@@ -1,8 +1,8 @@
 {
   "schemaVersion": 1,
   "locale": "ja",
-  "keyCount": 3668,
-  "keyFingerprint": "89abfabff951c621ad847d4150f0b655a92e0212977ff8be97c026dec5e0f0b0",
+  "keyCount": 3670,
+  "keyFingerprint": "14b8663398cc20d5e558b7e718ab887c68701e03947d3d2e9cea8f50ec68d2d2",
   "translations": {
     "buttons": {
       "addFileSubtask": "ファイルサブタスクを追加",
@@ -2774,6 +2774,8 @@
       "taskRelationschildren": "子タスク",
       "taskRelationsconnections": "Canvas の接続",
       "taskRelationsparent": "親タスク",
+      "taskSourceAction": "ソース操作",
+      "taskSourceActionDesc": "マウスを重ねるかキーボードでフォーカスするとソース操作を表示します。クリックで現在のソースをプレビューし、デスクトップでは Cmd/Ctrl+クリックで新しいタブを開きます。",
       "taskStatusIconColorSource": "タスクアイコンの色ソース",
       "taskStatusIconColorSourceDesc": "メインタスクアイコンの色を選択します。タスクや優先度の色がない場合は色を適用しません。",
       "taskWikilinkOverlayActionsSection": "タスクウィキリンクオーバーレイのアクション",
@@ -3713,5 +3715,5 @@
       "toggleDescendantPreview": "子孫プレビューを切り替え"
     }
   },
-  "sourceVersion": "0b4128c130ecc2aab6add531d499edddd148886fe20be9f0bb9e16ec409813a3"
+  "sourceVersion": "3175e83b2bbbb0dfa8d352d4243c623d5c60f038075c5e53e5b8ede983e0d520"
 }

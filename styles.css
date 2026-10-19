@@ -18528,6 +18528,20 @@ body :is(
 	}
 }
 
+/* Source actions follow desktop hover/focus visibility without changing other actions. */
+@media (hover: hover) and (pointer: fine) {
+ body:not(.is-mobile) :is(.operon-task-wikilink-reading, .operon-task-wikilink-trailing, .operon-task-card) .operon-task-source-action {
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 120ms ease;
+ }
+ body:not(.is-mobile) :is(.operon-task-wikilink-reading, .operon-task-wikilink-trailing, .operon-task-card):is(:hover, :focus-within) .operon-task-source-action,
+ body:not(.is-mobile) :is(.operon-task-wikilink-reading, .operon-task-wikilink-trailing, .operon-task-card) .operon-task-source-action:focus-visible {
+  opacity: 1;
+  pointer-events: auto;
+ }
+}
+
 .cm-content .operon-task-wikilink-live-mark:hover,
 .cm-content .operon-task-wikilink-live-mark:hover *,
 .cm-content .operon-task-wikilink-label:hover,

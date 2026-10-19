@@ -434,7 +434,7 @@ const TASK_CHIPS_SETTINGS_PAGE_META: Record<TaskChipsSettingsPageId, TaskChipsSe
 	taskCardChips: {
 		titleKey: 'taskCardChips',
 		descKey: 'taskCardChipsDesc',
-		entryIds: ['taskCardChips', 'taskCardShowPlayAction', 'taskCardShowPinAction', 'taskCardShowNoteAction', 'taskCardShowSubtaskAction', 'taskCardShowPlainCheckboxAction'],
+		entryIds: ['taskCardChips', 'taskCardShowPlayAction', 'taskCardShowPinAction', 'taskCardShowNoteAction', 'taskCardShowSubtaskAction', 'taskCardShowPlainCheckboxAction', 'taskCardShowSourceAction'],
 		docsTarget: 'DOCS-041 Task chips display and behavior',
 	},
 	taskCreatorToolbar: {
@@ -446,7 +446,7 @@ const TASK_CHIPS_SETTINGS_PAGE_META: Record<TaskChipsSettingsPageId, TaskChipsSe
 	inlineTaskChips: {
 		titleKey: 'inlineTaskIconsSection',
 		descKey: 'inlineTaskIconsSectionDesc',
-		entryIds: ['inlineTaskChips', 'inlineTaskShowNoteAction'],
+		entryIds: ['inlineTaskChips', 'inlineTaskShowNoteAction', 'inlineTaskShowSourceAction'],
 		docsTarget: 'DOCS-041 Task chips display and behavior',
 	},
 	taskFinderChips: {
@@ -458,7 +458,7 @@ const TASK_CHIPS_SETTINGS_PAGE_META: Record<TaskChipsSettingsPageId, TaskChipsSe
 	filterTaskChips: {
 		titleKey: 'filterTaskIconsSection',
 		descKey: 'filterTaskIconsSectionDesc',
-		entryIds: ['filterTaskChips', 'filterTaskShowNoteAction', 'filterTaskShowPlainCheckboxAction'],
+		entryIds: ['filterTaskChips', 'filterTaskShowNoteAction', 'filterTaskShowPlainCheckboxAction', 'filterTaskShowSourceAction'],
 		docsTarget: 'DOCS-041 Task chips display and behavior',
 	},
 	kanbanTaskChips: {
@@ -471,13 +471,14 @@ const TASK_CHIPS_SETTINGS_PAGE_META: Record<TaskChipsSettingsPageId, TaskChipsSe
 			'kanbanTaskShowNoteAction',
 			'kanbanTaskShowSubtaskAction',
 			'kanbanTaskShowPlainCheckboxAction',
+			'kanbanTaskShowSourceAction',
 		],
 		docsTarget: 'DOCS-041 Task chips display and behavior',
 	},
 	taskWikilinkOverlayChips: {
 		titleKey: 'taskWikilinkOverlayIconsSection',
 		descKey: 'taskWikilinkOverlayIconsSectionDesc',
-		entryIds: ['taskWikilinkOverlayChips', 'taskWikilinkOverlayShowPlainCheckboxAction'],
+		entryIds: ['taskWikilinkOverlayChips', 'taskWikilinkOverlayShowPlainCheckboxAction', 'taskWikilinkOverlayShowSourceAction'],
 		docsTarget: 'DOCS-103 Task Wikilink Overlay',
 	},
 };
@@ -1891,9 +1892,9 @@ export class OperonSettingsTab extends PluginSettingTab {
 				groups = [{ type: 'group', heading: '', cls: 'operon-task-chip-settings-group', items: [description, ...definitions] }];
 				const prefix = ({ inlineTaskChips: 'inlineTask', filterTaskChips: 'filterTask', kanbanTaskChips: 'kanbanTask', taskWikilinkOverlayChips: 'taskWikilinkOverlay', taskCardChips: 'taskCard' } as const)[pageId as 'inlineTaskChips' | 'filterTaskChips' | 'kanbanTaskChips' | 'taskWikilinkOverlayChips' | 'taskCardChips'];
 				if (prefix) {
-					const actions = ['Play', 'Pin', 'Note', 'Subtask', ...(prefix === 'inlineTask' ? [] : ['PlainCheckbox'])];
+					const actions = ['Play', 'Pin', 'Note', 'Subtask', ...(prefix === 'inlineTask' ? [] : ['PlainCheckbox']), 'Source'];
 					groups.push({ type: 'group', heading: t('settings', `${prefix}ActionsSection`), cls: 'operon-task-chip-settings-group', items: actions.map((action, index) => {
-						const titleKey = action === 'PlainCheckbox' ? (prefix === 'taskCard' ? 'kanbanTaskOpenCheckboxAction' : `${prefix}OpenCheckboxAction`) : `inlineTask${action}Action`;
+						const titleKey = action === 'Source' ? 'taskSourceAction' : action === 'PlainCheckbox' ? (prefix === 'taskCard' ? 'kanbanTaskOpenCheckboxAction' : `${prefix}OpenCheckboxAction`) : `inlineTask${action}Action`;
 						const entry = entries.find(entry => entry.key === `${prefix}Show${action}Action`);
 						return this.buildTaskChipCardDefinition(pageId, t('settings', titleKey), { action: index }, entry ? this.getSettingsSearchAliases(entry) : []);
 					}) });
@@ -7019,6 +7020,16 @@ export class OperonSettingsTab extends PluginSettingTab {
 						await this.saveSettings();
 					},
 				},
+				{
+					visible: this.settings.inlineTaskShowSourceAction,
+					icon: 'file-search',
+					label: t('settings', 'taskSourceAction'),
+					searchTargetId: 'ui.inlineTaskShowSourceAction',
+					onToggle: async () => {
+						this.settings.inlineTaskShowSourceAction = !this.settings.inlineTaskShowSourceAction;
+						await this.saveSettings();
+					},
+				},
 			],
 		});
 	}
@@ -7124,6 +7135,16 @@ export class OperonSettingsTab extends PluginSettingTab {
 					searchTargetId: 'ui.taskWikilinkOverlayShowPlainCheckboxAction',
 					onToggle: async () => {
 						this.settings.taskWikilinkOverlayShowPlainCheckboxAction = !this.settings.taskWikilinkOverlayShowPlainCheckboxAction;
+						await this.saveSettings();
+					},
+				},
+				{
+					visible: this.settings.taskWikilinkOverlayShowSourceAction,
+					icon: 'file-search',
+					label: t('settings', 'taskSourceAction'),
+					searchTargetId: 'ui.taskWikilinkOverlayShowSourceAction',
+					onToggle: async () => {
+						this.settings.taskWikilinkOverlayShowSourceAction = !this.settings.taskWikilinkOverlayShowSourceAction;
 						await this.saveSettings();
 					},
 				},
@@ -13102,6 +13123,16 @@ export class OperonSettingsTab extends PluginSettingTab {
 						await this.saveSettings();
 					},
 				},
+				{
+					visible: this.settings.filterTaskShowSourceAction,
+					icon: 'file-search',
+					label: t('settings', 'taskSourceAction'),
+					searchTargetId: 'ui.filterTaskShowSourceAction',
+					onToggle: async () => {
+						this.settings.filterTaskShowSourceAction = !this.settings.filterTaskShowSourceAction;
+						await this.saveSettings();
+					},
+				},
 			],
 		});
 	}
@@ -13183,6 +13214,16 @@ export class OperonSettingsTab extends PluginSettingTab {
 						searchTargetId: `ui.${profile}ShowPlainCheckboxAction`,
 						onToggle: async () => {
 							this.settings[`${profile}ShowPlainCheckboxAction`] = !this.settings[`${profile}ShowPlainCheckboxAction`];
+							await this.saveSettings();
+						},
+					},
+					{
+						visible: this.settings[`${profile}ShowSourceAction`],
+						icon: 'file-search',
+						label: t('settings', 'taskSourceAction'),
+						searchTargetId: `ui.${profile}ShowSourceAction`,
+						onToggle: async () => {
+							this.settings[`${profile}ShowSourceAction`] = !this.settings[`${profile}ShowSourceAction`];
 							await this.saveSettings();
 						},
 					},

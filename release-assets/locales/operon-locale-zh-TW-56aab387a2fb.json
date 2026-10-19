@@ -1,8 +1,8 @@
 {
   "schemaVersion": 1,
   "locale": "zh-TW",
-  "keyCount": 3668,
-  "keyFingerprint": "89abfabff951c621ad847d4150f0b655a92e0212977ff8be97c026dec5e0f0b0",
+  "keyCount": 3670,
+  "keyFingerprint": "14b8663398cc20d5e558b7e718ab887c68701e03947d3d2e9cea8f50ec68d2d2",
   "translations": {
     "buttons": {
       "addFileSubtask": "新增檔案子任務",
@@ -2774,6 +2774,8 @@
       "taskRelationschildren": "子任務",
       "taskRelationsconnections": "Canvas 連接",
       "taskRelationsparent": "父任務",
+      "taskSourceAction": "來源操作",
+      "taskSourceActionDesc": "懸停或鍵盤聚焦時顯示來源操作。按一下預覽目前來源；桌面版 Cmd/Ctrl+按一下在新分頁中開啟。",
       "taskStatusIconColorSource": "任務圖示顏色來源",
       "taskStatusIconColorSourceDesc": "選擇主任務圖示的配色方式。缺少任務或優先級顏色時不套用顏色。",
       "taskWikilinkOverlayActionsSection": "任務維基連結覆蓋層操作",
@@ -3713,5 +3715,5 @@
       "toggleDescendantPreview": "切換子任務預覽"
     }
   },
-  "sourceVersion": "5966589edd8eb70cd331e88f39392ce52bd2defbca4226389e16fd94856c7cb9"
+  "sourceVersion": "771db9de188db001c93b1a7c29200c6a92967c841d6c105f75cb76b96bcf4ee6"
 }

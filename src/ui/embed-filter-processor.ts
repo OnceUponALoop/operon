@@ -329,6 +329,7 @@ export function renderFilterSurface(
         deps.settings.filterTaskShowPlayAction,
         deps.settings.filterTaskShowPinAction,
         deps.settings.filterTaskShowNoteAction,
+        deps.settings.filterTaskShowSourceAction,
         deps.settings.filterTaskShowSubtaskAction,
         deps.settings.filterTaskShowPlainCheckboxAction,
     ]);

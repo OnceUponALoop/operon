@@ -8,7 +8,7 @@ import type { PipelineStoreSettings } from './pipeline-store';
 import type { PriorityStoreSettings } from './priority-store';
 import type { TaskAutomationPolicyStoreSettings } from './task-automation-policy-store';
 import type { TaskCreationProfileStoreSettings } from './task-creation-profile-store';
-import type { TaskUiPreferenceStoreSettings } from './task-ui-preference-store';
+import type { TaskUiPreferencePackageSettings, TaskUiPreferenceStoreSettings } from './task-ui-preference-store';
 import { buildTablePresetPackageManifest } from './table-preset-manifest';
 import {
 	type ExternalCalendarSource,
@@ -136,6 +136,11 @@ export const OPERON_DATA_PACKAGE_OWNED_SETTINGS_KEYS = [
 	'taskWikilinkOverlayShowNoteAction',
 	'taskWikilinkOverlayShowSubtaskAction',
 	'taskWikilinkOverlayShowPlainCheckboxAction',
+	'inlineTaskShowSourceAction',
+	'filterTaskShowSourceAction',
+	'kanbanTaskShowSourceAction',
+	'taskWikilinkOverlayShowSourceAction',
+	'taskCardShowSourceAction',
 	'inlineTaskShowPlayAction',
 	'inlineTaskShowPinAction',
 	'assigneeImageProperty',
@@ -242,6 +247,11 @@ const TASK_UI_PREFERENCE_PACKAGE_KEYS = [
 	'taskWikilinkOverlayShowNoteAction',
 	'taskWikilinkOverlayShowSubtaskAction',
 	'taskWikilinkOverlayShowPlainCheckboxAction',
+	'inlineTaskShowSourceAction',
+	'filterTaskShowSourceAction',
+	'kanbanTaskShowSourceAction',
+	'taskWikilinkOverlayShowSourceAction',
+	'taskCardShowSourceAction',
 	'inlineTaskShowPlayAction',
 	'inlineTaskShowPinAction',
 	'assigneeImageProperty',
@@ -327,7 +337,7 @@ export interface OperonViewsPackageV1 {
 export interface OperonUiPackageV1 {
 	propertyValuePool?: unknown;
 	contextualMenu: VersionedStoreSlice<ContextualMenuStoreSettings>;
-	taskUiPreferences: VersionedStoreSlice<Omit<TaskUiPreferenceStoreSettings, 'taskEditorUseMobileLayout'>> & { taskEditorUseMobileLayout?: boolean };
+	taskUiPreferences: VersionedStoreSlice<TaskUiPreferencePackageSettings>;
 	taskCreationProfile: VersionedStoreSlice<Omit<TaskCreationProfileStoreSettings, 'defaultInlineTaskTemplateId' | 'inlineTaskUseLastTemplateAsDefault' | 'fileTaskUseLastTemplateAsDefault'>> & { defaultInlineTaskTemplateId?: string | null; inlineTaskUseLastTemplateAsDefault?: boolean; fileTaskUseLastTemplateAsDefault?: boolean };
 	workspaceTweaks: VersionedStoreSlice<WorkspaceTweaksPackageSettings>;
 	presetFavorites?: VersionedStoreSlice<PresetFavorites>;
@@ -514,6 +524,11 @@ export function composeOperonSettingsFromDataPackage(
 			defaults.contextualMenuMobileAutoHideMs,
 		),
 		...cloneUnknown<Partial<OperonSettings>>(dataPackage.ui.taskUiPreferences),
+		inlineTaskShowSourceAction: dataPackage.ui.taskUiPreferences.inlineTaskShowSourceAction !== false,
+		filterTaskShowSourceAction: dataPackage.ui.taskUiPreferences.filterTaskShowSourceAction !== false,
+		kanbanTaskShowSourceAction: dataPackage.ui.taskUiPreferences.kanbanTaskShowSourceAction !== false,
+		taskWikilinkOverlayShowSourceAction: dataPackage.ui.taskUiPreferences.taskWikilinkOverlayShowSourceAction !== false,
+		taskCardShowSourceAction: dataPackage.ui.taskUiPreferences.taskCardShowSourceAction !== false,
 		...cloneUnknown<Partial<OperonSettings>>(dataPackage.ui.taskCreationProfile),
 		...cloneUnknown<Partial<OperonSettings>>(dataPackage.ui.workspaceTweaks),
 		propertyValuePool: dataPackage.ui.propertyValuePool === undefined ? undefined : cloneUnknown(dataPackage.ui.propertyValuePool),
@@ -621,6 +636,11 @@ export function buildOperonDataPackageFromSettings(
 				taskWikilinkOverlayShowNoteAction: normalized.taskWikilinkOverlayShowNoteAction,
 				taskWikilinkOverlayShowSubtaskAction: normalized.taskWikilinkOverlayShowSubtaskAction,
 				taskWikilinkOverlayShowPlainCheckboxAction: normalized.taskWikilinkOverlayShowPlainCheckboxAction,
+				...(normalized.inlineTaskShowSourceAction === false ? { inlineTaskShowSourceAction: false } : {}),
+				...(normalized.filterTaskShowSourceAction === false ? { filterTaskShowSourceAction: false } : {}),
+				...(normalized.kanbanTaskShowSourceAction === false ? { kanbanTaskShowSourceAction: false } : {}),
+				...(normalized.taskWikilinkOverlayShowSourceAction === false ? { taskWikilinkOverlayShowSourceAction: false } : {}),
+				...(normalized.taskCardShowSourceAction === false ? { taskCardShowSourceAction: false } : {}),
 				inlineTaskShowPlayAction: normalized.inlineTaskShowPlayAction,
 				inlineTaskShowPinAction: normalized.inlineTaskShowPinAction,
 				assigneeImageProperty: normalized.assigneeImageProperty,

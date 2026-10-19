@@ -12,6 +12,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Added a shared **desktop lightbox** for web pages, media, and editable Markdown, Bases, and Operon Tables, using their normal views and save behavior. Markdown/web previews use a narrower frame, while Base/Table previews offer more space; Table presets and Gantt remain available without changing your workspace tab layout.
 - Added **nested previews** that preserve the previous view and Description/Note drafts, with four upper controls to close, open in a new tab, open to the right, or open below. Unfinished drafts and failed saves stay protected before moving to another tab or split.
 - Added optional **Source chips** to all six task chip profiles, showing the source file and Inline task line; they start hidden and open the source through the shared desktop preview behavior. Task Finder chips remain informational and mobile navigation is unchanged. On Obsidian 1.14+, Source and Project Serial settings avoid collisions with same-named Custom Keys during search, reordering, and visibility changes.
+- Added optional **Source actions** to desktop Inline Tasks, Filter Tasks, Kanban cards, Task Wikilink Overlays, and Task Cards. Enabled by default, they appear on hover or keyboard focus immediately before Note, or at the end of the action group when Note is unavailable; normal clicks preview the current source and Cmd/Ctrl-click opens a new tab.
 - Added a **year and month picker** to the desktop Calendar sidebar and toolbar, with date-format-aware year/date buttons, clear selection highlights, and a **Go to today** action; changing months preserves the focused day where possible.
 - Added **Repeat reference date** columns and filter conditions, including relative dates and empty values. Tables show saved dates in your preferred format, show empty cells when no date is saved, and open the Repeat picker for editing; changes update matching filter results.
 - Added **vault-local ICS calendars** as read-only external calendar sources, with automatic updates when files change and continued support for URL subscriptions.
@@ -47,7 +48,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Validation
 
-- Full local Plugin checks, production build, release guard, and code review passed, along with **5,177/5,177** local regression tests.
+- Full local Plugin checks, production build, release guard, and code review passed, along with **5,180/5,180** local regression tests.
 
 ## [4.0.1] - 2026-10-14
 

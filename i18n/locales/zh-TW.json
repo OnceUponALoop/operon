@@ -1065,6 +1065,8 @@
 		"taskWikilinkOverlayIconsMoveDown": "下移",
 		"taskWikilinkOverlayActionsSection": "任務維基連結覆蓋層操作",
 		"inlineTaskNoteAction": "筆記操作",
+		"taskSourceAction": "來源操作",
+		"taskSourceActionDesc": "懸停或鍵盤聚焦時顯示來源操作。按一下預覽目前來源；桌面版 Cmd/Ctrl+按一下在新分頁中開啟。",
 		"inlineTaskPlayAction": "播放操作",
 		"inlineTaskPinAction": "置頂操作",
 		"inlineTaskSubtaskAction": "新增子任務操作",

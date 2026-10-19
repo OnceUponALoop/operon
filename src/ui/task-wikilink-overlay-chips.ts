@@ -102,6 +102,7 @@ export function buildTaskWikilinkOverlaySettingsSignature(settings: OperonSettin
 		taskWikilinkOverlayShowPlayAction: settings.taskWikilinkOverlayShowPlayAction,
 		taskWikilinkOverlayShowPinAction: settings.taskWikilinkOverlayShowPinAction,
 		taskWikilinkOverlayShowNoteAction: settings.taskWikilinkOverlayShowNoteAction,
+		taskWikilinkOverlayShowSourceAction: settings.taskWikilinkOverlayShowSourceAction,
 		taskWikilinkOverlayShowSubtaskAction: settings.taskWikilinkOverlayShowSubtaskAction,
 		taskWikilinkOverlayShowPlainCheckboxAction: settings.taskWikilinkOverlayShowPlainCheckboxAction,
 	});

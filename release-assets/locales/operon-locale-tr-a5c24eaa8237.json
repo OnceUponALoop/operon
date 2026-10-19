@@ -1,8 +1,8 @@
 {
   "schemaVersion": 1,
   "locale": "tr",
-  "keyCount": 3668,
-  "keyFingerprint": "89abfabff951c621ad847d4150f0b655a92e0212977ff8be97c026dec5e0f0b0",
+  "keyCount": 3670,
+  "keyFingerprint": "14b8663398cc20d5e558b7e718ab887c68701e03947d3d2e9cea8f50ec68d2d2",
   "translations": {
     "buttons": {
       "addFileSubtask": "Dosya Tipi Alt Görev Ekle",
@@ -2774,6 +2774,8 @@
       "taskRelationschildren": "Alt görevler",
       "taskRelationsconnections": "Canvas bağlantıları",
       "taskRelationsparent": "Üst görev",
+      "taskSourceAction": "Source eylemi",
+      "taskSourceActionDesc": "Üzerine gelindiğinde veya klavye odağında Source eylemini gösterir. Tıklama güncel kaynağı önizler; masaüstünde Cmd/Ctrl+tıklama yeni sekme açar.",
       "taskStatusIconColorSource": "Görev simgesi renk kaynağı",
       "taskStatusIconColorSourceDesc": "Operon’un ana görev ikonunu nasıl renklendireceğini seçin. Görev ve öncelik rengi yoksa renk kullanılmaz.",
       "taskWikilinkOverlayActionsSection": "Task Wikilink Overlay Eylemleri",
@@ -3713,5 +3715,5 @@
       "toggleDescendantPreview": "Alt görev önizlemesini aç/kapat"
     }
   },
-  "sourceVersion": "5a7cedf9826b9fa0e0596f101ccefb50d9c5e430a41781e1520e4b926ad121c5"
+  "sourceVersion": "5dc1ff875022325851cfcb49767e4a57a1811ae427713f4939c5e2e6b0d6f6cd"
 }

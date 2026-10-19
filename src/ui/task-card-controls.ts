@@ -111,7 +111,7 @@ export class TaskCardControls extends Component {
   const summary = resolveTaskProgressDescendantSummary(task, source);
   const signature = JSON.stringify([taskColor, settings.keyMappings, settings.pipelines, settings.priorities, settings.timeFormat, task, this.deps.chips.getProjectSerialDisplay?.(this.id, task), settings.taskCardCompactChips, settings.taskCardItemOrder,
    settings.taskCardShowTaskProgress, settings.taskCardShowCheckboxProgress, settings.taskCardShowChips,
-   settings.taskCardShowPlayAction, settings.taskCardShowPinAction, settings.taskCardShowNoteAction,
+   settings.taskCardShowPlayAction, settings.taskCardShowPinAction, settings.taskCardShowNoteAction, settings.taskCardShowSourceAction,
    settings.taskCardShowSubtaskAction, settings.taskCardShowPlainCheckboxAction,
    this.deps.chips.isTaskPinned?.(this.id), this.deps.chips.isTaskTracking?.(this.id), readOnly, actionsReadOnly, summary, visibility]);
   if (signature === this.signature && this.renderedLease?.() !== false) return;
@@ -172,7 +172,7 @@ export class TaskCardControls extends Component {
     },
    }, { allTasks: this.deps.getAllTasks(), owner: this.root, readOnly, actionsReadOnly, isTargetReadOnly: () => !this.canInteract(), allowReadOnlyNavigation: true, noteEditable: !readOnly, classPrefix: 'operon-task-card',
     profile: { items: settings.taskCardCompactChips, play: settings.taskCardShowPlayAction, pin: settings.taskCardShowPinAction,
-     note: settings.taskCardShowNoteAction, subtask: settings.taskCardShowSubtaskAction, checkbox: settings.taskCardShowPlainCheckboxAction } });
+     note: settings.taskCardShowNoteAction, source: settings.taskCardShowSourceAction, subtask: settings.taskCardShowSubtaskAction, checkbox: settings.taskCardShowPlainCheckboxAction } });
    if (row) append('chips').appendChild(row);
   }
  }

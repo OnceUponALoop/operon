@@ -1065,6 +1065,8 @@
 		"taskWikilinkOverlayIconsMoveDown": "Move down",
 		"taskWikilinkOverlayActionsSection": "Task Wikilink Overlay Actions",
 		"inlineTaskNoteAction": "Note action",
+		"taskSourceAction": "Source action",
+		"taskSourceActionDesc": "Show a Source action on hover or keyboard focus. Click to preview the current source; Cmd/Ctrl-click opens a new tab on desktop.",
 		"inlineTaskPlayAction": "Play action",
 		"inlineTaskPinAction": "Pin action",
 		"inlineTaskSubtaskAction": "Add subtask action",

@@ -1065,6 +1065,8 @@
 		"taskWikilinkOverlayIconsMoveDown": "Sposta in basso",
 		"taskWikilinkOverlayActionsSection": "Azioni overlay wikilink attività",
 		"inlineTaskNoteAction": "Azione nota",
+		"taskSourceAction": "Azione Sorgente",
+		"taskSourceActionDesc": "Mostra l’azione Sorgente al passaggio del mouse o con il focus della tastiera. Un clic mostra l’anteprima della sorgente attuale; Cmd/Ctrl+clic apre una nuova scheda sul desktop.",
 		"inlineTaskPlayAction": "Azione riproduzione",
 		"inlineTaskPinAction": "Azione fissaggio",
 		"inlineTaskSubtaskAction": "Azione aggiungi sotto-attività",

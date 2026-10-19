@@ -1065,6 +1065,8 @@
 		"taskWikilinkOverlayIconsMoveDown": "Aşağı taşı",
 		"taskWikilinkOverlayActionsSection": "Task Wikilink Overlay Eylemleri",
 		"inlineTaskNoteAction": "Not eylemi",
+		"taskSourceAction": "Source eylemi",
+		"taskSourceActionDesc": "Üzerine gelindiğinde veya klavye odağında Source eylemini gösterir. Tıklama güncel kaynağı önizler; masaüstünde Cmd/Ctrl+tıklama yeni sekme açar.",
 		"inlineTaskPlayAction": "Başlatma eylemi",
 		"inlineTaskPinAction": "Sabitleme eylemi",
 		"inlineTaskSubtaskAction": "Alt görev ekleme eylemi",

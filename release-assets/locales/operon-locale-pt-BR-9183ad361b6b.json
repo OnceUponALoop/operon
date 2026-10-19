@@ -1,8 +1,8 @@
 {
   "schemaVersion": 1,
   "locale": "pt-BR",
-  "keyCount": 3668,
-  "keyFingerprint": "89abfabff951c621ad847d4150f0b655a92e0212977ff8be97c026dec5e0f0b0",
+  "keyCount": 3670,
+  "keyFingerprint": "14b8663398cc20d5e558b7e718ab887c68701e03947d3d2e9cea8f50ec68d2d2",
   "translations": {
     "buttons": {
       "addFileSubtask": "Adicionar subtarefa em arquivo",
@@ -2774,6 +2774,8 @@
       "taskRelationschildren": "Subtarefas",
       "taskRelationsconnections": "Conexões do Canvas",
       "taskRelationsparent": "Tarefa pai",
+      "taskSourceAction": "Ação de origem",
+      "taskSourceActionDesc": "Mostra a ação de origem ao passar o cursor ou receber foco do teclado. Um clique visualiza a origem atual; Cmd/Ctrl+clique abre uma nova aba no desktop.",
       "taskStatusIconColorSource": "Origem da cor do ícone da tarefa",
       "taskStatusIconColorSourceDesc": "Escolha como colorir o ícone principal da tarefa. Se não houver cor de tarefa ou prioridade, nenhuma cor será aplicada.",
       "taskWikilinkOverlayActionsSection": "Ações de Sobreposição Wikilink da Tarefa",
@@ -3713,5 +3715,5 @@
       "toggleDescendantPreview": "Alternar visualização descendente"
     }
   },
-  "sourceVersion": "15b457000a294a66c45fbcf76a902d0dcdbda151cc4fc5300795de0d5579603d"
+  "sourceVersion": "7167fce9c5bcec4a4b982373d328102f84d89e81272abdbc893c974ff4a9d22a"
 }

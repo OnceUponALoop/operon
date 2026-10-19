@@ -9,7 +9,7 @@ import ts from 'typescript';
 const root=path.resolve(path.dirname(fileURLToPath(import.meta.url)),'..');
 const temp=mkdtempSync(path.join(tmpdir(),'operon-task-info-'));
 after(()=>rmSync(temp,{recursive:true,force:true}));
-await build({stdin:{contents:`export * from './src/types/settings'; export * from './src/ui/compact-task-layout'; export * from './src/core/task-info-chips'; export * from './src/ui/task-info-chip-action'; export * from './src/ui/custom-key-mapping-modal'; export * from './src/core/settings-backup-export'; export * from './src/core/settings-backup-preflight'; export * from './src/ui/table/table-field-catalog'; export {TFile} from 'obsidian';`,resolveDir:root},outfile:path.join(temp,'subject.mjs'),bundle:true,format:'esm',platform:'node',target:'node18',logLevel:'silent',alias:{obsidian:path.join(root,'scripts/test-support/obsidian.ts')}});
+await build({stdin:{contents:`export * from './src/types/settings'; export * from './src/storage/operon-data-package'; export * from './src/storage/task-ui-preference-store'; export * from './src/storage/write-queue'; export * from './src/ui/settings/settings-search-registry'; export * from './src/ui/compact-task-layout'; export * from './src/core/task-info-chips'; export * from './src/ui/task-info-chip-action'; export * from './src/ui/custom-key-mapping-modal'; export * from './src/core/settings-backup-export'; export * from './src/core/settings-backup-preflight'; export * from './src/ui/table/table-field-catalog'; export {TFile} from 'obsidian';`,resolveDir:root},outfile:path.join(temp,'subject.mjs'),bundle:true,format:'esm',platform:'node',target:'node18',logLevel:'silent',alias:{obsidian:path.join(root,'scripts/test-support/obsidian.ts')}});
 const api=await import(pathToFileURL(path.join(temp,'subject.mjs')));
 const profiles=['inlineTask','filterTask','taskWikilinkOverlay','kanbanTask','taskCard','taskFinder'].map(s=>s+'CompactChips');
 const serialKey='taskInfo.projectSerial',sourceKey='taskInfo.source';
@@ -195,4 +195,35 @@ test('Creator definitions retain their existing names and rendering metadata', (
  const define = method('src/ui/settings-tab.ts', 'buildTaskChipCardDefinition', {});
  const row = define.call({}, 'taskCreatorToolbar', 'Type', {key:'taskType'}, ['taskType']);
  assert.equal(row.name, 'Type');assert.equal(row.id, undefined);assert.deepEqual(row.aliases, ['taskType']);
+});
+
+const sourceActionProfiles=['inlineTask','filterTask','kanbanTask','taskWikilinkOverlay','taskCard'];
+for(const profile of sourceActionProfiles)test(`${profile} Source action: default-on, explicit false, canonical roundtrip and Settings Search stay independent`,async()=>{
+ const key=profile+'ShowSourceAction';
+ for(const value of [undefined,null,'false',true,false]){
+  const settings=api.migrateSettings({[key]:value});assert.equal(settings[key],typeof value==='boolean'?value:true);
+  const pack=api.buildOperonDataPackageFromSettings(settings);assert.equal(pack.ui.taskUiPreferences[key]??true,settings[key]);if(settings[key])assert.equal(key in pack.ui.taskUiPreferences,false);assert.equal(key in pack.settings,false);
+  const restored=api.composeOperonSettingsFromDataPackage(JSON.parse(JSON.stringify(pack)),api.DEFAULT_SETTINGS);assert.equal(restored[key],settings[key]);
+  assert.equal(api.composeOperonSettingsFromDataPackage(pack,{...api.DEFAULT_SETTINGS,[key]:!settings[key]})[key],settings[key]);
+  const store=new api.TaskUiPreferenceStore({},new api.WriteQueue(),settings);store.loadFromPackage(pack.ui.taskUiPreferences);assert.equal(store.getAll()[key],settings[key]);
+  assert.deepEqual(restored[profile+'CompactChips'],settings[profile+'CompactChips']);
+ }
+ const setting=api.OPERON_SETTINGS_SEARCH_REGISTRY.find(entry=>entry.key===key);
+ assert.equal(setting.id,'ui.'+key);assert.equal(setting.name.key,'taskSourceAction');assert.ok(setting.aliases.includes('lightbox'));
+ const rendererName=profile==='inlineTask'?'renderInlineTaskCompactChipSettingsSection':profile==='filterTask'?'renderFilterTaskCardsSection':profile==='taskWikilinkOverlay'?'renderTaskWikilinkOverlayCompactChipSettingsSection':'renderKanbanTaskCompactChipSettingsSection';
+ let options,saves=0;
+ const render=method('src/ui/settings-tab.ts',rendererName,{t:(_namespace,key)=>key,renderCompactChipSettingsSection:input=>options=input,isTaskInfoChipKey:()=>false});
+ const ctx={settings:api.migrateSettings({}),saveSettings:async()=>saves++,getRenderableSurfaceItems:items=>items,renderTaskChipsGroupedSection:el=>el};
+ render.call(ctx,{},profile==='taskCard'?'taskCard':profile==='kanbanTask'?'kanbanTask':undefined);
+ const before=JSON.stringify(ctx.settings),toggles=options.getActionToggles(),source=toggles.at(-1);assert.equal(source.searchTargetId,'ui.'+key);assert.equal(source.visible,true);
+ await source.onToggle();assert.equal(ctx.settings[key],false);assert.equal(saves,1);assert.equal(options.getActionToggles().at(-1).visible,false);
+ const expected=JSON.parse(before);expected[key]=false;assert.deepEqual(JSON.parse(JSON.stringify(ctx.settings)),expected);
+});
+test('Source action backup export and restore preserve all five flags including false',()=>{
+ const fixture=JSON.parse(read('scripts/settings-backup-fixtures/representative-body.json'));
+ const settings=api.migrateSettings({...Object.assign({},...Object.values(fixture.groups).map(group=>group.data)),keyMappings:[...api.DEFAULT_SETTINGS.keyMappings,...fixture.groups['custom-keys'].data.customKeys],...Object.fromEntries(sourceActionProfiles.map((p,i)=>[p+'ShowSourceAction',i%2===0]))});
+ const exported=api.exportOperonSettingsBackupJsonV1({settings,createdAt:'2026-10-19T12:00:00Z',source:{pluginVersion:'4.0.1',obsidianVersion:'1.14.0',dataPackageSchemaVersion:2}});assert.equal(exported.ok,true,JSON.stringify(exported.diagnostics));
+ const result=api.preflightOperonSettingsBackupRestoreV1({sourceJson:exported.json,selectedGroups:['general'],targetSnapshot:{settings:api.migrateSettings({...settings,...Object.fromEntries(sourceActionProfiles.map(p=>[p+'ShowSourceAction',!settings[p+'ShowSourceAction']]))}),settingsVersion:settings.settingsVersion,dataPackageSchemaVersion:2,canonicalWritesSuspended:false,canonicalWriteSuspensionReason:null}});
+ assert.equal(result.ok,true,JSON.stringify(result.diagnostics));assert.ok(result.restorePlan);
+ for(const p of sourceActionProfiles)assert.equal(result.restorePlan.candidateSettings[p+'ShowSourceAction'],settings[p+'ShowSourceAction']);
 });

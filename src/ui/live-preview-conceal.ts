@@ -1,7 +1,7 @@
 import { iterateMarkdownLinesOutsideFences } from '../core/markdown-fenced-lines';
 import { taskTextLinkEditorExtension } from './task-text-link-editor';
 import { isTaskInfoChipKey } from '../core/task-info-chips';
-import { bindTaskInfoSourceAction } from './task-info-chip-action';
+import { bindTaskInfoSourceAction, createTaskSourceActionButton } from './task-info-chip-action';
 import { bindDesktopChipOpening } from './links-chip-action';
 import { identifyInlineTaskPart, rememberInlineTaskDom, reconcileInlineTaskDom } from './inline-retained-dom';
 import { bindAssigneeChipImage } from './assignee-chip-image';
@@ -15,7 +15,7 @@ import {
 	WidgetType,
 } from '@codemirror/view';
 import { EditorState, Extension, RangeSetBuilder, StateEffect, StateField } from '@codemirror/state';
-import { App, editorInfoField, editorLivePreviewField, setIcon } from 'obsidian';
+import { App, Platform, editorInfoField, editorLivePreviewField, setIcon } from 'obsidian';
 import { createOwnerElement, getOwnerWindow } from '../core/dom-compat';
 import { parseTaskLine } from '../core/parser';
 import { IndexedTask, ParsedTask } from '../types/fields';
@@ -655,6 +655,7 @@ export class MetadataTailWidget extends WidgetType {
 		actions.appendChild(playButton);
 		}
 
+		let noteAction: HTMLElement | null = null;
 		const rawNoteValue = fieldValues['note'] ?? '';
 		const noteValue = rawNoteValue.trim();
 		if (operonId && settings.inlineTaskShowNoteAction && (!isTerminal || noteValue)) {
@@ -684,8 +685,19 @@ export class MetadataTailWidget extends WidgetType {
 			});
 			bindLivePreviewChipHoverState(noteButton);
 			identifyInlineTaskPart(noteButton, 'note', JSON.stringify([rawNoteValue, taskColor, settings.language, noteButton.outerHTML.replace(/operon-accessible-label-\d+/g, 'operon-accessible-label')]));
+			noteAction = noteButton;
 			actions.appendChild(noteButton);
 		}
+
+		if (Platform.isDesktopApp && operonId && settings.inlineTaskShowSourceAction) {
+   const sourceButton = createTaskSourceActionButton({ app: this.callbacks.app, owner: actions,
+    getSettings: this.callbacks.getSettings, getTask: () => this.callbacks.getIndexedTask(operonId),
+    taskColor, className: 'operon-live-preview-edit operon-live-preview-action operon-task-chip-action',
+   });
+   bindLivePreviewChipHoverState(sourceButton);
+   identifyInlineTaskPart(sourceButton, 'source', sourceButton.outerHTML.replace(/operon-accessible-label-\d+/g, 'operon-accessible-label'));
+   actions.insertBefore(sourceButton, noteAction);
+  }
 
 		const editButton = createOwnerElement(actions, 'button');
 		editButton.type = 'button';
@@ -1149,6 +1161,7 @@ export function buildMetadataTailRenderSignature(
 		inlineTaskShowPlayAction: settings.inlineTaskShowPlayAction,
 		inlineTaskShowPinAction: settings.inlineTaskShowPinAction,
 		inlineTaskShowNoteAction: settings.inlineTaskShowNoteAction,
+		inlineTaskShowSourceAction: settings.inlineTaskShowSourceAction,
 		inlineTaskShowSubtaskAction: settings.inlineTaskShowSubtaskAction,
 		noteIcon: getConfiguredKeyMappingIcon('note', settings.keyMappings) || 'notebook-pen',
 	});

@@ -1,8 +1,8 @@
 import { isTaskInfoChipKey } from '../core/task-info-chips';
-import { bindTaskInfoSourceAction } from './task-info-chip-action';
+import { bindTaskInfoSourceAction, createTaskSourceActionButton } from './task-info-chip-action';
 import { bindDesktopChipOpening, isDesktopOpeningChip } from './links-chip-action';
 import { bindAssigneeChipImage } from './assignee-chip-image';
-import { App, setIcon } from 'obsidian';
+import { App, Platform, setIcon } from 'obsidian';
 import { createOwnerElement, getOwnerWindow } from '../core/dom-compat';
 import type { ContextualMenuActionHandler, ContextualMenuActionId, ContextualMenuContext } from '../core/contextual-menu-engine';
 import { getLocationPlaceIndex } from '../core/location-source-resolver';
@@ -69,7 +69,7 @@ export interface CompactCardChipRowCallbacks {
 }
 
 export interface CompactCardChipRowOptions {
- profile: { items: OperonSettings['kanbanTaskCompactChips']; play: boolean; pin: boolean; note: boolean; subtask: boolean; checkbox: boolean };
+ profile: { items: OperonSettings['kanbanTaskCompactChips']; play: boolean; pin: boolean; note: boolean; source?: boolean; subtask: boolean; checkbox: boolean };
  classPrefix: string;
  bindTarget?: (target: HTMLElement) => void;
  isTargetReadOnly?: (target: HTMLElement) => boolean;
@@ -283,6 +283,11 @@ function buildKanbanTaskActionChips(
 			empty: !noteValue,
 		});
 	}
+ if (profile.source && Platform.isDesktopApp) {
+  const source = { actionId: 'jumpToSource' as const, icon: 'file-search', label: t('settings', 'contextualMenuActionJumpToSource') };
+  const noteIndex = chips.findIndex(chip => chip.note);
+  chips.splice(noteIndex < 0 ? chips.length : noteIndex, 0, source);
+ }
 	return chips;
 }
 
@@ -296,6 +301,15 @@ function createKanbanTaskActionChipElement(
 	noteEditable: boolean,
  options: CompactCardChipRowOptions,
 ): HTMLElement {
+ if (action.actionId === 'jumpToSource') {
+  const source = createTaskSourceActionButton({ app: callbacks.app, owner,
+   getSettings: callbacks.getSettings, getTask: () => callbacks.getTaskById?.(task.operonId), taskColor,
+   className: `${options.classPrefix}-action-chip operon-task-chip-action`,
+   canActivate: () => (!readOnly || options.allowReadOnlyNavigation === true) && !options.isTargetReadOnly?.(source),
+  });
+  options.bindTarget?.(source);
+  return source;
+ }
 	const canEditNote = action.note === true && noteEditable;
 	const chip = createOwnerElement(
 		owner,

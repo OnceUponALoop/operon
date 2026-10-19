@@ -1065,6 +1065,8 @@
 		"taskWikilinkOverlayIconsMoveDown": "Переместить вниз",
 		"taskWikilinkOverlayActionsSection": "Действия оверлея вики-ссылок задач",
 		"inlineTaskNoteAction": "Действие заметки",
+		"taskSourceAction": "Действие «Источник»",
+		"taskSourceActionDesc": "Показывает действие «Источник» при наведении или фокусе клавиатуры. Нажатие открывает предпросмотр текущего источника; Cmd/Ctrl+нажатие открывает новую вкладку на компьютере.",
 		"inlineTaskPlayAction": "Действие воспроизведения",
 		"inlineTaskPinAction": "Действие закрепления",
 		"inlineTaskSubtaskAction": "Действие добавления подзадачи",

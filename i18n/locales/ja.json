@@ -1065,6 +1065,8 @@
 		"taskWikilinkOverlayIconsMoveDown": "下へ移動",
 		"taskWikilinkOverlayActionsSection": "タスクウィキリンクオーバーレイのアクション",
 		"inlineTaskNoteAction": "ノートアクション",
+		"taskSourceAction": "ソース操作",
+		"taskSourceActionDesc": "マウスを重ねるかキーボードでフォーカスするとソース操作を表示します。クリックで現在のソースをプレビューし、デスクトップでは Cmd/Ctrl+クリックで新しいタブを開きます。",
 		"inlineTaskPlayAction": "再生アクション",
 		"inlineTaskPinAction": "ピン留めアクション",
 		"inlineTaskSubtaskAction": "サブタスク追加アクション",

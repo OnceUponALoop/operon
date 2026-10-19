@@ -1,3 +1,4 @@
+import { createTaskSourceActionButton } from '../src/ui/task-info-chip-action';
 import { getNativePropertyIndex } from '../src/indexer/native-property-index';
 import { bindTableTaskOpening, bindTablePropertyOpening, bindTableMarkdownOpening, resolveTableWikiOpening, readTablePropertyLinkValue } from '../src/ui/table/table-link-opening';
 import assert from 'node:assert/strict';
@@ -390,4 +391,28 @@ test('context menu Source activation retains missing-file and ambiguous-inline p
   f.content('- [ ] One {{operonId:: abcdefg}}\n- [ ] Two {{operonId:: abcdefg}}');
   await activateResolvedOpening(f.anchor,context);assert.equal(f.calls.length,0);assert.equal(f.writes(),0);
  }finally{f.cleanup();await tick();}
+});
+
+function sourceActionFixture() {
+ const f=fixture();
+ f.doc.win.createEl=(tag:string)=>f.doc.body.createEl(tag);
+ const button=createTaskSourceActionButton({app:f.app,owner:f.anchor,getSettings:f.context.getSettings,getTask:f.context.getTask,taskColor:null,className:'operon-live-preview-action',canActivate:()=>f.context.canActivate()});
+ return {...f,button,fireSource:(kind:string,event:any=mouse())=>(button as any).events.get(kind)?.(event)};
+}
+for(const mac of [true,false])test(`Source action ${mac?'Cmd':'Ctrl'} opens the fresh File and Inline target once without writes`,async()=>{
+ const f=sourceActionFixture();try{
+  Platform.isMacOS=mac;f.task().primary={filePath:'B.md',format:'inline',lineNumber:99};f.content('heading\n- [ ] Child {{operonId:: abcdefg}}');
+  const event=mouse(mac?{metaKey:true}:{ctrlKey:true});f.fireSource('click',event);f.fireSource('click',event);await tick();
+  assert.equal(f.calls.length,1);assert.equal(f.calls[0].file,'B.md');assert.equal(f.calls[0].state.eState.line,1);assert.equal(f.writes(),0);
+  assert.equal(f.button.tagName,'BUTTON');assert.match(f.button.className,/operon-task-source-action/);assert.equal(f.button.getAttribute('title')!==null,false);
+ }finally{f.cleanup();}
+});
+test('Source action pointer and keyboard preserve editing, native activation and missing-target no-write guards',async()=>{
+ const f=sourceActionFixture();try{
+  let prevented=0,stopped=0;f.fireSource('pointerdown',mouse({preventDefault(){prevented++;},stopPropagation(){stopped++;}}));assert.equal(prevented,1);assert.equal(stopped,1);
+  f.fireSource('keydown',mouse({key:'Enter',repeat:false,preventDefault(){prevented++;},stopPropagation(){stopped++;}}));assert.equal(prevented,1);assert.equal(f.calls.length,0);
+  f.fireSource('keydown',mouse({key:' ',repeat:true,preventDefault(){prevented++;},stopPropagation(){stopped++;}}));assert.equal(prevented,2);
+  f.files.delete('A.md');f.fireSource('click');await tick();assert.deepEqual(f.notices,['Link target not found.']);assert.equal(f.calls.length,0);
+  f.allowed(false);f.fireSource('click');await tick();assert.equal(f.notices.length,1);assert.equal(f.writes(),0);
+ }finally{f.cleanup();}
 });

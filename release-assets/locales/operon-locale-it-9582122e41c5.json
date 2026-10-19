@@ -1,8 +1,8 @@
 {
   "schemaVersion": 1,
   "locale": "it",
-  "keyCount": 3668,
-  "keyFingerprint": "89abfabff951c621ad847d4150f0b655a92e0212977ff8be97c026dec5e0f0b0",
+  "keyCount": 3670,
+  "keyFingerprint": "14b8663398cc20d5e558b7e718ab887c68701e03947d3d2e9cea8f50ec68d2d2",
   "translations": {
     "buttons": {
       "addFileSubtask": "Aggiungi sotto-attività-file",
@@ -2774,6 +2774,8 @@
       "taskRelationschildren": "Sottoattività",
       "taskRelationsconnections": "Collegamenti del Canvas",
       "taskRelationsparent": "Attività superiore",
+      "taskSourceAction": "Azione Sorgente",
+      "taskSourceActionDesc": "Mostra l’azione Sorgente al passaggio del mouse o con il focus della tastiera. Un clic mostra l’anteprima della sorgente attuale; Cmd/Ctrl+clic apre una nuova scheda sul desktop.",
       "taskStatusIconColorSource": "Origine colore icona attività",
       "taskStatusIconColorSourceDesc": "Scegli come colorare l’icona principale dell’attività. Se mancano colori di attività o priorità, non viene applicato alcun colore.",
       "taskWikilinkOverlayActionsSection": "Azioni overlay wikilink attività",
@@ -3713,5 +3715,5 @@
       "toggleDescendantPreview": "Alterna anteprima discendenti"
     }
   },
-  "sourceVersion": "64f03cb6008a405e3ee5ef67e07afacd1f15922e1f949d54d53d1e3f89af380c"
+  "sourceVersion": "ee235eb9f899bfd77ecdcc60541734d7a0fd0fa1f4f2360e6673130c4caa1c6f"
 }

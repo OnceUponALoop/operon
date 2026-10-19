@@ -1738,6 +1738,7 @@ export interface OperonSettings extends TaskCardSettings {
 	taskCardShowPlayAction: boolean;
 	taskCardShowPinAction: boolean;
 	taskCardShowNoteAction: boolean;
+	taskCardShowSourceAction: boolean;
 	taskCardShowSubtaskAction: boolean;
 	taskCardShowPlainCheckboxAction: boolean;
 	kanbanTaskCompactChips: InlineTaskCompactChipItem[];
@@ -1747,6 +1748,7 @@ export interface OperonSettings extends TaskCardSettings {
 	kanbanTaskShowPinAction: boolean;
 	/** Whether Kanban task cards show the note indicator chip when the task has a note. */
 	kanbanTaskShowNoteAction: boolean;
+	kanbanTaskShowSourceAction: boolean;
 	/** Whether Kanban task cards show the add subtask action chip. */
 	kanbanTaskShowSubtaskAction: boolean;
 	/** Whether Kanban task cards show the plain checkbox action chip. */
@@ -1775,6 +1777,7 @@ export interface OperonSettings extends TaskCardSettings {
 	taskWikilinkOverlayShowPinAction: boolean;
 	/** Whether Task Wikilink Overlay rows show the note indicator when the task has a note. */
 	taskWikilinkOverlayShowNoteAction: boolean;
+	taskWikilinkOverlayShowSourceAction: boolean;
 	/** Whether Task Wikilink Overlay rows show the right-side add subtask action. */
 	taskWikilinkOverlayShowSubtaskAction: boolean;
 	/** Whether Task Wikilink Overlay rows show the plain checkbox editor action. */
@@ -1787,6 +1790,7 @@ export interface OperonSettings extends TaskCardSettings {
 	assigneeImageProperty: string;
 	/** Whether the compact inline row shows the right-side note action. */
 	inlineTaskShowNoteAction: boolean;
+	inlineTaskShowSourceAction: boolean;
 	/** Whether the compact inline row shows the right-side add subtask action. */
 	inlineTaskShowSubtaskAction: boolean;
 	/** Whether classic Tasks emoji checkbox lines show a hover-only convert icon in Live Preview. */
@@ -1801,6 +1805,7 @@ export interface OperonSettings extends TaskCardSettings {
 	filterTaskShowPinAction: boolean;
 	/** Whether filter rows show the right-side note action. */
 	filterTaskShowNoteAction: boolean;
+	filterTaskShowSourceAction: boolean;
 	/** Whether filter rows show the right-side add subtask action. */
 	filterTaskShowSubtaskAction: boolean;
 	/** Whether filter rows show the right-side plain checkbox progress action. */
@@ -2311,12 +2316,14 @@ export const DEFAULT_SETTINGS: OperonSettings = {
 	taskCardShowPlayAction: false,
 	taskCardShowPinAction: false,
 	taskCardShowNoteAction: true,
+	taskCardShowSourceAction: true,
 	taskCardShowSubtaskAction: false,
 	taskCardShowPlainCheckboxAction: false,
 	kanbanTaskCompactChips: buildDefaultKanbanTaskCompactChipItems(),
 	kanbanTaskShowPlayAction: false,
 	kanbanTaskShowPinAction: false,
 	kanbanTaskShowNoteAction: true,
+	kanbanTaskShowSourceAction: true,
 	kanbanTaskShowSubtaskAction: false,
 	kanbanTaskShowPlainCheckboxAction: false,
 	taskFinderCompactChips: buildDefaultTaskFinderCompactChipItems(),
@@ -2331,12 +2338,14 @@ export const DEFAULT_SETTINGS: OperonSettings = {
 	taskWikilinkOverlayShowPlayAction: false,
 	taskWikilinkOverlayShowPinAction: false,
 	taskWikilinkOverlayShowNoteAction: true,
+	taskWikilinkOverlayShowSourceAction: true,
 	taskWikilinkOverlayShowSubtaskAction: false,
 	taskWikilinkOverlayShowPlainCheckboxAction: true,
 	inlineTaskShowPlayAction: true,
 	inlineTaskShowPinAction: false,
 	assigneeImageProperty: '',
 	inlineTaskShowNoteAction: true,
+	inlineTaskShowSourceAction: true,
 	inlineTaskShowSubtaskAction: true,
 	inlineTaskShowTasksEmojiConvertIcon: true,
 	inlineTaskShowPlainCheckboxConvertIcon: true,
@@ -2344,6 +2353,7 @@ export const DEFAULT_SETTINGS: OperonSettings = {
 	filterTaskShowPlayAction: true,
 	filterTaskShowPinAction: false,
 	filterTaskShowNoteAction: true,
+	filterTaskShowSourceAction: true,
 	filterTaskShowSubtaskAction: true,
 	filterTaskShowPlainCheckboxAction: true,
 
@@ -4418,6 +4428,7 @@ export function migrateSettings(raw: unknown): OperonSettings {
 	out.taskCardShowPlayAction = typeof src.taskCardShowPlayAction === 'boolean' ? src.taskCardShowPlayAction : DEFAULT_SETTINGS.taskCardShowPlayAction;
 	out.taskCardShowPinAction = typeof src.taskCardShowPinAction === 'boolean' ? src.taskCardShowPinAction : DEFAULT_SETTINGS.taskCardShowPinAction;
 	out.taskCardShowNoteAction = typeof src.taskCardShowNoteAction === 'boolean' ? src.taskCardShowNoteAction : DEFAULT_SETTINGS.taskCardShowNoteAction;
+	out.taskCardShowSourceAction = typeof src.taskCardShowSourceAction === 'boolean' ? src.taskCardShowSourceAction : DEFAULT_SETTINGS.taskCardShowSourceAction;
 	out.taskCardShowSubtaskAction = typeof src.taskCardShowSubtaskAction === 'boolean' ? src.taskCardShowSubtaskAction : DEFAULT_SETTINGS.taskCardShowSubtaskAction;
 	out.taskCardShowPlainCheckboxAction = typeof src.taskCardShowPlainCheckboxAction === 'boolean' ? src.taskCardShowPlainCheckboxAction : DEFAULT_SETTINGS.taskCardShowPlainCheckboxAction;
 	out.kanbanTaskCompactChips = normalizeKanbanTaskCompactChips(src.kanbanTaskCompactChips);
@@ -4430,6 +4441,7 @@ export function migrateSettings(raw: unknown): OperonSettings {
 	out.kanbanTaskShowNoteAction = typeof src.kanbanTaskShowNoteAction === 'boolean'
 		? src.kanbanTaskShowNoteAction
 		: DEFAULT_SETTINGS.kanbanTaskShowNoteAction;
+	out.kanbanTaskShowSourceAction = typeof src.kanbanTaskShowSourceAction === 'boolean' ? src.kanbanTaskShowSourceAction : DEFAULT_SETTINGS.kanbanTaskShowSourceAction;
 	out.kanbanTaskShowSubtaskAction = typeof src.kanbanTaskShowSubtaskAction === 'boolean'
 		? src.kanbanTaskShowSubtaskAction
 		: DEFAULT_SETTINGS.kanbanTaskShowSubtaskAction;
@@ -4468,6 +4480,7 @@ export function migrateSettings(raw: unknown): OperonSettings {
 		legacyTaskWikilinkOverlaySource.overlayTaskShowNoteAction,
 		DEFAULT_SETTINGS.taskWikilinkOverlayShowNoteAction,
 	);
+	out.taskWikilinkOverlayShowSourceAction = typeof src.taskWikilinkOverlayShowSourceAction === 'boolean' ? src.taskWikilinkOverlayShowSourceAction : DEFAULT_SETTINGS.taskWikilinkOverlayShowSourceAction;
 	out.taskWikilinkOverlayShowSubtaskAction = readAliasedBoolean(
 		src.taskWikilinkOverlayShowSubtaskAction,
 		legacyTaskWikilinkOverlaySource.overlayTaskShowSubtaskAction,
@@ -4488,6 +4501,7 @@ export function migrateSettings(raw: unknown): OperonSettings {
 	out.inlineTaskShowNoteAction = typeof src.inlineTaskShowNoteAction === 'boolean'
 		? src.inlineTaskShowNoteAction
 		: DEFAULT_SETTINGS.inlineTaskShowNoteAction;
+	out.inlineTaskShowSourceAction = typeof src.inlineTaskShowSourceAction === 'boolean' ? src.inlineTaskShowSourceAction : DEFAULT_SETTINGS.inlineTaskShowSourceAction;
 	out.inlineTaskShowSubtaskAction = typeof src.inlineTaskShowSubtaskAction === 'boolean'
 		? src.inlineTaskShowSubtaskAction
 		: DEFAULT_SETTINGS.inlineTaskShowSubtaskAction;
@@ -4507,6 +4521,7 @@ export function migrateSettings(raw: unknown): OperonSettings {
 	out.filterTaskShowNoteAction = typeof src.filterTaskShowNoteAction === 'boolean'
 		? src.filterTaskShowNoteAction
 		: DEFAULT_SETTINGS.filterTaskShowNoteAction;
+	out.filterTaskShowSourceAction = typeof src.filterTaskShowSourceAction === 'boolean' ? src.filterTaskShowSourceAction : DEFAULT_SETTINGS.filterTaskShowSourceAction;
 	out.filterTaskShowSubtaskAction = typeof src.filterTaskShowSubtaskAction === 'boolean'
 		? src.filterTaskShowSubtaskAction
 		: DEFAULT_SETTINGS.filterTaskShowSubtaskAction;

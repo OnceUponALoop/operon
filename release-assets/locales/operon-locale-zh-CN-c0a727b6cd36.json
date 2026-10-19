@@ -1,8 +1,8 @@
 {
   "schemaVersion": 1,
   "locale": "zh-CN",
-  "keyCount": 3668,
-  "keyFingerprint": "89abfabff951c621ad847d4150f0b655a92e0212977ff8be97c026dec5e0f0b0",
+  "keyCount": 3670,
+  "keyFingerprint": "14b8663398cc20d5e558b7e718ab887c68701e03947d3d2e9cea8f50ec68d2d2",
   "translations": {
     "buttons": {
       "addFileSubtask": "添加文件子任务",
@@ -2774,6 +2774,8 @@
       "taskRelationschildren": "子任务",
       "taskRelationsconnections": "Canvas 连接",
       "taskRelationsparent": "父任务",
+      "taskSourceAction": "来源操作",
+      "taskSourceActionDesc": "悬停或键盘聚焦时显示来源操作。单击预览当前来源；桌面端 Cmd/Ctrl+单击在新标签页中打开。",
       "taskStatusIconColorSource": "任务图标颜色来源",
       "taskStatusIconColorSourceDesc": "选择主任务图标的配色方式。缺少任务或优先级颜色时不应用颜色。",
       "taskWikilinkOverlayActionsSection": "任务维基链接覆盖层操作",
@@ -3713,5 +3715,5 @@
       "toggleDescendantPreview": "切换子任务预览"
     }
   },
-  "sourceVersion": "679e64fb00f26aebe64b446590e8b146ca8a7f69471a3808a97a0299c6838167"
+  "sourceVersion": "8f1da07f356fefbce5fb4138b5acbec6c0f849437b322691d65ae1438343177c"
 }

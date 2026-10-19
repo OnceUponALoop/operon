@@ -1,8 +1,8 @@
 {
   "schemaVersion": 1,
   "locale": "de",
-  "keyCount": 3668,
-  "keyFingerprint": "89abfabff951c621ad847d4150f0b655a92e0212977ff8be97c026dec5e0f0b0",
+  "keyCount": 3670,
+  "keyFingerprint": "14b8663398cc20d5e558b7e718ab887c68701e03947d3d2e9cea8f50ec68d2d2",
   "translations": {
     "buttons": {
       "addFileSubtask": "Datei-Unteraufgabe hinzufügen",
@@ -2774,6 +2774,8 @@
       "taskRelationschildren": "Unteraufgaben",
       "taskRelationsconnections": "Canvas-Verbindungen",
       "taskRelationsparent": "Übergeordnete Aufgabe",
+      "taskSourceAction": "Quellaktion",
+      "taskSourceActionDesc": "Zeigt die Quellaktion beim Darüberfahren oder Tastaturfokus. Ein Klick zeigt die aktuelle Quelle als Vorschau; Cmd/Strg-Klick öffnet auf dem Desktop einen neuen Tab.",
       "taskStatusIconColorSource": "Farbquelle für Aufgabensymbol",
       "taskStatusIconColorSourceDesc": "Wähle die Farbe des Hauptsymbols der Aufgabe. Fehlende Aufgaben- und Prioritätsfarben werden ohne Farbe dargestellt.",
       "taskWikilinkOverlayActionsSection": "Task Wikilink Overlay-Aktionen",
@@ -3713,5 +3715,5 @@
       "toggleDescendantPreview": "Vorschau untergeordneter Aufgaben umschalten"
     }
   },
-  "sourceVersion": "d884ceac5e613130099a2d57602e292c6b1afd1b1c4f60edb164abea060f055e"
+  "sourceVersion": "bfff4207f3a479e43c162edbb0d3e1643b4f0d01c623b927c5470948b4e00adb"
 }

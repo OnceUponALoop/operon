@@ -1,3 +1,4 @@
+import { createTaskSourceActionButton } from './task-info-chip-action';
 import { taskDescriptionOpening } from './task-text-link-opening';
 import { identifyInlineTaskPart, rememberInlineTaskDom, reconcileInlineTaskDom } from './inline-retained-dom';
 import { getTaskIconActionLabel } from '../core/task-icon-action';
@@ -10,7 +11,7 @@ import {
 	WidgetType,
 } from '@codemirror/view';
 import { Extension, RangeSetBuilder, StateEffect } from '@codemirror/state';
-import { App, editorLivePreviewField, setIcon } from 'obsidian';
+import { App, Platform, editorLivePreviewField, setIcon } from 'obsidian';
 import { createOwnerElement } from '../core/dom-compat';
 import { t } from '../core/i18n';
 import { normalizeTaskColorValue } from '../core/task-color-value';
@@ -258,6 +259,7 @@ class TaskWikilinkTrailingWidget extends WidgetType {
 			wrap.appendChild(pinButton);
 		}
 
+		let noteAction: HTMLElement | null = null;
 		const noteValue = this.task.fieldValues['note']?.trim();
 		if (settings.taskWikilinkOverlayShowNoteAction && noteValue) {
 			const noteIndicator = createOwnerElement(wrap, 'span');
@@ -275,6 +277,7 @@ class TaskWikilinkTrailingWidget extends WidgetType {
 				preferredHorizontal: 'right',
 			});
 			identifyInlineTaskPart(noteIndicator, 'note', JSON.stringify([this.task.fieldValues.note, noteIndicator.outerHTML.replace(/operon-accessible-label-\d+/g, 'operon-accessible-label')]));
+			noteAction = noteIndicator;
 			wrap.appendChild(noteIndicator);
 		}
 
@@ -301,6 +304,16 @@ class TaskWikilinkTrailingWidget extends WidgetType {
 				wrap.appendChild(subtaskButton);
 			}
 		}
+
+		if (Platform.isDesktopApp && settings.taskWikilinkOverlayShowSourceAction) {
+   const sourceButton = createTaskSourceActionButton({ app: this.callbacks.app, owner: wrap,
+    getSettings: this.callbacks.getSettings, getTask: () => this.callbacks.getAllTasks().find(current => current.operonId === this.task.operonId),
+    canActivate: () => !this.callbacks.hasDuplicateOperonIdConflict?.(this.task.operonId),
+    taskColor: this.visuals.hoverColor, className: 'operon-live-preview-edit operon-live-preview-action operon-task-wikilink-overlay-action operon-task-chip-action',
+   });
+   identifyInlineTaskPart(sourceButton, 'source', sourceButton.outerHTML.replace(/operon-accessible-label-\d+/g, 'operon-accessible-label'));
+   wrap.insertBefore(sourceButton, noteAction);
+  }
 
 		const button = createOwnerElement(wrap, 'button');
 		button.type = 'button';
@@ -712,6 +725,7 @@ export function buildTaskWikilinkTrailingRenderSignature(
 		taskWikilinkOverlayShowPlayAction: settings.taskWikilinkOverlayShowPlayAction,
 		taskWikilinkOverlayShowPinAction: settings.taskWikilinkOverlayShowPinAction,
 		taskWikilinkOverlayShowNoteAction: settings.taskWikilinkOverlayShowNoteAction,
+		taskWikilinkOverlayShowSourceAction: settings.taskWikilinkOverlayShowSourceAction,
 		taskWikilinkOverlayShowSubtaskAction: settings.taskWikilinkOverlayShowSubtaskAction,
 		taskWikilinkOverlayShowPlainCheckboxAction: settings.taskWikilinkOverlayShowPlainCheckboxAction,
 		keyMappings: settings.keyMappings,

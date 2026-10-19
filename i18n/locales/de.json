@@ -1063,6 +1063,8 @@
 		"taskWikilinkOverlayIconsMoveDown": "Nach unten",
 		"taskWikilinkOverlayActionsSection": "Task Wikilink Overlay-Aktionen",
 		"inlineTaskNoteAction": "Notiz-Aktion",
+		"taskSourceAction": "Quellaktion",
+		"taskSourceActionDesc": "Zeigt die Quellaktion beim Darüberfahren oder Tastaturfokus. Ein Klick zeigt die aktuelle Quelle als Vorschau; Cmd/Strg-Klick öffnet auf dem Desktop einen neuen Tab.",
 		"inlineTaskPlayAction": "Start-Aktion",
 		"inlineTaskPinAction": "Anheft-Aktion",
 		"inlineTaskSubtaskAction": "Unteraufgabe-hinzufügen-Aktion",

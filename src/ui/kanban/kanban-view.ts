@@ -851,6 +851,7 @@ export class KanbanView extends ItemView {
 			kanbanTaskShowPlayAction: settings.kanbanTaskShowPlayAction,
 			kanbanTaskShowPinAction: settings.kanbanTaskShowPinAction,
 			kanbanTaskShowNoteAction: settings.kanbanTaskShowNoteAction,
+			kanbanTaskShowSourceAction: settings.kanbanTaskShowSourceAction,
 			kanbanTaskShowSubtaskAction: settings.kanbanTaskShowSubtaskAction,
 			kanbanTaskShowPlainCheckboxAction: settings.kanbanTaskShowPlainCheckboxAction,
 			kanbanTaskShowNotesPreview: settings.kanbanTaskShowNotesPreview,

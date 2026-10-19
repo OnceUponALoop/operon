@@ -1065,6 +1065,8 @@
 		"taskWikilinkOverlayIconsMoveDown": "Mover para baixo",
 		"taskWikilinkOverlayActionsSection": "Ações de Sobreposição Wikilink da Tarefa",
 		"inlineTaskNoteAction": "Ação de nota",
+		"taskSourceAction": "Ação de origem",
+		"taskSourceActionDesc": "Mostra a ação de origem ao passar o cursor ou receber foco do teclado. Um clique visualiza a origem atual; Cmd/Ctrl+clique abre uma nova aba no desktop.",
 		"inlineTaskPlayAction": "Ação de reproduzir",
 		"inlineTaskPinAction": "Ação de fixar",
 		"inlineTaskSubtaskAction": "Adicionar subtarefa",

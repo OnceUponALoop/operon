@@ -1,8 +1,9 @@
+import { createTaskSourceActionButton } from './task-info-chip-action';
 import { taskDescriptionOpening } from './task-text-link-opening';
 import { identifyInlineTaskPart, rememberInlineTaskDom, reconcileInlineTaskDom } from './inline-retained-dom';
 import { cleanupOperonRenderRoot } from './render-root-cleanup';
 import { getTaskIconActionLabel } from '../core/task-icon-action';
-import { App, parseLinktext, setIcon, TFile } from 'obsidian';
+import { App, Platform, parseLinktext, setIcon, TFile } from 'obsidian';
 import { createOwnerElement } from '../core/dom-compat';
 import { t } from '../core/i18n';
 import { DescendantTaskSummary } from '../indexer/indexer';
@@ -288,6 +289,7 @@ export function enhanceReadingTaskFileWikilinks(
 			identifyInlineTaskPart(pinButton, 'overlay-pin', pinButton.outerHTML.replace(/operon-accessible-label-\d+/g, 'operon-accessible-label'));
 			wrapper.appendChild(pinButton);
 		}
+		let noteAction: HTMLElement | null = null;
 		const noteValue = resolved.task.fieldValues['note']?.trim();
 		if (settings.taskWikilinkOverlayShowNoteAction && noteValue) {
 			const noteIndicator = createOwnerElement(wrapper, 'span');
@@ -305,6 +307,7 @@ export function enhanceReadingTaskFileWikilinks(
 				preferredHorizontal: 'right',
 			});
 			identifyInlineTaskPart(noteIndicator, 'note', JSON.stringify([resolved.task.fieldValues.note, noteIndicator.outerHTML.replace(/operon-accessible-label-\d+/g, 'operon-accessible-label')]));
+			noteAction = noteIndicator;
 			wrapper.appendChild(noteIndicator);
 		}
 		if (!isTerminal && settings.taskWikilinkOverlayShowSubtaskAction && callbacks.requestSubtask) {
@@ -325,6 +328,15 @@ export function enhanceReadingTaskFileWikilinks(
 				wrapper.appendChild(subtaskButton);
 			}
 		}
+		if (Platform.isDesktopApp && settings.taskWikilinkOverlayShowSourceAction) {
+   const sourceButton = createTaskSourceActionButton({ app: callbacks.app, owner: wrapper,
+    getSettings: callbacks.getSettings, getTask: () => callbacks.getAllTasks().find(current => current.operonId === resolved.task.operonId),
+    canActivate: () => !callbacks.hasDuplicateOperonIdConflict?.(resolved.task.operonId),
+    taskColor: visuals.hoverColor, className: 'operon-live-preview-edit operon-live-preview-action operon-task-wikilink-overlay-action operon-task-chip-action',
+   });
+   identifyInlineTaskPart(sourceButton, 'source', sourceButton.outerHTML.replace(/operon-accessible-label-\d+/g, 'operon-accessible-label'));
+   wrapper.insertBefore(sourceButton, noteAction);
+  }
 		identifyInlineTaskPart(rightButton, 'editor', rightButton.outerHTML.replace(/operon-accessible-label-\d+/g, 'operon-accessible-label'));
 		wrapper.appendChild(rightButton);
 		rememberInlineTaskDom(wrapper);

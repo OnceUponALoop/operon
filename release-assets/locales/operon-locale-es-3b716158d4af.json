@@ -1,8 +1,8 @@
 {
   "schemaVersion": 1,
   "locale": "es",
-  "keyCount": 3668,
-  "keyFingerprint": "89abfabff951c621ad847d4150f0b655a92e0212977ff8be97c026dec5e0f0b0",
+  "keyCount": 3670,
+  "keyFingerprint": "14b8663398cc20d5e558b7e718ab887c68701e03947d3d2e9cea8f50ec68d2d2",
   "translations": {
     "buttons": {
       "addFileSubtask": "Añadir subtarea de archivo",
@@ -2774,6 +2774,8 @@
       "taskRelationschildren": "Subtareas",
       "taskRelationsconnections": "Conexiones del Canvas",
       "taskRelationsparent": "Tarea superior",
+      "taskSourceAction": "Acción de origen",
+      "taskSourceActionDesc": "Muestra la acción de origen al pasar el cursor o recibir el foco del teclado. Un clic previsualiza el origen actual; Cmd/Ctrl+clic abre una pestaña nueva en el escritorio.",
       "taskStatusIconColorSource": "Origen de color del icono de tarea",
       "taskStatusIconColorSourceDesc": "Elige cómo colorear el icono principal de la tarea. Si faltan colores de tarea o prioridad, no se aplica color.",
       "taskWikilinkOverlayActionsSection": "Acciones de Task Wikilink Overlay",
@@ -3713,5 +3715,5 @@
       "toggleDescendantPreview": "Alternar vista previa de descendientes"
     }
   },
-  "sourceVersion": "7a49833bb376feb6110cf195fab431fcbe84c57fa2f4095a734ca8553f304b94"
+  "sourceVersion": "0dd3f91e6ec942017eb3ae59e547f0f5e6f2a91b3074bd68094008f984981ca5"
 }

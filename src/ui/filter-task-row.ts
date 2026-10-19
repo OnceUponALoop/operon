@@ -162,6 +162,7 @@ export function buildFilterTaskRowElement(
 		showPlayAction: callbacks.getSettings().filterTaskShowPlayAction,
 		showPinAction: callbacks.getSettings().filterTaskShowPinAction,
 		showNoteAction: callbacks.getSettings().filterTaskShowNoteAction,
+		showSourceAction: callbacks.getSettings().filterTaskShowSourceAction,
 		showSubtaskAction: options?.showSubtaskAction ?? callbacks.getSettings().filterTaskShowSubtaskAction,
 		rowClassName: 'operon-filter-task-row',
 		beforeTailContent: hasChildren

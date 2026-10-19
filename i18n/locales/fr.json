@@ -1065,6 +1065,8 @@
 		"taskWikilinkOverlayIconsMoveDown": "Déplacer vers le bas",
 		"taskWikilinkOverlayActionsSection": "Actions Task Wikilink Overlay",
 		"inlineTaskNoteAction": "Action de note",
+		"taskSourceAction": "Action Source",
+		"taskSourceActionDesc": "Affiche l’action Source au survol ou au focus clavier. Un clic prévisualise la source actuelle ; Cmd/Ctrl+clic ouvre un nouvel onglet sur ordinateur.",
 		"inlineTaskPlayAction": "Action de lecture",
 		"inlineTaskPinAction": "Action d'épinglage",
 		"inlineTaskSubtaskAction": "Action d'ajout de sous-tâche",

@@ -1,12 +1,12 @@
 import { taskDescriptionOpening } from './task-text-link-opening';
 import { isTaskInfoChipKey } from '../core/task-info-chips';
-import { bindTaskInfoSourceAction } from './task-info-chip-action';
+import { bindTaskInfoSourceAction, createTaskSourceActionButton } from './task-info-chip-action';
 import { getTimeScopeSignature, replaceTaskTimeScope } from '../core/time-scope-values';
 import { bindDesktopChipOpening } from './links-chip-action';
 import { identifyInlineTaskPart, registerInlineTaskDomRefresh, rememberInlineTaskDom, reconcileInlineTaskDom } from './inline-retained-dom';
 import { bindAssigneeChipImage } from './assignee-chip-image';
 import { getTaskIconActionLabel } from '../core/task-icon-action';
-import { App, setIcon } from 'obsidian';
+import { App, Platform, setIcon } from 'obsidian';
 import { IndexedTask } from '../types/fields';
 import { showDatePicker, type ManualDatePickerOptions } from './field-pickers/date-picker';
 import { showPriorityPicker } from './field-pickers/priority-picker';
@@ -152,6 +152,7 @@ export interface ReadingTaskRowOptions {
 	showPlayAction?: boolean;
 	showPinAction?: boolean;
 	showNoteAction?: boolean;
+	showSourceAction?: boolean;
 	showSubtaskAction?: boolean;
 	showEditAction?: boolean;
 	rowClassName?: string;
@@ -197,7 +198,7 @@ export function updateReadingInlineTaskRow(
   currentCallbacks.isTaskPinned?.(model.operonId), currentCallbacks.isTaskTracking?.(model.operonId),
   currentCallbacks.getProjectSerialDisplay?.(model.operonId, model),
   options.readOnly, options.rowClassName,
-  options.showPlayAction, options.showPinAction, options.showNoteAction, options.showSubtaskAction, options.showEditAction,
+  options.showPlayAction, options.showPinAction, options.showNoteAction, options.showSourceAction, options.showSubtaskAction, options.showEditAction,
  ]);
  if (canRetain && previous && signature !== undefined && state.signature === signature && state.refreshSignature === options.refreshSignature
   && !options.beforeTailContent && !options.beforeEditAction) return previous;
@@ -520,6 +521,7 @@ export function buildReadingTaskRowElement(
 		actions.appendChild(playButton);
 	}
 
+	let noteAction: HTMLElement | null = null;
 	const rawNoteValue = task.fieldValues['note'] ?? '';
 	const noteValue = rawNoteValue.trim();
 	if (showNoteAction && readOnly && noteValue) {
@@ -532,6 +534,7 @@ export function buildReadingTaskRowElement(
 		});
 		noteIndicator.querySelector('.operon-hover-trigger')?.classList.add('operon-reading-task-note-neutral', 'operon-task-chip-action');
 		identifyInlineTaskPart(noteIndicator, 'note', JSON.stringify([rawNoteValue, taskColor, settings.language, noteIndicator.outerHTML.replace(/operon-accessible-label-\d+/g, 'operon-accessible-label')]));
+		noteAction = noteIndicator;
 		actions.appendChild(noteIndicator);
 	} else if (showNoteAction && !readOnly && (!isTerminal || noteValue)) {
 		// Keep action closures independent of the render-pass lookup.
@@ -564,8 +567,18 @@ export function buildReadingTaskRowElement(
 			},
 		});
 		identifyInlineTaskPart(noteButton, 'note', JSON.stringify([rawNoteValue, taskColor, settings.language, noteButton.outerHTML.replace(/operon-accessible-label-\d+/g, 'operon-accessible-label')]));
+		noteAction = noteButton;
 		actions.appendChild(noteButton);
 	}
+
+	if (Platform.isDesktopApp && !options?.onBlockedAction && (options?.showSourceAction ?? settings.inlineTaskShowSourceAction)) {
+  const sourceButton = createTaskSourceActionButton({ app: callbacks.app, owner: actions,
+   getSettings: callbacks.getSettings, getTask: () => callbacks.getAllTasks().find(current => current.operonId === task.operonId),
+   taskColor, className: 'operon-live-preview-edit operon-reading-task-edit operon-live-preview-action operon-task-chip-action',
+  });
+  identifyInlineTaskPart(sourceButton, 'source', sourceButton.outerHTML.replace(/operon-accessible-label-\d+/g, 'operon-accessible-label'));
+  actions.insertBefore(sourceButton, noteAction);
+ }
 
 	if (showEditAction) {
 		const editButton = el('button', 'operon-live-preview-edit operon-reading-task-edit operon-task-chip-action', row);

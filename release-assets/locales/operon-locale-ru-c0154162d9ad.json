@@ -1,8 +1,8 @@
 {
   "schemaVersion": 1,
   "locale": "ru",
-  "keyCount": 3668,
-  "keyFingerprint": "89abfabff951c621ad847d4150f0b655a92e0212977ff8be97c026dec5e0f0b0",
+  "keyCount": 3670,
+  "keyFingerprint": "14b8663398cc20d5e558b7e718ab887c68701e03947d3d2e9cea8f50ec68d2d2",
   "translations": {
     "buttons": {
       "addFileSubtask": "Добавить файловую подзадачу",
@@ -2774,6 +2774,8 @@
       "taskRelationschildren": "Подзадачи",
       "taskRelationsconnections": "Связи Canvas",
       "taskRelationsparent": "Родительская задача",
+      "taskSourceAction": "Действие «Источник»",
+      "taskSourceActionDesc": "Показывает действие «Источник» при наведении или фокусе клавиатуры. Нажатие открывает предпросмотр текущего источника; Cmd/Ctrl+нажатие открывает новую вкладку на компьютере.",
       "taskStatusIconColorSource": "Источник цвета значка задачи",
       "taskStatusIconColorSourceDesc": "Выберите цвет основного значка задачи. Если цвет задачи или приоритета отсутствует, цвет не применяется.",
       "taskWikilinkOverlayActionsSection": "Действия оверлея вики-ссылок задач",
@@ -3713,5 +3715,5 @@
       "toggleDescendantPreview": "Переключить предпросмотр потомков"
     }
   },
-  "sourceVersion": "3511fb3e709d096d6cfc4cc4eb82a3a9d0a85bf75de4a36be5c36192dade3b71"
+  "sourceVersion": "1b7e8acd8205092706d2772796e1014ec43cb88719a795c3c463c3b07fbc9812"
 }
