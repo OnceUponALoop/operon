@@ -41,7 +41,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Fixed repeated **settings warnings** during startup and tab changes: a saving pause is now reported once per cause and is no longer described as a damaged Table configuration, while genuine Table file errors remain visible.
 - Fixed **Task Creator repeat editing** so saving or clearing updates immediately, reference dates and Count settings are preserved for Inline and File tasks, and cancelled edits leave the draft unchanged.
 - Fixed certain **Outlook all-day yearly events** missing from URL and vault-local ICS calendars when the calendar’s timezone confirms that the recurrence end matches the event’s start.
-- Fixed **Dynamic File Task Filter** appearing inside normal Markdown table cells and the **Task Editor file body**, while preserving inline task features.
+- Fixed **Dynamic File Task Filter** appearing inside Markdown table cells, while keeping it available in the **Task Editor File Body** and Markdown lightboxes; short Description/Note editors remain unaffected.
 - Fixed **Calendar sidebar and toolbar actions** updating only after another interaction; visibility toggles and color changes now update immediately while preserving editing and drag protections.
 - Fixed the cursor jumping to the start when clicking **nested inline task descriptions** in Live Preview; clicks now place it at the selected text position, including wrapped lines.
 

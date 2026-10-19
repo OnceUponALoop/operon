@@ -11,19 +11,20 @@ try {
  const source=fs.readFileSync(path.join(root,'main.ts'),'utf8');
  const ast=ts.createSourceFile('main.ts',source,ts.ScriptTarget.Latest,true);
  const cls=ast.statements.find(n=>ts.isClassDeclaration(n)&&n.name?.text==='OperonPlugin');
- const methods=['refreshMarkdownTaskSurfaces','runScheduledIndexSideEffects','refreshRetainedReadingSections'].map(name=>cls.members.find(n=>n.name?.getText(ast)===name).getText(ast));
+ const methods=['getDynamicFileTaskFilterMarkdownViews','refreshMarkdownTaskSurfaces','runScheduledIndexSideEffects','refreshRetainedReadingSections'].map(name=>cls.members.find(n=>n.name?.getText(ast)===name).getText(ast));
  const outfile=path.join(dir,'test.mjs');
  const prelude=`import {createGlobalMarkdownRefreshScope} from ${JSON.stringify(path.join(root,'src/core/markdown-refresh-scope'))};
  export class EditorView{dispatch(value){this.effects=value.effects;}}
  export class MarkdownView{constructor(filePath,mode='preview'){this.file={path:filePath};this.contentEl={querySelector:()=>null,contains:()=>true};this.mode=mode;this.calls=[];this.indexValue='loading';this.rendered='loading';this.editor={cm:new EditorView()};this.previewMode={rerender:force=>{this.calls.push(force);if(force)this.rendered=this.indexValue;}};}getMode(){return this.mode;}}
  const operonIndexRefreshEffect={of:()=> 'index'},operonEditorCloseRefreshEffect={of:()=> 'close'},operonTaskWikilinkForceRevealEffect={of:value=>value};
+ const getNativeLightboxLeaves=app=>app.ownedLeaves;
  const getEditorViewFromEditor=editor=>editor.cm;
  const refreshEmbeddedMarkdownSourceEditors=()=>({refreshedEditors:0,skippedEditors:0});
  const enginePerfNow=()=>0,enginePerfLog=()=>{};
  export class Harness{readingInlineMounts=new Map();indexer={getTask:()=>({})};${methods.join('\n')}}`;
  await build({stdin:{contents:prelude,resolveDir:root,loader:'ts'},outfile,bundle:true,format:'esm',platform:'node',logLevel:'silent'});
  const {Harness,MarkdownView}=await import(pathToFileURL(outfile).href);
- const setup=(views)=>{const h=new Harness();h.app={workspace:{getLeavesOfType:()=>views.map(view=>({view}))}};return h;};
+ const setup=(views)=>{const h=new Harness();h.app={ownedLeaves:[],workspace:{getLeavesOfType:()=>views.map(view=>({view}))}};return h;};
  let count=0;const test=async(name,fn)=>{await fn();count++;console.log('PASS',name);};
  await test('default refresh replaces the loading render after index readiness',()=>{
   const view=new MarkdownView('Note.md'),h=setup([view]);view.indexValue='ready';h.refreshMarkdownTaskSurfaces();
@@ -39,6 +40,21 @@ try {
  });
  await test('Live Preview still receives its existing editor effect',()=>{
   const view=new MarkdownView('Note.md','source'),h=setup([view]);h.refreshMarkdownTaskSurfaces();assert.deepEqual(view.calls,[]);assert.deepEqual(view.editor.cm.effects,['index']);
+ });
+ await test('isolated lightbox receives index and settings refresh with no normal tab',()=>{
+  const preview=new MarkdownView('Note.md'),live=new MarkdownView('Live.md','source'),h=setup([]);
+  h.app.ownedLeaves=[{view:preview},{view:live}];preview.indexValue='ready';
+  let result=h.refreshMarkdownTaskSurfaces();
+  assert.equal(preview.rendered,'ready');assert.deepEqual(live.editor.cm.effects,['index']);assert.equal(result.refreshedLeaves,2);
+  preview.indexValue='changed';h.refreshMarkdownTaskSurfaces({resetLivePreviewReveal:true});
+  assert.equal(preview.rendered,'changed');assert.deepEqual(live.editor.cm.effects,['close']);
+  h.app.ownedLeaves=[];result=h.refreshMarkdownTaskSurfaces();assert.equal(result.refreshedLeaves,0);
+ });
+ await test('owned views honor scoped refresh and duplicate workspace ownership',()=>{
+  const a=new MarkdownView('A.md'),b=new MarkdownView('B.md'),h=setup([a]);
+  h.app.ownedLeaves=[{view:a},{view:b}];
+  const result=h.refreshMarkdownTaskSurfaces({scope:{mode:'scoped',filePaths:['A.md'],reason:'test'}});
+  assert.deepEqual(a.calls,[true]);assert.deepEqual(b.calls,[]);assert.equal(result.refreshedLeaves,1);assert.equal(result.skippedLeaves,1);
  });
  await test('explicit lightweight refresh remains available',()=>{
   const view=new MarkdownView('Note.md'),h=setup([view]);h.refreshMarkdownTaskSurfaces({forceReadingViewRerender:false});assert.deepEqual(view.calls,[false]);

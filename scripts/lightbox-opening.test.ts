@@ -5,6 +5,7 @@ import { lightboxFixture } from './test-support/lightbox-dom';
 import { openLightbox } from '../src/ui/lightbox';
 import { openLightboxTarget, resolveLightboxFile } from '../src/ui/lightbox-opening';
 import { disposeWebLightboxes, flushLightboxMarkdown, openWebLightbox, prepareLightboxTab } from '../src/ui/web-lightbox';
+import { getNativeLightboxLeaves } from '../src/ui/native-lightbox-lifecycle';
 import { bindTaskMediaChipPreview, cleanupTaskMediaChipPreviews } from '../src/ui/compact-chip-link-preview';
 
 const tick = () => new Promise(resolve => setImmediate(resolve));
@@ -263,7 +264,10 @@ for (const extension of ['md','base','table','web']) for (const stacked of [fals
  test(`${extension} isolated native view preserves normal/stacked tabs, layout and full closed-tab history (${stacked})`,async()=>{
   const f=isolatedTabFixture(extension,stacked), history=JSON.stringify(f.history);
   try {
+   assert.deepEqual(getNativeLightboxLeaves(f.app),[]);
    await f.open();
+   assert.deepEqual(getNativeLightboxLeaves(f.app),[f.leaf]);
+   assert.deepEqual(getNativeLightboxLeaves({} as any),[]);
    const tabs=f.leaf.parent;
    assert.equal(f.host().inert,false);
    assert.notEqual(tabs,f.userTabs);assert.equal(tabs.parent,null);
@@ -277,6 +281,7 @@ for (const extension of ['md','base','table','web']) for (const stacked of [fals
    await f.leaf.setViewState({type:f.view.getViewType(),state:{file:'Other.md'}});
    assert.deepEqual(f.workspace.getLayout(),f.layout);
    disposeWebLightboxes(f.app);await tick();
+   assert.deepEqual(getNativeLightboxLeaves(f.app),[]);
    assert.equal(f.workspace.getLayout,f.getLayout);
    assert.equal(f.workspace.activeLeaf,f.owner);
    assert.deepEqual(f.workspace.getLayout(),f.layout);
@@ -294,7 +299,9 @@ test('failed native save retains isolated view and layout projection until succe
   disposeWebLightboxes(f.app);await tick();
   assert.equal(f.workspace.activeLeaf,f.leaf);assert.notEqual(f.workspace.getLayout,f.getLayout);
   assert.deepEqual(f.workspace.getLayout(),f.layout);assert.equal(f.view.getViewData(),'edited');
+  assert.deepEqual(getNativeLightboxLeaves(f.app),[f.leaf]);
   f.recover();disposeWebLightboxes(f.app);await tick();
+  assert.deepEqual(getNativeLightboxLeaves(f.app),[]);
   assert.equal(f.workspace.getLayout,f.getLayout);assert.equal(f.workspace.activeLeaf,f.owner);
  }finally{f.cleanup();await tick();}
 });

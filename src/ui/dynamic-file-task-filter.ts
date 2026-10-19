@@ -298,7 +298,7 @@ export function resolveDynamicFileTaskFilterInsertLine(
 
 export interface DynamicFileTaskFilterLivePreviewCallbacks {
 	getFilePath: (view: EditorView) => string;
-	/** True only for the owning document editor, never nested or task-body editors. */
+	/** True for a full document or File Body editor, never a table cell or short-field editor. */
 	isDocumentEditor: (view: EditorView) => boolean;
 	getFilterDeps: () => EmbedFilterDeps;
 	openDynamicFilterSettings: (template: FilterSet) => void;

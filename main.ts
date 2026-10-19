@@ -253,6 +253,7 @@ import {
 } from './src/ui/task-editor-content';
 import {
 	getEmbeddedMarkdownSourceEditorFilePath,
+	isEmbeddedMarkdownFileBodyEditor,
 	refreshEmbeddedMarkdownSourceEditors,
 } from './src/ui/embedded-markdown-source-editor';
 import {
@@ -23073,6 +23074,19 @@ export default class OperonPlugin extends Plugin {
 			return null;
 		}
 
+	/** Filter-only enumeration: never changes normal workspace navigation semantics. */
+	private getDynamicFileTaskFilterMarkdownViews(): MarkdownView[] {
+		return [...new Set([
+			...this.app.workspace.getLeavesOfType('markdown'),
+			...getNativeLightboxLeaves(this.app),
+		].map(leaf => leaf.view).filter((view): view is MarkdownView => view instanceof MarkdownView))];
+	}
+
+	private isDynamicFileTaskFilterDocumentEditor(editorView: EditorView): boolean {
+		return isEmbeddedMarkdownFileBodyEditor(editorView)
+			|| this.getDynamicFileTaskFilterMarkdownViews().some(view => getEditorViewFromEditor(view.editor) === editorView);
+	}
+
 	private getMarkdownViewForPath(filePath: string): MarkdownView | null {
 		const activeView = this.app.workspace.getActiveViewOfType(MarkdownView);
 		if (activeView?.file?.path === filePath) return activeView;
@@ -23327,8 +23341,10 @@ export default class OperonPlugin extends Plugin {
 				getRepeatSkipDates: (repeatSeriesId: string) => this.storage.repeatSeries.getSkipDates(repeatSeriesId),
 			}));
 			this.registerEditorExtension(operonDynamicFileTaskFilterLivePreviewExtension({
-				isDocumentEditor: (editorView: EditorView) => this.getMarkdownViewForEditorView(editorView) !== null,
-				getFilePath: (editorView: EditorView) => this.getFilePathForEditorView(editorView),
+				isDocumentEditor: (editorView: EditorView) => this.isDynamicFileTaskFilterDocumentEditor(editorView),
+				getFilePath: (editorView: EditorView) => this.getDynamicFileTaskFilterMarkdownViews()
+					.find(view => getEditorViewFromEditor(view.editor) === editorView)?.file?.path
+					?? getEmbeddedMarkdownSourceEditorFilePath(editorView),
 				getFilterDeps: () => {
 					if (!this.embedFilterDeps) this.embedFilterDeps = this.buildFilterSurfaceDeps();
 					return this.embedFilterDeps;
@@ -23663,7 +23679,7 @@ export default class OperonPlugin extends Plugin {
 	}
 
 	private pruneDisconnectedDynamicFileTaskFilterReadingHosts(): void {
-		const views = new Set(this.app.workspace.getLeavesOfType('markdown').map(leaf => leaf.view));
+		const views = new Set(this.getDynamicFileTaskFilterMarkdownViews());
 		for (const host of Array.from(this.dynamicFileTaskFilterReadingHosts)) {
 			const owner = this.dynamicFileTaskFilterReadingOwners.get(host);
 			if (!host.isConnected || !owner || !views.has(owner.view)
@@ -23678,8 +23694,7 @@ export default class OperonPlugin extends Plugin {
 		this.pruneDisconnectedDynamicFileTaskFilterReadingHosts();
 		const deps = this.embedFilterDeps ?? this.buildFilterSurfaceDeps();
 		if (!this.embedFilterDeps) this.embedFilterDeps = deps;
-		for (const leaf of this.app.workspace.getLeavesOfType('markdown')) {
-			const view = leaf.view;
+		for (const view of this.getDynamicFileTaskFilterMarkdownViews()) {
 			if (!(view instanceof MarkdownView) || view.file?.path !== filePath || view.getMode() !== 'preview') continue;
 			const root = this.getReadingPreviewContentRoot(view);
 			if (!root) continue;
@@ -26706,9 +26721,7 @@ export default class OperonPlugin extends Plugin {
 				operonTaskWikilinkForceRevealEffect.of({ filePaths: [forceTaskWikilinkOverlayFilePath] }),
 			]
 			: [refreshEffect];
-		for (const leaf of this.app.workspace.getLeavesOfType('markdown')) {
-			const view = leaf.view;
-			if (!(view instanceof MarkdownView)) continue;
+		for (const view of this.getDynamicFileTaskFilterMarkdownViews()) {
 			if (scopedFilePaths && (!view.file || !scopedFilePaths.has(view.file.path))) {
 				skippedLeaves++;
 				continue;

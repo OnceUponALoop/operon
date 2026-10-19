@@ -48,9 +48,14 @@ state=state.update({effects:source.reconfigure(editorInfoField.init(()=>({file:{
 // Native table cells share the file context and Live Preview mode, but are not the owning editor.
 documentEditor=false;assert.equal(widgets(qualify(raw('Cell content'))).length,0);
 console.log('PASS native Markdown table cell rejects the document filter');
-// Task Editor file body is another non-owning editor of the same real file.
-assert.equal(widgets(qualify(raw('| A | B |\\n| - | - |\\n| x | y |'))).length,0);
-console.log('PASS Task Editor file body rejects the document filter');
+// Full file views remain eligible, including File Body and isolated native lightboxes.
+documentEditor=true;assert.equal(widgets(make('File Body')).length,1);
+console.log('PASS Task Editor file body accepts the document filter');
+assert.equal(widgets(make('Lightbox file')).length,1);
+console.log('PASS isolated lightbox file accepts the document filter');
+// Compact short-field editors remain excluded even with a valid file context.
+assert.equal(widgets(qualify(raw('Short field').update({effects:scope.reconfigure(compactEditorSurfaceScopeExtension)}).state)).length,0);
+console.log('PASS short-field editor rejects the document filter');
 // The default scope remains document: inline task extensions are not globally disabled.
 assert.equal(raw('Body').facet(operonEditorSurfaceScopeFacet),'document');
 documentEditor=true;assert.equal(widgets(make('Body')).length,1);
