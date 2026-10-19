@@ -30,8 +30,24 @@ export function openFileLightbox(app: App, anchor: HTMLElement, file: ResolvedLi
 
 /** Obsidian ephemeral state uses zero-based lines. */
 export function lightboxFileState(target: ResolvedLightboxFile): Record<string, unknown> {
+ // A native line target adds a search highlight and repositions the cursor.
+ // Use a collapsed cursor and line-based scroll for verified Inline sources.
+ if (target.file.extension === 'md' && !target.subpath && Number.isInteger(target.line) && target.line! >= 0
+  && Number.isInteger(target.caretCh) && target.caretCh! >= 0) {
+  const position = { line: target.line, ch: target.caretCh };
+  return { cursor: { from: position, to: { ...position } }, scroll: target.line, focus: true };
+ }
  return { ...(target.subpath ? { subpath: target.subpath } : {}),
   ...(Number.isInteger(target.line) && target.line! >= 0 ? { line: target.line, focus: true } : {}) };
+}
+
+/** Initial openFile state can run while the owned host is inert; focus only after it is usable. */
+export function focusLightboxSourceCaret(leaf: WorkspaceLeaf, target: ResolvedLightboxFile): void {
+ const state = lightboxFileState(target);
+ const view = leaf.view as TextFileView;
+ if (!state.cursor || view.getViewType() !== 'markdown' || view.file?.path !== target.file.path
+  || !view.containerEl.isConnected || view.containerEl.closest('[inert], [hidden]')) return;
+ view.setEphemeralState(state);
 }
 
 /** Flush only edited native Markdown, never write merely because a file was viewed. */
@@ -344,6 +360,7 @@ function openNativeLightbox(app: App, anchor: HTMLElement, target: { url: string
       ready = true;
       host.inert = false;
       mount();
+      if (isFile) focusLightboxSourceCaret(owned, target.file);
       if (isFile && target.file.file.extension === 'base') app.workspace.setActiveLeaf(owned, { focus: false });
      } catch {
       if (closed) return;

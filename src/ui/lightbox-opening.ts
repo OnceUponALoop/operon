@@ -1,24 +1,24 @@
 import { transferLightboxOpening, getLightboxOrigin } from './lightbox';
-import { Notice, Platform, TFile, parseLinktext, type App } from 'obsidian';
+import { Notice, Platform, TFile, parseLinktext, type App, type WorkspaceLeaf } from 'obsidian';
 import { getInternalPlugin, isPluginEnabled } from '../core/obsidian-app';
 import { getOwnerDocument, getOwnerWindow } from '../core/dom-compat';
 import { t } from '../core/i18n';
 import { classifyLocalTaskMediaPreview } from '../core/task-media-preview-kind';
-import { nativeLightboxViewType, getLightboxOwnerLeaf, prepareLightboxTab, lightboxFileState, openFileLightbox, openWebLightbox } from './web-lightbox';
+import { nativeLightboxViewType, getLightboxOwnerLeaf, prepareLightboxTab, lightboxFileState, focusLightboxSourceCaret, openFileLightbox, openWebLightbox } from './web-lightbox';
 import { openTaskMediaLightbox, type TaskMediaPreviewSource } from './task-media-lightbox';
 
 /** Original references are retained separately from resource/embed URLs. */
 export type LightboxTarget =
  | { kind: 'web'; url: string; media?: TaskMediaPreviewSource }
- | { kind: 'local'; linktext: string; sourcePath: string; line?: number; label?: string };
+ | { kind: 'local'; linktext: string; sourcePath: string; line?: number; caretCh?: number; label?: string };
 export type LightboxOpenResult = 'opened' | 'missing' | 'unsupported' | 'unavailable';
-export interface ResolvedLightboxFile { file: TFile; subpath: string; line?: number }
+export interface ResolvedLightboxFile { file: TFile; subpath: string; line?: number; caretCh?: number }
 
 export function resolveLightboxFile(app: App, target: Extract<LightboxTarget, { kind: 'local' }>): ResolvedLightboxFile | null {
  const raw = target.linktext.trim().replace(/^!?\[\[([\s\S]*)\]\]$/u, '$1').split('|')[0];
  const parsed = parseLinktext(raw);
  const file = app.metadataCache.getFirstLinkpathDest(parsed.path, target.sourcePath);
- return file instanceof TFile ? { file, subpath: parsed.subpath, line: target.line } : null;
+ return file instanceof TFile ? { file, subpath: parsed.subpath, line: target.line, ...(target.caretCh !== undefined ? { caretCh: target.caretCh } : {}) } : null;
 }
 
 /** Stage 1 callers opt in explicitly; no property or cell routing lives here. */
@@ -67,7 +67,9 @@ function mediaTabOpening(app: App, anchor: HTMLElement, target: LightboxTarget, 
    }
    const local = target.kind === 'local' ? resolveLightboxFile(app, target) : null;
    if (target.kind === 'local' && !local) { new Notice('This file could not be found.'); return null; }
-   return await prepareLightboxTab(app, getOwnerDocument(anchor), async leaf => {
+   let destination: WorkspaceLeaf | null = null;
+   const activate = await prepareLightboxTab(app, getOwnerDocument(anchor), async leaf => {
+   destination = leaf;
    if (local) await leaf.openFile(local.file, {active: false, eState: lightboxFileState(local)});
    else if (target.kind === 'web') await leaf.setViewState({type: 'webviewer', active: false, state: {url: target.url, navigate: true}});
    await leaf.loadIfDeferred();
@@ -75,6 +77,7 @@ function mediaTabOpening(app: App, anchor: HTMLElement, target: LightboxTarget, 
    if (expected && leaf.view.getViewType() !== expected) throw new Error('Unavailable native view');
    if (leaf.view.containerEl.ownerDocument !== getOwnerDocument(anchor) || (target.kind === 'web' && leaf.view.getViewType() !== 'webviewer')) throw new Error('Unavailable target view');
    }, placement, origin);
+   return () => { activate(); if (local && destination) focusLightboxSourceCaret(destination, local); };
   } catch { new Notice(placement === 'below' ? 'Could not open below the original tab. The lightbox is still open.' : placement === 'split' ? 'Could not open to the right of the original tab. The lightbox is still open.' : 'Could not open a new tab. The lightbox is still open.'); return null; }
  };
 }

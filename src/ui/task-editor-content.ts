@@ -38,7 +38,7 @@ import {
 	shouldTriggerOneShotAutomation,
 } from '../types/pipeline';
 import { serializeTask } from '../core/serializer';
-import { parseTaskLine } from '../core/parser';
+import { parseTaskLine, resolveInlineTaskDescriptionCursorCh } from '../core/parser';
 import {
 	getManagedTaskFieldType,
 	isManagedTaskFieldCanonicalKey,
@@ -935,14 +935,16 @@ export class TaskEditorContent {
 		const operonId = this.getCurrentOperonId();
 		const lines = this.fileBodyDraft.split('\n');
 		let targetLine: number | null = null;
+		let descriptionEnd = 0;
 		for (let index = 0; index < lines.length; index++) {
 			const task = parseTaskLine(lines[index], index, context.filePath, this.settings.keyMappings);
 			if (!task || !(operonId ? task.operonId === operonId : task.rawLine === this.existingTask?.rawLine)) continue;
 			// An absent or ambiguous task must not redirect focus to another task.
 			if (targetLine !== null) return fallback;
 			targetLine = index;
+			descriptionEnd = resolveInlineTaskDescriptionCursorCh(task);
 		}
-		return targetLine === null ? fallback : this.getBodyCursorOffset(this.fileBodyDraft, targetLine);
+		return targetLine === null ? fallback : this.getBodyCursorOffset(this.fileBodyDraft, targetLine) + descriptionEnd;
 	}
 
 	private async refreshFileBodyDraftFromSource(): Promise<void> {

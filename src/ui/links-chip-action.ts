@@ -6,6 +6,7 @@ import { openLightboxTarget, resolveLightboxFile, type LightboxTarget } from './
 import type { IndexedTask } from '../types/fields';
 import type { OperonSettings } from '../types/settings';
 import { findInlinePropertyTask } from '../core/inline-property-source';
+import { resolveInlineTaskDescriptionCursorCh } from '../core/parser';
 import { isRecord, isUnknownFunction } from '../core/unknown-value';
 import { getOwnerDocument } from '../core/dom-compat';
 import { splitTaskListValue } from '../core/task-field-patch';
@@ -141,6 +142,7 @@ export async function activateResolvedOpening(
     if (fresh.kind !== 'target' || fresh.sourceTask?.operonId !== source.operonId || fresh.sourceTask?.primary.filePath !== file.path) return;
     if (!match) { if (context.missingSourceUsesPicker) context.onPicker?.(); else new Notice('Link target not found.'); return; }
     target.line = match.index;
+    target.caretCh = resolveInlineTaskDescriptionCursorCh(match.parsed!);
    }
    if (context.canActivate?.() === false) return;
    const mode = event.detail !== 0 && isTaskSourceOpenModifierClick(event) ? 'tab' : 'lightbox';

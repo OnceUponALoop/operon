@@ -140,7 +140,7 @@ test('Source locates unique inline identity instead of stale line; no write on o
   f.content('heading\n\n- [ ] Child {{operonId:: abcdefg}}');
   f.app.workspace.getLeaf().view.getViewType=()=> 'markdown';
   f.bind(entry('taskInfo.source'));f.fire('click',mouse({metaKey:true}));await tick();
-  assert.equal(f.calls[0]?.state.eState.line,2);assert.equal(f.writes(),0);
+  assert.deepEqual(f.calls[0]?.state.eState,{cursor:{from:{line:2,ch:11},to:{line:2,ch:11}},scroll:2,focus:true});assert.equal(f.writes(),0);
  }finally{f.cleanup();}
 });
 test('duplicate/missing inline identity and changed parent during read never open wrong line',async()=>{
@@ -292,7 +292,7 @@ test('Table Source re-resolves inline line identity and rejects a removed task w
  const f=tableFixture();try{
   f.task().primary.format='inline';f.task().primary.lineNumber=999;
   f.content('header\n- [ ] task {{operonId:: abcdefg}}');f.app.workspace.getLeaf().view.getViewType=()=> 'markdown';
-  f.bindTable('source');f.fire('click',mouse({metaKey:true}));await tick();assert.equal(f.calls[0]?.state.eState.line,1);
+  f.bindTable('source');f.fire('click',mouse({metaKey:true}));await tick();assert.deepEqual(f.calls[0]?.state.eState.cursor,{from:{line:1,ch:10},to:{line:1,ch:10}});
   f.removeTask();f.fire('click');await tick();assert.equal(f.calls.length,1);assert.equal(f.writes(),0);
  }finally{f.cleanup();}
 });
@@ -403,7 +403,7 @@ for(const mac of [true,false])test(`Source action ${mac?'Cmd':'Ctrl'} opens the 
  const f=sourceActionFixture();try{
   Platform.isMacOS=mac;f.task().primary={filePath:'B.md',format:'inline',lineNumber:99};f.content('heading\n- [ ] Child {{operonId:: abcdefg}}');
   const event=mouse(mac?{metaKey:true}:{ctrlKey:true});f.fireSource('click',event);f.fireSource('click',event);await tick();
-  assert.equal(f.calls.length,1);assert.equal(f.calls[0].file,'B.md');assert.equal(f.calls[0].state.eState.line,1);assert.equal(f.writes(),0);
+  assert.equal(f.calls.length,1);assert.equal(f.calls[0].file,'B.md');assert.deepEqual(f.calls[0].state.eState.cursor,{from:{line:1,ch:11},to:{line:1,ch:11}});assert.equal(f.writes(),0);
   assert.equal(f.button.tagName,'BUTTON');assert.match(f.button.className,/operon-task-source-action/);assert.equal(f.button.getAttribute('title')!==null,false);
  }finally{f.cleanup();}
 });

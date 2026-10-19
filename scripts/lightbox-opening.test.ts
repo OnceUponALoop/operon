@@ -1,4 +1,9 @@
 import assert from 'node:assert/strict';
+import { readFileSync } from 'node:fs';
+import { createRequire } from 'node:module';
+import type { ClassDeclaration, MethodDeclaration } from 'typescript';
+const ts: typeof import('typescript') = createRequire(`${process.cwd()}/package.json`)('typescript');
+import { parseTaskLine, resolveInlineTaskDescriptionCursorCh } from '../src/core/parser';
 import { test } from 'node:test';
 import { Platform, TFile } from 'obsidian';
 import { lightboxFixture } from './test-support/lightbox-dom';
@@ -6,7 +11,7 @@ import { activateResolvedOpening, resolveChipOpening } from '../src/ui/links-chi
 import { DEFAULT_SETTINGS } from '../src/types/settings';
 import { openLightbox } from '../src/ui/lightbox';
 import { openLightboxTarget, resolveLightboxFile } from '../src/ui/lightbox-opening';
-import { disposeWebLightboxes, flushLightboxMarkdown, openWebLightbox, prepareLightboxTab } from '../src/ui/web-lightbox';
+import { disposeWebLightboxes, flushLightboxMarkdown, lightboxFileState, openWebLightbox, prepareLightboxTab } from '../src/ui/web-lightbox';
 import { getNativeLightboxLeaves } from '../src/ui/native-lightbox-lifecycle';
 import { bindTaskMediaChipPreview, cleanupTaskMediaChipPreviews } from '../src/ui/compact-chip-link-preview';
 
@@ -520,6 +525,99 @@ for (const format of ['yaml', 'inline']) test(`context menu Source activation wi
   await activateResolvedOpening(f.anchor,{...context,resolve:()=>resolveChipOpening({key:'taskInfo.source'},context)});await tick();
   assert.ok(f.doc.body.querySelectorAll().some((node:any)=>node.classes.has('operon-task-media-lightbox')));
   assert.equal(f.view.file,f.file);assert.equal(f.opens.length,1);assert.equal(f.opens[0].active,false);
-  assert.equal(f.opens[0].eState.line,format==='inline'?1:undefined);assert.equal(f.stats().saves,0);
+  assert.deepEqual(f.opens[0].eState,format==='inline'?{cursor:{from:{line:1,ch:11},to:{line:1,ch:11}},scroll:1,focus:true}:{});assert.equal(f.stats().saves,0);
  }finally{f.cleanup();await tick();}
+});
+
+const inlineSourceCases = [
+ {raw:'- [ ] Child {{operonId:: abcdefg}}', ch:11},
+ {raw:'  - [x] SpätDienst 🎉 {{note:: keep this}} {{operonId:: abcdefg}}', ch:21},
+ {raw:'- [ ] Read [[Note|label]] **today**   {{operonId:: abcdefg}}', ch:35},
+ {raw:'- [ ] {{operonId:: abcdefg}}', ch:6},
+];
+for (const activation of ['lightbox','keyboard','Cmd','Ctrl']) for (const sample of inlineSourceCases) {
+ test(`Inline Source ${activation}: collapsed description-end cursor excludes metadata (${sample.raw})`,async()=>{
+  const f=fixture();try {
+   Platform.isMacOS=activation!=='Ctrl';
+   const content=`heading\n\n${sample.raw}`;
+   f.stored(content);
+   const task:any={operonId:'abcdefg',primary:{filePath:f.file.path,format:'inline',lineNumber:99},fieldValues:{},tags:[]};
+   f.app.vault.getAbstractFileByPath=(path:string)=>path===f.file.path?f.file:null;
+   const settings={...DEFAULT_SETTINGS,keyMappings:DEFAULT_SETTINGS.keyMappings};
+   const context:any={app:f.app,getSettings:()=>settings,getTask:()=>task,getTaskById:()=>null,getAllTasks:()=>[task]};
+   await activateResolvedOpening(f.anchor,{app:f.app,getSettings:()=>settings,resolve:()=>resolveChipOpening({key:'taskInfo.source'},context)},mouse({detail:activation==='keyboard'?0:1,metaKey:activation==='Cmd',ctrlKey:activation==='Ctrl'}));
+   await tick();
+   assert.equal(f.opens.length,1);
+   assert.deepEqual(f.opens[0].eState,{cursor:{from:{line:2,ch:sample.ch},to:{line:2,ch:sample.ch}},scroll:2,focus:true});
+   assert.equal('line' in f.opens[0].eState,false,'native line highlighting must not override the caret');
+   assert.equal(f.view.getViewType(),'markdown');
+   assert.equal(f.stats().saves,0);assert.equal(f.view.getViewData(),'original');
+   assert.equal(f.opens[0].active,false);
+  }finally{f.cleanup();await tick();}
+ });
+}
+for(const mode of ['lightbox','tab'] as const)test(`File Source ${mode}: opening has no Inline caret or forced view mode`,async()=>{
+ const f=fixture();try{
+  const task:any={operonId:'abcdefg',primary:{filePath:f.file.path,format:'yaml',lineNumber:0},fieldValues:{},tags:[]};
+  f.app.vault.getAbstractFileByPath=()=>f.file;
+  const context:any={app:f.app,getSettings:()=>DEFAULT_SETTINGS,getTask:()=>task,getTaskById:()=>null,getAllTasks:()=>[task]};
+  await activateResolvedOpening(f.anchor,{app:f.app,getSettings:()=>DEFAULT_SETTINGS,resolve:()=>resolveChipOpening({key:'taskInfo.source'},context)},mouse({metaKey:mode==='tab'}));await tick();
+  assert.deepEqual(f.opens[0].eState,{});assert.equal(f.stats().saves,0);
+ }finally{f.cleanup();await tick();}
+});
+test('Inline caret state is preserved by resolution; ordinary heading/block/media and invalid caret targets retain native state',()=>{
+ const f=fixture();try{
+  const target={kind:'local' as const,linktext:'Note',sourcePath:'Folder/Origin.md',line:2,caretCh:11};
+  const resolved=resolveLightboxFile(f.app,target)!;
+  assert.equal(resolved.caretCh,11);assert.deepEqual(lightboxFileState(resolved).cursor,{from:{line:2,ch:11},to:{line:2,ch:11}});
+  for(const caretCh of [undefined,-1,1.5,NaN])assert.deepEqual(lightboxFileState({...resolved,caretCh}),{line:2,focus:true});
+  for(const subpath of ['#Heading','#^block'])assert.deepEqual(lightboxFileState({...resolved,subpath}),{subpath,line:2,focus:true});
+  for(const extension of ['base','table','pdf'])assert.deepEqual(lightboxFileState({...resolved,file:new (TFile as any)(`File.${extension}`)}),{line:2,focus:true});
+ }finally{f.cleanup();}
+});
+
+for(const mode of ['lightbox','tab'] as const)test(`Inline Source ${mode}: focus applies after inert loading and tab activation`,async()=>{
+ const f=fixture();try{
+  const applied:any[]=[];let active=false,focused=false;
+  f.app.workspace.setActiveLeaf=(_leaf:any,options:any)=>{if(options.focus){active=true;focused=false;}};
+  f.view.setEphemeralState=(state:any)=>{
+   let node:any=f.view.containerEl;while(node){assert.notEqual(node.inert,true);node=node.parent;}
+   if(mode==='tab')assert.equal(active,true,'activation must precede Source focus');
+   applied.push(state);focused=state.focus===true;
+  };
+  await openLightboxTarget(f.app,f.anchor,{kind:'local',linktext:'Note',sourcePath:f.file.path,line:2,caretCh:11},mode);await tick();
+  assert.equal(focused,true);assert.equal(applied.length,1);
+  assert.deepEqual(applied[0].cursor,{from:{line:2,ch:11},to:{line:2,ch:11}});
+  assert.equal(f.stats().saves,0);
+ }finally{f.cleanup();await tick();}
+});
+test('late native Source load never steals focus after its lightbox was closed',async()=>{
+ const f=fixture();try{
+  let release:any,focused=0;f.leaf.loadIfDeferred=()=>new Promise(resolve=>release=resolve);
+  f.view.setEphemeralState=()=>focused++;
+  await openLightboxTarget(f.app,f.anchor,{kind:'local',linktext:'Note',sourcePath:f.file.path,line:0,caretCh:11});await tick();
+  disposeWebLightboxes(f.app);release();await tick();
+  assert.equal(focused,0);assert.equal(f.stats().detached,1);assert.equal(f.stats().saves,0);
+ }finally{f.cleanup();await tick();}
+});
+const editorContentAst=ts.createSourceFile('task-editor-content.ts',readFileSync('src/ui/task-editor-content.ts','utf8'),ts.ScriptTarget.Latest,true);
+const editorContentClass=editorContentAst.statements.find(node=>ts.isClassDeclaration(node)&&node.name?.text==='TaskEditorContent') as ClassDeclaration;
+function editorCursorMethod(name:string):Function {
+ const method=editorContentClass.members.find(node=>ts.isMethodDeclaration(node)&&node.name.getText(editorContentAst)===name) as MethodDeclaration;
+ const code=ts.transpileModule(`return function(${method.parameters.map(parameter=>parameter.getText(editorContentAst)).join(',')}) ${method.body!.getText(editorContentAst)}`,{compilerOptions:{target:ts.ScriptTarget.ES2022}}).outputText;
+ return new Function('parseTaskLine','resolveInlineTaskDescriptionCursorCh',code)(parseTaskLine,resolveInlineTaskDescriptionCursorCh);
+}
+const bodyLineOffset=editorCursorMethod('getBodyCursorOffset'),bodySourceCursor=editorCursorMethod('resolveFileBodyCursorOffset');
+for(const raw of ['- [ ] Child {{operonId:: abcdefg}}','  - [x] SpätDienst 🎉 {{operonId:: abcdefg}}'])test(`Inline File Body resolves description end after draft changes: ${raw}`,()=>{
+ const task=parseTaskLine(raw,0,'Note.md',DEFAULT_SETTINGS.keyMappings)!;
+ const context:any={fileBodyContext:{filePath:'Note.md',format:'inline',cursorOffset:0},settings:DEFAULT_SETTINGS,getCurrentOperonId:()=>task.operonId,existingTask:task,
+  getBodyCursorOffset:bodyLineOffset};
+ const savedContext=JSON.stringify(context.fileBodyContext);
+ for(const body of [raw,`Prefix\n${raw}`,`Prefix\r\n${raw}\r\nLast`]){
+  context.fileBodyDraft=body;
+  assert.equal(bodySourceCursor.call(context),body.indexOf(raw)+task.descriptionRange.to);
+  assert.equal(JSON.stringify(context.fileBodyContext),savedContext);
+ }
+ context.fileBodyDraft=`${raw}\n${raw}`;assert.equal(bodySourceCursor.call(context),0);
+ context.fileBodyContext.format='yaml';context.fileBodyContext.cursorOffset=4;assert.equal(bodySourceCursor.call(context),4);
 });
