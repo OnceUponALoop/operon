@@ -113,9 +113,16 @@ export interface ResolvedOpeningContext {
 }
 
 export async function activateResolvedOpening(chip: HTMLElement, context: ResolvedOpeningContext, event: MouseEvent): Promise<void> {
- if (event.button !== 0 || event.detail > 1 || context.canActivate?.() === false) return;
+ const external = event.button === 1 && event.type === 'auxclick';
+ if ((event.button !== 0 && !external) || event.detail > 1 || context.canActivate?.() === false) return;
  try {
    const decision = context.resolve();
+   if (external) {
+    if (Platform.isDesktopApp && !context.media && decision.kind === 'target' && decision.target.kind === 'web') {
+     await openLightboxTarget(context.app, chip, decision.target, 'external');
+    }
+    return;
+   }
    if (decision.kind === 'picker') { context.onPicker?.(); return; }
    if (decision.kind === 'missing') { new Notice('Link target not found.'); return; }
    const target = decision.target;
@@ -175,9 +182,18 @@ export function bindResolvedChipOpening(chip: HTMLElement, context: ResolvedOpen
   opening = true;
   try { await activateResolvedOpening(chip, context, event); } finally {opening = false;}
  };
- if (context.stopPointerDown) chip.addEventListener('pointerdown', event => { if (event.button === 0) { event.preventDefault(); event.stopPropagation(); } });
+ const isWebLink = (): boolean => {
+  if (!Platform.isDesktopApp || context.media) return false;
+  const decision = context.resolve();
+  return decision.kind === 'target' && decision.target.kind === 'web' && !decision.target.media;
+ };
+ if (context.stopPointerDown) chip.addEventListener('pointerdown', event => { if (event.button === 0 || event.button === 1 && isWebLink()) { event.preventDefault(); event.stopPropagation(); } });
  chip.addEventListener('mousedown', event => { event.preventDefault(); event.stopPropagation(); });
  chip.addEventListener('click', event => { event.preventDefault(); event.stopPropagation(); void activate(event); });
+ chip.addEventListener('auxclick', event => {
+  if (event.button !== 1 || !isWebLink()) return;
+  event.preventDefault(); event.stopPropagation(); void activate(event);
+ });
  const nativeButton = chip.tagName === 'BUTTON';
  if (!nativeButton) { chip.tabIndex = 0; chip.setAttribute('role', 'button'); }
  chip.addEventListener('keydown', event => {
@@ -197,9 +213,10 @@ export function bindResolvedChipOpening(chip: HTMLElement, context: ResolvedOpen
 /** Existing Table Links route. Table field routing is deliberately outside the chip stage. */
 export function handleLinksChipClick(app: App, chip: HTMLElement, entry: { key: string; externalUrl?: string | null }, event: MouseEvent): boolean {
 	if (!Platform.isDesktopApp || entry.key !== 'links' || !entry.externalUrl) return false;
-	if (event.button !== 0 || event.detail > 1) return true;
+	const external = event.button === 1 && event.type === 'auxclick';
+	if ((event.button !== 0 && !external) || event.detail > 1) return true;
 	void openLightboxTarget(app, chip, { kind: 'web', url: entry.externalUrl },
-		event.detail !== 0 && isTaskSourceOpenModifierClick(event) ? 'tab' : 'lightbox');
+		external ? 'external' : event.detail !== 0 && isTaskSourceOpenModifierClick(event) ? 'tab' : 'lightbox');
 	return true;
 }
 

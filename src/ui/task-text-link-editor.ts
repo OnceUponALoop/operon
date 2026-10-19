@@ -43,7 +43,7 @@ export function taskTextLinkEditorExtension(app: App, readRange: (view: EditorVi
  return Prec.highest(ViewPlugin.fromClass(class {
   opening = false;
   composing = false;
-  gesture: {x: number; y: number; position: number; selection: EditorView['state']['selection']; doc: EditorView['state']['doc']} | null = null;
+  gesture: {button: number; x: number; y: number; position: number; selection: EditorView['state']['selection']; doc: EditorView['state']['doc']} | null = null;
   constructor(readonly view: EditorView) {}
   linkAt(position: number) {
    const range = readRange(this.view, position);
@@ -52,30 +52,10 @@ export function taskTextLinkEditorExtension(app: App, readRange: (view: EditorVi
    const link = taskTextLinkAt(value, position - range.from);
    return link ? {link, source: {value, sourcePath: range.sourcePath}} : null;
   }
-  position(event: MouseEvent): number | null {
-   const target = asHTMLElement(event.target, this.view.dom);
-   if (!target?.closest('a.internal-link, a.external-link, .cm-hmd-internal-link, .cm-link, .cm-url')) return null;
-   return this.view.posAtCoords({x: event.clientX, y: event.clientY});
-  }
- }, {eventHandlers: {
-  mousedown(event) {
-   this.gesture = null;
-   if (event.button !== 0 || event.detail > 1 || event.shiftKey || event.altKey || this.composing || this.view.composing || !this.view.state.selection.main.empty || this.view.state.selection.ranges.length !== 1) return false;
-   const position = this.position(event);
-   if (position === null || !this.linkAt(position)) return false;
-   this.gesture = {x:event.clientX,y:event.clientY,position,selection:this.view.state.selection,doc:this.view.state.doc};
-   // Let CodeMirror place/select text. Only a completed, stationary click navigates.
-   event.stopPropagation();
-   return false;
-  },
-  click(event) {
+  open(event: MouseEvent): boolean {
    const gesture = this.gesture; this.gesture = null;
-   const position = this.position(event);
-   if (event.button !== 0 || event.altKey || event.shiftKey || position === null || !this.linkAt(position)) return false;
-   // Consume rejected gestures too: Obsidian's outer click handler must not open
-   // a second/native target after composition, selection or a double click.
    event.preventDefault(); event.stopImmediatePropagation();
-   if (!gesture || event.detail > 1 || event.shiftKey || event.altKey || this.composing || this.view.composing
+   if (!gesture || gesture.button !== event.button || event.detail > 1 || event.shiftKey || event.altKey || this.composing || this.view.composing
     || gesture.doc !== this.view.state.doc || Math.hypot(event.clientX-gesture.x,event.clientY-gesture.y) >= 5
     || !this.view.state.selection.main.empty) return true;
    const current = this.linkAt(gesture.position);
@@ -88,6 +68,45 @@ export function taskTextLinkEditorExtension(app: App, readRange: (view: EditorVi
     return latest && gesture.doc === this.view.state.doc ? resolveTaskTextLink(app,latest.link,latest.source,false) : {kind:'missing'};
    }}, event).finally(()=> {this.opening=false;});
    return true;
+  }
+  position(event: MouseEvent): number | null {
+   const target = asHTMLElement(event.target, this.view.dom);
+   if (!target?.closest('a.internal-link, a.external-link, .cm-hmd-internal-link, .cm-link, .cm-url')) return null;
+   return this.view.posAtCoords({x: event.clientX, y: event.clientY});
+  }
+ }, {eventHandlers: {
+  mousedown(event) {
+   this.gesture = null;
+   if (event.button !== 0 && event.button !== 1) return false;
+   const position = this.position(event);
+   const current = position === null ? null : this.linkAt(position);
+   const middle = event.button === 1;
+   if (middle) {
+    if (!current || current.link.type !== 'markdown-link' || !current.link.external || !/^https?:\/\//iu.test(current.link.destination)) return false;
+    // Consume HTTP middle-down even when navigation is vetoed: native paste and
+    // autoscroll start here, before auxclick can protect the draft or selection.
+    event.preventDefault(); event.stopImmediatePropagation();
+   }
+   if (event.detail > 1 || event.shiftKey || event.altKey || this.composing || this.view.composing || !this.view.state.selection.main.empty || this.view.state.selection.ranges.length !== 1) return middle;
+   if (position === null || !current) return false;
+   this.gesture = {button:event.button,x:event.clientX,y:event.clientY,position,selection:this.view.state.selection,doc:this.view.state.doc};
+   if (middle) return true;
+   // Let CodeMirror place/select text. Only a completed, stationary click navigates.
+   event.stopPropagation();
+   return false;
+  },
+  click(event) {
+   const position = this.position(event);
+   if (event.button !== 0 || event.altKey || event.shiftKey || position === null || !this.linkAt(position)) return false;
+   // Rejected link gestures must not fall through to Obsidian's native opener.
+   return this.open(event);
+  },
+  auxclick(event) {
+   const position = this.position(event);
+   const current = position === null ? null : this.linkAt(position);
+   if (event.button !== 1) return false;
+   if (this.gesture?.button !== 1 && (!current || current.link.type !== 'markdown-link' || !current.link.external || !/^https?:\/\//iu.test(current.link.destination))) return false;
+   return this.open(event);
   },
   dragstart() { this.gesture = null; return false; },
   compositionstart() { this.composing = true; this.gesture = null; return false; },

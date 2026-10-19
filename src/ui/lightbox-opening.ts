@@ -1,7 +1,7 @@
 import { transferLightboxOpening, getLightboxOrigin } from './lightbox';
 import { Notice, Platform, TFile, parseLinktext, type App } from 'obsidian';
 import { getInternalPlugin, isPluginEnabled } from '../core/obsidian-app';
-import { getOwnerDocument } from '../core/dom-compat';
+import { getOwnerDocument, getOwnerWindow } from '../core/dom-compat';
 import { t } from '../core/i18n';
 import { classifyLocalTaskMediaPreview } from '../core/task-media-preview-kind';
 import { nativeLightboxViewType, getLightboxOwnerLeaf, prepareLightboxTab, lightboxFileState, openFileLightbox, openWebLightbox } from './web-lightbox';
@@ -22,16 +22,23 @@ export function resolveLightboxFile(app: App, target: Extract<LightboxTarget, { 
 }
 
 /** Stage 1 callers opt in explicitly; no property or cell routing lives here. */
-export async function openLightboxTarget(app: App, anchor: HTMLElement, target: LightboxTarget, mode: 'lightbox' | 'tab' = 'lightbox'): Promise<LightboxOpenResult> {
+export async function openLightboxTarget(app: App, anchor: HTMLElement, target: LightboxTarget, mode: 'lightbox' | 'tab' | 'external' = 'lightbox'): Promise<LightboxOpenResult> {
  if (!Platform.isDesktopApp) return 'unsupported';
  if (target.kind === 'web') {
   let url: URL;
   try { url = new URL(target.url); } catch { return 'unsupported'; }
   if (url.protocol !== 'http:' && url.protocol !== 'https:') return 'unsupported';
+  if (mode === 'external') {
+   if (target.media) return 'unsupported';
+   // Obsidian's own default-browser action uses this target to bypass Web Viewer.
+   getOwnerWindow(anchor).open(url.href, '_external', 'noopener');
+   return 'opened';
+  }
   if (mode === 'tab') return await transferLightboxOpening(anchor, mediaTabOpening(app, anchor, target)) ? 'opened' : 'unavailable';
   if (target.media) { openTaskMediaLightbox(app, anchor, target.media, mediaTabOpening(app, anchor, target), mediaTabOpening(app, anchor, target, 'split'), mediaTabOpening(app, anchor, target, 'below'));  return 'opened'; }
   return openWebLightbox(app, anchor, url.href) ? 'opened' : 'unavailable';
  }
+ if (mode === 'external') return 'unsupported';
  const resolved = resolveLightboxFile(app, target);
  if (!resolved) return 'missing';
  const { file, subpath } = resolved;

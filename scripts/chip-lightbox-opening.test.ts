@@ -6,8 +6,9 @@ import { Platform, TFile, Notice } from 'obsidian';
 import { readFileSync } from 'node:fs';
 import { lightboxFixture } from './test-support/lightbox-dom';
 import { pickerCalls } from './test-support/chip-opening-picker';
-import { bindDesktopChipOpening, resolveChipOpening, isDesktopOpeningChip } from '../src/ui/links-chip-action';
+import { bindDesktopChipOpening, handleLinksChipClick, resolveChipOpening, isDesktopOpeningChip } from '../src/ui/links-chip-action';
 import { buildInlineTaskCompactChipEntries } from '../src/ui/compact-task-layout';
+import { bindTaskTextOpening } from '../src/ui/task-text-link-opening';
 import { DEFAULT_SETTINGS } from '../src/types/settings';
 import { bindCompactChipLinkPreview, bindTaskMediaChipPreview, cleanupTaskMediaChipPreviews } from '../src/ui/compact-chip-link-preview';
 import { disposeWebLightboxes } from '../src/ui/web-lightbox';
@@ -23,7 +24,8 @@ function fixture() {
  const parent:any={operonId:'hijklmn',primary:{filePath:'P.md',format:'yaml',lineNumber:0},fieldValues:{},tags:[]};
  let allowed=true, editable=true, writes=0, content='';
  const settings:any={...DEFAULT_SETTINGS,keyMappings:[...DEFAULT_SETTINGS.keyMappings,{canonicalKey:'customText',visiblePropertyName:'Custom Text',isSystem:false,type:'text',aliases:[]},{canonicalKey:'customList',visiblePropertyName:'Custom List',isSystem:false,type:'list',aliases:[]}]};
- const calls:any[] = [], notices:string[]=[], previews:any[]=[];
+ const calls:any[] = [], notices:string[]=[], previews:any[]=[], external:any[]=[];
+ f.doc.defaultView.open=(...args:any[])=>{external.push(args);return null;};
  (Notice as any).onNotice=(message:string)=>notices.push(message);
  const root=f.doc.body.createDiv();
  let viewType='empty';
@@ -37,7 +39,7 @@ function fixture() {
  picker:()=>editable?{onCommit:()=>writes++}:null};
  const fire=(kind:string,event:any=mouse())=>(f.anchor as any).events.get(kind)?.(event);
  (f.anchor as any).click=()=>fire('click',mouse({detail:0}));
- return {...f,app,files,context,parent,settings,calls,notices,previews,fire,
+ return {...f,app,files,context,parent,settings,calls,notices,previews,external,fire,
   task:()=>task,removeTask(){task=null;},allowed(value:boolean){allowed=value;},editable(value:boolean){editable=value;},content(value:string){content=value;},writes:()=>writes,
   bind:(chipEntry:any)=>bindDesktopChipOpening(f.anchor,chipEntry,context),
   cleanup(){cleanupTaskMediaChipPreviews(f.anchor);disposeWebLightboxes(app);Platform.isDesktopApp=desktop;Platform.isMacOS=mac;(Notice as any).onNotice=null;}};
@@ -315,5 +317,66 @@ for(const key of ['customList','assignees','contexts']) test(`Table ${key}: esca
   const raw='[[B.md|Semi; label]]';f.task().fieldValues[key]='[[B.md|Semi\\; label]]; plain';
   f.app.workspace.getLeaf().view.getViewType=()=> 'markdown';f.bindTable(key,raw);
   f.fire('click',mouse({metaKey:true}));await tick();assert.equal(f.calls[0]?.file,'B.md');assert.equal(f.edits(),0);
+ }finally{f.cleanup();}
+});
+
+const middle = (extra:any = {}) => mouse({button:1,type:'auxclick',...extra});
+for(const raw of ['https://example.com/work?id=42#comment','[Work item](http://example.com/work)'])for(const iconOnly of [false,true])test(`Links ${iconOnly?'icon':'detailed'} middle click uses the system browser and original URL: ${raw}`,async()=>{
+ const f=fixture();try{
+  f.task().fieldValues.links=raw;const e={...entry('links',raw),iconOnly};f.bind(e);
+  f.app.internalPlugins.plugins.webviewer.enabled=false;f.app.internalPlugins.getEnabledPluginById=()=>null;
+  let prevented=0,stopped=0;
+  const event=middle({preventDefault(){prevented++;},stopPropagation(){stopped++;}});
+  f.fire('auxclick',event);f.fire('auxclick',event);await tick();
+  assert.equal(f.external.length,1);assert.deepEqual(f.external[0],[raw.startsWith('[')?'http://example.com/work':raw,'_external','noopener']);
+  assert.equal(prevented,2);assert.equal(stopped,2);assert.deepEqual(f.calls,[]);assert.deepEqual(f.notices,[]);assert.equal(pickerCalls.length,0);assert.equal(f.writes(),0);
+  f.fire('click',middle({type:'click'}));f.fire('auxclick',middle({detail:2}));f.fire('auxclick',middle({button:2}));await tick();
+  assert.equal(f.external.length,1);
+ }finally{f.cleanup();}
+});
+test('middle activation reads current membership and interaction permission without opening a picker',async()=>{
+ const f=fixture();try{
+  const raw='https://example.com/original';f.task().fieldValues.links=raw;f.bind(entry('links',raw));
+  f.allowed(false);f.fire('auxclick',middle());await tick();assert.deepEqual(f.external,[]);
+  f.allowed(true);f.task().fieldValues.links='https://example.com/replacement';f.fire('auxclick',middle());await tick();
+  f.removeTask();f.fire('auxclick',middle());await tick();
+  assert.deepEqual(f.external,[]);assert.deepEqual(f.calls,[]);assert.deepEqual(f.notices,[]);assert.equal(pickerCalls.length,0);assert.equal(f.writes(),0);
+ }finally{f.cleanup();}
+});
+for(const key of ['taskImage','taskGallery','customText','parentTask','taskInfo.source'])test(`${key} remains outside external middle-click behavior`,async()=>{
+ const f=fixture();try{
+  const raw=key==='taskImage'||key==='taskGallery'?'https://example.com/remote':'[[B.md]]';
+  f.task().fieldValues[key]=key==='parentTask'?f.parent.operonId:raw;f.bind(entry(key,raw));
+  f.fire('auxclick',middle());await tick();assert.deepEqual(f.external,[]);assert.deepEqual(f.calls,[]);assert.deepEqual(f.notices,[]);assert.equal(pickerCalls.length,0);
+ }finally{f.cleanup();}
+});
+for(const key of ['links','description','note'] as const)test(`Table ${key} middle click opens one current web target without editing`,async()=>{
+ const f=tableFixture();try{
+  const raw='[Site](https://example.com/table)';
+  if(key==='links'){f.task().fieldValues.links=raw;f.bindTable('links',raw);}
+  else {
+   if(key==='description')f.task().description=raw;else f.task().fieldValues.note=raw;
+   bindTableMarkdownOpening(f.anchor,{type:'markdown-link',destination:'https://example.com/table',label:'Site',external:true},key,f.context);
+  }
+  let prevented=0;f.fire('pointerdown',middle({preventDefault(){prevented++;}}));assert.equal(prevented,1);
+  f.fire('auxclick',middle({metaKey:true,ctrlKey:true}));await tick();
+  assert.deepEqual(f.external,[['https://example.com/table','_external','noopener']]);assert.deepEqual(f.calls,[]);assert.equal(f.edits(),0);assert.equal(f.writes(),0);
+  if(key==='description')f.task().description='removed';else f.task().fieldValues[key]='removed';
+  f.fire('auxclick',middle());await tick();assert.equal(f.external.length,1);assert.equal(f.edits(),0);
+ }finally{f.cleanup();}
+});
+test('rendered task text uses current content for middle click; normal modifier still opens an Obsidian tab',async()=>{
+ const f=fixture();try{
+  let value='[Site](https://example.com/text)';
+  bindTaskTextOpening(f.app,()=>({value,sourcePath:'A.md'}))!(f.anchor,{type:'markdown-link',destination:'https://example.com/text',label:'Site',external:true});
+  f.fire('auxclick',middle());await tick();assert.deepEqual(f.external,[['https://example.com/text','_external','noopener']]);
+  f.app.workspace.getLeaf().view.getViewType=()=> 'webviewer';f.fire('click',mouse({metaKey:true}));await tick();assert.deepEqual(f.calls,['https://example.com/text']);
+  value='removed';f.fire('auxclick',middle());await tick();assert.equal(f.external.length,1);assert.equal(f.writes(),0);
+ }finally{f.cleanup();}
+});
+test('legacy Table Links opening shares the explicit external mode without changing modifier routing',async()=>{
+ const f=fixture();try{
+  handleLinksChipClick(f.app,f.anchor,{key:'links',externalUrl:'https://example.com/legacy'},middle());await tick();
+  assert.deepEqual(f.external,[['https://example.com/legacy','_external','noopener']]);assert.deepEqual(f.calls,[]);
  }finally{f.cleanup();}
 });

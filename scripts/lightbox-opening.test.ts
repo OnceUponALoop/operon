@@ -467,3 +467,37 @@ for(const placement of ['split','below'] as const)for(const interveningResize of
   else assert.ok(Math.abs(group.dimension-100*20/70)<0.001);
  }finally{f.cleanup();await tick();}
 });
+
+for (const enabled of [true,false]) test(`explicit external mode bypasses Web Viewer (${enabled}) and uses the owner window`,async()=>{
+ const f=fixture();try{
+  const opened:any[]=[];f.doc.defaultView.open=(...args:any[])=>{opened.push(args);return null;};
+  f.app.internalPlugins.plugins.webviewer.enabled=enabled;
+  f.app.internalPlugins.getEnabledPluginById=()=>{throw Error('External opening must not inspect Web Viewer');};
+  for(const url of ['https://example.com/work?id=42#comment','http://example.com/work']) {
+   assert.equal(await openLightboxTarget(f.app,f.anchor,{kind:'web',url},'external'),'opened');
+   assert.deepEqual(opened.at(-1),[url,'_external','noopener']);
+  }
+  assert.equal(f.stats().created,0);assert.equal(f.stats().saves,0);assert.deepEqual(f.stats().tabUrls,[]);
+ }finally{f.cleanup();}
+});
+test('external mode rejects local files, media, mobile and unsupported schemes without side effects',async()=>{
+ const f=fixture();try{
+  const opened:any[]=[];f.doc.defaultView.open=(...args:any[])=>opened.push(args);
+  for(const url of ['javascript:alert(1)','file:///etc/hosts','mailto:a@example.com','obsidian://open','data:text/html,x','not a url'])
+   assert.equal(await openLightboxTarget(f.app,f.anchor,{kind:'web',url},'external'),'unsupported');
+  assert.equal(await openLightboxTarget(f.app,f.anchor,local,'external'),'unsupported');
+  assert.equal(await openLightboxTarget(f.app,f.anchor,{kind:'web',url:'https://example.com/a.png',media:{kind:'image',url:'https://example.com/a.png',label:'Image'}},'external'),'unsupported');
+  Platform.isDesktopApp=false;
+  assert.equal(await openLightboxTarget(f.app,f.anchor,{kind:'web',url:'https://example.com'},'external'),'unsupported');
+  assert.deepEqual(opened,[]);assert.equal(f.stats().created,0);assert.equal(f.stats().saves,0);
+ }finally{f.cleanup();}
+});
+test('opening externally preserves an existing native preview and does not flush its unsaved edit',async()=>{
+ const f=fixture();try{
+  await openLightboxTarget(f.app,f.anchor,local);await tick();f.edit('unsaved native draft');
+  const before=f.stats();const shell=f.doc.body.children.at(-1);const opened:any[]=[];
+  f.doc.defaultView.open=(...args:any[])=>opened.push(args);
+  await openLightboxTarget(f.app,f.anchor,{kind:'web',url:'https://example.com/'},'external');
+  assert.deepEqual(f.stats(),before);assert.equal(shell.isConnected,true);assert.equal(opened.length,1);
+ }finally{f.cleanup();}
+});

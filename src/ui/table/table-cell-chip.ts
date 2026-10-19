@@ -423,6 +423,15 @@ function renderTableExternalLinkChip(
 			options.onExternalLinkModifierActivate?.(chip, link);
 		}
 	});
+	if (desktopLinks) chip.addEventListener('mousedown', event => {
+		if (event.button !== 1) return;
+		event.preventDefault(); event.stopPropagation();
+	});
+	if (desktopLinks) chip.addEventListener('auxclick', event => {
+		if (event.button !== 1) return;
+		event.preventDefault(); event.stopPropagation();
+		handleLinksChipClick(options.app!, chip, { key: 'links', externalUrl: link.url }, event);
+	});
 	chip.addEventListener('dblclick', event => {
 		if (event.button !== 0 || (!desktopLinks && !isTaskSourceOpenModifierClick(event))) return;
 		event.preventDefault();
