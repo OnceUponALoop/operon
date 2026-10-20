@@ -1,3 +1,4 @@
+import { bindDescendantFocusVisible } from './descendant-focus-visible';
 import { iterateMarkdownLinesOutsideFences } from '../core/markdown-fenced-lines';
 import { taskTextLinkEditorExtension } from './task-text-link-editor';
 import { isTaskInfoChipKey } from '../core/task-info-chips';
@@ -231,8 +232,7 @@ function bindLivePreviewChipHoverState(element: HTMLElement): void {
 	element.addEventListener('pointerleave', removeHover);
 	element.addEventListener('mouseenter', addHover);
 	element.addEventListener('mouseleave', removeHover);
-	element.addEventListener('focusin', addHover);
-	element.addEventListener('focusout', removeHover);
+	// Keyboard focus is styled by :focus-visible; pointer focus is not hover.
 }
 
 export class TaskIconWidget extends WidgetType {
@@ -402,6 +402,7 @@ export class MetadataTailWidget extends WidgetType {
 		wrapper.appendChild(breakEl);
 		const tailWrap = createOwnerElement(wrapper, 'span');
 		tailWrap.className = 'operon-live-preview-tail-wrap operon-task-chip-surface';
+		if (Platform.isDesktopApp) bindDescendantFocusVisible(tailWrap);
 		const row = createOwnerElement(tailWrap, 'span');
 		row.className = 'operon-live-preview-tail-row';
 		const actions = createOwnerElement(tailWrap, 'span');

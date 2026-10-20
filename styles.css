@@ -18519,8 +18519,8 @@ body :is(
 		transition: opacity 120ms ease;
 	}
 
-	body:not(.is-mobile) .operon-live-preview-tail-wrap:is(:hover, :focus-within) > .operon-live-preview-tail-actions > .operon-live-preview-action:not(.operon-task-note-action):not(.operon-task-timer-action.is-active),
-	body:not(.is-mobile) .operon-reading-task-row:is(:hover, :focus-within) > .operon-reading-task-tail-wrap > .operon-reading-task-actions > .operon-live-preview-action:not(.operon-task-note-action):not(.operon-task-timer-action.is-active),
+	body:not(.is-mobile) .operon-live-preview-tail-wrap:is(:hover, .has-descendant-focus-visible) > .operon-live-preview-tail-actions > .operon-live-preview-action:not(.operon-task-note-action):not(.operon-task-timer-action.is-active),
+	body:not(.is-mobile) .operon-reading-task-row:is(:hover, .has-descendant-focus-visible) > .operon-reading-task-tail-wrap > .operon-reading-task-actions > .operon-live-preview-action:not(.operon-task-note-action):not(.operon-task-timer-action.is-active),
 	body:not(.is-mobile) .operon-live-preview-tail-wrap > .operon-live-preview-tail-actions > .operon-live-preview-action:not(.operon-task-note-action):not(.operon-task-timer-action.is-active):focus-visible,
 	body:not(.is-mobile) .operon-reading-task-row > .operon-reading-task-tail-wrap > .operon-reading-task-actions > .operon-live-preview-action:not(.operon-task-note-action):not(.operon-task-timer-action.is-active):focus-visible {
 		opacity: var(--operon-hover-action-opacity);

@@ -39,6 +39,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- Fixed **Inline task hover feedback** remaining active after closing Task Editor with the mouse, while preserving genuine hover and keyboard focus.
 - Distinguished **Daily and Weekly Notes** format and folder setting names, preventing duplicate-setting warnings when Obsidian redraws settings while preserving saved values.
 - **Automatic settings backup conflicts**, including those caused by synchronization, no longer block settings saves or Table startup. Existing backups are preserved, automatic backup creation pauses with a clear console message, and settings-file safety checks remain active.
 - Fixed repeated **settings warnings** during startup and tab changes: a saving pause is now reported once per cause and is no longer described as a damaged Table configuration, while genuine Table file errors remain visible.
@@ -50,7 +51,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Validation
 
-- Full local Plugin checks, production build, release guard, and code review passed, along with **5,182/5,182** local regression tests.
+- Full local Plugin checks, production build, release guard, and code review passed, along with **5,184/5,184** local regression tests.
 
 ## [4.0.1] - 2026-10-14
 

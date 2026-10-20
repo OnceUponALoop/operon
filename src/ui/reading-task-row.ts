@@ -1,3 +1,4 @@
+import { bindDescendantFocusVisible } from './descendant-focus-visible';
 import { taskDescriptionOpening } from './task-text-link-opening';
 import { isTaskInfoChipKey } from '../core/task-info-chips';
 import { bindTaskInfoSourceAction, createTaskSourceActionButton } from './task-info-chip-action';
@@ -252,6 +253,7 @@ export function buildReadingTaskRowElement(
 ): HTMLElement {
 	const owner = renderedDescription ?? options?.owner ?? null;
 	const row = el('div', 'operon-reading-task-row operon-task-chip-surface', owner);
+	if (Platform.isDesktopApp) bindDescendantFocusVisible(row);
 	if (options?.rowClassName) row.classList.add(options.rowClassName);
  if (options?.retainDom) {
   const state = { task, callbacks, adopt: (nextTask: IndexedTask, nextCallbacks: ReadingTaskRowCallbacks) => { task = nextTask; callbacks = nextCallbacks; state.task = task; state.callbacks = callbacks; } };
