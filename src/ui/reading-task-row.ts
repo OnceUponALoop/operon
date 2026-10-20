@@ -1,9 +1,13 @@
+import { bindDescendantFocusVisible } from './descendant-focus-visible';
+import { taskDescriptionOpening } from './task-text-link-opening';
+import { isTaskInfoChipKey } from '../core/task-info-chips';
+import { bindTaskInfoSourceAction, createTaskSourceActionButton } from './task-info-chip-action';
 import { getTimeScopeSignature, replaceTaskTimeScope } from '../core/time-scope-values';
-import { bindLinksChipKeyboard, handleLinksChipClick } from './links-chip-action';
+import { bindDesktopChipOpening } from './links-chip-action';
 import { identifyInlineTaskPart, registerInlineTaskDomRefresh, rememberInlineTaskDom, reconcileInlineTaskDom } from './inline-retained-dom';
 import { bindAssigneeChipImage } from './assignee-chip-image';
 import { getTaskIconActionLabel } from '../core/task-icon-action';
-import { App, setIcon } from 'obsidian';
+import { App, Platform, setIcon } from 'obsidian';
 import { IndexedTask } from '../types/fields';
 import { showDatePicker, type ManualDatePickerOptions } from './field-pickers/date-picker';
 import { showPriorityPicker } from './field-pickers/priority-picker';
@@ -30,12 +34,10 @@ import { bindTaskContextualHoverMenu } from './contextual-hover-menu';
 import type { ContextualMenuActionHandler } from '../core/contextual-menu-engine';
 import { getConfiguredKeyMappingIcon } from '../core/key-mapping-icons';
 import { getLocationPlaceIndex } from '../core/location-source-resolver';
-import { openObsidianTagSearch } from './tag-search';
 import { bindCompactChipLinkPreview, bindTaskMediaChipPreview } from './compact-chip-link-preview';
 import { bindExternalLinkContextMenu, openExternalUrl } from './external-link-actions';
 import { showLocationMapPreview } from './location-map-preview';
 import type { ProjectSerialDisplay } from '../core/project-serials';
-import { createProjectSerialChipElement } from './project-serial-chip';
 import {
 	bindAdaptiveIconOnlyExpansion,
 	bindIconOnlyChipPreview,
@@ -46,7 +48,7 @@ import {
 } from './icon-only-chip-preview';
 import { t } from '../core/i18n';
 import { createOwnerElement, getOwnerWindow } from '../core/dom-compat';
-import { resolveSubtaskActionIcon, resolveSubtaskActionLabelKey } from '../core/subtask-action';
+import { resolveSubtaskChipKinds, resolveSubtaskActionIconForKind, resolveSubtaskActionLabelKeyForKind } from '../core/subtask-action';
 import { resolveTaskDateToneColor } from '../core/task-date-tone';
 import { resolveTaskStatusIconColor } from '../core/task-color-source';
 import type { InlineRepeatCompletionMode } from '../storage/repeat-series-store';
@@ -76,7 +78,7 @@ export interface ReadingTaskRowCallbacks {
 	isTaskPinned?: (taskId: string) => boolean;
 	isTaskTracking?: (taskId: string) => boolean;
 	toggleTimer?: (taskId: string) => void | Promise<void>;
-	requestSubtask?: (operonId: string) => void | Promise<void>;
+	requestSubtask?: (operonId: string, requestedKind?: 'inline') => void | Promise<void>;
 	updateFields?: (operonId: string, payload: Record<string, string>) => void | boolean | Promise<void | boolean>;
 	updateSubtasks?: (operonId: string, subtaskIds: string[]) => void;
 	updateDependencyField?: (operonId: string, field: 'blocking' | 'blockedBy', value: string) => void;
@@ -145,13 +147,13 @@ export interface ReadingTaskRowOptions {
 	owner?: Node | null;
 	workflowStatusIdentityIndex?: WorkflowStatusIdentityIndex;
 	chipItems?: InlineTaskCompactChipItem[];
-	projectSerialPlacement?: 'head' | 'tail';
 	readOnly?: boolean;
 	/** Show normal controls, but route attempts to explicit identity repair. */
 	onBlockedAction?: () => void;
 	showPlayAction?: boolean;
 	showPinAction?: boolean;
 	showNoteAction?: boolean;
+	showSourceAction?: boolean;
 	showSubtaskAction?: boolean;
 	showEditAction?: boolean;
 	rowClassName?: string;
@@ -196,8 +198,8 @@ export function updateReadingInlineTaskRow(
   model, getTimeScopeSignature(model), preparedEntries,
   currentCallbacks.isTaskPinned?.(model.operonId), currentCallbacks.isTaskTracking?.(model.operonId),
   currentCallbacks.getProjectSerialDisplay?.(model.operonId, model),
-  options.readOnly, options.projectSerialPlacement, options.rowClassName,
-  options.showPlayAction, options.showPinAction, options.showNoteAction, options.showSubtaskAction, options.showEditAction,
+  options.readOnly, options.rowClassName,
+  options.showPlayAction, options.showPinAction, options.showNoteAction, options.showSourceAction, options.showSubtaskAction, options.showEditAction,
  ]);
  if (canRetain && previous && signature !== undefined && state.signature === signature && state.refreshSignature === options.refreshSignature
   && !options.beforeTailContent && !options.beforeEditAction) return previous;
@@ -233,6 +235,7 @@ function prepareReadingTaskChips(
 		locationResolver,
 		{
 			app: callbacks.app,
+			task, projectSerialDisplay: callbacks.getProjectSerialDisplay?.(task.operonId, task),
 			repeatSkipDateResolver: callbacks.getRepeatSkipDates,
 			workflowStatusIdentityIndex,
 			taskLookup: options?.renderContext?.taskLookup,
@@ -250,6 +253,7 @@ export function buildReadingTaskRowElement(
 ): HTMLElement {
 	const owner = renderedDescription ?? options?.owner ?? null;
 	const row = el('div', 'operon-reading-task-row operon-task-chip-surface', owner);
+	if (Platform.isDesktopApp) bindDescendantFocusVisible(row);
 	if (options?.rowClassName) row.classList.add(options.rowClassName);
  if (options?.retainDom) {
   const state = { task, callbacks, adopt: (nextTask: IndexedTask, nextCallbacks: ReadingTaskRowCallbacks) => { task = nextTask; callbacks = nextCallbacks; state.task = task; state.callbacks = callbacks; } };
@@ -332,13 +336,6 @@ export function buildReadingTaskRowElement(
 	}
 	identifyInlineTaskPart(iconButton, 'status-icon', iconButton.outerHTML.replace(/operon-accessible-label-\d+/g, 'operon-accessible-label'));
 	head.appendChild(iconButton);
-	const projectSerialDisplay = callbacks.getProjectSerialDisplay?.(task.operonId, task) ?? null;
-	const projectSerialPlacement = options?.projectSerialPlacement ?? 'tail';
-	if (projectSerialDisplay && projectSerialPlacement === 'head') {
-		head.appendChild(createProjectSerialChipElement(projectSerialDisplay, 'operon-reading-task-chip operon-task-chip', {
-			keyMappings: callbacks.getSettings().keyMappings,
-		}));
-	}
 
 	const description = el('div', 'operon-reading-task-description operon-task-description', row);
 	description.setAttribute('role', 'button');
@@ -372,12 +369,6 @@ export function buildReadingTaskRowElement(
 		isTerminal,
 	});
 
-	if (projectSerialDisplay && projectSerialPlacement === 'tail') {
-		tail.appendChild(createProjectSerialChipElement(projectSerialDisplay, 'operon-reading-task-chip operon-task-chip', {
-			keyMappings: callbacks.getSettings().keyMappings,
-		}));
-	}
-
 	const settings = callbacks.getSettings();
 	const entries = options?.preparedEntries ?? prepareReadingTaskChips(task, callbacks, options, workflowStatusIdentityIndex);
 	for (const entry of entries) {
@@ -403,7 +394,7 @@ export function buildReadingTaskRowElement(
 			if (renderEntry.interactive) {
 				attachReadingChipAction(chip, renderEntry, task, callbacks, () => closeIconOnlyChipPreview(chip), taskColor, options?.retainDom ? () => ({ task, callbacks }) : undefined);
 			} else {
-				bindIconOnlyChipPreview(chip);
+				if (entry.key !== 'taskInfo.projectSerial') bindIconOnlyChipPreview(chip);
 			}
 			const previewLinkTarget = renderEntry.previewLinkTarget ?? renderEntry.linkTarget;
 			if (isCompactTaskMediaChipKey(renderEntry.key)) {
@@ -423,7 +414,10 @@ export function buildReadingTaskRowElement(
 		if (renderEntry.interactive) {
 			attachReadingChipAction(chip, renderEntry, task, callbacks, undefined, taskColor, options?.retainDom ? () => ({ task, callbacks }) : undefined);
 		}
-		const chipNode = renderEntry.tooltipContent
+		if (isTaskInfoChipKey(renderEntry.key)) {
+			bindOperonHoverTooltip(chip, { title: renderEntry.tooltipTitle, content: renderEntry.tooltipContent, taskColor });
+		}
+		const chipNode = renderEntry.tooltipContent && !isTaskInfoChipKey(renderEntry.key)
 			? wrapWithOperonHoverTooltip(chip, {
 				title: renderEntry.tooltipTitle ?? t('taskEditor', 'details'),
 				content: renderEntry.tooltipContent,
@@ -457,23 +451,25 @@ export function buildReadingTaskRowElement(
 	const showEditAction = !readOnly && (options?.showEditAction ?? true);
 
 	if (!isTerminal && callbacks.requestSubtask && showSubtaskAction) {
-		const subtaskLabel = t('buttons', resolveSubtaskActionLabelKey(task));
-		const subtaskButton = el('button', 'operon-live-preview-edit operon-reading-task-edit operon-live-preview-action operon-task-chip-action', row);
-		subtaskButton.type = 'button';
-		setIcon(subtaskButton, resolveSubtaskActionIcon(task));
-		setAccessibleLabelWithoutTooltip(subtaskButton, subtaskLabel);
-		bindOperonHoverTooltip(subtaskButton, {
-			content: subtaskLabel,
-			taskColor,
-		});
-		subtaskButton.addEventListener('click', (event) => {
-			event.preventDefault();
-			event.stopPropagation();
-			void callbacks.requestSubtask?.(task.operonId);
-		});
-		if (taskColor) subtaskButton.style.setProperty('--operon-live-hover-border', taskColor);
-		identifyInlineTaskPart(subtaskButton, 'subtask', subtaskButton.outerHTML.replace(/operon-accessible-label-\d+/g, 'operon-accessible-label'));
-		actions.appendChild(subtaskButton);
+		for (const kind of resolveSubtaskChipKinds(task)) {
+			const subtaskLabel = t('buttons', resolveSubtaskActionLabelKeyForKind(kind));
+			const subtaskButton = el('button', 'operon-live-preview-edit operon-reading-task-edit operon-live-preview-action operon-task-chip-action', row);
+			subtaskButton.type = 'button';
+			setIcon(subtaskButton, resolveSubtaskActionIconForKind(kind));
+			setAccessibleLabelWithoutTooltip(subtaskButton, subtaskLabel);
+			bindOperonHoverTooltip(subtaskButton, {
+				content: subtaskLabel,
+				taskColor,
+			});
+			subtaskButton.addEventListener('click', (event) => {
+				event.preventDefault();
+				event.stopPropagation();
+				void callbacks.requestSubtask?.(task.operonId, kind === 'inline' ? 'inline' : undefined);
+			});
+			if (taskColor) subtaskButton.style.setProperty('--operon-live-hover-border', taskColor);
+			identifyInlineTaskPart(subtaskButton, kind === resolveSubtaskChipKinds(task)[0] ? 'subtask' : 'subtask-inline', subtaskButton.outerHTML.replace(/operon-accessible-label-\d+/g, 'operon-accessible-label'));
+			actions.appendChild(subtaskButton);
+		}
 	}
 
 	if (!readOnly) {
@@ -527,6 +523,7 @@ export function buildReadingTaskRowElement(
 		actions.appendChild(playButton);
 	}
 
+	let noteAction: HTMLElement | null = null;
 	const rawNoteValue = task.fieldValues['note'] ?? '';
 	const noteValue = rawNoteValue.trim();
 	if (showNoteAction && readOnly && noteValue) {
@@ -539,6 +536,7 @@ export function buildReadingTaskRowElement(
 		});
 		noteIndicator.querySelector('.operon-hover-trigger')?.classList.add('operon-reading-task-note-neutral', 'operon-task-chip-action');
 		identifyInlineTaskPart(noteIndicator, 'note', JSON.stringify([rawNoteValue, taskColor, settings.language, noteIndicator.outerHTML.replace(/operon-accessible-label-\d+/g, 'operon-accessible-label')]));
+		noteAction = noteIndicator;
 		actions.appendChild(noteIndicator);
 	} else if (showNoteAction && !readOnly && (!isTerminal || noteValue)) {
 		// Keep action closures independent of the render-pass lookup.
@@ -571,8 +569,18 @@ export function buildReadingTaskRowElement(
 			},
 		});
 		identifyInlineTaskPart(noteButton, 'note', JSON.stringify([rawNoteValue, taskColor, settings.language, noteButton.outerHTML.replace(/operon-accessible-label-\d+/g, 'operon-accessible-label')]));
+		noteAction = noteButton;
 		actions.appendChild(noteButton);
 	}
+
+	if (Platform.isDesktopApp && !options?.onBlockedAction && (options?.showSourceAction ?? settings.inlineTaskShowSourceAction)) {
+  const sourceButton = createTaskSourceActionButton({ app: callbacks.app, owner: actions,
+   getSettings: callbacks.getSettings, getTask: () => callbacks.getAllTasks().find(current => current.operonId === task.operonId),
+   taskColor, className: 'operon-live-preview-edit operon-reading-task-edit operon-live-preview-action operon-task-chip-action',
+  });
+  identifyInlineTaskPart(sourceButton, 'source', sourceButton.outerHTML.replace(/operon-accessible-label-\d+/g, 'operon-accessible-label'));
+  actions.insertBefore(sourceButton, noteAction);
+ }
 
 	if (showEditAction) {
 		const editButton = el('button', 'operon-live-preview-edit operon-reading-task-edit operon-task-chip-action', row);
@@ -620,6 +628,7 @@ function renderTaskDescription(
 	const rendered = renderCompactTaskMarkdown(descriptionEl, {
 		app: callbacks.app,
 		value: description,
+  bindLink: taskDescriptionOpening(callbacks.app, () => callbacks.getAllTasks().find(current => current.operonId === task.operonId)),
 		sourcePath: task.primary.filePath,
 		mode: 'interactive',
 		containerClassName: 'operon-reading-task-description-markdown',
@@ -695,15 +704,37 @@ function attachReadingChipAction(
 	taskColor?: string | null,
  getCurrent?: () => { task: IndexedTask; callbacks: ReadingTaskRowCallbacks },
 ): void {
-	bindLinksChipKeyboard(chip, entry.key);
+
+ const currentCallbacks = () => getCurrent?.().callbacks ?? callbacks;
+ if (bindDesktopChipOpening(chip, entry, {
+  app: callbacks.app, getSettings: () => currentCallbacks().getSettings(),
+  getTask: () => currentCallbacks().getAllTasks().find(candidate => candidate.operonId === task.operonId),
+  getTaskById: id => currentCallbacks().getAllTasks().find(candidate => candidate.operonId === id),
+  getAllTasks: () => currentCallbacks().getAllTasks(),
+  picker: current => ({ onCommit: payload => {
+   const live = currentCallbacks();
+   const normalized = Object.fromEntries(Object.entries(payload).map(([key, value]) => [key, Array.isArray(value) ? value.join('; ') : value]));
+   if (live.updateFields) void live.updateFields(current.operonId, normalized);
+   else for (const [key, value] of Object.entries(normalized)) void live.updateField(current.operonId, key, value);
+   onCommit?.();
+  } }),
+ })) return;
+	if (entry.key === 'taskInfo.projectSerial') return;
+	if (entry.key === 'taskInfo.source') {
+		bindTaskInfoSourceAction(chip, () => { const current = getCurrent?.() ?? { task, callbacks };
+			void current.callbacks.onContextualAction?.(current.task.operonId, 'jumpToSource'); }, callbacks.app, () => {
+			const current = getCurrent?.() ?? { task, callbacks };
+			return current.callbacks.getAllTasks().find(candidate => candidate.operonId === current.task.operonId);
+		});
+		return;
+	}
+
+	let tagPickerOpen = false;
+	let statusPickerOpen = false;
 	chip.addEventListener('click', (event) => {
 		event.preventDefault();
 		event.stopPropagation();
-		if (handleLinksChipClick(callbacks.app, chip, entry, event)) {
-			onCommit?.();
-			return;
-		}
-		if (entry.iconOnly && shouldOpenIconOnlyChipPreview(chip)) {
+		if (entry.key !== 'tags' && entry.key !== 'status' && entry.iconOnly && shouldOpenIconOnlyChipPreview(chip)) {
 			openIconOnlyChipPreview(chip);
 			return;
 		}
@@ -742,12 +773,16 @@ function attachReadingChipAction(
 			return;
 		}
 		switch (entry.key) {
+			case 'status':
 			case 'taskType':
+				if (entry.key === 'status' && statusPickerOpen) return;
+				if (entry.key === 'status') statusPickerOpen = true;
 				openTaskFieldPicker({
 					app: callbacks.app,
 					settings: callbacks.getSettings(),
 					allTasks: callbacks.getAllTasks(),
-					canonicalKey: 'taskType',
+					canonicalKey: entry.key,
+					onClose: () => { statusPickerOpen = false; },
 					anchor: chip,
 					currentFieldValues: task.fieldValues,
 					getCurrentFieldValues: () => callbacks.getAllTasks()
@@ -756,9 +791,10 @@ function attachReadingChipAction(
 					sourcePath: task.primary.filePath,
 					taskFormat: task.primary.format,
 					onCommit: payload => {
-						const value = payload.taskType;
+						const value = payload[entry.key];
+						statusPickerOpen = false;
 						if (typeof value !== 'string') return;
-						void callbacks.updateField(task.operonId, 'taskType', value);
+						void callbacks.updateField(task.operonId, entry.key, value);
 						onCommit?.();
 					},
 				});
@@ -779,11 +815,6 @@ function attachReadingChipAction(
 					);
 					onCommit?.();
 				}
-				break;
-			case 'status':
-				if (callbacks.onContextualAction) void callbacks.onContextualAction(task.operonId, 'taskStatus');
-				else runReadingRowStatusCycle(callbacks, task.operonId);
-				onCommit?.();
 				break;
 			case 'priority':
 					showPriorityPicker(chip, {
@@ -832,8 +863,26 @@ function attachReadingChipAction(
 				}
 				break;
 			case 'tags':
-				void openObsidianTagSearch(callbacks.app, entry.label);
-				onCommit?.();
+				if (tagPickerOpen) return;
+				tagPickerOpen = true;
+				openTaskFieldPicker({
+					app: callbacks.app,
+					settings: callbacks.getSettings(),
+					allTasks: callbacks.getAllTasks(),
+					canonicalKey: 'tags',
+					anchor: chip,
+					currentFieldValues: task.fieldValues,
+					currentTags: callbacks.getAllTasks().find(candidate => candidate.operonId === task.operonId)?.tags ?? task.tags,
+					sourcePath: task.primary.filePath,
+					taskFormat: task.primary.format,
+					closeListPickerOnSelect: true,
+					onClose: () => { tagPickerOpen = false; },
+					onCommit: payload => {
+						if (!Array.isArray(payload.tags)) return;
+						void callbacks.updateField(task.operonId, '_tags', payload.tags.join('; '));
+						onCommit?.();
+					},
+				});
 				break;
 			case 'links':
 				openExternalUrl(entry.externalUrl);

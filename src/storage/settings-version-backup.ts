@@ -17,6 +17,9 @@ const queues = new WeakMap<BackupAdapter, Map<string, Promise<void>>>();
 const versionPattern = /^[0-9]+\.[0-9]+\.[0-9]+(?:-[0-9A-Za-z.-]+)?$/u;
 const namePattern = /^data-\d{8}T\d{9}Z-before-[0-9]+\.[0-9]+\.[0-9]+(?:-[0-9A-Za-z.-]+)?-[0-9a-f-]{36}\.json$/u;
 
+/** Backup-only conflicts must never authorize changes to the canonical settings. */
+export class SettingsBackupConflictError extends Error {}
+
 /** Internal journal, independent of user settings. No automatic restoration. */
 export async function prepareSettingsVersionBackup(
 	adapter: BackupAdapter, pluginDir: string, canonicalPath: string,
@@ -53,7 +56,7 @@ class SettingsVersionBackup {
 		if (journal.value.pending) {
 			// An interrupted operation never adopts a different canonical source.
 			if (await sha256HexForStorage(source) !== journal.value.pending.entry.digest) {
-				throw new Error('Interrupted settings backup has a different source');
+				throw new SettingsBackupConflictError('Interrupted settings backup has a different source');
 			}
 			journal = await this.finish(journal, source);
 		}
@@ -62,7 +65,7 @@ class SettingsVersionBackup {
 			await this.assertCanonical(source);
 			return;
 		}
-		if (await this.adapter.exists(this.temporary)) throw new Error('Unowned settings backup temporary file');
+		if (await this.adapter.exists(this.temporary)) throw new SettingsBackupConflictError('Unowned settings backup temporary file');
 		await this.verifyEntries(journal.value.backups);
 		await this.ensureDirectory();
 		if (firstInstallation) {
@@ -125,8 +128,8 @@ class SettingsVersionBackup {
 		const inventory = await this.adapter.list(this.directory);
 		for (const path of inventory.files) {
 			const name = path.slice(this.directory.length + 1);
-			if (namePattern.test(name) && !owned.has(path)) throw new Error('Unowned automatic backup requires inspection');
-			if (path === this.temporary && !journal.pending) throw new Error('Unowned backup temporary file requires inspection');
+			if (namePattern.test(name) && !owned.has(path)) throw new SettingsBackupConflictError('Unowned automatic backup requires inspection');
+			if (path === this.temporary && !journal.pending) throw new SettingsBackupConflictError('Unowned backup temporary file requires inspection');
 		}
 	}
 
@@ -160,7 +163,7 @@ class SettingsVersionBackup {
 	private async verifyEntries(entries: Entry[]): Promise<void> {
 		for (const entry of entries) {
 			const raw = await this.read(this.path(entry));
-			if (raw === null || await sha256HexForStorage(raw) !== entry.digest) throw new Error('Retained settings backup is missing or changed');
+			if (raw === null || await sha256HexForStorage(raw) !== entry.digest) throw new SettingsBackupConflictError('Retained settings backup is missing or changed');
 		}
 	}
 	private async ensureDirectory(): Promise<void> {
@@ -209,9 +212,9 @@ class SettingsVersionBackup {
 		}
 		valid.sort((left, right) => right.value.generation - left.value.generation);
 		if (valid.length === 2 && valid[0].value.generation === valid[1].value.generation
-			&& sources[0] !== sources[1]) throw new Error('Ambiguous settings backup journal');
+			&& sources[0] !== sources[1]) throw new SettingsBackupConflictError('Ambiguous settings backup journal');
 		if (valid[0]) return valid[0];
-		if (sources.some(source => source !== null)) throw new Error('No valid settings backup journal');
+		if (sources.some(source => source !== null)) throw new SettingsBackupConflictError('No valid settings backup journal');
 		return {
 			slot: -1, sources,
 			value: { format: 'operon-settings-backups', version: 1, generation: 0, processedVersion: null, backups: [], pending: null },

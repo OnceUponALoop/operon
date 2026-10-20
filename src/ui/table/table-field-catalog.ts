@@ -1,6 +1,7 @@
+import { TASK_INFO_CHIPS } from '../../core/task-info-chips';
 import type { NativePropertyReadOnlyReason } from '../../core/task-editor-native-properties';
 import { getConfiguredKeyMappingIcon } from '../../core/key-mapping-icons';
-import { t } from '../../core/i18n';
+import { getCurrentLang, t } from '../../core/i18n';
 import { getManagedCustomFieldMappings, getManagedCustomKeyMapping } from '../../core/managed-task-fields';
 import { CANONICAL_KEYS, type ValueType } from '../../types/keys';
 import { CHECKBOX_PROGRESS_COLUMN_KEY } from '../task-progress-tracks';
@@ -62,6 +63,7 @@ export const TABLE_EDITABLE_TASK_FIELD_KEYS = new Set([
 	'datetimeRepeatEnd',
 	'estimate',
 	'repeat',
+	'repeatOccurrenceDate',
 	'parentTask',
 	'blocking',
 	'blockedBy',
@@ -81,12 +83,12 @@ const SYNTHETIC_TABLE_FIELDS: Array<Omit<TableTaskField, 'aliases'>> = [
 	{ key: '__countdown', label: 'Countdown', type: 'datetime', group: 'scheduling', icon: 'hourglass', readonly: true },
 	{ key: TABLE_TASK_TREE_COLUMN_KEY, label: 'Task Tree', type: 'text', group: 'task', icon: 'list-tree', readonly: true },
 	{ key: TABLE_TASK_DATA_TYPE_COLUMN_KEY, label: 'Task Data Type', type: 'text', group: 'source', icon: 'database', readonly: true },
-	{ key: PROJECT_SERIAL_TABLE_FIELD_KEY, label: 'Project Serial', type: 'text', group: 'identity', icon: 'fingerprint', readonly: true },
+	{ key: PROJECT_SERIAL_TABLE_FIELD_KEY, label: TASK_INFO_CHIPS['taskInfo.projectSerial'].label, type: 'text', group: 'identity', icon: 'fingerprint', readonly: true },
 	{ key: 'description', label: 'Task', type: 'text', group: 'task', icon: 'list-todo', readonly: false },
 	{ key: 'checkbox', label: 'Checkbox', type: 'checkbox', group: 'workflow', icon: 'square-check-big', readonly: true },
 	{ key: CHECKBOX_PROGRESS_COLUMN_KEY, label: 'Checkbox Progress', type: 'number', group: 'workflow', icon: 'list-checks', readonly: true },
 	{ key: 'tags', label: 'Tags', type: 'tags', group: 'workflow', icon: 'hash', readonly: false },
-	{ key: 'source', label: 'Source', type: 'text', group: 'source', icon: 'file-search', readonly: true },
+	{ key: 'source', label: TASK_INFO_CHIPS['taskInfo.source'].label, type: 'text', group: 'source', icon: 'file-search', readonly: true },
 	{ key: 'sourcePath', label: 'Source path', type: 'text', group: 'source', icon: 'folder-input', readonly: true },
 	{ key: 'sourceLine', label: 'Source line', type: 'number', group: 'source', icon: 'list-ordered', readonly: true },
 	{ key: 'sourceFormat', label: 'Source format', type: 'text', group: 'source', icon: 'braces', readonly: true },
@@ -97,6 +99,7 @@ const SYNTHETIC_TABLE_FIELDS: Array<Omit<TableTaskField, 'aliases'>> = [
 ];
 
 interface TableTaskFieldCatalogCacheEntry {
+	language: ReturnType<typeof getCurrentLang>;
 	keyMappings: TableTaskFieldCatalogSettings['keyMappings'];
 	catalog: TableTaskField[];
 	fieldByKey: Map<string, TableTaskField>;
@@ -107,10 +110,11 @@ let tableTaskFieldCatalogCache: TableTaskFieldCatalogCacheEntry | null = null;
 
 // Building the catalog walks CANONICAL_KEYS × keyMappings and its callers sit on
 // per-cell render paths (labels, editability, key normalization), so the result is
-// memoized by keyMappings identity — every settings write path replaces that array
+// memoized by language and keyMappings identity — every settings write path replaces that array
 // wholesale, never mutates it in place.
 function resolveTableTaskFieldCatalog(settings: TableTaskFieldCatalogSettings): TableTaskFieldCatalogCacheEntry {
-	if (tableTaskFieldCatalogCache && tableTaskFieldCatalogCache.keyMappings === settings.keyMappings) {
+	const language = getCurrentLang();
+	if (tableTaskFieldCatalogCache && tableTaskFieldCatalogCache.language === language && tableTaskFieldCatalogCache.keyMappings === settings.keyMappings) {
 		return tableTaskFieldCatalogCache;
 	}
 	const catalog = buildTableTaskFieldCatalogUncached(settings);
@@ -124,7 +128,7 @@ function resolveTableTaskFieldCatalog(settings: TableTaskFieldCatalogSettings): 
 			}
 		}
 	}
-	tableTaskFieldCatalogCache = { keyMappings: settings.keyMappings, catalog, fieldByKey, aliasToKey };
+	tableTaskFieldCatalogCache = { language, keyMappings: settings.keyMappings, catalog, fieldByKey, aliasToKey };
 	return tableTaskFieldCatalogCache;
 }
 
@@ -235,6 +239,18 @@ function buildTableTaskFieldCatalogUncached(settings: TableTaskFieldCatalogSetti
 			aliases: buildAliases(field.key, field.label),
 		});
 	}
+
+	// Expose the stored recurrence reference only on Table surfaces; keep it internal globally.
+	const referenceDateLabel = t('taskEditor', 'repeatReferenceDateField');
+	addField(fields, seen, {
+		key: 'repeatOccurrenceDate',
+		label: referenceDateLabel,
+		type: 'date',
+		group: 'scheduling',
+		icon: 'calendars',
+		readonly: false,
+		aliases: buildAliases('repeatOccurrenceDate', referenceDateLabel),
+	});
 
 	for (const canonical of CANONICAL_KEYS) {
 		if (canonical.internal === true || isRetiredKeyMapping(canonical.name)) continue;

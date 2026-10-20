@@ -109,9 +109,9 @@ export class TaskCardControls extends Component {
   this.icon.setAttribute('aria-disabled', String(!this.canChangeStatus() || !this.canInteract()));
   const source: TaskProgressSource = { getTask: this.deps.getTask, getChildIds: this.deps.getChildIds };
   const summary = resolveTaskProgressDescendantSummary(task, source);
-  const signature = JSON.stringify([taskColor, settings.keyMappings, settings.pipelines, settings.priorities, settings.timeFormat, task, settings.taskCardCompactChips, settings.taskCardItemOrder,
+  const signature = JSON.stringify([taskColor, settings.keyMappings, settings.pipelines, settings.priorities, settings.timeFormat, task, this.deps.chips.getProjectSerialDisplay?.(this.id, task), settings.taskCardCompactChips, settings.taskCardItemOrder,
    settings.taskCardShowTaskProgress, settings.taskCardShowCheckboxProgress, settings.taskCardShowChips,
-   settings.taskCardShowPlayAction, settings.taskCardShowPinAction, settings.taskCardShowNoteAction,
+   settings.taskCardShowPlayAction, settings.taskCardShowPinAction, settings.taskCardShowNoteAction, settings.taskCardShowSourceAction,
    settings.taskCardShowSubtaskAction, settings.taskCardShowPlainCheckboxAction,
    this.deps.chips.isTaskPinned?.(this.id), this.deps.chips.isTaskTracking?.(this.id), readOnly, actionsReadOnly, summary, visibility]);
   if (signature === this.signature && this.renderedLease?.() !== false) return;
@@ -152,12 +152,13 @@ export class TaskCardControls extends Component {
     const mode = repeatMode; repeatMode = undefined;
     return this.deps.run(this.id, allowed, () => this.deps.updateSurfaceFields?.(this.id, payload, task, allowed, mode) ?? false);
    };
-   const row = buildCompactCardChipRow(task, { ...callbacks, surface: surface?.menuSurface ?? 'taskCard', canMutate: allowed,
+   const row = buildCompactCardChipRow(task, { ...callbacks, getAllTasks: () => this.deps.getAllTasks(), getTaskById: id => this.deps.getTask(id) ?? undefined, surface: surface?.menuSurface ?? 'taskCard', canMutate: allowed,
     updateField: (_id, key, value) => commit({ [key]: value }),
     updateFields: (id, value) => surface ? commit(value) : this.run(() => callbacks.updateFields?.(id, value)),
     updateRepeatSeriesInlineCompletionMode: (id, mode) => { if (surface) repeatMode = mode; else void this.run(() => callbacks.updateRepeatSeriesInlineCompletionMode?.(id, mode)); },
     toggleTimer: id => this.run(() => callbacks.toggleTimer?.(id, allowed)).then(() => undefined),
     onAction: (id, action, context, invocation) => {
+     if (action === 'jumpToSource') return this.deps.onAction(id, action, context, invocation);
      if (action === 'checkboxes') { this.openCheckboxes(invocation?.actionAnchor ?? this.icon); return; }
      return this.run(() => this.deps.onAction(id, action, context, { ...invocation, canMutate: allowed })).then(() => undefined);
     },
@@ -171,7 +172,7 @@ export class TaskCardControls extends Component {
     },
    }, { allTasks: this.deps.getAllTasks(), owner: this.root, readOnly, actionsReadOnly, isTargetReadOnly: () => !this.canInteract(), allowReadOnlyNavigation: true, noteEditable: !readOnly, classPrefix: 'operon-task-card',
     profile: { items: settings.taskCardCompactChips, play: settings.taskCardShowPlayAction, pin: settings.taskCardShowPinAction,
-     note: settings.taskCardShowNoteAction, subtask: settings.taskCardShowSubtaskAction, checkbox: settings.taskCardShowPlainCheckboxAction } });
+     note: settings.taskCardShowNoteAction, source: settings.taskCardShowSourceAction, subtask: settings.taskCardShowSubtaskAction, checkbox: settings.taskCardShowPlainCheckboxAction } });
    if (row) append('chips').appendChild(row);
   }
  }
@@ -182,7 +183,7 @@ export class TaskCardControls extends Component {
   showTextFieldPopover({ app: this.deps.app, anchor, title: t('taskEditor', 'description'),
    initialValue: task.description, taskColor: task.fieldValues.taskColor,
    sessionKey: `canvas-task-description:${this.id}`, lifecycleOwner: this.root, rebindCommitOnReopen: true,
-   editor: { kind: 'compact-markdown', sourcePath: task.primary.filePath },
+   editor: { kind: 'compact-markdown', openLinksInLightbox: true, sourcePath: task.primary.filePath },
    onCommit: value => this.deps.run(this.id, allowed, () => surface
     ? this.deps.updateSurfaceFields?.(this.id, { _description: value }, task, allowed) ?? false
     : this.deps.chips.updateField?.(this.id, '_description', value)),

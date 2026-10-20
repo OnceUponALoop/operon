@@ -28,7 +28,7 @@ import {
 } from '../../core/blocked-by-visual-state';
 import type { TableTaskLookup } from './table-value-adapter';
 import { formatTableDetailedDatetimeValue } from './table-datetime-format';
-import { formatTableCompactDuration, isTableDurationLikeTaskField } from './table-display';
+import { formatTableCompactDuration, formatTableRepeatValue, isTableDurationLikeTaskField } from './table-display';
 import { bindTableParentTaskTooltip } from './table-parent-task-tooltip';
 import { getTaskMediaReferenceAlias, resolveTaskMediaReference } from '../../core/task-media-reference';
 import { parseTableTaskListValue } from './table-value-adapter';
@@ -48,6 +48,7 @@ export interface TableCellChipRenderOptions {
 	workflowStatusIdentityIndex?: WorkflowStatusIdentityIndex;
 	accentValue?: string;
 	locationResolver?: TableLocationCellResolver | null;
+	bindOpening?: (chip: HTMLElement, rawValue: string) => boolean;
 	onLocationPreview?: (trigger: HTMLElement, visual: TableLocationCellVisual) => void;
 	onExternalLinkModifierActivate?: (trigger: HTMLElement, link: ExternalLinkValue) => void;
 }
@@ -97,7 +98,7 @@ export function renderTableCellChips(
 					: 'overflow',
 			});
 		}
-		bindTableTaskMediaChipActivation(chip, key, item.rawValue, options);
+		if (!options.bindOpening?.(chip, item.rawValue)) bindTableTaskMediaChipActivation(chip, key, item.rawValue, options);
 	}
 }
 
@@ -307,6 +308,17 @@ export function renderTableCellChipContent(
 		renderTableExternalLinkChip(chip, externalLink, options);
 		return;
 	}
+	if (key === 'repeat') {
+		const summary = formatTableRepeatValue(value);
+		renderTableValueIconChipContent(chip, summary, field?.icon ?? 'repeat', 'repeat');
+		setAccessibleLabelWithoutTooltip(chip, summary);
+		bindOperonHoverTooltip(chip, {
+			content: summary,
+			taskColor: resolveTableCellChipAccent(key, value, options),
+			preferredHorizontal: 'center',
+		});
+		return;
+	}
 	const displayValue = formatTableDetailedDatetimeValue(key, value, options.settings);
 	if (key === 'assignees') {
 		renderTableValueIconChipContent(chip, displayValue, field?.icon ?? 'users');
@@ -353,7 +365,7 @@ export function renderTableCellChipContent(
 	if (key !== 'taskIcon') {
 		chip.setText(displayValue);
 		const parentTaskId = key === 'parentTask' ? (options.accentValue ?? value).trim() : '';
-		if (parentTaskId && options.taskLookup?.getTask(parentTaskId)) {
+		if (parentTaskId && !options.bindOpening && options.taskLookup?.getTask(parentTaskId)) {
 			bindTableParentTaskTooltip(
 				chip,
 				displayValue,
@@ -381,7 +393,8 @@ function renderTableExternalLinkChip(
 	options: TableCellChipRenderOptions,
 ): void {
 	const desktopLinks = Platform.isDesktopApp && !!options.app;
-	if (desktopLinks) bindLinksChipKeyboard(chip, 'links');
+	const sharedOpening = !!options.bindOpening;
+	if (desktopLinks && !sharedOpening) bindLinksChipKeyboard(chip, 'links');
 	chip.addClass('operon-table-external-link-chip');
 	renderTableValueIconChipContent(chip, link.displayValue, options.settings ? getTableTaskField('links', options.settings)?.icon ?? 'link' : 'link', 'link');
 	bindOperonHoverTooltip(chip, {
@@ -392,6 +405,8 @@ function renderTableExternalLinkChip(
 		taskColor: null,
 		preferredHorizontal: 'center',
 	});
+
+	if (sharedOpening) return;
 
 	chip.addEventListener('pointerdown', event => {
 		if (event.button !== 0 || (!desktopLinks && !isTaskSourceOpenModifierClick(event))) return;
@@ -407,6 +422,15 @@ function renderTableExternalLinkChip(
 		} else {
 			options.onExternalLinkModifierActivate?.(chip, link);
 		}
+	});
+	if (desktopLinks) chip.addEventListener('mousedown', event => {
+		if (event.button !== 1) return;
+		event.preventDefault(); event.stopPropagation();
+	});
+	if (desktopLinks) chip.addEventListener('auxclick', event => {
+		if (event.button !== 1) return;
+		event.preventDefault(); event.stopPropagation();
+		handleLinksChipClick(options.app!, chip, { key: 'links', externalUrl: link.url }, event);
 	});
 	chip.addEventListener('dblclick', event => {
 		if (event.button !== 0 || (!desktopLinks && !isTaskSourceOpenModifierClick(event))) return;

@@ -1,3 +1,4 @@
+import { parseCompactWikiLinkValue } from '../compact-task-layout';
 import type { NativeListPickerOperation } from '../field-pickers/custom/custom-list-field-picker';
 import { formatUiDate } from '../../core/ui-date-format';
 import { formatUiTaskDatetime } from '../../core/ui-time-format';
@@ -34,11 +35,11 @@ import { resolveTableColumnCellAccent } from './table-column-color';
 import { renderTableTextValueDisplay } from './table-description-cell';
 import { formatTableIconOnlyTooltipContent, renderTableIconOnlyCell } from './table-icon-only-cell';
 import { bindPropertyReadOnlyWarning } from '../property-readonly-warning';
-import { createCompactTaskMarkdownTooltipContent } from '../operon-hover-tooltip';
+import { bindOperonHoverTooltip, createCompactTaskMarkdownTooltipContent } from '../operon-hover-tooltip';
 import { showSearchableOptionPicker } from '../field-pickers/searchable-option-picker';
 import { resolveSurfaceFloatingHostOptions } from '../field-pickers/common';
 import { showTextFieldPopover } from '../text-field-popover';
-import { buildTableFilePropertyTextMutation, resolveTableTextEditRoute } from './table-text-edit-route';
+import { buildTableFilePropertyTextMutation } from './table-text-edit-route';
 
 export interface TableFilePropertyUpdateRequest {
  sourceFormat?: 'yaml' | 'inline';
@@ -110,7 +111,8 @@ export function openTableFilePropertyPicker(options: {
 		onRemove: remove,
 		onClose: options.onClose,
 	};
-	const normalizedValue = options.cellValue.normalizedValue;
+	const normalizedValue = options.field.type === 'text' && typeof options.cellValue.rawValue === 'string'
+		? options.cellValue.rawValue : options.cellValue.normalizedValue;
 	switch (options.field.type) {
 		case 'checkbox':
 			return showSearchableOptionPicker(options.anchor, {
@@ -173,30 +175,32 @@ export function openTableFilePropertyPicker(options: {
 			});
 		case 'text':
 		default:
-			if (options.textEditRoute === 'popover' || (options.textEditRoute !== 'picker' && resolveTableTextEditRoute(normalizedValue, true) === 'popover')) {
-				return showTextFieldPopover({
-					app: options.app,
-					anchor: options.anchor,
-					title: options.label,
-					initialValue: normalizedValue,
-					allowEmptyCommit: true,
-					sessionKey: options.sessionKey,
-					lifecycleOwner: options.lifecycleOwner,
-					onFocusReturn: options.onFocusReturn,
-					editor: {
-						kind: 'compact-markdown',
-						sourcePath: options.sourcePath,
-					},
-					onCommit: value => {
-						options.onMutation(buildTableFilePropertyTextMutation(value));
-					},
-					onClose: options.onClose,
-				});
-			}
 			return showCustomTextFieldPicker(options.anchor, {
 				...common,
 				type: 'text',
 				value: normalizedValue,
+				separateCurrentValue: true,
+				editMultilineValue: onClose => {
+					return showTextFieldPopover({
+						app: options.app,
+						anchor: options.anchor,
+						title: options.label,
+						initialValue: normalizedValue,
+						allowEmptyCommit: true,
+						sessionKey: options.sessionKey,
+						lifecycleOwner: options.lifecycleOwner,
+						onFocusReturn: options.onFocusReturn,
+						editor: {
+							kind: 'compact-markdown',
+							sourcePath: options.sourcePath,
+							textPolicy: 'task-note',
+						},
+						onCommit: value => {
+							options.onMutation(buildTableFilePropertyTextMutation(value));
+						},
+						onClose,
+					});
+				},
 				candidates: [...options.candidates],
 				onCommit: (_key, value) => options.onMutation({ kind: 'set', value }),
 			});
@@ -262,6 +266,7 @@ export function renderTableFilePropertyValue(options: {
 	sourcePath?: string;
 	editable: boolean;
 	onToggle: (mutation: RawYamlPropertyMutation) => void;
+ bindOpening?: (chip: HTMLElement, member?: unknown, memberIndex?: number) => boolean;
  onEditListMember?: (index: number) => void;
 }): boolean {
  const warning = !options.editable ? options.cellValue.readOnlyReason ?? options.field?.readOnlyReason : undefined;
@@ -291,6 +296,7 @@ export function renderTableFilePropertyValue(options: {
 	const renderValues = Array.isArray(options.cellValue.rawValue)
 		? options.cellValue.rawValue.filter(value => value !== null).map(String)
 		: (options.cellValue.normalizedValue.trim() ? [options.cellValue.normalizedValue] : []);
+	const openingMembers = Array.isArray(options.cellValue.rawValue) ? options.cellValue.rawValue.map((value: unknown, index) => ({ value, index })).filter(member => member.value !== null) : [];
 	const listValue = options.field?.type === 'list' || Array.isArray(options.cellValue.rawValue);
  if (warning && options.column.displayMode === 'icon') {
   const icon = options.cell.createSpan('operon-table-file-property-icon');
@@ -299,9 +305,16 @@ export function renderTableFilePropertyValue(options: {
   return false;
  }
 	if (isTextField && options.column.displayMode !== 'icon') {
+  if (options.bindOpening && parseCompactWikiLinkValue(options.cellValue.normalizedValue)) {
+   const chip = options.cell.createSpan('operon-table-cell-chip operon-chip operon-inline-compact-chip operon-task-chip');
+   chip.createSpan({ cls: 'operon-table-cell-chip-label', text: parseCompactWikiLinkValue(options.cellValue.normalizedValue)!.displayValue });
+   bindOperonHoverTooltip(chip, { content: options.cellValue.normalizedValue, taskColor: null });
+   options.bindOpening(chip);
+   return false;
+  }
 		renderTableTextValueDisplay(options.cell, {
 			value: options.cellValue.normalizedValue,
-   suppressValueTooltip: !!warning,
+   suppressValueTooltip: !!warning, visualOnlyLinks: !!options.bindOpening,
 			...(options.app && options.sourcePath
 				? { wikilinks: { app: options.app, sourcePath: options.sourcePath } }
 				: {}),
@@ -309,7 +322,7 @@ export function renderTableFilePropertyValue(options: {
 	} else if (isTextField && options.column.displayMode === 'icon') {
 		if (!options.cellValue.normalizedValue.trim()) return false;
 		const content = formatTableIconOnlyTooltipContent(options.cellValue.normalizedValue);
-		renderTableIconOnlyCell(options.cell, {
+		const icon = renderTableIconOnlyCell(options.cell, {
 			icon: options.field?.icon ?? 'text',
 			color: null,
 			title: options.label,
@@ -320,6 +333,7 @@ export function renderTableFilePropertyValue(options: {
 			ariaLabel: `${options.label}: ${content}`,
 			focusable: !options.editable,
 		});
+  options.bindOpening?.(icon);
 	} else if (listValue && options.column.displayMode === 'icon') {
 		const content = formatTableListIconOnlyTooltipContent(renderValues);
 		if (!content) return false;
@@ -367,6 +381,8 @@ export function renderTableFilePropertyValue(options: {
 			}
 			applyTableColumnCellAccent(chip, options.column, value, accentOptions);
 			if (listValue) decorateTableListValueChip(chip, displayValue, { tooltipMode: warning ? 'none' : 'overflow' });
+   const openingMember = openingMembers[index];
+   if (listValue && typeof openingMember?.value === 'string' && options.bindOpening?.(chip, openingMember.value, openingMember.index)) continue;
    if (listValue && options.editable && options.onEditListMember) {
     chip.tabIndex = 0; chip.setAttribute('role', 'button');
     chip.addEventListener('click', event => { event.stopPropagation(); options.onEditListMember?.(index); });

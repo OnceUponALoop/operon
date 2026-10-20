@@ -97,7 +97,7 @@ export interface EmbedFilterDeps {
     getRepeatSkipSignature?: () => string;
     getRepeatSeriesInlineCompletionMode?: (repeatSeriesId: string) => InlineRepeatCompletionMode;
     updateRepeatSeriesInlineCompletionMode?: (operonId: string, mode: InlineRepeatCompletionMode) => void | Promise<void>;
-    requestSubtask?: (operonId: string) => void | Promise<void>;
+    requestSubtask?: (operonId: string, requestedKind?: 'inline') => void | Promise<void>;
     onContextualAction?: ContextualMenuActionHandler;
     pinnedCache?: PinnedCache;
     isTaskTracking?: (taskId: string) => boolean;
@@ -329,6 +329,7 @@ export function renderFilterSurface(
         deps.settings.filterTaskShowPlayAction,
         deps.settings.filterTaskShowPinAction,
         deps.settings.filterTaskShowNoteAction,
+        deps.settings.filterTaskShowSourceAction,
         deps.settings.filterTaskShowSubtaskAction,
         deps.settings.filterTaskShowPlainCheckboxAction,
     ]);

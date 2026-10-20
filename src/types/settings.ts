@@ -1,3 +1,6 @@
+import { normalizeLightboxSizes, type LightboxSizes } from '../core/lightbox-size';
+import { normalizeBackgroundDimming } from '../core/background-dimming';
+import { TASK_INFO_CHIPS, isTaskInfoChipKey } from '../core/task-info-chips';
 import { cloneInlinePropertyDefinitions, validateInlinePropertyDefinitions } from '../core/inline-property-definitions';
 import { normalizeTaskEditorSections, type TaskEditorSection } from './task-editor-sections';
 import { DEFAULT_TASK_CARD_SETTINGS, normalizeTaskCardSettings, type TaskCardSettings } from './task-card';
@@ -790,6 +793,9 @@ export interface FileTaskTemplateDefinition {
 export interface ExternalCalendarSource {
 	id: string;
 	type: 'ics';
+	/** Omitted on legacy URL sources to preserve their stored representation. */
+	sourceKind?: 'url' | 'vault-file';
+	filePath?: string;
 	name: string;
 	url: string;
 	color: string;
@@ -1085,6 +1091,7 @@ export interface TaskFinderShortcutItem {
 
 function buildDefaultInlineTaskCompactChipItems(): InlineTaskCompactChipItem[] {
 	return [
+		{ key: 'taskInfo.projectSerial', visible: true, iconOnly: false },
 		{ key: 'priority', visible: true, iconOnly: false },
 		{ key: 'status', visible: true, iconOnly: true },
 		{ key: 'parentTask', visible: true, iconOnly: true },
@@ -1112,6 +1119,7 @@ function buildDefaultInlineTaskCompactChipItems(): InlineTaskCompactChipItem[] {
 		{ key: 'dateCancelled', visible: true, iconOnly: true },
 		{ key: 'totalDuration', visible: true, iconOnly: false },
 		{ key: 'totalEstimate', visible: false, iconOnly: false },
+		{ key: 'taskInfo.source', visible: false, iconOnly: false },
 	];
 }
 
@@ -1184,6 +1192,7 @@ export function buildCompatibilityTaskEditorWorkflowPickerItems(): TaskEditorWor
 
 function buildDefaultFilterTaskCompactChipItems(): InlineTaskCompactChipItem[] {
 	return [
+		{ key: 'taskInfo.projectSerial', visible: true, iconOnly: false },
 		{ key: 'priority', visible: true, iconOnly: false },
 		{ key: 'status', visible: true, iconOnly: true },
 		{ key: 'parentTask', visible: true, iconOnly: true },
@@ -1211,11 +1220,13 @@ function buildDefaultFilterTaskCompactChipItems(): InlineTaskCompactChipItem[] {
 		{ key: 'tags', visible: false, iconOnly: false },
 		{ key: 'totalDuration', visible: true, iconOnly: false },
 		{ key: 'totalEstimate', visible: false, iconOnly: false },
+		{ key: 'taskInfo.source', visible: false, iconOnly: false },
 	];
 }
 
 function buildDefaultKanbanTaskCompactChipItems(): InlineTaskCompactChipItem[] {
 	return [
+		{ key: 'taskInfo.projectSerial', visible: true, iconOnly: false },
 		{ key: 'priority', visible: false, iconOnly: false },
 		{ key: 'status', visible: false, iconOnly: false },
 		{ key: 'parentTask', visible: false, iconOnly: false },
@@ -1243,11 +1254,13 @@ function buildDefaultKanbanTaskCompactChipItems(): InlineTaskCompactChipItem[] {
 		{ key: 'tags', visible: false, iconOnly: false },
 		{ key: 'totalDuration', visible: false, iconOnly: false },
 		{ key: 'totalEstimate', visible: false, iconOnly: false },
+		{ key: 'taskInfo.source', visible: false, iconOnly: false },
 	];
 }
 
 function buildDefaultTaskFinderCompactChipItems(): InlineTaskCompactChipItem[] {
 	return [
+		{ key: 'taskInfo.projectSerial', visible: true, iconOnly: false },
 		{ key: 'priority', visible: true, iconOnly: false },
 		{ key: 'status', visible: false, iconOnly: false },
 		{ key: 'parentTask', visible: true, iconOnly: false },
@@ -1275,11 +1288,13 @@ function buildDefaultTaskFinderCompactChipItems(): InlineTaskCompactChipItem[] {
 		{ key: 'estimate', visible: false, iconOnly: false },
 		{ key: 'totalEstimate', visible: false, iconOnly: false },
 		{ key: 'tags', visible: false, iconOnly: false },
+		{ key: 'taskInfo.source', visible: false, iconOnly: false },
 	];
 }
 
 function buildDefaultTaskWikilinkOverlayCompactChipItems(): InlineTaskCompactChipItem[] {
 	return [
+		{ key: 'taskInfo.projectSerial', visible: true, iconOnly: false },
 		{ key: 'priority', visible: false, iconOnly: false },
 		{ key: 'status', visible: false, iconOnly: false },
 		{ key: 'parentTask', visible: false, iconOnly: false },
@@ -1307,6 +1322,7 @@ function buildDefaultTaskWikilinkOverlayCompactChipItems(): InlineTaskCompactChi
 		{ key: 'estimate', visible: false, iconOnly: false },
 		{ key: 'totalEstimate', visible: false, iconOnly: false },
 		{ key: 'tags', visible: false, iconOnly: false },
+		{ key: 'taskInfo.source', visible: false, iconOnly: false },
 	];
 }
 
@@ -1320,7 +1336,7 @@ export function buildDefaultTaskChipSettings(defaults: OperonSettings): OperonSe
 		visibleKeys: readonly string[],
 	): InlineTaskCompactChipItem[] => items.map(item => ({
 		...item,
-		visible: visibleKeys.includes(item.key),
+		visible: item.key === 'taskInfo.projectSerial' || visibleKeys.includes(item.key),
 		iconOnly: item.key === 'status' && visibleKeys.includes('status'),
 	}));
 	const creatorKeys = ['taskIcon', 'taskColor', 'taskType', 'priority', 'status', 'note'];
@@ -1723,6 +1739,7 @@ export interface OperonSettings extends TaskCardSettings {
 	taskCardShowPlayAction: boolean;
 	taskCardShowPinAction: boolean;
 	taskCardShowNoteAction: boolean;
+	taskCardShowSourceAction: boolean;
 	taskCardShowSubtaskAction: boolean;
 	taskCardShowPlainCheckboxAction: boolean;
 	kanbanTaskCompactChips: InlineTaskCompactChipItem[];
@@ -1732,6 +1749,7 @@ export interface OperonSettings extends TaskCardSettings {
 	kanbanTaskShowPinAction: boolean;
 	/** Whether Kanban task cards show the note indicator chip when the task has a note. */
 	kanbanTaskShowNoteAction: boolean;
+	kanbanTaskShowSourceAction: boolean;
 	/** Whether Kanban task cards show the add subtask action chip. */
 	kanbanTaskShowSubtaskAction: boolean;
 	/** Whether Kanban task cards show the plain checkbox action chip. */
@@ -1760,6 +1778,7 @@ export interface OperonSettings extends TaskCardSettings {
 	taskWikilinkOverlayShowPinAction: boolean;
 	/** Whether Task Wikilink Overlay rows show the note indicator when the task has a note. */
 	taskWikilinkOverlayShowNoteAction: boolean;
+	taskWikilinkOverlayShowSourceAction: boolean;
 	/** Whether Task Wikilink Overlay rows show the right-side add subtask action. */
 	taskWikilinkOverlayShowSubtaskAction: boolean;
 	/** Whether Task Wikilink Overlay rows show the plain checkbox editor action. */
@@ -1772,6 +1791,7 @@ export interface OperonSettings extends TaskCardSettings {
 	assigneeImageProperty: string;
 	/** Whether the compact inline row shows the right-side note action. */
 	inlineTaskShowNoteAction: boolean;
+	inlineTaskShowSourceAction: boolean;
 	/** Whether the compact inline row shows the right-side add subtask action. */
 	inlineTaskShowSubtaskAction: boolean;
 	/** Whether classic Tasks emoji checkbox lines show a hover-only convert icon in Live Preview. */
@@ -1786,6 +1806,7 @@ export interface OperonSettings extends TaskCardSettings {
 	filterTaskShowPinAction: boolean;
 	/** Whether filter rows show the right-side note action. */
 	filterTaskShowNoteAction: boolean;
+	filterTaskShowSourceAction: boolean;
 	/** Whether filter rows show the right-side add subtask action. */
 	filterTaskShowSubtaskAction: boolean;
 	/** Whether filter rows show the right-side plain checkbox progress action. */
@@ -1794,6 +1815,8 @@ export interface OperonSettings extends TaskCardSettings {
 	// Workspace tweaks
 	/** If true, hide Obsidian workspace scrollbars while preserving scrolling. */
 	workspaceTweaksHideScrollbars: boolean;
+	workspaceTweaksBackgroundDimming: number;
+	workspaceTweaksLightboxSizes: LightboxSizes;
 	/** If true, collapse Obsidian Properties when opening matching notes. */
 	workspaceTweaksCollapseProperties: boolean;
 	/** Which notes receive the Properties collapser tweak. */
@@ -2295,12 +2318,14 @@ export const DEFAULT_SETTINGS: OperonSettings = {
 	taskCardShowPlayAction: false,
 	taskCardShowPinAction: false,
 	taskCardShowNoteAction: true,
+	taskCardShowSourceAction: true,
 	taskCardShowSubtaskAction: false,
 	taskCardShowPlainCheckboxAction: false,
 	kanbanTaskCompactChips: buildDefaultKanbanTaskCompactChipItems(),
 	kanbanTaskShowPlayAction: false,
 	kanbanTaskShowPinAction: false,
 	kanbanTaskShowNoteAction: true,
+	kanbanTaskShowSourceAction: true,
 	kanbanTaskShowSubtaskAction: false,
 	kanbanTaskShowPlainCheckboxAction: false,
 	taskFinderCompactChips: buildDefaultTaskFinderCompactChipItems(),
@@ -2315,12 +2340,14 @@ export const DEFAULT_SETTINGS: OperonSettings = {
 	taskWikilinkOverlayShowPlayAction: false,
 	taskWikilinkOverlayShowPinAction: false,
 	taskWikilinkOverlayShowNoteAction: true,
+	taskWikilinkOverlayShowSourceAction: true,
 	taskWikilinkOverlayShowSubtaskAction: false,
 	taskWikilinkOverlayShowPlainCheckboxAction: true,
 	inlineTaskShowPlayAction: true,
 	inlineTaskShowPinAction: false,
 	assigneeImageProperty: '',
 	inlineTaskShowNoteAction: true,
+	inlineTaskShowSourceAction: true,
 	inlineTaskShowSubtaskAction: true,
 	inlineTaskShowTasksEmojiConvertIcon: true,
 	inlineTaskShowPlainCheckboxConvertIcon: true,
@@ -2328,10 +2355,13 @@ export const DEFAULT_SETTINGS: OperonSettings = {
 	filterTaskShowPlayAction: true,
 	filterTaskShowPinAction: false,
 	filterTaskShowNoteAction: true,
+	filterTaskShowSourceAction: true,
 	filterTaskShowSubtaskAction: true,
 	filterTaskShowPlainCheckboxAction: true,
 
 	workspaceTweaksHideScrollbars: false,
+	workspaceTweaksBackgroundDimming: 50,
+	workspaceTweaksLightboxSizes: {},
 	workspaceTweaksCollapseProperties: false,
 	workspaceTweaksPropertiesScope: 'operon-file-tasks',
 	workspaceTweaksPropertiesExcludedFolders: [],
@@ -2805,6 +2835,9 @@ function normalizeExternalCalendarSource(raw: unknown): ExternalCalendarSource |
 	return {
 		id: normalizeOptionalString(src.id) ?? createExternalCalendarSourceId(),
 		type: 'ics',
+		...(src.sourceKind === 'vault-file'
+			? { sourceKind: 'vault-file' as const, filePath: normalizeOptionalString(src.filePath) ?? '' }
+			: src.sourceKind === 'url' ? { sourceKind: 'url' as const } : {}),
 		name: normalizeOptionalString(src.name) ?? '',
 		url: normalizeOptionalString(src.url) ?? '',
 		color: normalizeExternalCalendarColor(src.color),
@@ -4398,6 +4431,7 @@ export function migrateSettings(raw: unknown): OperonSettings {
 	out.taskCardShowPlayAction = typeof src.taskCardShowPlayAction === 'boolean' ? src.taskCardShowPlayAction : DEFAULT_SETTINGS.taskCardShowPlayAction;
 	out.taskCardShowPinAction = typeof src.taskCardShowPinAction === 'boolean' ? src.taskCardShowPinAction : DEFAULT_SETTINGS.taskCardShowPinAction;
 	out.taskCardShowNoteAction = typeof src.taskCardShowNoteAction === 'boolean' ? src.taskCardShowNoteAction : DEFAULT_SETTINGS.taskCardShowNoteAction;
+	out.taskCardShowSourceAction = typeof src.taskCardShowSourceAction === 'boolean' ? src.taskCardShowSourceAction : DEFAULT_SETTINGS.taskCardShowSourceAction;
 	out.taskCardShowSubtaskAction = typeof src.taskCardShowSubtaskAction === 'boolean' ? src.taskCardShowSubtaskAction : DEFAULT_SETTINGS.taskCardShowSubtaskAction;
 	out.taskCardShowPlainCheckboxAction = typeof src.taskCardShowPlainCheckboxAction === 'boolean' ? src.taskCardShowPlainCheckboxAction : DEFAULT_SETTINGS.taskCardShowPlainCheckboxAction;
 	out.kanbanTaskCompactChips = normalizeKanbanTaskCompactChips(src.kanbanTaskCompactChips);
@@ -4410,6 +4444,7 @@ export function migrateSettings(raw: unknown): OperonSettings {
 	out.kanbanTaskShowNoteAction = typeof src.kanbanTaskShowNoteAction === 'boolean'
 		? src.kanbanTaskShowNoteAction
 		: DEFAULT_SETTINGS.kanbanTaskShowNoteAction;
+	out.kanbanTaskShowSourceAction = typeof src.kanbanTaskShowSourceAction === 'boolean' ? src.kanbanTaskShowSourceAction : DEFAULT_SETTINGS.kanbanTaskShowSourceAction;
 	out.kanbanTaskShowSubtaskAction = typeof src.kanbanTaskShowSubtaskAction === 'boolean'
 		? src.kanbanTaskShowSubtaskAction
 		: DEFAULT_SETTINGS.kanbanTaskShowSubtaskAction;
@@ -4448,6 +4483,7 @@ export function migrateSettings(raw: unknown): OperonSettings {
 		legacyTaskWikilinkOverlaySource.overlayTaskShowNoteAction,
 		DEFAULT_SETTINGS.taskWikilinkOverlayShowNoteAction,
 	);
+	out.taskWikilinkOverlayShowSourceAction = typeof src.taskWikilinkOverlayShowSourceAction === 'boolean' ? src.taskWikilinkOverlayShowSourceAction : DEFAULT_SETTINGS.taskWikilinkOverlayShowSourceAction;
 	out.taskWikilinkOverlayShowSubtaskAction = readAliasedBoolean(
 		src.taskWikilinkOverlayShowSubtaskAction,
 		legacyTaskWikilinkOverlaySource.overlayTaskShowSubtaskAction,
@@ -4468,6 +4504,7 @@ export function migrateSettings(raw: unknown): OperonSettings {
 	out.inlineTaskShowNoteAction = typeof src.inlineTaskShowNoteAction === 'boolean'
 		? src.inlineTaskShowNoteAction
 		: DEFAULT_SETTINGS.inlineTaskShowNoteAction;
+	out.inlineTaskShowSourceAction = typeof src.inlineTaskShowSourceAction === 'boolean' ? src.inlineTaskShowSourceAction : DEFAULT_SETTINGS.inlineTaskShowSourceAction;
 	out.inlineTaskShowSubtaskAction = typeof src.inlineTaskShowSubtaskAction === 'boolean'
 		? src.inlineTaskShowSubtaskAction
 		: DEFAULT_SETTINGS.inlineTaskShowSubtaskAction;
@@ -4487,12 +4524,15 @@ export function migrateSettings(raw: unknown): OperonSettings {
 	out.filterTaskShowNoteAction = typeof src.filterTaskShowNoteAction === 'boolean'
 		? src.filterTaskShowNoteAction
 		: DEFAULT_SETTINGS.filterTaskShowNoteAction;
+	out.filterTaskShowSourceAction = typeof src.filterTaskShowSourceAction === 'boolean' ? src.filterTaskShowSourceAction : DEFAULT_SETTINGS.filterTaskShowSourceAction;
 	out.filterTaskShowSubtaskAction = typeof src.filterTaskShowSubtaskAction === 'boolean'
 		? src.filterTaskShowSubtaskAction
 		: DEFAULT_SETTINGS.filterTaskShowSubtaskAction;
 	out.filterTaskShowPlainCheckboxAction = typeof src.filterTaskShowPlainCheckboxAction === 'boolean'
 		? src.filterTaskShowPlainCheckboxAction
 		: DEFAULT_SETTINGS.filterTaskShowPlainCheckboxAction;
+	out.workspaceTweaksBackgroundDimming = normalizeBackgroundDimming(src.workspaceTweaksBackgroundDimming);
+	out.workspaceTweaksLightboxSizes = normalizeLightboxSizes(src.workspaceTweaksLightboxSizes);
 	out.workspaceTweaksHideScrollbars = typeof src.workspaceTweaksHideScrollbars === 'boolean'
 		? src.workspaceTweaksHideScrollbars
 		: DEFAULT_SETTINGS.workspaceTweaksHideScrollbars;
@@ -5201,7 +5241,7 @@ function normalizeCompactChipItems(
 	defaults: InlineTaskCompactChipItem[],
 	keyMappings?: readonly KeyMapping[],
 ): InlineTaskCompactChipItem[] {
-	return normalizeSurfaceItems(raw, defaults, INLINE_TASK_COMPACT_CHIP_ORDER, keyMappings, mapping => mapping.showInChips === true);
+	return normalizeSurfaceItems(raw, defaults, [...INLINE_TASK_COMPACT_CHIP_ORDER, ...Object.keys(TASK_INFO_CHIPS)], keyMappings, mapping => mapping.showInChips === true, true);
 }
 
 function normalizeSurfaceItems<T extends { key: string; visible: boolean; iconOnly?: boolean }>(
@@ -5210,6 +5250,7 @@ function normalizeSurfaceItems<T extends { key: string; visible: boolean; iconOn
 	builtInOrder: readonly string[],
 	keyMappings: readonly KeyMapping[] | undefined,
 	getCustomVisible: (mapping: KeyMapping) => boolean,
+	taskInfoDefaults = false,
 ): T[] {
 	const allowedBuiltIns = new Set<string>(builtInOrder);
 	const customMappings = getProjectableCustomSurfaceMappings(keyMappings);
@@ -5221,7 +5262,7 @@ function normalizeSurfaceItems<T extends { key: string; visible: boolean; iconOn
 	const normalized: T[] = [];
 	const seen = new Set<string>();
 	const hasRawItems = Array.isArray(raw);
-	const rawItems = hasRawItems ? raw : defaults;
+	const rawItems = hasRawItems ? raw : defaults.filter(item => !taskInfoDefaults || !isTaskInfoChipKey(item.key));
 	const hasIconOnly = defaults.some(item => 'iconOnly' in item);
 
 	for (const rawItem of rawItems) {
@@ -5262,7 +5303,7 @@ function normalizeSurfaceItems<T extends { key: string; visible: boolean; iconOn
 	}
 
 	for (const item of defaults) {
-		if (seen.has(item.key)) continue;
+		if (seen.has(item.key) || (taskInfoDefaults && isTaskInfoChipKey(item.key))) continue;
 		const customOwner = customByComparableKey.get(normalizeKeyMappingComparableName(item.key));
 		if (customOwner && customOwner.canonicalKey !== item.key) continue;
 		seen.add(item.key);
@@ -5281,6 +5322,14 @@ function normalizeSurfaceItems<T extends { key: string; visible: boolean; iconOn
 			visible: getCustomVisible(mapping),
 			...(hasIconOnly ? { iconOnly: false } : {}),
 		} as T);
+	}
+
+	if (taskInfoDefaults) {
+		for (const item of defaults.filter(item => isTaskInfoChipKey(item.key))) {
+			if (seen.has(item.key)) continue;
+			if (item.key === 'taskInfo.projectSerial') normalized.unshift({ ...item });
+			else normalized.push({ ...item });
+		}
 	}
 
 	return normalized;
@@ -5309,7 +5358,7 @@ function normalizeFilterTaskCompactChips(src: Record<string, unknown>, keyMappin
 
 	const defaults = buildDefaultFilterTaskCompactChipItems();
 	if (!src.taskBarChips || typeof src.taskBarChips !== 'object' || Array.isArray(src.taskBarChips)) {
-		return defaults;
+		return normalizeCompactChipItems(undefined, defaults, keyMappings);
 	}
 
 	const saved = src.taskBarChips as Record<string, unknown>;
@@ -5325,7 +5374,7 @@ function normalizeFilterTaskCompactChips(src: Record<string, unknown>, keyMappin
 		tags: typeof saved.tags === 'boolean' ? saved.tags : undefined,
 	};
 
-	return defaults.map(item => {
+	const legacyDefaults = defaults.map(item => {
 		const savedVisible = (INLINE_TASK_COMPACT_CHIP_ORDER as readonly string[]).includes(item.key)
 			? visibilityMap[item.key as InlineTaskCompactChipKey]
 			: undefined;
@@ -5333,6 +5382,7 @@ function normalizeFilterTaskCompactChips(src: Record<string, unknown>, keyMappin
 			? { ...item, visible: savedVisible }
 			: item;
 	});
+	return normalizeCompactChipItems(undefined, legacyDefaults, keyMappings);
 }
 
 function normalizeKanbanTaskCompactChips(raw: unknown, keyMappings?: readonly KeyMapping[]): InlineTaskCompactChipItem[] {

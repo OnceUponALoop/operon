@@ -43,6 +43,11 @@ export type TaskUiPreferenceStoreSettings = Pick<
 	| 'taskWikilinkOverlayShowNoteAction'
 	| 'taskWikilinkOverlayShowSubtaskAction'
 	| 'taskWikilinkOverlayShowPlainCheckboxAction'
+	| 'inlineTaskShowSourceAction'
+	| 'filterTaskShowSourceAction'
+	| 'kanbanTaskShowSourceAction'
+	| 'taskWikilinkOverlayShowSourceAction'
+	| 'taskCardShowSourceAction'
 	| 'inlineTaskShowPlayAction'
 	| 'inlineTaskShowPinAction'
 	| 'assigneeImageProperty'
@@ -54,6 +59,17 @@ export type TaskUiPreferenceStoreSettings = Pick<
 	| 'filterTaskShowSubtaskAction'
 	| 'filterTaskShowPlainCheckboxAction'
 >;
+
+type DefaultedTaskUiPreferenceKey = 'taskEditorUseMobileLayout'
+ | 'inlineTaskShowSourceAction'
+ | 'filterTaskShowSourceAction'
+ | 'kanbanTaskShowSourceAction'
+ | 'taskWikilinkOverlayShowSourceAction'
+ | 'taskCardShowSourceAction'
+;
+
+export type TaskUiPreferencePackageSettings = Omit<TaskUiPreferenceStoreSettings, DefaultedTaskUiPreferenceKey>
+ & Partial<Pick<TaskUiPreferenceStoreSettings, DefaultedTaskUiPreferenceKey>>;
 
 interface TaskUiPreferenceStoreData extends TaskUiPreferenceStoreSettings {
 	version: number;
@@ -97,6 +113,11 @@ function cloneSettings(settings: TaskUiPreferenceStoreSettings): TaskUiPreferenc
 		taskWikilinkOverlayShowNoteAction: settings.taskWikilinkOverlayShowNoteAction,
 		taskWikilinkOverlayShowSubtaskAction: settings.taskWikilinkOverlayShowSubtaskAction,
 		taskWikilinkOverlayShowPlainCheckboxAction: settings.taskWikilinkOverlayShowPlainCheckboxAction,
+		inlineTaskShowSourceAction: settings.inlineTaskShowSourceAction,
+		filterTaskShowSourceAction: settings.filterTaskShowSourceAction,
+		kanbanTaskShowSourceAction: settings.kanbanTaskShowSourceAction,
+		taskWikilinkOverlayShowSourceAction: settings.taskWikilinkOverlayShowSourceAction,
+		taskCardShowSourceAction: settings.taskCardShowSourceAction,
 		inlineTaskShowPlayAction: settings.inlineTaskShowPlayAction,
 		inlineTaskShowPinAction: settings.inlineTaskShowPinAction,
 		assigneeImageProperty: settings.assigneeImageProperty,
@@ -206,6 +227,11 @@ function readStoreData(
 			raw.taskWikilinkOverlayShowPlainCheckboxAction ?? raw.overlayTaskShowPlainCheckboxAction,
 			fallback.taskWikilinkOverlayShowPlainCheckboxAction,
 		),
+		inlineTaskShowSourceAction: readBoolean(raw.inlineTaskShowSourceAction, fallback.inlineTaskShowSourceAction),
+		filterTaskShowSourceAction: readBoolean(raw.filterTaskShowSourceAction, fallback.filterTaskShowSourceAction),
+		kanbanTaskShowSourceAction: readBoolean(raw.kanbanTaskShowSourceAction, fallback.kanbanTaskShowSourceAction),
+		taskWikilinkOverlayShowSourceAction: readBoolean(raw.taskWikilinkOverlayShowSourceAction, fallback.taskWikilinkOverlayShowSourceAction),
+		taskCardShowSourceAction: readBoolean(raw.taskCardShowSourceAction, fallback.taskCardShowSourceAction),
 		inlineTaskShowPlayAction: readBoolean(raw.inlineTaskShowPlayAction, fallback.inlineTaskShowPlayAction),
 		inlineTaskShowPinAction: readBoolean(raw.inlineTaskShowPinAction, fallback.inlineTaskShowPinAction),
 		assigneeImageProperty: typeof raw.assigneeImageProperty === 'string' ? raw.assigneeImageProperty.trim() : fallback.assigneeImageProperty,
@@ -246,8 +272,14 @@ export class TaskUiPreferenceStore {
 		this.packagePersist = persist;
 	}
 
-	loadFromPackage(settings: Omit<TaskUiPreferenceStoreSettings, 'taskEditorUseMobileLayout'> & { taskEditorUseMobileLayout?: boolean }): void {
-		this.settings = cloneSettings({ ...settings, taskEditorUseMobileLayout: settings.taskEditorUseMobileLayout === true });
+	loadFromPackage(settings: TaskUiPreferencePackageSettings): void {
+		this.settings = cloneSettings({ ...settings, taskEditorUseMobileLayout: settings.taskEditorUseMobileLayout === true,
+   inlineTaskShowSourceAction: settings.inlineTaskShowSourceAction !== false,
+   filterTaskShowSourceAction: settings.filterTaskShowSourceAction !== false,
+   kanbanTaskShowSourceAction: settings.kanbanTaskShowSourceAction !== false,
+   taskWikilinkOverlayShowSourceAction: settings.taskWikilinkOverlayShowSourceAction !== false,
+   taskCardShowSourceAction: settings.taskCardShowSourceAction !== false,
+  });
 		this.serializedSettings = JSON.stringify(this.settings);
 		this.recoveredFromMalformed = false;
 	}

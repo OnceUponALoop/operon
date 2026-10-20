@@ -1,3 +1,7 @@
+import { saveDesktopBackdropDimming } from './modal-backdrop';
+import { BACKGROUND_DIMMING_OPTIONS, normalizeBackgroundDimming } from '../core/background-dimming';
+import { TASK_INFO_CHIPS, isTaskInfoChipKey } from '../core/task-info-chips';
+import { FileSuggest } from './file-suggest';
 import { syncCustomPropertyType } from '../core/custom-property-type-sync';
 import { getNativePropertyIndex } from '../indexer/native-property-index';
 import { notifyPropertyTypeChanges } from './table/table-file-property';
@@ -430,7 +434,7 @@ const TASK_CHIPS_SETTINGS_PAGE_META: Record<TaskChipsSettingsPageId, TaskChipsSe
 	taskCardChips: {
 		titleKey: 'taskCardChips',
 		descKey: 'taskCardChipsDesc',
-		entryIds: ['taskCardChips', 'taskCardShowPlayAction', 'taskCardShowPinAction', 'taskCardShowNoteAction', 'taskCardShowSubtaskAction', 'taskCardShowPlainCheckboxAction'],
+		entryIds: ['taskCardChips', 'taskCardShowPlayAction', 'taskCardShowPinAction', 'taskCardShowNoteAction', 'taskCardShowSubtaskAction', 'taskCardShowPlainCheckboxAction', 'taskCardShowSourceAction'],
 		docsTarget: 'DOCS-041 Task chips display and behavior',
 	},
 	taskCreatorToolbar: {
@@ -442,7 +446,7 @@ const TASK_CHIPS_SETTINGS_PAGE_META: Record<TaskChipsSettingsPageId, TaskChipsSe
 	inlineTaskChips: {
 		titleKey: 'inlineTaskIconsSection',
 		descKey: 'inlineTaskIconsSectionDesc',
-		entryIds: ['inlineTaskChips', 'inlineTaskShowNoteAction'],
+		entryIds: ['inlineTaskChips', 'inlineTaskShowNoteAction', 'inlineTaskShowSourceAction'],
 		docsTarget: 'DOCS-041 Task chips display and behavior',
 	},
 	taskFinderChips: {
@@ -454,7 +458,7 @@ const TASK_CHIPS_SETTINGS_PAGE_META: Record<TaskChipsSettingsPageId, TaskChipsSe
 	filterTaskChips: {
 		titleKey: 'filterTaskIconsSection',
 		descKey: 'filterTaskIconsSectionDesc',
-		entryIds: ['filterTaskChips', 'filterTaskShowNoteAction', 'filterTaskShowPlainCheckboxAction'],
+		entryIds: ['filterTaskChips', 'filterTaskShowNoteAction', 'filterTaskShowPlainCheckboxAction', 'filterTaskShowSourceAction'],
 		docsTarget: 'DOCS-041 Task chips display and behavior',
 	},
 	kanbanTaskChips: {
@@ -467,13 +471,14 @@ const TASK_CHIPS_SETTINGS_PAGE_META: Record<TaskChipsSettingsPageId, TaskChipsSe
 			'kanbanTaskShowNoteAction',
 			'kanbanTaskShowSubtaskAction',
 			'kanbanTaskShowPlainCheckboxAction',
+			'kanbanTaskShowSourceAction',
 		],
 		docsTarget: 'DOCS-041 Task chips display and behavior',
 	},
 	taskWikilinkOverlayChips: {
 		titleKey: 'taskWikilinkOverlayIconsSection',
 		descKey: 'taskWikilinkOverlayIconsSectionDesc',
-		entryIds: ['taskWikilinkOverlayChips', 'taskWikilinkOverlayShowPlainCheckboxAction'],
+		entryIds: ['taskWikilinkOverlayChips', 'taskWikilinkOverlayShowPlainCheckboxAction', 'taskWikilinkOverlayShowSourceAction'],
 		docsTarget: 'DOCS-103 Task Wikilink Overlay',
 	},
 };
@@ -631,58 +636,6 @@ function applyOperonTooltipToExtraButton(button: { extraSettingsEl?: HTMLElement
 	if (!button.extraSettingsEl) return;
 	setAccessibleLabelWithoutTooltip(button.extraSettingsEl, content);
 	applyOperonTooltip(button.extraSettingsEl, content);
-}
-
-/**
- * File suggest dropdown — shows matching vault md files as user types.
- */
-interface FileSuggestOptions {
-	files?: () => TFile[];
-	filter?: (file: TFile) => boolean;
-}
-
-class FileSuggest extends AbstractInputSuggest<TFile> {
-	private selectCallback: (file: TFile) => void;
-	private textInputEl: HTMLInputElement;
-	private files: () => TFile[];
-	private filter: (file: TFile) => boolean;
-
-	constructor(
-		app: App,
-		inputEl: HTMLInputElement,
-		selectCallback: (file: TFile) => void,
-		options: FileSuggestOptions = {},
-	) {
-		super(app, inputEl);
-		this.textInputEl = inputEl;
-		this.selectCallback = selectCallback;
-		this.files = options.files ?? (() => this.app.vault.getMarkdownFiles());
-		this.filter = options.filter ?? (() => true);
-	}
-
-	getSuggestions(query: string): TFile[] {
-		const lowerQuery = query.toLowerCase();
-		const files: TFile[] = [];
-		for (const f of this.files()) {
-			if (!this.filter(f)) continue;
-			if (!lowerQuery || f.path.toLowerCase().includes(lowerQuery) || f.basename.toLowerCase().includes(lowerQuery)) {
-				files.push(f);
-			}
-		}
-		files.sort((a, b) => a.path.localeCompare(b.path));
-		return files.slice(0, 20);
-	}
-
-	renderSuggestion(file: TFile, el: HTMLElement): void {
-		el.setText(file.path);
-	}
-
-	selectSuggestion(file: TFile): void {
-		this.textInputEl.value = file.path;
-		this.textInputEl.trigger('input');
-		this.selectCallback(file);
-		this.close();
-	}
 }
 
 class TextValueSuggest extends AbstractInputSuggest<string> {
@@ -888,6 +841,7 @@ const SETTINGS_SEARCH_DOM_REFRESH_KEYS = new Set<OperonSettingSearchKey>([
 
 const SETTINGS_SEARCH_WORKSPACE_TWEAK_KEYS = new Set<OperonSettingSearchKey>([
 	'workspaceTweaksHideScrollbars',
+	'workspaceTweaksBackgroundDimming',
 	'workspaceTweaksCollapseProperties',
 	'workspaceTweaksPropertiesScope',
 	'workspaceTweaksCompactSidebarTabIcons',
@@ -909,6 +863,7 @@ const SETTINGS_SEARCH_OPTION_NUMBER_KEYS = new Set<OperonSettingSearchKey>([
 	'duplicateAlertDelaySeconds',
 	'taskFinderRecentModifiedDays',
 	'taskFinderVisibleResultCount',
+	'workspaceTweaksBackgroundDimming',
 	'pinnedDockGridCols',
 	'flowTimePauseMinutes',
 	'flowTimeDefaultSessionMinutes',
@@ -1103,6 +1058,14 @@ export class OperonSettingsTab extends PluginSettingTab {
 		this.refreshTablesSettingsPage?.();
 	}
 
+ refreshBackgroundDimmingState(): void {
+  this.updateNativeSettingsDefinitions();
+  const value = String(this.settings.workspaceTweaksBackgroundDimming);
+  for (const container of [this.containerEl, this.activeNativeSettingsPage?.containerEl]) {
+   for (const select of Array.from(container?.querySelectorAll<HTMLSelectElement>('[data-operon-settings-search-key="workspaceTweaksBackgroundDimming"] select') ?? [])) select.value = value;
+  }
+ }
+
 	refreshLanguageState(): void {
 		this.updateNativeSettingsDefinitions();
 		this.refreshNativeSettingsDom();
@@ -1268,6 +1231,16 @@ export class OperonSettingsTab extends PluginSettingTab {
 			return;
 		}
 		const normalized = this.normalizeSettingsSearchControlValue(entry, value);
+  if (entry.key === 'workspaceTweaksBackgroundDimming') {
+   try { if (await saveDesktopBackdropDimming(normalizeBackgroundDimming(Number(value)))) return; }
+   catch (error) { this.refreshBackgroundDimmingState(); throw error; }
+   const previous = this.settings.workspaceTweaksBackgroundDimming;
+   this.settings.workspaceTweaksBackgroundDimming = normalizeBackgroundDimming(Number(value));
+   try { await this.saveSettings(); }
+   catch (error) { this.settings.workspaceTweaksBackgroundDimming = previous; this.updateNativeSettingsDefinitions(); throw error; }
+   this.applySettingsSearchAfterSaveEffects(entry.key);
+   return;
+  }
   if (entry.key.startsWith('contextualMenu')) {
    if (this.contextMenuSaving) return;
    await this.storage.updateSettings({ [entry.key]: normalized, contextualMenuActionOrder: resolveContextualMenuActionOrder(this.settings.contextualMenuActionOrder, this.settings.contextualMenuActionAllowlist) });
@@ -1919,9 +1892,9 @@ export class OperonSettingsTab extends PluginSettingTab {
 				groups = [{ type: 'group', heading: '', cls: 'operon-task-chip-settings-group', items: [description, ...definitions] }];
 				const prefix = ({ inlineTaskChips: 'inlineTask', filterTaskChips: 'filterTask', kanbanTaskChips: 'kanbanTask', taskWikilinkOverlayChips: 'taskWikilinkOverlay', taskCardChips: 'taskCard' } as const)[pageId as 'inlineTaskChips' | 'filterTaskChips' | 'kanbanTaskChips' | 'taskWikilinkOverlayChips' | 'taskCardChips'];
 				if (prefix) {
-					const actions = ['Play', 'Pin', 'Note', 'Subtask', ...(prefix === 'inlineTask' ? [] : ['PlainCheckbox'])];
+					const actions = ['Play', 'Pin', 'Note', 'Subtask', ...(prefix === 'inlineTask' ? [] : ['PlainCheckbox']), 'Source'];
 					groups.push({ type: 'group', heading: t('settings', `${prefix}ActionsSection`), cls: 'operon-task-chip-settings-group', items: actions.map((action, index) => {
-						const titleKey = action === 'PlainCheckbox' ? (prefix === 'taskCard' ? 'kanbanTaskOpenCheckboxAction' : `${prefix}OpenCheckboxAction`) : `inlineTask${action}Action`;
+						const titleKey = action === 'Source' ? 'taskSourceAction' : action === 'PlainCheckbox' ? (prefix === 'taskCard' ? 'kanbanTaskOpenCheckboxAction' : `${prefix}OpenCheckboxAction`) : `inlineTask${action}Action`;
 						const entry = entries.find(entry => entry.key === `${prefix}Show${action}Action`);
 						return this.buildTaskChipCardDefinition(pageId, t('settings', titleKey), { action: index }, entry ? this.getSettingsSearchAliases(entry) : []);
 					}) });
@@ -1941,13 +1914,23 @@ export class OperonSettingsTab extends PluginSettingTab {
 	}
 
 	private buildTaskChipCardDefinition(pageId: TaskChipsSettingsPageId, name: string, singleRow: InterfaceIconRowSelection, aliases: string[]): SettingDefinition {
-		return { name, aliases, render: setting => {
-			setting.settingEl.empty();
-			setting.settingEl.removeClass('setting-item');
-			setting.settingEl.addClass('operon-task-chip-setting');
-			setting.settingEl.dataset.operonChipRow = `${pageId}:${'key' in singleRow ? singleRow.key : `action-${singleRow.action}`}`;
-			this.renderTaskChipsSettingsPageContent(pageId, setting.settingEl, { singleRow });
-		} };
+		const rowId = pageId === 'taskCreatorToolbar' ? undefined
+			: `operon:task-chip:${pageId}:${'key' in singleRow ? `field:${singleRow.key}` : `action:${singleRow.action}`}`;
+		// Obsidian 1.14+ uses explicit IDs to reconcile same-name settings.
+		// Keep names and aliases unchanged for native search and older hosts.
+		const definition: SettingDefinition & { id?: string } = {
+			...(rowId ? { id: rowId } : {}),
+			name,
+			aliases,
+			render: setting => {
+				setting.settingEl.empty();
+				setting.settingEl.removeClass('setting-item');
+				setting.settingEl.addClass('operon-task-chip-setting');
+				setting.settingEl.dataset.operonChipRow = `${pageId}:${'key' in singleRow ? singleRow.key : `action-${singleRow.action}`}`;
+				this.renderTaskChipsSettingsPageContent(pageId, setting.settingEl, { singleRow });
+			},
+		};
+		return definition;
 	}
 
 	private getTaskChipsDocsTargets(pageId: TaskChipsSettingsPageId): string[] {
@@ -2049,13 +2032,15 @@ export class OperonSettingsTab extends PluginSettingTab {
 					.onChange(value => this.setControlValue('workspaceTweaksHideScrollbars', value)));
 				const title = t('settings', 'subtabTweaks');
 				return attachDeclarativeSettingsPageTitleAction(setting.settingEl, title,
-					this.buildNativeSettingsDocsAction(title, 'DOCS-098 Workspace Tweaks').action);
+					['DOCS-098 Workspace Tweaks', 'DOCS-151 Lightbox']
+						.map(target => this.buildNativeSettingsDocsAction(title, target).action));
 			};
 		}
 		const groups: SettingDefinitionItem[] = [{
 			type: 'group', cls: 'operon-workspace-tweaks-settings-group',
 			heading: t('settings', 'workspaceTweaksWorkspaceSection'),
 			items: this.compactSettingsSearchDefinitions([hideScrollbars,
+    this.buildSettingsSearchSettingDefinition(entries, 'workspaceTweaksBackgroundDimming'),
 				this.buildSettingsSearchSettingDefinition(entries, 'workspaceTweaksCompactSidebarTabIcons')]),
 		}, {
 			type: 'group', cls: 'operon-workspace-tweaks-settings-group',
@@ -3277,6 +3262,7 @@ export class OperonSettingsTab extends PluginSettingTab {
 		if (key === 'duplicateAlertDelaySeconds') return [...DUPLICATE_ALERT_DELAY_SECONDS_OPTIONS];
 		if (key === 'upcomingDays') return [1, 2, 3, 4, 5, 6, 7];
 		if (key === 'taskFinderRecentModifiedDays') return [1, 2, 3, 4, 5, 6, 7];
+		if (key === 'workspaceTweaksBackgroundDimming') return [...BACKGROUND_DIMMING_OPTIONS];
 		if (key === 'taskFinderVisibleResultCount') return [3, 4, 5, 6, 7, 8, 9];
 		if (key === 'pinnedDockGridCols') return [2, 3, 4, 5];
 		if (key === 'flowTimePauseMinutes') return [...FLOW_TIME_PAUSE_MINUTE_OPTIONS];
@@ -3630,6 +3616,7 @@ export class OperonSettingsTab extends PluginSettingTab {
  }
 
 	private getSettingsSearchDropdownOptions(key: OperonSettingSearchKey): Record<string, string> {
+  if (key === 'workspaceTweaksBackgroundDimming') return Object.fromEntries(BACKGROUND_DIMMING_OPTIONS.map(value => [String(value), value === 50 ? t('settings', 'workspaceTweaksBackgroundDimmingDefault') : `${value}%`]));
 		if (key === 'calendarTimeGridScale') {
 			return Object.fromEntries(CALENDAR_TIME_GRID_SCALE_OPTIONS.map(scale => [String(scale), `${this.formatCalendarTimeGridScaleLabel(scale)}x`]));
 		}
@@ -4683,6 +4670,15 @@ export class OperonSettingsTab extends PluginSettingTab {
 				},
 			},
 		);
+
+  this.markSettingsSearchTarget(renderDropdownSetting({
+   containerEl: workspaceSection,
+   name: t('settings', 'workspaceTweaksBackgroundDimming'),
+   desc: t('settings', 'workspaceTweaksBackgroundDimmingDesc'),
+   value: String(this.settings.workspaceTweaksBackgroundDimming),
+   options: Object.entries(this.getSettingsSearchDropdownOptions('workspaceTweaksBackgroundDimming')).map(([value, label]) => ({value, label})),
+   onChange: settingsAsyncHandler('settings background dimming change failed', value => this.setControlValue('workspaceTweaksBackgroundDimming', value)),
+  }), 'workspaceTweaksBackgroundDimming');
 
 		const propertiesSection = renderNativeSettingsGroupedSection(
 			containerEl,
@@ -6851,7 +6847,7 @@ export class OperonSettingsTab extends PluginSettingTab {
 		if (target === 'creator' && TASK_CREATOR_TOOLBAR_FIELD_KEY_SET.has(key)) return true;
 		if (target === 'editorWorkflow' && TASK_EDITOR_WORKFLOW_PICKER_KEY_SET.has(key)) return true;
 		if (target === 'editorMobile' && TASK_EDITOR_MOBILE_CORE_TOOL_KEY_SET.has(key)) return true;
-		if (target === 'chips' && INLINE_TASK_COMPACT_CHIP_KEY_SET.has(key)) return true;
+		if (target === 'chips' && (isTaskInfoChipKey(key) || INLINE_TASK_COMPACT_CHIP_KEY_SET.has(key))) return true;
 		return getManagedCustomFieldOptionMapping(key, this.settings.keyMappings) !== null;
 	}
 
@@ -6981,7 +6977,7 @@ export class OperonSettingsTab extends PluginSettingTab {
 			},
 			getLabel: key => this.getInlineTaskCompactChipLabel(key),
 			getIcon: key => this.getInlineTaskCompactChipIcon(key),
-			getCanonicalLabel: key => `{{${key}:: }}`,
+			getCanonicalLabel: key => isTaskInfoChipKey(key) ? '' : `{{${key}:: }}`,
 			iconOnlyButtonLabel: t('settings', 'compactChipIconOnly'),
 			actionTogglesTitle: t('settings', 'inlineTaskActionsSection'),
 			getVisibilityToggleLabel: label => t('settings', 'compactChipVisibilityToggle', { label }),
@@ -7025,6 +7021,16 @@ export class OperonSettingsTab extends PluginSettingTab {
 						await this.saveSettings();
 					},
 				},
+				{
+					visible: this.settings.inlineTaskShowSourceAction,
+					icon: 'file-search',
+					label: t('settings', 'taskSourceAction'),
+					searchTargetId: 'ui.inlineTaskShowSourceAction',
+					onToggle: async () => {
+						this.settings.inlineTaskShowSourceAction = !this.settings.inlineTaskShowSourceAction;
+						await this.saveSettings();
+					},
+				},
 			],
 		});
 	}
@@ -7051,7 +7057,7 @@ export class OperonSettingsTab extends PluginSettingTab {
 			},
 			getLabel: key => this.getInlineTaskCompactChipLabel(key),
 			getIcon: key => this.getInlineTaskCompactChipIcon(key),
-			getCanonicalLabel: key => `{{${key}:: }}`,
+			getCanonicalLabel: key => isTaskInfoChipKey(key) ? '' : `{{${key}:: }}`,
 			getVisibilityToggleLabel: label => t('settings', 'compactChipVisibilityToggle', { label }),
 			save: () => this.saveSettings(),
 		});
@@ -7080,7 +7086,7 @@ export class OperonSettingsTab extends PluginSettingTab {
 			},
 			getLabel: key => this.getInlineTaskCompactChipLabel(key),
 			getIcon: key => this.getInlineTaskCompactChipIcon(key),
-			getCanonicalLabel: key => `{{${key}:: }}`,
+			getCanonicalLabel: key => isTaskInfoChipKey(key) ? '' : `{{${key}:: }}`,
 			iconOnlyButtonLabel: t('settings', 'compactChipIconOnly'),
 			actionTogglesTitle: t('settings', 'taskWikilinkOverlayActionsSection'),
 			getVisibilityToggleLabel: label => t('settings', 'compactChipVisibilityToggle', { label }),
@@ -7130,6 +7136,16 @@ export class OperonSettingsTab extends PluginSettingTab {
 					searchTargetId: 'ui.taskWikilinkOverlayShowPlainCheckboxAction',
 					onToggle: async () => {
 						this.settings.taskWikilinkOverlayShowPlainCheckboxAction = !this.settings.taskWikilinkOverlayShowPlainCheckboxAction;
+						await this.saveSettings();
+					},
+				},
+				{
+					visible: this.settings.taskWikilinkOverlayShowSourceAction,
+					icon: 'file-search',
+					label: t('settings', 'taskSourceAction'),
+					searchTargetId: 'ui.taskWikilinkOverlayShowSourceAction',
+					onToggle: async () => {
+						this.settings.taskWikilinkOverlayShowSourceAction = !this.settings.taskWikilinkOverlayShowSourceAction;
 						await this.saveSettings();
 					},
 				},
@@ -7214,6 +7230,7 @@ export class OperonSettingsTab extends PluginSettingTab {
 	}
 
 	private getInlineTaskCompactChipLabel(key: string): string {
+		if (isTaskInfoChipKey(key)) return TASK_INFO_CHIPS[key].label;
 		const customMapping = getCustomFieldMapping(this.settings.keyMappings, key);
 		if (customMapping) return getCustomFieldLabel(customMapping);
 		if (key === 'tags') return t('settings', 'chipTags');
@@ -7223,6 +7240,7 @@ export class OperonSettingsTab extends PluginSettingTab {
 	}
 
 	private getInlineTaskCompactChipIcon(key: string): string {
+		if (isTaskInfoChipKey(key)) return key === 'taskInfo.projectSerial' ? getConfiguredKeyMappingIcon('operonId', this.settings.keyMappings) || TASK_INFO_CHIPS[key].icon : TASK_INFO_CHIPS[key].icon;
 		const customMapping = getCustomFieldMapping(this.settings.keyMappings, key);
 		if (customMapping) return getCustomFieldIcon(customMapping);
 		const mapping = this.settings.keyMappings.find(candidate => candidate.canonicalKey === key);
@@ -7808,8 +7826,6 @@ export class OperonSettingsTab extends PluginSettingTab {
 		index: number,
 		refresh: () => void,
 	): void {
-		const cache = this.storage.externalCalendars.getSource(source.id);
-		const syncedAt = this.formatSettingsDateTime(cache?.syncedAt ?? null);
 		const displayName = source.name.trim() || t('settings', 'externalCalendarUntitled');
 		const total = this.settings.externalCalendars.length;
 
@@ -7820,19 +7836,10 @@ export class OperonSettingsTab extends PluginSettingTab {
 			className: 'operon-external-calendar-card',
 		});
 
-		createSettingsListCardChip({
-			containerEl: card.metaEl,
-			icon: 'clock',
-			label: t('settings', 'externalCalendarLastSynced', { value: syncedAt }),
-		});
-		if (cache?.lastError) {
-			createSettingsListCardChip({
-				containerEl: card.metaEl,
-				icon: 'alert-triangle',
-				label: t('settings', 'externalCalendarLastError', { value: cache.lastError }),
-				className: 'is-error',
-			});
-		}
+		const status = card.metaEl;
+		status.addClass('operon-external-calendar-source-status');
+		status.dataset.sourceId = source.id;
+		this.renderExternalCalendarStatus(status, source.id);
 
 		createSettingsListCardActionButton({
 			containerEl: card.actionsEl,
@@ -7890,6 +7897,31 @@ export class OperonSettingsTab extends PluginSettingTab {
 				refresh();
 			},
 		});
+	}
+
+	public refreshExternalCalendarStatuses(): void {
+		for (const el of Array.from(this.containerEl.querySelectorAll<HTMLElement>('.operon-external-calendar-source-status'))) {
+			if (el.dataset.sourceId) this.renderExternalCalendarStatus(el, el.dataset.sourceId);
+		}
+	}
+
+	private renderExternalCalendarStatus(containerEl: HTMLElement, sourceId: string): void {
+		containerEl.empty();
+		const cache = this.storage.externalCalendars.getSource(sourceId);
+		const syncedAt = this.formatSettingsDateTime(cache?.syncedAt ?? null);
+		createSettingsListCardChip({
+			containerEl,
+			icon: 'clock',
+			label: t('settings', 'externalCalendarLastSynced', { value: syncedAt }),
+		});
+		if (cache?.lastError) {
+			createSettingsListCardChip({
+				containerEl,
+				icon: 'alert-triangle',
+				label: t('settings', 'externalCalendarLastError', { value: cache.lastError }),
+				className: 'is-error',
+			});
+		}
 	}
 
 	private openExternalCalendarSourceEditModal(
@@ -10011,7 +10043,7 @@ export class OperonSettingsTab extends PluginSettingTab {
 			for (const source of externalCalendars) {
 				const isVisible = preset.externalCalendarVisibility[source.id] === true;
 				new Setting(bodyInner)
-					.setName(source.name || source.url)
+					.setName(source.name || source.filePath || source.url)
 					.addToggle(toggle => {
 						toggle.setValue(isVisible);
 						toggle.onChange(async (value) => {
@@ -13038,7 +13070,7 @@ export class OperonSettingsTab extends PluginSettingTab {
 			},
 			getLabel: key => this.getInlineTaskCompactChipLabel(key),
 			getIcon: key => this.getInlineTaskCompactChipIcon(key),
-			getCanonicalLabel: key => `{{${key}:: }}`,
+			getCanonicalLabel: key => isTaskInfoChipKey(key) ? '' : `{{${key}:: }}`,
 			iconOnlyButtonLabel: t('settings', 'compactChipIconOnly'),
 			actionTogglesTitle: t('settings', 'filterTaskActionsSection'),
 			getVisibilityToggleLabel: label => t('settings', 'compactChipVisibilityToggle', { label }),
@@ -13092,6 +13124,16 @@ export class OperonSettingsTab extends PluginSettingTab {
 						await this.saveSettings();
 					},
 				},
+				{
+					visible: this.settings.filterTaskShowSourceAction,
+					icon: 'file-search',
+					label: t('settings', 'taskSourceAction'),
+					searchTargetId: 'ui.filterTaskShowSourceAction',
+					onToggle: async () => {
+						this.settings.filterTaskShowSourceAction = !this.settings.filterTaskShowSourceAction;
+						await this.saveSettings();
+					},
+				},
 			],
 		});
 	}
@@ -13119,7 +13161,7 @@ export class OperonSettingsTab extends PluginSettingTab {
 				},
 				getLabel: key => this.getInlineTaskCompactChipLabel(key),
 				getIcon: key => this.getInlineTaskCompactChipIcon(key),
-				getCanonicalLabel: key => `{{${key}:: }}`,
+				getCanonicalLabel: key => isTaskInfoChipKey(key) ? '' : `{{${key}:: }}`,
 				iconOnlyButtonLabel: t('settings', 'compactChipIconOnly'),
 				actionTogglesTitle: t('settings', profile === 'taskCard' ? 'taskCardActionsSection' : 'kanbanTaskActionsSection'),
 				getVisibilityToggleLabel: label => t('settings', 'compactChipVisibilityToggle', { label }),
@@ -13173,6 +13215,16 @@ export class OperonSettingsTab extends PluginSettingTab {
 						searchTargetId: `ui.${profile}ShowPlainCheckboxAction`,
 						onToggle: async () => {
 							this.settings[`${profile}ShowPlainCheckboxAction`] = !this.settings[`${profile}ShowPlainCheckboxAction`];
+							await this.saveSettings();
+						},
+					},
+					{
+						visible: this.settings[`${profile}ShowSourceAction`],
+						icon: 'file-search',
+						label: t('settings', 'taskSourceAction'),
+						searchTargetId: `ui.${profile}ShowSourceAction`,
+						onToggle: async () => {
+							this.settings[`${profile}ShowSourceAction`] = !this.settings[`${profile}ShowSourceAction`];
 							await this.saveSettings();
 						},
 					},

@@ -1385,6 +1385,7 @@ export function checkLegacyPairedReleaseEvidence() {
 
 function checkCssScorecard() {
 	const bannedCssPatterns = [
+		[/:has\s*\(/i, 'avoid :has() selectors because Obsidian CSS compatibility checks flag them'],
 		[/!important\b/, 'future CSS changes must avoid !important'],
 		[/\ball\s*:\s*unset\b/, 'use explicit scoped resets instead of all: unset'],
 		[/\bdisplay\s*:\s*contents\b/, 'avoid display: contents because Obsidian compatibility checks flag it'],

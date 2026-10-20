@@ -1,6 +1,7 @@
-import { reanchorFloatingPanel } from './field-pickers/common';
-import { Notice, setIcon, type App } from 'obsidian';
-import { getOwnerWindow } from '../core/dom-compat';
+import { registerLightboxSource } from './lightbox';
+import { reanchorFloatingPanel, getFloatingRectAnchorOwner } from './field-pickers/common';
+import { Notice, Platform, setIcon, type App } from 'obsidian';
+import { asHTMLElement, getOwnerWindow } from '../core/dom-compat';
 import { t } from '../core/i18n';
 import { normalizeTaskFieldColor } from '../core/task-color-source';
 import { createFloatingPanel, type FloatingPanelCloseReason } from './field-pickers/common';
@@ -32,6 +33,7 @@ export interface TextFieldPopoverOptions {
 	normalizeValue?: (value: string) => string;
 	editor?: {
 		kind: 'compact-markdown';
+  openLinksInLightbox?: boolean;
 		sourcePath: string;
 		textPolicy?: CompactTaskTextPolicy;
 	};
@@ -42,7 +44,8 @@ interface TextFieldEditorSurface {
 		shouldCommit: boolean;
 		value: string;
 	};
-	focusEnd: () => void;
+	focus: () => void;
+ focusEnd: () => void;
 	refreshLayout: () => void;
 	destroy: () => void;
 }
@@ -123,9 +126,11 @@ export function showTextFieldPopover(
 	let saving = false;
 	let closed = false;
 	let editorHost: HTMLElement | null = null;
+ let previewSource: ReturnType<typeof registerLightboxSource> | null = null;
 	const closeAttemptWaiters = new Set<(closed: boolean) => void>();
 	const requestClose = (): void => {
-		if (saving || closed) return;
+		if (previewSource?.suspended()) { settleCloseAttempt(false); return; }
+  if (saving || closed) return;
 		const commit = readEditorCommit();
 		if (commit === null || !shouldCommitValue(commit)) {
 			forceClose();
@@ -135,7 +140,7 @@ export function showTextFieldPopover(
 	};
 	const shouldClose = (reason: FloatingPanelCloseReason): boolean => {
 		if (allowDirectClose) return true;
-		if (saving || closed) return false;
+		if (saving || closed || previewSource?.suspended()) return false;
 		const commit = readEditorCommit();
 		if (commit === null || !shouldCommitValue(commit)) return true;
 		if (reason === 'anchor-detach') return false;
@@ -147,6 +152,7 @@ export function showTextFieldPopover(
 		'operon-floating-panel operon-text-field-popover-panel',
 		() => {
 			closed = true;
+   previewSource?.dispose();
 			editorSurface?.destroy();
 			editorSurface = null;
 			if (sessionKey && activeTextFieldPopovers.get(sessionKey)?.panel === panel) {
@@ -166,7 +172,7 @@ export function showTextFieldPopover(
 			repositionOnPanelResize: true,
 			repositionOnScroll: true,
 			shouldHandleEscape: options.editor
-				? event => !editorHost?.contains(event.target as Node)
+				? event => !previewSource?.suspended() && !editorHost?.contains(event.target as Node)
 				: undefined,
 		},
 	);
@@ -222,7 +228,15 @@ export function showTextFieldPopover(
 			dependencies,
 		)
 		: createTextareaTextFieldEditorSurface(editorHost, options, requestClose, normalizeValue);
-	getOwnerWindow(panel).requestAnimationFrame(() => {
+	if (Platform.isDesktopApp && options.editor?.openLinksInLightbox) {
+  previewSource = registerLightboxSource(panel, asHTMLElement(options.anchor) ?? getFloatingRectAnchorOwner(options.anchor) ?? options.lifecycleOwner ?? null, {
+   blocked: () => saving || readEditorCommit()?.shouldCommit === true,
+   focus: () => editorSurface?.focus(),
+   closeClean: () => { session.focusReturn = null; forceClose(); },
+  });
+ }
+ getOwnerWindow(panel).requestAnimationFrame(() => {
+  if (previewSource?.suspended() || closed) return;
 		editorSurface?.refreshLayout();
 		editorSurface?.focusEnd();
 	});
@@ -364,6 +378,7 @@ function createTextareaTextFieldEditorSurface(
 				value,
 			};
 		},
+		focus: () => editor.focus({preventScroll: true}),
 		focusEnd: () => {
 			editor.focus();
 			const end = editor.value.length;
@@ -393,6 +408,7 @@ function createCompactTextFieldEditorSurface(
 		placeholder: options.placeholder,
 		ariaLabel: options.title,
 		textPolicy: editorOptions.textPolicy,
+  openLinksInLightbox: editorOptions.openLinksInLightbox,
 		onIntent: intent => {
 			if (intent === 'focus-next' || intent === 'focus-previous') {
 				closeButton.focus();
@@ -403,6 +419,7 @@ function createCompactTextFieldEditorSurface(
 	});
 	return {
 		getCommit: () => surface.getCommit(),
+		focus: () => surface.focus({preventScroll: true}),
 		focusEnd: () => surface.focusEnd(),
 		refreshLayout: () => surface.refreshLayout(),
 		destroy: () => surface.destroy(),

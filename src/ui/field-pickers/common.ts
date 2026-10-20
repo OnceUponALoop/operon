@@ -235,7 +235,7 @@ export function snapshotFloatingRectAnchor(anchorEl: HTMLElement): DOMRect {
 	return snapshot;
 }
 
-function getFloatingRectAnchorOwner(anchor: HTMLElement | DOMRect): HTMLElement | null {
+export function getFloatingRectAnchorOwner(anchor: HTMLElement | DOMRect): HTMLElement | null {
 	return (anchor as OwnedFloatingRect)[FLOATING_RECT_ANCHOR_OWNER] ?? null;
 }
 
@@ -252,6 +252,8 @@ function resolveRect(anchor: HTMLElement | DOMRect): DOMRect {
 }
 
 export function resolveSurfaceFloatingHostOptions(anchorEl: HTMLElement): FloatingHostOptions {
+	const lightboxHost = asHTMLElement(anchorEl.closest('.operon-native-lightbox-host'), anchorEl);
+	if (lightboxHost) return { floatingHost: lightboxHost, floatingScrollHost: getOwnerWindow(lightboxHost), constrainToFloatingHost: true };
 	const pagePreviewHost = asHTMLElement(anchorEl.closest('.hover-popover, .popover.hover-popover'), anchorEl);
  if (!pagePreviewHost) {
   const excalidraw = anchorEl.closest('[data-operon-task-card-excalidraw]')?.closest('.view-content');
@@ -281,6 +283,8 @@ function resolveHostContext(anchor: HTMLElement | DOMRect, options: FloatingHost
 	const anchorEl = asHTMLElement(anchor);
 	const rectAnchorOwnerEl = anchorEl ? null : getFloatingRectAnchorOwner(anchor);
 	if (rectAnchorOwnerEl) {
+		const lightbox = asHTMLElement(rectAnchorOwnerEl.closest('.operon-native-lightbox-host'), rectAnchorOwnerEl);
+		if (lightbox) return { host: lightbox, constrainToHost: true, scrollHost: getOwnerWindow(lightbox) };
 		return {
 			host: getOwnerBody(rectAnchorOwnerEl),
 			constrainToHost: false,
@@ -498,11 +502,17 @@ function positionTaskCreatorMobileSurface(
 ): void {
 	const modal = asHTMLElement(root.closest(TASK_CREATOR_MOBILE_MODAL_SELECTOR), root) ?? root;
 	const modalRect = modal.getBoundingClientRect();
-	const visibleLeft = Math.max(modalRect.left, 0);
-	const visibleRight = Math.min(modalRect.right, hostWindow.innerWidth);
-	const visibleTop = Math.max(modalRect.top, 0);
-	const visibleBottom = Math.min(modalRect.bottom, hostWindow.innerHeight);
-	const surfaceTop = resolveTaskCreatorMobileSurfaceTop(root, visibleTop, visibleBottom);
+	const viewport = hostWindow.visualViewport;
+	const viewportLeft = viewport?.offsetLeft ?? 0;
+	const viewportTop = viewport?.offsetTop ?? 0;
+	const visibleLeft = Math.max(modalRect.left, viewportLeft);
+	const visibleRight = Math.min(modalRect.right, viewportLeft + (viewport?.width ?? hostWindow.innerWidth));
+	const visibleTop = Math.max(modalRect.top, viewportTop);
+	const visibleBottom = Math.min(modalRect.bottom, viewportTop + (viewport?.height ?? hostWindow.innerHeight));
+	let surfaceTop = resolveTaskCreatorMobileSurfaceTop(root, visibleTop, visibleBottom);
+	// Wrapped tools can fill the keyboard viewport. Keep the picker usable above them instead.
+	const minimumHeight = Math.min(240, visibleBottom - visibleTop - margin * 2);
+	if (visibleBottom - surfaceTop - margin * 2 < minimumHeight) surfaceTop = visibleTop;
 	const availableWidth = Math.max(
 		TASK_CREATOR_MOBILE_SURFACE_MIN_WIDTH,
 		visibleRight - visibleLeft - margin * 2,
@@ -710,6 +720,7 @@ export function createFloatingPanel(
 			&& options.shouldHandleEscape?.(event) !== false
 			&& isTopMostFloatingPanel(record)
 		) {
+			if (panel.closest('.operon-native-lightbox-host')) { event.preventDefault(); event.stopPropagation(); }
 			requestClose('escape');
 		}
 	};

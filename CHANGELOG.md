@@ -7,7 +7,48 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### New
+
+- Added a shared **desktop lightbox** for web pages, media, and editable Markdown, Bases, and Operon Tables, with content-specific opening sizes, normal save behavior, and embedded YouTube playback. Table presets and Gantt remain available without changing your workspace tab layout.
+- Added **nested previews** that preserve previous views and Description/Note drafts, with controls to close, open in a new tab, or split right or below. Unfinished drafts and failed saves stay protected; neutral controls appear over the dimmed background or on hover and remain accessible with Tab, without taking focus on opening.
+- Added **Lightbox background dimming** in Interface → Workspace Tweaks, shared by desktop lightboxes, Task Creator, Finder, Editor, and standalone Dynamic Subtasks Filter modals. Choose 10–90%, starting at 50% for new users; existing preferences are preserved. Nested layers add 5 percentage points up to 90% and restore the previous level on closing. Moon/Sun controls save changes directly to Tweaks.
+- Added **lightbox size controls** to adjust width and height from 40% to 90%. Your changes are remembered per vault for Markdown, Base, Table, web, PDF, images, video, and YouTube; untouched profiles keep their original sizes.
+- Added optional **Source chips and actions**: chips show the source file and Inline task line across all six profiles and start hidden. Source actions start enabled in desktop Inline Tasks, Filter Tasks, Kanban, Task Wikilink Overlays, and Task Cards, appearing on hover or keyboard focus. Task Finder chips remain informational; mobile navigation is unchanged.
+- Added a **year and month picker** to the desktop Calendar sidebar and toolbar, with date-format-aware buttons and **Go to today**; changing months preserves the focused day where possible.
+- Added **Repeat reference date** columns and filters, including relative dates and empty values. Tables use your date format and the Repeat picker; saved changes update matching results.
+- Added **vault-local ICS calendars** as read-only external sources that update when files change, alongside URL subscriptions.
+
+### Improved
+
+- Unified **desktop link opening** across supported task chips, Tables, descriptions, and Description/Note popovers: click to preview, Cmd/Ctrl-click for an Obsidian tab, and middle-click HTTP/HTTPS links for the system browser, even without Web Viewer. Other web previews require Web Viewer; local modifier-hover follows Page Preview preferences, and media keeps hover previews and single-click opening. Existing Parent/Type/Text/List wikilinks use the same flow; ordinary values and missing wikilinks keep their pickers, and Table editing remains available outside links.
+- Unified **Open Source** navigation in the contextual menu, Session History, Source chips/actions, and Canvas/Excalidraw task-card controls. Desktop previews open the current source and Inline task line; supported Cmd/Ctrl actions retain new-tab navigation. Inline sources place the caret immediately after the description without selecting text, including in Task Editor File Body.
+- **Project Serial chips** can be reordered, hidden, or shown as icons, remaining visible first by default and informational everywhere. On Obsidian 1.14+, Source and Project Serial settings stay distinct from same-named Custom Keys during search, reordering, and visibility changes.
+- **Add subtask actions** now offer File and Inline subtasks for File tasks; Inline tasks keep the Inline action across all five profiles.
+- **Mobile Task Creator** wraps property icons onto additional rows, keeping controls, template previews, and pickers accessible with the keyboard open.
+- **Status chips** consistently open the picker with the current value selected for typing. **Status and Priority pickers** show configured colored icons, with dots as a fallback, and clearer hover feedback; checkbox and cycle commands retain their behavior.
+- **Type, Custom Keys Text, and Vault Properties Text pickers** show the current value above an empty search field, making all suggestions available immediately; click the value to edit it.
+- Made **Text property editing** consistent across standalone and embedded Tables, preserving long and multiline Inline/File values and save/conflict protections.
+- **Operon task tag chips** now open the task's tag picker without changing normal Markdown tag behavior.
+- Made **Repeat selections and Table cells** clearer, with readable repeat descriptions and consistent selection feedback; Table repeat cells open the Repeat picker.
+- **Sync now** refreshes external calendars with fresh contents, including previously empty cached feeds.
+- Made the **desktop-style Task Editor on phones** more compact, with consistent controls, single-line property values, and aligned headings.
+- Made **Add/Edit session** dialogs more compact and consistent, with the task title shown for context and a clearer Add session action.
+
+### Fixed
+
+- Fixed **Inline task hover feedback** remaining active after closing Task Editor with the mouse, preserving genuine hover and keyboard focus.
+- Distinguished **Daily and Weekly Notes** format and folder setting names to prevent duplicate-setting warnings without changing saved values.
+- **Automatic settings backup conflicts**, including synchronization conflicts, no longer block settings saves or Table startup. Existing backups remain intact; automatic backup creation pauses with a console message while settings-file safety checks stay active.
+- Fixed repeated **settings warnings** during startup and tab changes: saving pauses are reported once per cause, without implying Table corruption; genuine Table errors remain visible.
+- Fixed **Task Creator repeat editing** so saved or cleared values update immediately, reference dates and Count settings survive Inline/File editing, and Cancel preserves the draft.
+- Fixed certain **Outlook all-day yearly events** missing from URL and vault-local ICS calendars.
+- Fixed **Dynamic File Task Filter** appearing inside Markdown table cells, while retaining it in Task Editor File Body and Markdown lightboxes; short Description/Note editors remain unaffected.
+- Fixed **Calendar sidebar and toolbar actions** requiring another interaction to update; visibility and color changes now appear immediately.
+- Fixed clicks on **nested inline task descriptions** placing the cursor at the start; Live Preview now uses the clicked position, including wrapped lines.
+
 ### Validation
+
+- Full local Plugin checks, production build, release guard, and code review passed, along with **5,184/5,184** local regression tests.
 
 ## [4.0.1] - 2026-10-14
 

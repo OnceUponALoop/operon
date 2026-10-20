@@ -19,6 +19,7 @@ export interface ExternalCalendarParseOptions {
 	body: string;
 	rangeStart: string;
 	rangeEnd: string;
+	requireCalendar?: boolean;
 }
 
 const DATE_RE = /^\d{4}-\d{2}-\d{2}$/u;
@@ -74,12 +75,82 @@ export async function fetchExternalCalendarIcs(
 	};
 }
 
+/**
+ * Outlook can end a DATE series with a UTC DATE-TIME representing its own
+ * local midnight. Repair only that proven yearly boundary, in memory, before
+ * the normal iterator applies exclusions, additions and exceptions.
+ */
+function normalizeOutlookAllDayUntil(component: InstanceType<typeof ICAL.Component>): boolean {
+	const start = component.getFirstPropertyValue('dtstart');
+	const rules = component.getAllProperties('rrule');
+	if (!(start instanceof ICAL.Time) || !start.isDate || rules.length !== 1) return false;
+	const rule = rules[0].getFirstValue();
+	if (!(rule instanceof ICAL.Recur) || rule.freq !== 'YEARLY' || rule.interval !== 1
+		|| rule.count !== null || !rule.until || rule.until.isDate
+		|| rule.until.zone !== ICAL.Timezone.utcTimezone || start.compare(rule.until) <= 0) return false;
+	if (Object.keys(rule.parts).some(key => key !== 'BYMONTH' && key !== 'BYMONTHDAY')) return false;
+	if (rule.parts.BYMONTH && (rule.parts.BYMONTH.length !== 1 || rule.parts.BYMONTH[0] !== start.month)) return false;
+	if (rule.parts.BYMONTHDAY && (rule.parts.BYMONTHDAY.length !== 1 || rule.parts.BYMONTHDAY[0] !== start.day)) return false;
+	const calendar = component.parent;
+	if (!calendar || calendar.name !== 'vcalendar') return false;
+	const zoneProperties = calendar.getAllProperties('x-wr-timezone');
+	if (zoneProperties.length !== 1) return false;
+	const zoneName = zoneProperties[0].getFirstValue();
+	if (typeof zoneName !== 'string' || !zoneName.trim()) return false;
+	const tzid = zoneName.trim();
+	try {
+		const zones = calendar.getAllSubcomponents('vtimezone')
+			.filter(zone => zone.getFirstPropertyValue('tzid') === tzid);
+		if (zones.length > 1) return false;
+		let parts: number[];
+		if (zones.length === 1) {
+			// Do not fall back to IANA when an explicit embedded definition is broken.
+			const observances = zones[0].getAllSubcomponents()
+				.filter(part => part.name === 'standard' || part.name === 'daylight');
+			if (!observances.length || observances.some(part => {
+				const onset = part.getFirstPropertyValue('dtstart');
+				return !(onset instanceof ICAL.Time) || onset.isDate
+					|| !(part.getFirstPropertyValue('tzoffsetfrom') instanceof ICAL.UtcOffset)
+					|| !(part.getFirstPropertyValue('tzoffsetto') instanceof ICAL.UtcOffset);
+			})) return false;
+			const zone = calendar.getTimeZoneByID(tzid);
+			if (!zone) return false;
+			const local = rule.until.convertToZone(zone);
+			parts = [local.year, local.month, local.day, local.hour, local.minute, local.second];
+		} else {
+			// Numeric offsets accepted by newer Intl engines are not IANA names.
+			if (/^[+-]/u.test(tzid)) return false;
+			const formatted = new Intl.DateTimeFormat('en-GB', {
+				timeZone: tzid, calendar: 'gregory', numberingSystem: 'latn',
+				year: 'numeric', month: '2-digit', day: '2-digit',
+				hour: '2-digit', minute: '2-digit', second: '2-digit', hourCycle: 'h23',
+			}).formatToParts(new Date(rule.until.toUnixTime() * 1000));
+			parts = ['year', 'month', 'day', 'hour', 'minute', 'second']
+				.map(type => Number(formatted.find(part => part.type === type)?.value));
+		}
+		if (!parts.every((value, index) => value === [start.year, start.month, start.day, 0, 0, 0][index])) return false;
+		const normalized = rule.clone();
+		normalized.until = start.clone();
+		rules[0].setValue(normalized);
+		return true;
+	} catch {
+		// Unknown/invalid source timezones keep the existing recurrence behavior.
+		return false;
+	}
+}
+
 export function parseExternalCalendarIcsEvents(
 	options: ExternalCalendarParseOptions,
 ): ExternalCalendarCachedEvent[] {
 	const jcal: unknown = ICAL.parse(options.body);
-	if (!isIcalComponentInput(jcal)) return [];
+	if (!isIcalComponentInput(jcal)) {
+		if (options.requireCalendar) throw new Error('Expected a VCALENDAR document');
+		return [];
+	}
 	const root = new ICAL.Component(jcal);
+	if (options.requireCalendar && root.name !== 'vcalendar') {
+		throw new Error('Expected a VCALENDAR document');
+	}
 	const vevents = root.getAllSubcomponents('vevent');
 	const masters = vevents.filter(component => {
 		const event = new ICAL.Event(component);
@@ -93,6 +164,7 @@ export function parseExternalCalendarIcsEvents(
 	const items: ExternalCalendarCachedEvent[] = [];
 
 	for (const component of masters) {
+		const normalizedOutlookRule = normalizeOutlookAllDayUntil(component);
 		const event = new ICAL.Event(component);
 		if (event.isRecurring()) {
 			const iterator = event.iterator();
@@ -100,6 +172,7 @@ export function parseExternalCalendarIcsEvents(
 			const masterDurationMs = resolveMasterEventDurationMs(event);
 			let scannedCount = 0;
 			let inRangeCount = 0;
+			let previousNormalizedOccurrence: string | null = null;
 			// The in-range cap must not be consumed by occurrences before the
 			// window, otherwise long-lived frequent series (for example a daily
 			// event started years ago) exhaust it before reaching the window and
@@ -111,6 +184,13 @@ export function parseExternalCalendarIcsEvents(
 				const next = iterator.next();
 				if (!next) break;
 				scannedCount += 1;
+				if (normalizedOutlookRule) {
+					// The repaired DTSTART may already be present in RDATE. Keep the
+					// recurrence identity once, without changing valid series behavior.
+					const occurrenceKey = next.toString();
+					if (occurrenceKey === previousNormalizedOccurrence) continue;
+					previousNormalizedOccurrence = occurrenceKey;
+				}
 				const nextJs = next.toJSDate();
 				if (nextJs.getTime() >= rangeEndExclusive.getTime()) {
 					break;

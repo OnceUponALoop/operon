@@ -1,8 +1,13 @@
+import { cleanupTaskMediaChipPreviews } from '../compact-chip-link-preview';
+import { bindTableTaskOpening, bindTablePropertyOpening, bindTableMarkdownOpening, readTablePropertyLinkValue, type TableOpeningContext } from './table-link-opening';
+import { isDesktopOpeningChip } from '../links-chip-action';
+import { parseCompactWikiLinkValue } from '../compact-task-layout';
+import { trackLightboxTableCallbacks } from '../native-lightbox-lifecycle';
 import { cleanupTaskContextualHoverMenus, hideTaskContextualHoverMenu } from '../contextual-hover-menu';
 import { clearTableNativePending, getPendingTableRenderState, retainTableNativePending } from './table-native-pending';
 import { retainTablePropertyDraft, tablePropertyPickerDraft, tablePropertyUpdateRequest } from './table-file-property-editor';
 import { cancelTableNativePropertyRequest, clearTableNativePropertySnapshot, getTableNativePropertySnapshot, getVerifiedTableRowKeys } from './table-native-property';
-import { formatTableCompactDuration } from './table-display';
+import { formatTableRepeatValue, formatTableCompactDuration } from './table-display';
 import { registerFilterDayRefresh } from '../../core/filter-day-refresh';
 import { getScopedTrackerSessions } from '../../core/time-scope-values';
 import { withTableRowHover } from './table-row-hover';
@@ -472,6 +477,7 @@ export class OperonTableView extends FileView {
 	private searchDebounceTimer: number | null = null;
 	private tableResizeObserverCleanup: (() => void) | null = null;
 	private toolbarLayoutCleanup: (() => void) | null = null;
+	private tableCellOpeners = new WeakMap<HTMLElement, () => void>();
 	private activePickerClose: (() => void) | null = null;
 	private keepActivePickerOnRender = false;
 	private retainActivePickerOnScroll = false;
@@ -522,6 +528,7 @@ export class OperonTableView extends FileView {
 		options: OperonTableViewOptions = {},
 	) {
 		super(leaf);
+		this.callbacks = trackLightboxTableCallbacks(leaf, callbacks);
 		this.persistStateScheduler = new TableTrailingIdleScheduler(
 			80,
 			() => { void this.app.workspace.requestSaveLayout(); },
@@ -691,6 +698,7 @@ export class OperonTableView extends FileView {
 		this.ganttRenderInvalidated = false;
 		this.ganttTaskModelCache.clear();
 		clearTableVirtualRowCache(this.virtualRows, row => {
+			cleanupTaskMediaChipPreviews(row);
 			cleanupOperonHoverTooltips(row);
 			cleanupTaskContextualHoverMenus(row);
 			row.remove();
@@ -700,6 +708,7 @@ export class OperonTableView extends FileView {
 		this.retainedVirtualRange = null;
 		this.retainedVirtualCoverage = null;
 		this.retainedVirtualRangeIdentity = null;
+		cleanupTaskMediaChipPreviews(this.contentEl);
 		cleanupOperonHoverTooltips(this.contentEl);
 		this.contentEl.empty();
 	}
@@ -790,6 +799,7 @@ export class OperonTableView extends FileView {
 		this.cleanupTableResizeObserver();
 		this.cleanupToolbarLayout();
 		this.cleanupMobileViewport();
+		cleanupTaskMediaChipPreviews(this.contentEl);
 		cleanupOperonHoverTooltips(this.contentEl);
 		this.contentEl.empty();
 		this.contentEl.removeClass('operon-table-file-error-view');
@@ -810,6 +820,7 @@ export class OperonTableView extends FileView {
 		this.cleanupTableResizeObserver();
 		this.cleanupToolbarLayout();
 		this.cleanupMobileViewport();
+		cleanupTaskMediaChipPreviews(this.contentEl);
 		cleanupOperonHoverTooltips(this.contentEl);
 		this.contentEl.empty();
 		this.contentEl.removeClass('operon-table-file-loading-view');
@@ -1172,6 +1183,7 @@ export class OperonTableView extends FileView {
 		this.cleanupTableResizeObserver();
 		this.cleanupToolbarLayout();
 		this.cleanupMobileViewport();
+		cleanupTaskMediaChipPreviews(this.contentEl);
 		cleanupOperonHoverTooltips(this.contentEl);
 		this.contentEl.empty();
 		this.contentEl.removeClass('operon-table-file-error-view', 'operon-table-file-loading-view');
@@ -2603,6 +2615,7 @@ export class OperonTableView extends FileView {
 				}
 			},
 			removeRow: row => {
+				cleanupTaskMediaChipPreviews(row);
 				cleanupOperonHoverTooltips(row);
 				cleanupTaskContextualHoverMenus(row);
 				row.remove();
@@ -3069,7 +3082,9 @@ export class OperonTableView extends FileView {
 			})
 			: null;
 		const iconContent = formatTableIconOnlyTooltipContent(value);
+  if (canOpenTextPopover) this.tableCellOpeners.set(cell, () => this.openInlineTextPopover(cell, task, column.key, value, fieldLabel, cellKey, payloadKey));
 		renderTableDescriptionCellContent(cell, {
+   ...(Platform.isDesktopApp ? { bindLink: (anchor, link) => bindTableMarkdownOpening(anchor, link, key === 'note' ? 'note' : 'description', this.tableOpeningContext(cell, task)) } : {}),
 			value,
 			fieldLabel,
 			editLabel: t('table', 'editCellAria'),
@@ -3111,14 +3126,15 @@ export class OperonTableView extends FileView {
 			locationResolver: renderState.locationResolver,
 		});
 		const field = getTableTaskField(column.key, renderState.settings);
-		const baseContent = field?.type === 'date' || field?.type === 'datetime'
+		const baseContent = column.key === 'repeat' ? formatTableRepeatValue(value)
+			: field?.type === 'date' || field?.type === 'datetime'
 			? formatTableDetailedDatetimeValue(column.key, value, renderState.settings)
 			: locationVisual?.label
 			?? formatTableDependencyTooltipContent(column.key, value, renderState.valueResolver.taskLookup)
 			?? formatTableIconOnlyTooltipContent(value);
 		const rawParentTaskId = column.key === 'parentTask' ? (task.fieldValues['parentTask'] ?? '').trim() : '';
 		const canOpenParentTask = !!rawParentTaskId && !!renderState.valueResolver.taskLookup.getTask(rawParentTaskId);
-		const content = canOpenParentTask
+		const content = canOpenParentTask && !Platform.isDesktopApp
 			? `${baseContent}\n${formatTableParentTaskTooltipContent(rawParentTaskId, getTaskSourceOpenModifierLabel())}`
 			: baseContent;
 		const fallbackIcon = field?.icon ?? 'text';
@@ -3188,11 +3204,16 @@ export class OperonTableView extends FileView {
 		if (locationVisual) {
 			this.bindLocationMapPreviewTrigger(icon, task, locationVisual, renderState);
 		}
+  const openingKey = column.key === 'source' ? 'taskInfo.source' : column.key;
+  const summaryList = field?.type === 'list' || ['links', 'assignees', 'contexts'].includes(column.key);
+  if (!summaryList && !isTableTaskMediaField(column.key) && column.key !== 'source' && isDesktopOpeningChip(openingKey, renderState.settings)) {
+   this.bindTableValueOpening(icon, cell, task, column.key, task.fieldValues[column.key] ?? value);
+  }
 		if (isTableTaskMediaField(column.key)) {
 			const mediaValue = column.key === 'taskGallery'
 				? parseTableTaskListValue(column.key, value)[0] ?? ''
 				: value;
-			bindTableTaskMediaChipActivation(icon, column.key, mediaValue, {
+			if (!this.bindTableValueOpening(icon, cell, task, column.key, mediaValue)) bindTableTaskMediaChipActivation(icon, column.key, mediaValue, {
 				app: this.app,
 				sourcePath: task.primary.filePath,
 			});
@@ -3224,6 +3245,7 @@ export class OperonTableView extends FileView {
 		cellKey: string,
 		payloadKey: string,
 		allowEmptyCommit = false,
+		preserveLineBreaks = false,
 	): void {
 		if (this.pendingCellKey !== null) return;
 		this.closeActivePicker();
@@ -3274,7 +3296,8 @@ export class OperonTableView extends FileView {
 				sessionKey: `table-text:${task.operonId}:${key}`,
 				lifecycleOwner: this.contentEl,
 				editor: {
-					kind: 'compact-markdown',
+					kind: 'compact-markdown', openLinksInLightbox: key === 'description',
+					textPolicy: preserveLineBreaks ? 'task-note' : 'single-line',
 					sourcePath: task.primary.filePath,
 				},
 				onCommit: commitValue,
@@ -3286,6 +3309,19 @@ export class OperonTableView extends FileView {
 		this.activePickerClose = closeTextPopover;
 		this.keepActivePickerOnRender = true;
 	}
+
+ private tableOpeningContext(cell: HTMLElement, task: IndexedTask): TableOpeningContext {
+  return {
+   app: this.app, getSettings: () => this.getSettings(),
+   getTask: () => this.indexer.getTask(task.operonId),
+   getTaskById: id => this.indexer.getTask(id), getAllTasks: () => this.indexer.getAllTasks(),
+   canActivate: () => cell.isConnected && this.pendingCellKey === null && !this.ganttInteraction?.isPending(task.operonId),
+   picker: () => null, onPicker: () => this.tableCellOpeners.get(cell)?.(),
+  };
+ }
+ private bindTableValueOpening(chip: HTMLElement, cell: HTMLElement, task: IndexedTask, key: string, rawValue: string): boolean {
+  return bindTableTaskOpening(chip, key, rawValue, this.tableOpeningContext(cell, task));
+ }
 
 	private renderSourceCell(
 		cell: HTMLElement,
@@ -3300,6 +3336,10 @@ export class OperonTableView extends FileView {
 			cell.tabIndex = 0;
 			setAccessibleLabelWithoutTooltip(cell, t('table', 'openSource', { source: fullSource }));
 			this.renderIconOnlyCell(cell, task, column, fullSource, renderState, { focusable: false });
+   if (Platform.isDesktopApp) {
+    this.bindTableValueOpening(cell, cell, task, 'source', '');
+    return;
+   }
 			const openSource = (): void => {
 				this.callbacks.onOpenTaskSource?.(task.operonId);
 			};
@@ -3324,6 +3364,7 @@ export class OperonTableView extends FileView {
 		const iconEl = button.createSpan('operon-table-source-icon');
 		setIcon(iconEl, task.primary.format === 'inline' ? 'text-cursor-input' : 'file-text');
 		button.createSpan({ cls: 'operon-table-source-label', text: value });
+  if (this.bindTableValueOpening(button, cell, task, 'source', '')) return;
 		button.addEventListener('click', (event) => {
 			event.preventDefault();
 			event.stopPropagation();
@@ -3425,8 +3466,16 @@ export class OperonTableView extends FileView {
 			return;
 		}
 		if (isTablePlainTextField(getTableTaskField(column.key, renderState.settings))) {
+   const conditional = isDesktopOpeningChip(column.key, renderState.settings);
+   if (conditional && parseCompactWikiLinkValue(value)) {
+    const chip = cell.createSpan('operon-table-cell-chip operon-chip operon-inline-compact-chip operon-task-chip');
+    chip.createSpan({ cls: 'operon-table-cell-chip-label', text: parseCompactWikiLinkValue(value)!.displayValue });
+   bindOperonHoverTooltip(chip, { content: value, taskColor: null });
+    this.bindTableValueOpening(chip, cell, task, column.key, value);
+    return;
+   }
 			renderTableTextValueDisplay(cell, {
-				value,
+				value, visualOnlyLinks: conditional,
 				wikilinks: { app: this.app, sourcePath: task.primary.filePath },
 			});
 			return;
@@ -3435,6 +3484,7 @@ export class OperonTableView extends FileView {
 			return;
 		}
 		renderTableCellChips(cell, column.key, value, {
+   ...(Platform.isDesktopApp && isDesktopOpeningChip(column.key, renderState.settings) ? { bindOpening: (chip: HTMLElement, raw: string) => this.bindTableValueOpening(chip, cell, task, column.key, raw) } : {}),
 			chipClassName: `operon-table-cell-chip operon-chip operon-live-preview-chip operon-inline-compact-chip operon-task-chip${editable ? ' operon-table-editable-chip' : ' operon-chip-readonly'}`,
 			column,
 			task,
@@ -3491,6 +3541,11 @@ export class OperonTableView extends FileView {
 			onRemove: () => commit({ kind: 'delete' }),
 		});
 		if (renderTableFilePropertyValue({
+   ...(Platform.isDesktopApp && field && (field.type === 'text' || field.type === 'list') ? {
+    bindOpening: (chip: HTMLElement, member?: unknown, memberIndex?: number) => bindTablePropertyOpening(chip, {
+     ...this.tableOpeningContext(cell, task), onPicker: () => { if (editable) openPicker(memberIndex); },
+    }, () => readTablePropertyLinkValue(this.app, this.indexer.getTask(task.operonId), field, member)),
+   } : {}),
 			cell,
 			field,
 			label,
@@ -3538,6 +3593,7 @@ export class OperonTableView extends FileView {
 			this.keepActivePickerOnRender = true;
 			this.activePickerClose = closePicker;
 		};
+  this.tableCellOpeners.set(cell, () => openPicker());
 		cell.addEventListener('click', event => {
 			if (isCompactTaskMarkdownLinkEventTarget(event.target, cell)) return;
 			event.preventDefault();
@@ -3812,7 +3868,7 @@ export class OperonTableView extends FileView {
 		const canEdit = editable && !!this.callbacks.onUpdateTaskFields;
 		const parentTaskId = key === 'parentTask' ? (task.fieldValues['parentTask'] ?? '').trim() : '';
 		const parentExists = !!parentTaskId && !!this.indexer.getTask(parentTaskId);
-		const canOpenParentTask = resolveTableParentTaskActivation({
+		const canOpenParentTask = !Platform.isDesktopApp && resolveTableParentTaskActivation({
 			parentTaskId,
 			parentExists,
 			canOpenEditor: !!this.callbacks.onOpenTaskEditor,
@@ -3833,7 +3889,7 @@ export class OperonTableView extends FileView {
 		}
 		cell.tabIndex = 0;
 		const fieldLabel = getTableTaskFieldLabel(key, renderState.settings);
-		const valueLabel = value.trim();
+		const valueLabel = key === 'repeat' ? formatTableRepeatValue(value) : value.trim();
 		const editCellLabel = t('table', 'editCellAria');
 		setAccessibleLabelWithoutTooltip(
 			cell,
@@ -3856,7 +3912,7 @@ export class OperonTableView extends FileView {
 				app: this.app,
 				settings: renderState.settings,
 				allTasks,
-				canonicalKey: key,
+				canonicalKey: key === 'repeatOccurrenceDate' ? 'repeat' : key,
 				anchor: snapshotFloatingRectAnchor(cell),
 				currentFieldValues: task.fieldValues,
 				currentTags: task.tags,
@@ -3865,6 +3921,10 @@ export class OperonTableView extends FileView {
 				sourcePath: task.primary.filePath,
 				taskFormat: task.primary.format,
 				manualDatePicker: getTableManualDatePickerOptions(key, renderState.settings),
+				onEditMultilineText: rawValue => {
+					this.openInlineTextPopover(cell, task, key, rawValue, fieldLabel, cellKey, key, true, true);
+					return this.activePickerClose ?? (() => {});
+				},
 				onCommit: payload => {
 					const normalizedPayload = normalizeTablePickerPayload(payload);
 					if (Object.keys(normalizedPayload).length === 0) return;
@@ -3884,7 +3944,8 @@ export class OperonTableView extends FileView {
 			this.keepActivePickerOnRender = true;
 			this.activePickerClose = closePicker;
 		};
-		if (key === 'parentTask') {
+  if (canEdit) this.tableCellOpeners.set(cell, openPicker);
+		if (key === 'parentTask' && !Platform.isDesktopApp) {
 			bindTableParentTaskCellActivation(cell, {
 				parentTaskId,
 				parentExists,

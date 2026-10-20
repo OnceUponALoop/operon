@@ -1,3 +1,5 @@
+import { restoreNativePropertySource, type NativePropertyInline } from './native-property-persistence';
+import { readParsedInlinePropertyProjection } from '../core/inline-property-source';
 import { getNativePropertyIndex, type NativePropertySource } from './native-property-index';
 /**
  * Operon task indexer.
@@ -633,10 +635,37 @@ export class OperonIndexer {
 					}
 					const stagingStartedAt = collectTimings ? enginePerfNow() : 0;
 					const staged = this.createEmptyIndexState();
+					const settings = this.storage.getSettings({ committedMappings: true });
+					const cachedInlineSources = new Map<string, readonly NativePropertyInline[]>();
+					if (loaded.status === 'loaded') for (const shard of loaded.validatedSnapshot.shards) for (const source of shard.sources) {
+						let restored = restoreNativePropertySource(source.native);
+						if (!restored && settings.keyMappings.some(mapping => mapping.isSystem === false && mapping.type === 'text')) {
+							const file = this.app.vault.getAbstractFileByPath(source.path);
+							if (!(file instanceof TFile) || file.stat.mtime !== source.mtimeMs || file.stat.size !== source.sizeBytes) {
+								return { status: 'incompatible', reason: 'index-semantics', expectedSignature, cachedSignature: decision.manifest.indexSemanticsSignature };
+							}
+							restored = (await scanFileWithMappings(this.app, file, settings.keyMappings)).nativeProperties;
+							if (file.stat.mtime !== source.mtimeMs || file.stat.size !== source.sizeBytes) {
+								return { status: 'incompatible', reason: 'index-semantics', expectedSignature, cachedSignature: decision.manifest.indexSemanticsSignature };
+							}
+						}
+						if (restored) cachedInlineSources.set(source.path, restored.inline);
+					}
+					if (buildIndexV8SemanticsSignature(this.storage.getSettings({ committedMappings: true })) !== expectedSignature) {
+						return { status: 'incompatible', reason: 'index-semantics', expectedSignature, cachedSignature: decision.manifest.indexSemanticsSignature };
+					}
+					const hydrateText = (task: IndexedTask): void => {
+						if (task.primary.format !== 'inline') return;
+						const parsed = cachedInlineSources.get(task.primary.filePath)?.find(item =>
+							item.operonId === task.operonId && item.lineNumber === task.primary.lineNumber);
+						if (parsed) this.applyNativeTextProjection(task.fieldValues, parsed, settings.keyMappings, settings);
+					};
 					for (const [operonId, task] of decision.tasks) {
+						hydrateText(task);
 						staged.tasks.set(operonId, task);
 					}
 					for (const [instanceKey, task] of decision.taskInstances) {
+						hydrateText(task);
 						staged.taskInstances.set(instanceKey, task);
 					}
 					for (const [operonId, instanceKeys] of decision.operonIdInstances) {
@@ -1504,6 +1533,20 @@ export class OperonIndexer {
 		this.scheduleReindex(newPath);
 	}
 
+	/** Reuse typed source data for both fresh scans and rebuildable cache hydration. */
+	private applyNativeTextProjection(fieldValues: Record<string, string>, parsed: NativePropertyInline,
+		keyMappings: KeyMapping[], settings: Pick<OperonSettings, 'inlinePropertyDefinitions'>): void {
+		const mappings = keyMappings.filter(mapping => mapping.isSystem === false && mapping.type === 'text');
+		if (!mappings.length) return;
+		const types = Object.fromEntries(mappings.map(mapping => [mapping.visiblePropertyName, 'text' as const]));
+		for (const property of readParsedInlinePropertyProjection(parsed, types, keyMappings, settings.inlinePropertyDefinitions).properties) {
+			if (property.state === 'valid' && typeof property.value === 'string') {
+				const mapping = mappings.find(item => item.visiblePropertyName === property.sourceName)!;
+				if (isReadableTaskFieldCanonicalKey(mapping.canonicalKey, keyMappings)) fieldValues[mapping.canonicalKey] = property.value;
+			}
+		}
+	}
+
 	// --- Internal Indexing ---
 
 	/**
@@ -1552,6 +1595,7 @@ export class OperonIndexer {
 				if (!isReadableTaskFieldCanonicalKey(canonicalKey, keyMappings)) continue;
 				fieldValues[canonicalKey] = f.value;
 			}
+			this.applyNativeTextProjection(fieldValues, parsed, keyMappings, exclusionSettings);
 			const workflowState = resolveWorkflowStatus(pipelines, fieldValues['status'], workflowStatusIdentityIndex);
 			let checkbox = parsed.checkbox;
 			if (workflowState) {

@@ -1,4 +1,5 @@
 import { App, Modal, Platform } from 'obsidian';
+import { applyDesktopModalBackdrop } from './modal-backdrop';
 import { createFloatingPanel, closeFloatingPanelsForRoot, requestFloatingInputFocus } from './field-pickers/common';
 import { t } from '../core/i18n';
 import { setAccessibleLabelWithoutTooltip } from './accessibility-label';
@@ -24,6 +25,7 @@ export interface SubtasksFilterModalOptions {
 export class SubtasksFilterModal extends Modal {
 	private readonly options: SubtasksFilterModalOptions;
 	private instance: FilterSurfaceInstance | null = null;
+	private backdropCleanup: (() => void) | null = null;
 	private rootEl: HTMLElement | null = null;
 	private readonly resizeHandler = (): void => {
 		this.updateMobileViewportHeight();
@@ -35,6 +37,8 @@ export class SubtasksFilterModal extends Modal {
 	}
 
 	onOpen(): void {
+		this.backdropCleanup?.();
+		this.backdropCleanup = this.options.fileTaskPath ? null : applyDesktopModalBackdrop(this.containerEl);
 		this.containerEl.addClass('operon-subtasks-filter-modal-container');
 		this.modalEl.addClass('operon-subtasks-filter-modal');
 		this.containerEl.ownerDocument.body.classList.add(SUBTASKS_FILTER_MODAL_OPEN_BODY_CLASS);
@@ -56,6 +60,8 @@ export class SubtasksFilterModal extends Modal {
 	}
 
 	onClose(): void {
+		this.backdropCleanup?.();
+		this.backdropCleanup = null;
 		window.removeEventListener('resize', this.resizeHandler);
 		window.visualViewport?.removeEventListener('resize', this.resizeHandler);
 		window.visualViewport?.removeEventListener('scroll', this.resizeHandler);

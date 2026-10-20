@@ -97,6 +97,7 @@ export class PreparedTaskCreatorDraft {
  }
  applyPayload(payload: Record<string,string | string[]>, baseline?: CreationDraftFieldSnapshot): void {
   if (this.closed) return;
+  if (Object.prototype.hasOwnProperty.call(payload, 'repeat')) { this.draft.setRepeatValues(payload); return; }
   for (const [name, value] of Object.entries(payload)) {
    const property = this.catalog.resolve(name);
    const read = this.catalog.read(property, value);

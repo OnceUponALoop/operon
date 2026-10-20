@@ -303,7 +303,7 @@ function createReport(
 		externalCalendars: {
 			included: true,
 			sourceCount: settings.externalCalendars.length,
-			includedUrlCount: settings.externalCalendars.length,
+			includedUrlCount: settings.externalCalendars.filter(source => source.sourceKind !== 'vault-file').length,
 			maskedUrlCount: 0,
 		},
 	};

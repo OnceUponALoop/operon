@@ -3,6 +3,7 @@
  * Opens the task editor as a floating modal window.
  */
 
+import { applyDesktopModalBackdrop } from './modal-backdrop';
 import { App, KeymapEventHandler, Modal } from 'obsidian';
 import { OperonIndexer } from '../indexer/indexer';
 import { ParsedTask } from '../types/fields';
@@ -29,6 +30,7 @@ import {
 export class TaskEditorModal extends Modal {
 	content: TaskEditorContent;
 	onCloseSaveSettled: (() => void | Promise<void>) | null = null;
+	private backdropCleanup: (() => void) | null = null;
 	private mobilePickerOpenDepth = 0;
 	private viewportCloseTimer: number | null = null;
 	private escapeScopeHandler: KeymapEventHandler | null = null;
@@ -90,6 +92,8 @@ export class TaskEditorModal extends Modal {
 
 	onOpen(): void {
 		this.containerEl.addClass('operon-task-editor-modal-container');
+		this.backdropCleanup?.();
+		this.backdropCleanup = applyDesktopModalBackdrop(this.containerEl);
 		this.modalEl.addClass('operon-task-editor-modal');
 		if (this.content.isPhone) {
 			this.containerEl.addClass(this.content.usesMobileLayout ? 'operon-task-editor-modal-container-mobile' : 'operon-task-editor-modal-container-phone-desktop');
@@ -117,6 +121,8 @@ export class TaskEditorModal extends Modal {
 	}
 
 	onClose(): void {
+		this.backdropCleanup?.();
+		this.backdropCleanup = null;
 		if (this.closed) return;
 		this.closed = true;
 		if (this.viewportCloseTimer != null) window.clearTimeout(this.viewportCloseTimer);

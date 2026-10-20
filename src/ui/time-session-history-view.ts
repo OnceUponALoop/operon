@@ -27,7 +27,7 @@ export const TIME_SESSION_HISTORY_VIEW_TYPE = 'operon-time-session-history';
 
 interface TimeSessionHistoryViewCallbacks {
 	cycleStatus: (operonId: string) => Promise<void>;
-	navigateToTask: (task: import('../types/fields').IndexedTask) => void;
+	navigateToTask: (task: import('../types/fields').IndexedTask, anchor: HTMLElement) => void;
 	navigateToDailyNote: (dateKey: string) => void;
 	openTaskEditor: (operonId: string) => void;
 	getPipelines: () => import('../types/pipeline').Pipeline[];
@@ -55,7 +55,7 @@ export function getTimeSessionHistorySecondaryTaskActionAriaLabel(
 	clickAction: TimeSessionHistoryTaskDescriptionClickAction,
 ): string {
 	return clickAction === 'openTaskEditor'
-		? t('settings', 'trackerClickJumpToSource')
+		? t('settings', 'contextualMenuActionJumpToSource')
 		: t('settings', 'trackerClickOpenTaskEditor');
 }
 
@@ -364,19 +364,19 @@ export class TimeSessionHistoryView extends ItemView {
 			value: formatTimeSessionHistoryTaskDescription(task),
 			mode: 'visual-only',
 		});
-		desc.addEventListener('click', () => this.handleTaskDescriptionClick(task));
+		desc.addEventListener('click', () => this.handleTaskDescriptionClick(task, desc));
 		desc.addClass('is-history');
 
 		this.renderSecondaryTaskAction(row, task);
 	}
 
-	private handleTaskDescriptionClick(task: import('../types/fields').IndexedTask): void {
+	private handleTaskDescriptionClick(task: import('../types/fields').IndexedTask, anchor: HTMLElement = this.contentEl): void {
 		const action = this.callbacks.getSettings().trackerTaskDescriptionClickAction;
 		if (action === 'openTaskEditor') {
 			this.callbacks.openTaskEditor(task.operonId);
 			return;
 		}
-		this.callbacks.navigateToTask(task);
+		this.callbacks.navigateToTask(task, anchor);
 	}
 
 	private renderSecondaryTaskAction(
@@ -397,7 +397,7 @@ export class TimeSessionHistoryView extends ItemView {
 			event.stopPropagation();
 			const currentClickAction = this.callbacks.getSettings().trackerTaskDescriptionClickAction;
 			if (currentClickAction === 'openTaskEditor') {
-				this.callbacks.navigateToTask(task);
+				this.callbacks.navigateToTask(task, button);
 				return;
 			}
 			this.callbacks.openTaskEditor(task.operonId);

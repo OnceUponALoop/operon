@@ -13,6 +13,13 @@ export function resolveSubtaskActionKind(
 	return task?.primary.format === 'yaml' ? 'file' : 'inline';
 }
 
+/** Chip shortcuts preserve the parent-kind default and offer Inline for File parents. */
+export function resolveSubtaskChipKinds(
+	task: Pick<IndexedTask, 'primary'> | null | undefined,
+): SubtaskActionKind[] {
+	return resolveSubtaskActionKind(task) === 'file' ? ['file', 'inline'] : ['inline'];
+}
+
 export async function dispatchSubtaskActionByParentKind(
 	task: Pick<IndexedTask, 'primary'> | null | undefined,
 	handlers: SubtaskActionHandlers,
