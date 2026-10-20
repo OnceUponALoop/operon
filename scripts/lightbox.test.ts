@@ -217,3 +217,44 @@ test('desktop dimming keeps moon/sun controls without an output indicator; mobil
   }
  }finally{Platform.isDesktopApp=previous;delete (globalThis as any).__operonTestSetIcon;}
 });
+
+test('desktop control hover distinguishes backdrop, content and SVG descendants without moving focus',()=>{
+ const f=desktopFixture();let root:any;
+ try {
+  const close=openLightbox(f.anchor,{title:'Hover',render:el=>{root=el;return null;}});
+  const control=root.children.find((el:any)=>el.classes.has('operon-task-media-lightbox-close'));
+  Object.defineProperty(control,'parentElement',{value:root});
+  control.classList={contains:(name:string)=>control.classes.has(name)};
+  const content=root.createDiv(),svg={};
+  const over=(target:unknown,path:unknown[])=>root.events.get('pointerover')({target,composedPath:()=>path});
+  assert.equal(root.classes.has('are-controls-hovered'),false);
+  over(root,[root]);assert.equal(root.classes.has('are-controls-hovered'),true);
+  over(content,[content,root]);assert.equal(root.classes.has('are-controls-hovered'),false);
+  over(svg,[svg,control,root]);assert.equal(root.classes.has('are-controls-hovered'),true);
+  over(content,[content,root]);over(svg,[svg,control,root]);
+  assert.equal(root.classes.has('are-controls-hovered'),true,'entering the control reveals it again without a pointer-speed deadline');
+  assert.equal(f.doc.activeElement,root,'hover never changes focus');
+  root.events.get('pointerleave')();assert.equal(root.classes.has('are-controls-hovered'),false);
+  over(root,[root]);close();
+  assert.equal(root.events.has('pointerover'),false);assert.equal(root.events.has('pointerleave'),false);
+  assert.equal(root.classes.has('are-controls-hovered'),false);
+ }finally{f.cleanup();}
+});
+test('control hover belongs to its owner document and cleanup does not affect another window',()=>{
+ const a=desktopFixture(),b=fixture();let rootA:any,rootB:any;
+ try {
+  const closeA=openLightbox(a.anchor,{title:'A',render:el=>{rootA=el;return null;}});
+  const closeB=openLightbox(b.anchor,{title:'B',render:el=>{rootB=el;return null;}});
+  rootA.events.get('pointerover')({target:rootA,composedPath:()=>[rootA]});
+  assert.equal(rootA.classes.has('are-controls-hovered'),true);assert.equal(rootB.classes.has('are-controls-hovered'),false);
+  closeB();assert.equal(rootA.classes.has('are-controls-hovered'),true);closeA();
+ }finally{a.cleanup();}
+});
+test('mobile installs no control-hover listeners and retains the existing opening focus',()=>{
+ const f=fixture(),previous=Platform.isDesktopApp;Platform.isDesktopApp=false;let root:any;
+ try {
+  const close=openLightbox(f.anchor,{title:'Mobile',render:el=>{root=el;return null;}});
+  assert.equal(root.events.has('pointerover'),false);assert.equal(root.events.has('pointerleave'),false);
+  assert.equal(f.doc.activeElement,root.children[1]);close();
+ }finally{Platform.isDesktopApp=previous;}
+});

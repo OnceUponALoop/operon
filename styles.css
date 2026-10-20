@@ -35213,6 +35213,25 @@ body .operon-canvas-task-pool .operon-canvas-task-pool-meta button:hover { color
  cursor: default;
 }
 
+/* Desktop preview controls reveal on their own hover area before pointer activation. */
+.operon-task-media-lightbox.has-content-controls > .operon-task-media-lightbox-control {
+ background: var(--background-secondary);
+ background-image: none;
+ border-color: var(--background-modifier-border);
+ box-shadow: none;
+ filter: none;
+ opacity: 0;
+}
+.operon-task-media-lightbox.has-content-controls > .operon-task-media-lightbox-control:hover:not(:disabled) {
+ background: var(--background-secondary-alt, var(--background-secondary));
+ border-color: var(--background-modifier-border-hover, var(--background-modifier-border));
+}
+.operon-task-media-lightbox.has-content-controls.are-controls-hovered > .operon-task-media-lightbox-control,
+.operon-task-media-lightbox.has-content-controls > .operon-task-media-lightbox-control:focus-visible {
+ opacity: 1;
+ pointer-events: auto;
+}
+
 /* Host menus and Page Preview use Obsidian's own overlay layers. */
 .operon-task-media-lightbox:is(.is-native, .is-web) { z-index: var(--layer-popover); }
 

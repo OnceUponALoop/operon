@@ -187,6 +187,7 @@ export function openLightbox(anchor: HTMLElement, options: LightboxOptions): Lig
  }
  bindOperonHoverTooltip(closeButton, {content: t('buttons', 'close'), taskColor: null});
  let disposePosition: (() => void) | null = null;
+ let disposeControlHover: (() => void) | null = null;
  // A child preview must not inherit the underlying modal's Escape or Tab trap.
  const modalApp = modalOwner ? getWindowApp(getOwnerWindow(anchor)) : undefined;
  const modalScope = modalApp?.keymap ? new Scope(modalApp.scope) : null;
@@ -200,6 +201,7 @@ export function openLightbox(anchor: HTMLElement, options: LightboxOptions): Lig
 		if (isClosed) return true;
 		isClosed = true;
   disposePosition?.();
+  disposeControlHover?.();
   disposeDimmingControls?.();
   cleanupOperonHoverTooltips(closeButton);
   if (tabButton) cleanupOperonHoverTooltips(tabButton);
@@ -333,11 +335,31 @@ export function openLightbox(anchor: HTMLElement, options: LightboxOptions): Lig
 		finishClose();
 		throw error;
 	}
- if (!isClosed && Platform.isDesktopApp) disposePosition = positionLightboxControls(lightbox);
+ if (!isClosed && Platform.isDesktopApp) {
+  disposeControlHover = bindLightboxControlHover(lightbox);
+  disposePosition = positionLightboxControls(lightbox);
+ }
  if (!isClosed && (!Platform.isDesktopApp || !lightbox.contains(ownerDocument.activeElement) && !hasNativeOverlay())) focusShell();
 	return close;
 }
 
+
+/** Boundaries also work for iframe content and SVG icons without tracking every mouse move. */
+function bindLightboxControlHover(lightbox: HTMLElement): () => void {
+ const leave = (): void => lightbox.removeClass('are-controls-hovered');
+ const over = (event: PointerEvent): void => {
+  const onControl = event.composedPath().some(node => isHTMLElement(node, lightbox)
+   && node.parentElement === lightbox && node.classList.contains('operon-task-media-lightbox-control'));
+  lightbox.toggleClass('are-controls-hovered', event.target === lightbox || onControl);
+ };
+ lightbox.addEventListener('pointerover', over);
+ lightbox.addEventListener('pointerleave', leave);
+ return () => {
+  lightbox.removeEventListener('pointerover', over);
+  lightbox.removeEventListener('pointerleave', leave);
+  leave();
+ };
+}
 
 const appLightboxes = new WeakMap<App, Set<LightboxClose>>();
 

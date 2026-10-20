@@ -113,9 +113,13 @@ try {
     const dimensions=()=>page.locator('.operon-task-media-lightbox:not([hidden]) > .operon-task-media-lightbox-content').evaluate(el=>{const r=el.getBoundingClientRect();return{width:r.width/innerWidth*100,height:r.height/innerHeight*100};});
     const near=(actual,expected)=>assert.ok(Math.abs(actual-expected)<.1,`${actual} vs ${expected}`);
     let dims=await dimensions();near(dims.width,67);near(dims.height,67);
+    await page.mouse.move(8,8);
     await page.locator('.operon-lightbox-width-increase').click();near((await dimensions()).width,70);
+    await page.mouse.move(8,8);
     await page.locator('.operon-lightbox-width-decrease').click();near((await dimensions()).width,65);
+    await page.mouse.move(8,8);
     await page.locator('.operon-lightbox-height-increase').click();near((await dimensions()).height,70);
+    await page.mouse.move(8,8);
     await page.locator('.operon-lightbox-height-decrease').click();near((await dimensions()).height,65);
     const positions=await page.evaluate(()=>{
      const rect=el=>{const r=el.getBoundingClientRect();return{left:r.left,top:r.top,right:r.right,bottom:r.bottom};};
@@ -126,6 +130,7 @@ try {
     assert.deepEqual(await page.evaluate(()=>dimmingWrites),[]);
     await page.evaluate(()=>{window.sizeChild=Subject.openLightbox(document.getElementById('dim-child-anchor'),{title:'Independent child',render(shell){const child=shell.createDiv('operon-task-media-lightbox-content');child.style.cssText='width:67vw;height:67vh';return null;}});});
     near((await dimensions()).width,67);
+    await page.mouse.move(8,8);
     await page.locator('.operon-task-media-lightbox:not([hidden]) .operon-lightbox-width-increase').click();near((await dimensions()).width,70);
     await page.evaluate(()=>sizeChild());near((await dimensions()).width,65);
     // Unprofiled test shells keep their original content geometry on reopen.
@@ -133,9 +138,11 @@ try {
     near((await dimensions()).width,67);await page.evaluate(()=>sizeChild());
     for(const axis of ['width','height']){
      const increase=page.locator(`.operon-lightbox-${axis}-increase`),decrease=page.locator(`.operon-lightbox-${axis}-decrease`);
-     for(let i=0;i<12&&await increase.isEnabled();i++)await increase.click();
+     await page.mouse.move(8,8);
+     for(let i=0;i<12&&await increase.isEnabled();i++){await page.mouse.move(8,8);await increase.click();}
      assert.equal(await increase.isDisabled(),true);assert.ok((await dimensions())[axis]<=90.1);
-     for(let i=0;i<12&&await decrease.isEnabled();i++)await decrease.click();
+     await page.mouse.move(8,8);
+     for(let i=0;i<12&&await decrease.isEnabled();i++){await page.mouse.move(8,8);await decrease.click();}
      assert.equal(await decrease.isDisabled(),true);near((await dimensions())[axis],40);
     }
     assert.deepEqual(await page.evaluate(()=>dimmingWrites),[]);
@@ -150,7 +157,9 @@ try {
     });
     assert.ok(Math.abs(groups.topInset-8)<1&&Math.abs(groups.bottomInset-8)<1&&groups.leftDelta<1,JSON.stringify(groups));
     await page.evaluate(()=>document.activeElement?.blur());
+    await page.mouse.move(8,8);
     await page.locator('.operon-lightbox-dimming-increase').hover();assert.equal(await page.locator('.operon-hover-tooltip').count(),0);
+    await page.mouse.move(8,8);
     await page.locator('.operon-lightbox-dimming-decrease').hover();assert.equal(await page.locator('.operon-hover-tooltip').count(),0);
     await page.evaluate(()=>{const plus=document.querySelector('.operon-lightbox-dimming-increase');for(let i=0;i<5;i++)plus.click();});
     await page.waitForFunction(()=>savedDimming===80);
@@ -159,8 +168,10 @@ try {
     await page.evaluate(()=>{window.dimChild=Subject.openLightbox(document.getElementById('dim-child-anchor'),{title:'Nested dimming',render(shell){shell.createDiv('operon-task-media-lightbox-content').setText('Child');return null;}});});
     assert.equal(await dimValue(),'35');
     assert.equal(await page.locator('.operon-task-media-lightbox:not([hidden])').evaluate(el=>getComputedStyle(el).backgroundColor),'rgba(0, 0, 0, 0.45)');
+    await page.mouse.move(8,8);
     await page.locator('.operon-task-media-lightbox:not([hidden]) .operon-lightbox-dimming-decrease').click();
     await page.waitForFunction(()=>savedDimming===30);await page.evaluate(()=>dimChild());assert.equal(await dimValue(),'30');
+    await page.mouse.move(8,8);
     await page.evaluate(()=>{failDimming=true;document.querySelector('.operon-lightbox-dimming-increase').click();});
     await page.waitForTimeout(20);assert.equal(await dimValue(),'30');assert.equal(await page.evaluate(()=>savedDimming),30);
     await page.evaluate(async()=>{failDimming=false;await Subject.saveDesktopBackdropDimming(10);});
@@ -271,8 +282,11 @@ try {
      await page.evaluate(profile=>{sizePreferences[profile]={width:75,height:85};openProfile(profile);},profile);
      const first=await dims();assert.ok(Math.abs(first.width-1080)<1,JSON.stringify({profile,first}));assert.ok(Math.abs(first.height-850)<1,JSON.stringify({profile,first}));
      assert.equal(await page.evaluate(()=>sizeWrites.length),0,'opening never saves');
+     await page.mouse.move(8,8);
      await page.locator('.operon-lightbox-width-increase').click();assert.ok(Math.abs((await dims()).width-1152)<1);
+     await page.mouse.move(8,8);
      await page.locator('.operon-lightbox-height-decrease').click();assert.ok(Math.abs((await dims()).height-800)<1);
+     await page.mouse.move(8,8);
      await page.locator('.operon-lightbox-width-increase').click();assert.ok(Math.abs((await dims()).width-1224)<1);
      assert.deepEqual(await page.evaluate(profile=>sizePreferences[profile],profile),{width:85,height:80});
      assert.equal(await page.evaluate(()=>sizeWrites.length),3);await page.evaluate(()=>closeProfile());
@@ -287,6 +301,7 @@ try {
     // Single-axis image restoration preserves the untouched natural frame, including a cold image load.
     await page.evaluate(()=>{delete sizePreferences.image;openProfile('image');});
     await page.waitForFunction(()=>document.querySelector('.operon-task-media-lightbox img')?.naturalWidth===40);
+    await page.mouse.move(8,8);
     await page.locator('.operon-lightbox-width-increase').click();const imageFrame=await dims();
     assert.deepEqual(imageFrame,{width:576,height:40});
     assert.deepEqual(await page.evaluate(()=>sizePreferences.image),{width:40});
@@ -296,6 +311,7 @@ try {
     assert.deepEqual(await dims(),imageFrame);await page.evaluate(()=>closeProfile());
     // A failed write keeps the visible frame but reopening uses the last committed preference.
     await page.evaluate(()=>{sizeWrites=[];failSize=true;openProfile('table');});
+    await page.mouse.move(8,8);
     await page.locator('.operon-lightbox-width-increase').click();assert.deepEqual(await dims(),{width:1296,height:800});
     assert.deepEqual(await page.evaluate(()=>sizePreferences.table),{width:85,height:80});
     await page.evaluate(()=>closeProfile());await page.evaluate(()=>{failSize=false;openProfile('table');});
