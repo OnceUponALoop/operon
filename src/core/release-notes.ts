@@ -13,6 +13,54 @@ const RELEASE_NOTE_LIMIT = 5;
 
 export const OPERON_RELEASE_NOTES: OperonReleaseNote[] = [
 	{
+		version: '4.1.0',
+		date: '2026-10-20',
+		title: 'Operon 4.1.0 — Task Sources, Lightboxed',
+		showOnUpdate: true,
+		bannerUrl: 'operon-4-1-0-task-sources-lightboxed.png',
+		body: `
+Open links and task sources without leaving your workspace, with more control over previews and smoother everyday editing.
+
+### A shared desktop lightbox
+
+- **Preview and edit Markdown, Bases, and Operon Tables**, alongside web pages, images, PDFs, videos, and embedded YouTube playback. Table presets and Gantt remain available.
+- **Follow links through nested previews** while preserving previous views and unfinished Description/Note drafts. Open the current content in a new tab, to the right, or below.
+- **Adjust width and height visually.** Your preferred size is remembered separately for each content type in the current vault.
+- **Choose your background dimming** in Workspace Tweaks or with the Moon/Sun controls. New users start at 50%; nested previews deepen gradually up to 90%. Existing preferences are preserved.
+
+### Links and sources, consistently
+
+- **Click supported links to preview**, Cmd/Ctrl-click to open an Obsidian tab, or middle-click web links to use your system browser.
+- **Reach task sources from more places**, including the contextual menu, Session History, and Canvas/Excalidraw task cards. New Source actions appear on hover or keyboard focus; optional Source chips remain available separately.
+- **Inline sources open with the caret after the description**, without selecting the task text.
+
+### Planning and editing improvements
+
+- **Navigate Calendar months and years** with a new picker and Go to today.
+- **Use vault-local ICS calendars** and filter tasks by their Repeat reference date.
+- **Edit properties more comfortably** with clearer Status, Priority, Text, and Repeat pickers, more consistent Table editing, and compact mobile controls.
+
+### Reliability fixes
+
+- Fixed Task Creator repeat changes not appearing immediately, certain missing Outlook events, and delayed Calendar controls.
+- Reduced misleading settings warnings and unnecessary save blocking caused by backup conflicts.
+- Corrected Dynamic File Task Filter placement, nested Inline cursor positioning, and hover feedback after closing Task Editor.
+
+### New Docs
+
+- [[DOCS-151 Lightbox|Lightbox]]
+
+### Updated Docs
+
+- [[DOCS-041 Task chips display and behavior|Task Chips]]
+- [[DOCS-098 Workspace Tweaks|Workspace Tweaks]]
+- [[DOCS-021 Task Editor|Task Editor]]
+- [[DOCS-112 Table cells display and behavior|Table Cells]]
+- [[DOCS-053 Time session history|Session History]]
+- [[DOCS-048 External calendars|External Calendars]]
+`.trim(),
+	},
+	{
 		version: '4.0.1',
 		date: '2026-10-14',
 		title: 'Operon 4.0.1 — Bug Fixes',

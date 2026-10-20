@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Validation
+
+## [4.1.0] - 2026-10-20
+
 ### New
 
 - Added a shared **desktop lightbox** for web pages, media, and editable Markdown, Bases, and Operon Tables, with content-specific opening sizes, normal save behavior, and embedded YouTube playback. Table presets and Gantt remain available without changing your workspace tab layout.
