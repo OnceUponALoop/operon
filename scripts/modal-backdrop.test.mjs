@@ -8,14 +8,14 @@ import { fileURLToPath } from 'node:url';
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const bundled = await build({
- stdin: { contents: "export * from './src/ui/modal-backdrop';export * from './src/core/background-dimming';export {Platform} from 'obsidian';export {migrateSettings,DEFAULT_SETTINGS} from './src/types/settings';export {buildOperonDataPackageFromSettings,composeOperonSettingsFromDataPackage} from './src/storage/operon-data-package';export {OPERON_SETTINGS_SEARCH_REGISTRY} from './src/ui/settings/settings-search-registry';export {exportOperonSettingsBackupJsonV1} from './src/core/settings-backup-export';export {validateOperonSettingsBackupGroupsV1} from './src/core/settings-backup-group-validation';export {buildOperonSettingsBackupSelectedPatchV1} from './src/core/settings-backup-apply';export {getSettingsBackupCompatibilityForKey} from './src/core/settings-backup-compatibility';", resolveDir: root },
+ stdin: { contents: "export * from './src/ui/modal-backdrop';export * from './src/core/lightbox-size';export {preflightOperonSettingsResetDefaultsV1} from './src/core/settings-reset-default-profile';export * from './src/core/background-dimming';export {Platform} from 'obsidian';export {migrateSettings,DEFAULT_SETTINGS} from './src/types/settings';export {buildOperonDataPackageFromSettings,composeOperonSettingsFromDataPackage} from './src/storage/operon-data-package';export {OPERON_SETTINGS_SEARCH_REGISTRY} from './src/ui/settings/settings-search-registry';export {exportOperonSettingsBackupJsonV1} from './src/core/settings-backup-export';export {validateOperonSettingsBackupGroupsV1} from './src/core/settings-backup-group-validation';export {buildOperonSettingsBackupSelectedPatchV1} from './src/core/settings-backup-apply';export {getSettingsBackupCompatibilityForKey} from './src/core/settings-backup-compatibility';", resolveDir: root },
  bundle: true, write: false, format: 'esm', platform: 'node',
  plugins: [{ name: 'platform', setup(b) {
   b.onResolve({ filter: /^obsidian$/ }, () => ({ path: 'platform', namespace: 'stub' }));
   b.onLoad({ filter: /.*/, namespace: 'stub' }, () => ({ contents: 'export const Platform={isDesktopApp:true};export function normalizePath(p){return p;}export class TFile{}' }));
  } }],
 });
-const { bindDesktopBackdropDimmingPreference, subscribeDesktopBackdropDimming, stepDesktopBackdropDimming, saveDesktopBackdropDimming, canSaveDesktopBackdropDimming, getDesktopBackdropDimming, disposeDesktopBackdrops, normalizeBackgroundDimming, BACKGROUND_DIMMING_OPTIONS, applyDesktopModalBackdrop, Platform, migrateSettings, DEFAULT_SETTINGS, buildOperonDataPackageFromSettings, composeOperonSettingsFromDataPackage, OPERON_SETTINGS_SEARCH_REGISTRY, getSettingsBackupCompatibilityForKey, exportOperonSettingsBackupJsonV1, validateOperonSettingsBackupGroupsV1, buildOperonSettingsBackupSelectedPatchV1 } = await import(`data:text/javascript;base64,${Buffer.from(bundled.outputFiles[0].text).toString('base64')}`);
+const { preflightOperonSettingsResetDefaultsV1, LIGHTBOX_SIZE_PROFILES, normalizeLightboxSizes, bindLightboxSizePreference, getLightboxProfileSize, saveLightboxProfileSize, bindDesktopBackdropDimmingPreference, subscribeDesktopBackdropDimming, stepDesktopBackdropDimming, saveDesktopBackdropDimming, canSaveDesktopBackdropDimming, getDesktopBackdropDimming, disposeDesktopBackdrops, normalizeBackgroundDimming, BACKGROUND_DIMMING_OPTIONS, applyDesktopModalBackdrop, Platform, migrateSettings, DEFAULT_SETTINGS, buildOperonDataPackageFromSettings, composeOperonSettingsFromDataPackage, OPERON_SETTINGS_SEARCH_REGISTRY, getSettingsBackupCompatibilityForKey, exportOperonSettingsBackupJsonV1, validateOperonSettingsBackupGroupsV1, buildOperonSettingsBackupSelectedPatchV1 } = await import(`data:text/javascript;base64,${Buffer.from(bundled.outputFiles[0].text).toString('base64')}`);
 function container() {
  const classes = new Set(['modal-container']);
  return { ownerDocument: {}, classes, addClass: c => classes.add(c), removeClass: c => classes.delete(c) };
@@ -160,7 +160,7 @@ test('unload cancels queued changes and closes subscriptions without writing fro
  assert.equal(canSaveDesktopBackdropDimming(),false);f.done();
 });
 
-const realBundle=await build({stdin:{contents:"export * from './src/ui/modal-backdrop';export {SettingsPreservationHarness} from './scripts/test-support/settings-preservation-harness';",resolveDir:root},bundle:true,write:false,platform:'node',format:'esm',logLevel:'silent',alias:{obsidian:path.join(root,'scripts/test-support/obsidian.ts')}});
+const realBundle=await build({stdin:{contents:"export * from './src/ui/modal-backdrop';export * from './src/core/lightbox-size';export {preflightOperonSettingsResetDefaultsV1} from './src/core/settings-reset-default-profile';export {SettingsPreservationHarness} from './scripts/test-support/settings-preservation-harness';",resolveDir:root},bundle:true,write:false,platform:'node',format:'esm',logLevel:'silent',alias:{obsidian:path.join(root,'scripts/test-support/obsidian.ts')}});
 const real=await import('data:text/javascript;base64,'+Buffer.from(realBundle.outputFiles[0].text).toString('base64'));
 test('real settings writes save every expanded choice and reopen preserves an existing 70 preference',async()=>{
  const fixture=new real.SettingsPreservationHarness();let release;
@@ -197,4 +197,85 @@ test('actual Settings setter joins the control queue without a duplicate setting
   await Promise.all([probe.setControlValue('workspaceTweaksBackgroundDimming','35'),stepDesktopBackdropDimming(1)]);
   assert.deepEqual(f.writes,[35,40]);assert.equal(probe.settings.workspaceTweaksBackgroundDimming,40);assert.equal(getDesktopBackdropDimming(),40);
  }finally{f.done();}
+});
+
+for (const profile of LIGHTBOX_SIZE_PROFILES) test(`${profile} size survives canonical settings and backup round-trip independently`, () => {
+ const original = {...DEFAULT_SETTINGS, workspaceTweaksLightboxSizes: {[profile]: {width:75, height:85}}};
+ const settings = migrateSettings(original);
+ const pack = buildOperonDataPackageFromSettings(settings);
+ assert.deepEqual(pack.ui.workspaceTweaks.workspaceTweaksLightboxSizes, original.workspaceTweaksLightboxSizes);
+ assert.deepEqual(composeOperonSettingsFromDataPackage(JSON.parse(JSON.stringify(pack)), DEFAULT_SETTINGS).workspaceTweaksLightboxSizes, original.workspaceTweaksLightboxSizes);
+ const backup = exportOperonSettingsBackupJsonV1({settings,source:{pluginVersion:'4.0.1',obsidianVersion:'1.14.4',dataPackageSchemaVersion:3},createdAt:'2026-10-20T12:00:00.000Z'});
+ assert.equal(backup.ok,true);
+ if (backup.ok) {
+  const body = JSON.parse(backup.json).body;
+  const decoded=validateOperonSettingsBackupGroupsV1(body.groups);
+  assert.equal(decoded.ok,true);
+  const patch=buildOperonSettingsBackupSelectedPatchV1({selectedGroups:['general'],candidateSettings:{...DEFAULT_SETTINGS,...decoded.payloads.general}});
+  assert.deepEqual(patch.workspaceTweaksLightboxSizes,original.workspaceTweaksLightboxSizes);
+ }
+ assert.equal(getSettingsBackupCompatibilityForKey('workspaceTweaksLightboxSizes').support,'portable');
+ assert.equal(DEFAULT_SETTINGS.workspaceTweaksLightboxSizes[profile], undefined);
+ assert.equal(Object.hasOwn(buildOperonDataPackageFromSettings(DEFAULT_SETTINGS).ui.workspaceTweaks,'workspaceTweaksLightboxSizes'),false);
+});
+test('size normalization is sparse, immutable, and rejects invalid profiles and dimensions',()=>{
+ const raw={table:{width:75,height:67},base:{height:85},web:{width:'70'},youtube:{height:NaN},image:{width:90,height:40},pdf:[],other:{width:65}};
+ assert.deepEqual(normalizeLightboxSizes(raw),{base:{height:85},table:{width:75},image:{width:90,height:40}});
+ assert.equal(raw.table.height,67);
+ for(const value of [null,undefined,[],false,70])assert.deepEqual(normalizeLightboxSizes(value),{});
+ assert.deepEqual(migrateSettings({}).workspaceTweaksLightboxSizes,{});
+});
+function sizeStore() {
+ const file=ts.createSourceFile('storage.ts',readFileSync(path.join(root,'src/storage/operon-storage.ts'),'utf8'),ts.ScriptTarget.Latest,true);
+ const cls=file.statements.find(ts.isClassDeclaration);
+ const method=name=>cls.members.find(node=>node.name?.getText(file)===name).getText(file);
+ const js=ts.transpileModule(`class Store {
+ settings={workspaceTweaksLightboxSizes:{}};settingsSaveQueue=Promise.resolve();writes=[];fail=false;release=null;
+ notifyPropertyPoolChange(){}
+ async persistSettings(_options,_extra,_mappings,_reload,patch){this.writes.push(structuredClone(patch));if(this.release)await this.release;if(this.fail)throw Error('rejected');Object.assign(this.settings,patch);}
+ ${method('enqueueSettingsTransaction')}
+ ${method('saveLightboxSize')}
+ }`,{compilerOptions:{target:ts.ScriptTarget.ES2022}}).outputText;
+ return new (new Function('normalizeLightboxSizes',`${js};return Store;`)(normalizeLightboxSizes))();
+}
+test('actual size persistence serializes independent axes/profiles and does not write on read, invalid input or no-op',async()=>{
+ const store=sizeStore();const dispose=bindLightboxSizePreference({get:()=>store.settings.workspaceTweaksLightboxSizes,save:(...args)=>store.saveLightboxSize(...args)});
+ try {
+  assert.equal(getLightboxProfileSize('table'),undefined);assert.equal(store.writes.length,0);
+  await Promise.all([saveLightboxProfileSize('table','width',75),saveLightboxProfileSize('table','height',85),saveLightboxProfileSize('base','width',65)]);
+  assert.deepEqual(store.settings.workspaceTweaksLightboxSizes,{table:{width:75,height:85},base:{width:65}});
+  await store.saveLightboxSize('table','width',75);await store.saveLightboxSize('table','width',67);
+  assert.equal(store.writes.length,3);
+  assert.deepEqual(getLightboxProfileSize('table'),{width:75,height:85});
+ } finally {dispose();}
+ assert.equal(getLightboxProfileSize('table'),undefined);
+});
+test('failed size save preserves committed sizes, does not retry and leaves the queue usable',async()=>{
+ const store=sizeStore();await store.saveLightboxSize('table','width',75);store.fail=true;
+ await assert.rejects(store.saveLightboxSize('table','height',85),/rejected/);
+ assert.deepEqual(store.settings.workspaceTweaksLightboxSizes,{table:{width:75}});
+ store.fail=false;await store.saveLightboxSize('base','height',80);
+ assert.deepEqual(store.settings.workspaceTweaksLightboxSizes,{table:{width:75},base:{height:80}});
+ assert.equal(store.writes.length,3);
+});
+test('queued size changes rebase on latest settings and stale binding cleanup cannot remove a new owner',async()=>{
+ const store=sizeStore();let release;const block=new Promise(r=>release=r);
+ // Model an earlier reset/import transaction in the same real settings queue.
+ const previous=store.enqueueSettingsTransaction(async()=>{await block;store.settings.workspaceTweaksLightboxSizes={base:{width:65}};});
+ const pending=store.saveLightboxSize('table','width',75);
+ const next=store.saveLightboxSize('table','height',85);
+ release();await previous;await pending;await next;
+ assert.deepEqual(store.settings.workspaceTweaksLightboxSizes,{base:{width:65},table:{width:75,height:85}});
+ const old=bindLightboxSizePreference({get:()=>({table:{width:75}}),save:async()=>{}});
+ const current=bindLightboxSizePreference({get:()=>({base:{height:85}}),save:async()=>{}});old();
+ assert.deepEqual(getLightboxProfileSize('base'),{height:85});current();
+});
+
+test('explicit defaults reset clears all size overrides without mutating the current profile',()=>{
+ const sizes={table:{width:75,height:85},markdown:{height:80}};
+ const result=preflightOperonSettingsResetDefaultsV1({source:{pluginVersion:'4.0.1',obsidianVersion:'1.14.4',dataPackageSchemaVersion:3},createdAt:'2026-10-20T12:00:00.000Z',targetSnapshot:{settings:migrateSettings({...DEFAULT_SETTINGS,workspaceTweaksLightboxSizes:sizes}),dataPackageSchemaVersion:3,settingsVersion:DEFAULT_SETTINGS.settingsVersion,canonicalWritesSuspended:false,canonicalWriteSuspensionReason:null}});
+ assert.equal(result.preflight?.ok,true,JSON.stringify(result.preflight?.diagnostics));
+ assert.deepEqual(result.preflight.restorePlan.candidateSettings.workspaceTweaksLightboxSizes,{});
+ assert.deepEqual(sizes,{table:{width:75,height:85},markdown:{height:80}});
+ assert.equal(OPERON_SETTINGS_SEARCH_REGISTRY.some(entry=>entry.key==='workspaceTweaksLightboxSizes'),false);
 });

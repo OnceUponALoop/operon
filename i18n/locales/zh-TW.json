@@ -873,6 +873,7 @@
 		"backgroundDimmingIncrease": "增加背景暗化",
 		"backgroundDimmingDecrease": "減少背景暗化",
 		"backgroundDimmingSaveFailed": "無法儲存背景暗化設定。",
+		"lightboxSizeSaveFailed": "無法儲存燈箱尺寸。",
 		"workspaceTweaksHideScrollbars": "隱藏捲軸",
 		"workspaceTweaksShowScrollbars": "顯示捲動條",
 		"workspaceTweaksHideScrollbarsDesc": "在整個 Obsidian 工作區隱藏捲軸，同時保持正常的滾動行為。",
@@ -2249,6 +2250,10 @@
 		"useLastTemplateAsDefaultDesc": "在 Task Creator 中成功建立任務後，將所用範本儲存為此任務類型的預設範本。命令和轉換也會使用此預設範本。"
 	},
 	"buttons": {
+		"lightboxWidthDecrease": "減小寬度",
+		"lightboxWidthIncrease": "增大寬度",
+		"lightboxHeightDecrease": "減小高度",
+		"lightboxHeightIncrease": "增大高度",
 		"ok": "確定",
 		"close": "關閉",
 		"thanks": "謝謝！",

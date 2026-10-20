@@ -254,7 +254,8 @@ function run(): void {
 	assert.match(lightboxSource, /event\.key === 'Escape'[\s\S]*close\(\)/u);
 	assert.match(lightboxSource, /removeEventListener\('focusin', keepFocusInside, true\)[\s\S]*contentCleanup = null[\s\S]*cleanup\?\.\(\)/u);
 	assert.match(lightboxSource, /if \(isClosed\) return true;[\s\S]*isClosed = true/u);
-	assert.match(lightboxSource, /addEventListener\('focusin', keepFocusInside, true\)[\s\S]*closeButton\.focus/u);
+	assert.match(lightboxSource, /addEventListener\('focusin', keepFocusInside, true\)[\s\S]*focusShell\(\)/u);
+	assert.match(lightboxSource, /Platform\.isDesktopApp \? lightbox : closeButton\)\.focus/u);
 	assert.match(mediaPreviewSource, /event\.ctrlKey \|\| event\.metaKey[\s\S]*Math\.exp\(-event\.deltaY \* 0\.004\)/u);
 	assert.match(mediaPreviewSource, /TASK_MEDIA_LIGHTBOX_MAX_ZOOM = 8/u);
 	assert.match(mediaPreviewSource, /image\.addEventListener\('pointermove',[\s\S]*applyTransform\(\)/u);

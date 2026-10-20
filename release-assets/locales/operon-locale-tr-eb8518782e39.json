@@ -1,8 +1,8 @@
 {
   "schemaVersion": 1,
   "locale": "tr",
-  "keyCount": 3670,
-  "keyFingerprint": "14b8663398cc20d5e558b7e718ab887c68701e03947d3d2e9cea8f50ec68d2d2",
+  "keyCount": 3675,
+  "keyFingerprint": "535d34c968f17554a225cc11790d02e8aace329855d812f4849856bd33559fc2",
   "translations": {
     "buttons": {
       "addFileSubtask": "Dosya Tipi Alt Görev Ekle",
@@ -27,6 +27,10 @@
       "inline": "Satır içi",
       "kanbanNoValue": "Değer yok",
       "keepAsIs": "Olduğu gibi bırak",
+      "lightboxHeightDecrease": "Yüksekliği azalt",
+      "lightboxHeightIncrease": "Yüksekliği artır",
+      "lightboxWidthDecrease": "Genişliği azalt",
+      "lightboxWidthIncrease": "Genişliği artır",
       "ok": "Tamam",
       "partiallySubtract": "Kısmen düş",
       "pin": "Sabitle",
@@ -2032,6 +2036,7 @@
       "languageRussian": "Rusça",
       "languageSpanish": "İspanyolca",
       "languageTurkish": "Türkçe",
+      "lightboxSizeSaveFailed": "Lightbox boyutu kaydedilemedi.",
       "locationMapAppearanceSection": "Harita Görünümü",
       "locationMapsAlwaysLightMode": "Haritaları her zaman açık temada göster",
       "locationMapsAlwaysLightModeDesc": "Obsidian koyu temada olsa bile Location picker ve önizleme haritalarında açık harita karosu stilini kullanır.",
@@ -3715,5 +3720,5 @@
       "toggleDescendantPreview": "Alt görev önizlemesini aç/kapat"
     }
   },
-  "sourceVersion": "5dc1ff875022325851cfcb49767e4a57a1811ae427713f4939c5e2e6b0d6f6cd"
+  "sourceVersion": "bcec4040d5aab6af6d922e27af260336d5b99803e1e4153db26474ca61e8e74c"
 }

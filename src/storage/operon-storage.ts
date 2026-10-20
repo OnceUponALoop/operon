@@ -8,6 +8,7 @@ import { editPropertyPoolPreferences, resolvePropertyPoolFavorite, type Property
  */
 
 import { App } from 'obsidian';
+import { normalizeLightboxSizes, type LightboxSizeProfile, type LightboxSizeAxis } from '../core/lightbox-size';
 import type { LocationPickerDefaultChange } from '../core/location-picker-defaults';
 import { OperonSettings, DEFAULT_SETTINGS, migrateSettings, type KeyMapping } from '../types/settings';
 import { WriteQueue } from './write-queue';
@@ -756,6 +757,16 @@ export class OperonStorage {
 			}
 		});
 	}
+
+	async saveLightboxSize(profile: LightboxSizeProfile, axis: LightboxSizeAxis, value: number): Promise<void> {
+  await this.enqueueSettingsTransaction(async () => {
+   const sizes = normalizeLightboxSizes(this.settings.workspaceTweaksLightboxSizes);
+   const next = normalizeLightboxSizes({ [profile]: { [axis]: value } })[profile]?.[axis];
+   if (next === undefined || sizes[profile]?.[axis] === next) return;
+   sizes[profile] = { ...sizes[profile], [axis]: next };
+   await this.persistSettings({ forceRecoveredWrite: true }, [], undefined, false, { workspaceTweaksLightboxSizes: sizes });
+  });
+ }
 
 	async saveLocationPickerDefault(change: LocationPickerDefaultChange): Promise<void> {
 		// Menu coordinates are normalized at its boundary; Settings retains its existing text rules.

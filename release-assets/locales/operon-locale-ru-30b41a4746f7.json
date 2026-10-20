@@ -1,8 +1,8 @@
 {
   "schemaVersion": 1,
   "locale": "ru",
-  "keyCount": 3670,
-  "keyFingerprint": "14b8663398cc20d5e558b7e718ab887c68701e03947d3d2e9cea8f50ec68d2d2",
+  "keyCount": 3675,
+  "keyFingerprint": "535d34c968f17554a225cc11790d02e8aace329855d812f4849856bd33559fc2",
   "translations": {
     "buttons": {
       "addFileSubtask": "Добавить файловую подзадачу",
@@ -27,6 +27,10 @@
       "inline": "Встроенная",
       "kanbanNoValue": "Нет значения",
       "keepAsIs": "Оставить как есть",
+      "lightboxHeightDecrease": "Уменьшить высоту",
+      "lightboxHeightIncrease": "Увеличить высоту",
+      "lightboxWidthDecrease": "Уменьшить ширину",
+      "lightboxWidthIncrease": "Увеличить ширину",
       "ok": "ОК",
       "partiallySubtract": "Вычесть частично",
       "pin": "Закрепить",
@@ -2032,6 +2036,7 @@
       "languageRussian": "Русский",
       "languageSpanish": "Испанский",
       "languageTurkish": "Турецкий",
+      "lightboxSizeSaveFailed": "Не удалось сохранить размер lightbox.",
       "locationMapAppearanceSection": "Оформление карты",
       "locationMapsAlwaysLightMode": "Всегда использовать светлые карты",
       "locationMapsAlwaysLightModeDesc": "Использовать светлый стиль плиток карты для карты выбора местоположения и предпросмотра, даже если Obsidian в тёмном режиме.",
@@ -3715,5 +3720,5 @@
       "toggleDescendantPreview": "Переключить предпросмотр потомков"
     }
   },
-  "sourceVersion": "1b7e8acd8205092706d2772796e1014ec43cb88719a795c3c463c3b07fbc9812"
+  "sourceVersion": "3f3b3d464de6005185f8f442c73c6ed4900f00dd6cbbc4b553fb44d76e369ad2"
 }

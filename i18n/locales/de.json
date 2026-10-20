@@ -871,6 +871,7 @@
 		"backgroundDimmingIncrease": "Hintergrund stärker abdunkeln",
 		"backgroundDimmingDecrease": "Hintergrund weniger abdunkeln",
 		"backgroundDimmingSaveFailed": "Die Hintergrundabdunklung konnte nicht gespeichert werden.",
+		"lightboxSizeSaveFailed": "Die Lightbox-Größe konnte nicht gespeichert werden.",
 		"workspaceTweaksHideScrollbars": "Hide Scrollbars",
 		"workspaceTweaksShowScrollbars": "Bildlaufleisten anzeigen",
 		"workspaceTweaksHideScrollbarsDesc": "Blendet Scrollbars im gesamten Obsidian-Workspace aus, während normales Scrollen erhalten bleibt.",
@@ -2249,6 +2250,10 @@
 		"useLastTemplateAsDefaultDesc": "Nach erfolgreicher Erstellung im Task Creator wird die verwendete Vorlage als Standard für diesen Aufgabentyp gespeichert. Befehle und Konvertierungen verwenden ebenfalls diesen Standard."
 	},
 	"buttons": {
+		"lightboxWidthDecrease": "Breite verringern",
+		"lightboxWidthIncrease": "Breite vergrößern",
+		"lightboxHeightDecrease": "Höhe verringern",
+		"lightboxHeightIncrease": "Höhe vergrößern",
 		"ok": "OK",
 		"close": "Schließen",
 		"thanks": "Danke!",

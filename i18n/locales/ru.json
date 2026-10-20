@@ -873,6 +873,7 @@
 		"backgroundDimmingIncrease": "Увеличить затемнение фона",
 		"backgroundDimmingDecrease": "Уменьшить затемнение фона",
 		"backgroundDimmingSaveFailed": "Не удалось сохранить затемнение фона.",
+		"lightboxSizeSaveFailed": "Не удалось сохранить размер lightbox.",
 		"workspaceTweaksHideScrollbars": "Скрыть полосы прокрутки",
 		"workspaceTweaksShowScrollbars": "Показать полосы прокрутки",
 		"workspaceTweaksHideScrollbarsDesc": "Скрыть полосы прокрутки во всём рабочем пространстве Obsidian, сохраняя обычное поведение прокрутки.",
@@ -2249,6 +2250,10 @@
 		"useLastTemplateAsDefaultDesc": "После успешного создания задачи в Task Creator сохранить использованный шаблон по умолчанию для этого типа задач. Команды и преобразования также используют этот шаблон."
 	},
 	"buttons": {
+		"lightboxWidthDecrease": "Уменьшить ширину",
+		"lightboxWidthIncrease": "Увеличить ширину",
+		"lightboxHeightDecrease": "Уменьшить высоту",
+		"lightboxHeightIncrease": "Увеличить высоту",
 		"ok": "ОК",
 		"close": "Закрыть",
 		"thanks": "Спасибо!",

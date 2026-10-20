@@ -1,7 +1,7 @@
 import { Platform } from 'obsidian';
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
-import { openLightbox, registerLightboxSource, transferLightboxOpening, openAppLightbox, disposeAppLightboxes, getLightboxOrigin } from '../src/ui/lightbox';
+import { openLightbox, registerLightboxSource, transferLightboxOpening, openAppLightbox, disposeAppLightboxes, getLightboxOrigin, getLightboxSizeStep } from '../src/ui/lightbox';
 
 import { lightboxFixture as fixture } from './test-support/lightbox-dom';
 
@@ -173,4 +173,47 @@ test('modal preview render failure releases only its owner window keyboard scope
   assert.throws(()=>openLightbox(a.anchor,{title:'A',render:()=>{throw Error('mount');}}),/mount/);
   assert.equal(scopesA.length,0);assert.equal(scopesB.length,1);closeB();assert.equal(scopesB.length,0);
  }finally{a.cleanup();}
+});
+
+for (const contentFocused of [false, true]) test(`desktop shell preserves content focus=${contentFocused} without selecting management controls`, () => {
+ const f=desktopFixture();let root:any,editor:any;
+ try {
+  const close=openLightbox(f.anchor,{title:'Preview',render:el=>{
+   root=el;editor=el.createDiv();if(contentFocused)editor.focus();return null;
+  }});
+  assert.equal(f.doc.activeElement,contentFocused?editor:root);
+  f.anchor.focus();f.emit('focusin',{target:f.anchor});
+  assert.equal(f.doc.activeElement,root);
+  close();assert.equal(f.doc.activeElement,f.anchor);
+ }finally{f.cleanup();}
+});
+test('mobile retains its existing Close focus on opening and focus recovery',()=>{
+ const f=fixture(),previous=Platform.isDesktopApp;Platform.isDesktopApp=false;let root:any;
+ try {
+  const close=openLightbox(f.anchor,{title:'Mobile',render:el=>{root=el;return null;}});
+  assert.equal(f.doc.activeElement,root.children[1]);
+  f.emit('focusin',{target:f.anchor});assert.equal(f.doc.activeElement,root.children[1]);close();
+ }finally{Platform.isDesktopApp=previous;}
+});
+
+test('size steps choose the strict neighbouring viewport percentage, including intermediate values',()=>{
+ for(const [current,down,up] of [[67,65,70],[85,80,90],[75,70,80],[80,75,85],[70,65,75],[65,60,70],[40,null,45],[90,85,null],[12,null,40],[95,90,null],[64.999,60,70]]){
+  assert.equal(getLightboxSizeStep(current!,-1),down);assert.equal(getLightboxSizeStep(current!,1),up);
+ }
+});
+test('desktop dimming keeps moon/sun controls without an output indicator; mobile has neither',()=>{
+ const previous=Platform.isDesktopApp;const icons=new Map<any,string>();
+ (globalThis as any).__operonTestSetIcon=(el:any,name:string)=>icons.set(el,name);
+ try{
+  for(const desktop of [true,false]){
+   Platform.isDesktopApp=desktop;const f=fixture();
+   const close=openLightbox(f.anchor,{title:'Controls',render:()=>null});const nodes=f.doc.body.querySelectorAll();
+   assert.equal(nodes.some((el:any)=>el.classes.has('operon-lightbox-dimming-value')),false);
+   for(const [name,icon] of [['increase','moon'],['decrease','sun']]){
+    const button=nodes.find((el:any)=>el.classes.has(`operon-lightbox-dimming-${name}`));
+    assert.equal(!!button,desktop);if(button)assert.equal(icons.get(button),icon);
+   }
+   close();
+  }
+ }finally{Platform.isDesktopApp=previous;delete (globalThis as any).__operonTestSetIcon;}
 });

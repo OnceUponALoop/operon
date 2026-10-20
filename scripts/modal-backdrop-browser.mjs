@@ -9,7 +9,7 @@ const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const require = createRequire(import.meta.url);
 const { chromium } = require(process.env.OPERON_TEST_PLAYWRIGHT || 'playwright');
 const css = readFileSync(path.join(root, 'styles.css'), 'utf8');
-const bundle = await build({ stdin: { contents: "export * from './src/ui/modal-backdrop';export * from './src/ui/field-pickers/common';export * from './src/ui/lightbox';export {Platform} from 'obsidian';", resolveDir: root }, bundle:true, write:false, format:'iife', globalName:'Subject', platform:'browser', logLevel:'silent', alias:{obsidian:path.join(root,'scripts/test-support/obsidian.ts')} });
+const bundle = await build({ stdin: { contents: "export * from './src/ui/modal-backdrop';export * from './src/ui/field-pickers/common';export * from './src/ui/lightbox';export * from './src/core/lightbox-size';export {openTaskMediaLightbox} from './src/ui/task-media-lightbox';export {Platform} from 'obsidian';", resolveDir: root }, bundle:true, write:false, format:'iife', globalName:'Subject', platform:'browser', logLevel:'silent', alias:{obsidian:path.join(root,'scripts/test-support/obsidian.ts')} });
 const browser = await chromium.launch({headless:true, ...(process.env.OPERON_TEST_BROWSER ? {executablePath:process.env.OPERON_TEST_BROWSER} : {})});
 let scenarios = 0;
 try {
@@ -65,6 +65,11 @@ try {
    await page.evaluate(()=>{window.previewClosed=0;window.closePreview=Subject.openLightbox(document.getElementById('note'),{title:'Preview',className:'is-native',nativeView:true,onDispose(){window.previewClosed++;},render(shell){shell.createDiv('operon-task-media-lightbox-content operon-native-lightbox-host').createEl('button',{text:'Content'});return null;}});});
    assert.equal(await page.evaluate(()=>getComputedStyle(document.querySelector('.operon-task-media-lightbox')).backgroundColor),desktop?'rgba(0, 0, 0, 0.55)':'rgba(0, 0, 0, 0.82)');
    if(desktop){
+    assert.equal(await page.evaluate(()=>document.activeElement===document.querySelector('.operon-task-media-lightbox')),true,'opening focuses shell, not management controls');
+    await page.keyboard.press('Tab');
+    assert.equal(await page.evaluate(()=>document.activeElement.classList.contains('operon-task-media-lightbox-close')&&document.activeElement.matches(':focus-visible')),true,'keyboard users can still focus Close');
+    await page.locator('#outside').evaluate(el=>el.focus());
+    assert.equal(await page.evaluate(()=>document.activeElement===document.querySelector('.operon-task-media-lightbox')),true,'escaped focus returns to shell');
     const layers=await page.evaluate(()=>{
      const shell=document.querySelector('.operon-task-media-lightbox'),button=shell.querySelector('.operon-task-media-lightbox-content button'),r=button.getBoundingClientRect();
      return{top:shell.contains(document.elementFromPoint(r.x+r.width/2,r.y+r.height/2)),z:getComputedStyle(shell).zIndex,scope:scopeStack.length};
@@ -93,14 +98,48 @@ try {
    if(desktop)assert.deepEqual(await page.evaluate(()=>[window.parentCloses,scopeStack.length]),[0,1]);
    assert.deepEqual(await page.evaluate(()=>[window.previewClosed,document.activeElement.id,document.getElementById('note').value]),[1,'note','Note draft']);
    if(desktop){
-    // Real control events share one preference queue and keep nested indicators in sync.
+    // Real dimming events keep the existing preference queue without numeric controls.
     await page.evaluate(()=>{
      window.savedDimming=50;window.dimmingWrites=[];window.failDimming=false;
      window.unbindDimming=Subject.bindDesktopBackdropDimmingPreference({get:()=>savedDimming,save:async value=>{if(failDimming)throw Error('save rejected');dimmingWrites.push(value);savedDimming=value;}});
      window.dimClose=Subject.openLightbox(document.getElementById('note'),{title:'Dimming controls',className:'is-native',onOpenInTab:async()=>null,onOpenToRight:async()=>null,onOpenBelow:async()=>null,render(shell){const content=shell.createDiv('operon-task-media-lightbox-content');content.style.cssText='width:220px;height:180px';content.createEl('button',{attr:{id:'dim-child-anchor'}});return null;}});
     });
-    const dimValue=()=>page.locator('.operon-task-media-lightbox:not([hidden]) .operon-lightbox-dimming-value').evaluate(el=>el.firstChild.textContent);
+    const dimValue=()=>page.evaluate(()=>String(Subject.getDesktopBackdropDimming()));
+    assert.equal(await page.locator('.operon-lightbox-dimming-value').count(),0);
     assert.equal(await dimValue(),'50');
+    // Content without an explicit profile remains local and never touches the dimming preference queue.
+    await page.locator('.operon-task-media-lightbox-content').evaluate(el=>{el.style.width='67vw';el.style.height='67vh';});
+    await page.evaluate(()=>new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve))));
+    const dimensions=()=>page.locator('.operon-task-media-lightbox:not([hidden]) > .operon-task-media-lightbox-content').evaluate(el=>{const r=el.getBoundingClientRect();return{width:r.width/innerWidth*100,height:r.height/innerHeight*100};});
+    const near=(actual,expected)=>assert.ok(Math.abs(actual-expected)<.1,`${actual} vs ${expected}`);
+    let dims=await dimensions();near(dims.width,67);near(dims.height,67);
+    await page.locator('.operon-lightbox-width-increase').click();near((await dimensions()).width,70);
+    await page.locator('.operon-lightbox-width-decrease').click();near((await dimensions()).width,65);
+    await page.locator('.operon-lightbox-height-increase').click();near((await dimensions()).height,70);
+    await page.locator('.operon-lightbox-height-decrease').click();near((await dimensions()).height,65);
+    const positions=await page.evaluate(()=>{
+     const rect=el=>{const r=el.getBoundingClientRect();return{left:r.left,top:r.top,right:r.right,bottom:r.bottom};};
+     return {frame:rect(document.querySelector('.operon-task-media-lightbox-content')),widthDown:rect(document.querySelector('.operon-lightbox-width-decrease')),widthUp:rect(document.querySelector('.operon-lightbox-width-increase')),heightUp:rect(document.querySelector('.operon-lightbox-height-increase')),heightDown:rect(document.querySelector('.operon-lightbox-height-decrease'))};
+    });
+    assert.ok(Math.abs((positions.widthDown.left+positions.widthUp.right)/2-(positions.frame.left+positions.frame.right)/2)<1);
+    assert.ok(Math.abs((positions.heightUp.top+positions.heightDown.bottom)/2-(positions.frame.top+positions.frame.bottom)/2)<1);
+    assert.deepEqual(await page.evaluate(()=>dimmingWrites),[]);
+    await page.evaluate(()=>{window.sizeChild=Subject.openLightbox(document.getElementById('dim-child-anchor'),{title:'Independent child',render(shell){const child=shell.createDiv('operon-task-media-lightbox-content');child.style.cssText='width:67vw;height:67vh';return null;}});});
+    near((await dimensions()).width,67);
+    await page.locator('.operon-task-media-lightbox:not([hidden]) .operon-lightbox-width-increase').click();near((await dimensions()).width,70);
+    await page.evaluate(()=>sizeChild());near((await dimensions()).width,65);
+    // Unprofiled test shells keep their original content geometry on reopen.
+    await page.evaluate(()=>{window.sizeChild=Subject.openLightbox(document.getElementById('dim-child-anchor'),{title:'Reopened child',render(shell){const child=shell.createDiv('operon-task-media-lightbox-content');child.style.cssText='width:67vw;height:67vh';return null;}});});
+    near((await dimensions()).width,67);await page.evaluate(()=>sizeChild());
+    for(const axis of ['width','height']){
+     const increase=page.locator(`.operon-lightbox-${axis}-increase`),decrease=page.locator(`.operon-lightbox-${axis}-decrease`);
+     for(let i=0;i<12&&await increase.isEnabled();i++)await increase.click();
+     assert.equal(await increase.isDisabled(),true);assert.ok((await dimensions())[axis]<=90.1);
+     for(let i=0;i<12&&await decrease.isEnabled();i++)await decrease.click();
+     assert.equal(await decrease.isDisabled(),true);near((await dimensions())[axis],40);
+    }
+    assert.deepEqual(await page.evaluate(()=>dimmingWrites),[]);
+    await page.locator('.operon-task-media-lightbox-content').evaluate(el=>{el.style.width='220px';});
     await page.locator('.operon-task-media-lightbox-content').evaluate(el=>{el.style.height='600px';});
     await page.evaluate(()=>new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve))));
     const groups=await page.locator('.operon-task-media-lightbox:not([hidden])').evaluate(shell=>{
@@ -113,11 +152,6 @@ try {
     await page.evaluate(()=>document.activeElement?.blur());
     await page.locator('.operon-lightbox-dimming-increase').hover();assert.equal(await page.locator('.operon-hover-tooltip').count(),0);
     await page.locator('.operon-lightbox-dimming-decrease').hover();assert.equal(await page.locator('.operon-hover-tooltip').count(),0);
-    await page.locator('.operon-lightbox-dimming-value').hover();assert.equal(await page.locator('.operon-hover-tooltip').count(),1);
-    assert.equal(await page.locator('.operon-hover-tooltip').innerText(),'Background dimming');
-    const currentShell=await page.locator('.operon-task-media-lightbox:not([hidden])').getAttribute('aria-labelledby');
-    await page.locator('.operon-lightbox-dimming-value').click();
-    assert.equal(await page.locator('.operon-task-media-lightbox:not([hidden])').getAttribute('aria-labelledby'),currentShell,'indicator pointer click is inert');
     await page.evaluate(()=>{const plus=document.querySelector('.operon-lightbox-dimming-increase');for(let i=0;i<5;i++)plus.click();});
     await page.waitForFunction(()=>savedDimming===80);
     assert.deepEqual(await page.evaluate(()=>dimmingWrites),[55,60,65,70,80]);assert.equal(await dimValue(),'80');
@@ -211,6 +245,71 @@ try {
     assert.equal(await page.locator('#owner > .modal-bg').evaluate(e=>getComputedStyle(e).backgroundColor),'rgba(0, 0, 0, 0.6)');
     await page.evaluate(()=>Subject.updateDesktopBackdropDimming(70));
 
+   }
+   if(desktop && surface==='creator' && !dark && width===1440){
+    await page.setViewportSize({width:1440,height:1000});
+    await page.route('https://example.com/**', ()=>{}); // Hold test-only media loads; aborting video would intentionally close its preview.
+    await page.evaluate(()=>{
+     window.sizePreferences={};window.sizeWrites=[];window.failSize=false;app.workspace={getMostRecentLeaf:()=>({parent:{},view:{containerEl:document.body}}),iterateAllLeaves(){}};
+     window.unbindSize=Subject.bindLightboxSizePreference({get:()=>sizePreferences,save:async(profile,axis,value)=>{
+      sizeWrites.push({profile,axis,value});if(failSize)throw Error('rejected');
+      sizePreferences={...sizePreferences,[profile]:{...sizePreferences[profile],[axis]:value}};
+     }});
+     window.openProfile=(profile)=>{
+      if(['image','video','youtube','pdf'].includes(profile)){
+       Subject.openTaskMediaLightbox(app,document.getElementById('note'),{kind:profile,label:profile,url:profile==='image'?'data:image/svg+xml,'+encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" width="40" height="40"/>'):'https://example.com/'+profile});
+       window.closeProfile=()=>Subject.disposeAppLightboxes(app);
+      }else window.closeProfile=Subject.openLightbox(document.getElementById('note'),{title:profile,render(shell){
+       const host=shell.createDiv('operon-task-media-lightbox-content '+(profile==='web'?'operon-web-lightbox-host':'operon-native-lightbox-host')+' is-'+profile);
+       Subject.applyLightboxSizeProfile(shell,profile);return null;
+      }});
+     };
+    });
+    const content=()=>page.locator('.operon-task-media-lightbox:not([hidden]) > :is(.operon-task-media-lightbox-content,img)');
+    const dims=()=>content().evaluate(el=>({width:el.offsetWidth,height:el.offsetHeight}));
+    for(const profile of ['markdown','base','table','web','pdf','image','video','youtube']){
+     await page.evaluate(profile=>{sizePreferences[profile]={width:75,height:85};openProfile(profile);},profile);
+     const first=await dims();assert.ok(Math.abs(first.width-1080)<1,JSON.stringify({profile,first}));assert.ok(Math.abs(first.height-850)<1,JSON.stringify({profile,first}));
+     assert.equal(await page.evaluate(()=>sizeWrites.length),0,'opening never saves');
+     await page.locator('.operon-lightbox-width-increase').click();assert.ok(Math.abs((await dims()).width-1152)<1);
+     await page.locator('.operon-lightbox-height-decrease').click();assert.ok(Math.abs((await dims()).height-800)<1);
+     await page.locator('.operon-lightbox-width-increase').click();assert.ok(Math.abs((await dims()).width-1224)<1);
+     assert.deepEqual(await page.evaluate(profile=>sizePreferences[profile],profile),{width:85,height:80});
+     assert.equal(await page.evaluate(()=>sizeWrites.length),3);await page.evaluate(()=>closeProfile());
+     await page.evaluate(profile=>openProfile(profile),profile);assert.deepEqual(await dims(),{width:1224,height:800});
+     await page.setViewportSize({width:420,height:300});
+     const clamped=await dims();assert.ok(clamped.width<=324&&clamped.height<=204);
+     assert.equal(await page.evaluate(()=>sizeWrites.length),3,'viewport clamp never saves');
+     assert.deepEqual(await page.evaluate(profile=>sizePreferences[profile],profile),{width:85,height:80});
+     await page.evaluate(()=>closeProfile());await page.setViewportSize({width:1440,height:1000});
+     await page.evaluate(()=>{sizeWrites=[];});
+    }
+    // Single-axis image restoration preserves the untouched natural frame, including a cold image load.
+    await page.evaluate(()=>{delete sizePreferences.image;openProfile('image');});
+    await page.waitForFunction(()=>document.querySelector('.operon-task-media-lightbox img')?.naturalWidth===40);
+    await page.locator('.operon-lightbox-width-increase').click();const imageFrame=await dims();
+    assert.deepEqual(imageFrame,{width:576,height:40});
+    assert.deepEqual(await page.evaluate(()=>sizePreferences.image),{width:40});
+    await page.evaluate(()=>closeProfile());await page.evaluate(()=>openProfile('image'));
+    await page.waitForFunction(()=>document.querySelector('.operon-task-media-lightbox img')?.naturalWidth===40);
+    await page.evaluate(()=>new Promise(r=>requestAnimationFrame(()=>requestAnimationFrame(r))));
+    assert.deepEqual(await dims(),imageFrame);await page.evaluate(()=>closeProfile());
+    // A failed write keeps the visible frame but reopening uses the last committed preference.
+    await page.evaluate(()=>{sizeWrites=[];failSize=true;openProfile('table');});
+    await page.locator('.operon-lightbox-width-increase').click();assert.deepEqual(await dims(),{width:1296,height:800});
+    assert.deepEqual(await page.evaluate(()=>sizePreferences.table),{width:85,height:80});
+    await page.evaluate(()=>closeProfile());await page.evaluate(()=>{failSize=false;openProfile('table');});
+    assert.deepEqual(await dims(),{width:1224,height:800});
+    // Reapplying the same profile must not reset an in-flight user resize. A successful type switch resets only owned overrides.
+    await content().evaluate(el=>{el.style.width='70vw';Subject.applyLightboxSizeProfile(el.parentElement,'table');});
+    assert.ok(Math.abs((await dims()).width-1008)<1);
+    await content().evaluate(el=>{el.classList.remove('is-table');el.classList.add('is-base');Subject.applyLightboxSizeProfile(el.parentElement,'base');});
+    assert.deepEqual(await dims(),{width:1224,height:800});
+    await page.evaluate(()=>closeProfile());
+    // Mobile ignores even an existing saved desktop profile.
+    await page.evaluate(()=>{Subject.Platform.isDesktopApp=false;openProfile('table');});
+    assert.equal(await content().evaluate(el=>el.style.width),'');assert.equal(await page.locator('.operon-lightbox-size-control').count(),0);
+    await page.evaluate(()=>{closeProfile();Subject.Platform.isDesktopApp=true;unbindSize();});
    }
    for(const height of [320,900]){
     await page.setViewportSize({width,height});

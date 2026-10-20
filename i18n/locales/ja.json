@@ -873,6 +873,7 @@
 		"backgroundDimmingIncrease": "背景を暗くする",
 		"backgroundDimmingDecrease": "背景を明るくする",
 		"backgroundDimmingSaveFailed": "背景の暗さを保存できませんでした。",
+		"lightboxSizeSaveFailed": "ライトボックスのサイズを保存できませんでした。",
 		"workspaceTweaksHideScrollbars": "スクロールバーを非表示",
 		"workspaceTweaksShowScrollbars": "スクロールバーを表示",
 		"workspaceTweaksHideScrollbarsDesc": "通常のスクロール動作を保ちつつ、Obsidian ワークスペース全体でスクロールバーを非表示にします。",
@@ -2249,6 +2250,10 @@
 		"useLastTemplateAsDefaultDesc": "Task Creatorでタスクを正常に作成した後、使用したテンプレートをこのタスクの種類の既定として保存します。コマンドや変換でもこの既定が使用されます。"
 	},
 	"buttons": {
+		"lightboxWidthDecrease": "幅を狭くする",
+		"lightboxWidthIncrease": "幅を広げる",
+		"lightboxHeightDecrease": "高さを低くする",
+		"lightboxHeightIncrease": "高さを高くする",
 		"ok": "OK",
 		"close": "閉じる",
 		"thanks": "ありがとう！",

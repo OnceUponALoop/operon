@@ -4,7 +4,7 @@ import { OPERON_TABLE_FILE_VIEW_TYPE } from '../types/table';
 import { getOwnerDocument, getOwnerWindow } from '../core/dom-compat';
 import { getInternalPlugin, isPluginEnabled } from '../core/obsidian-app';
 import { t } from '../core/i18n';
-import { openAppLightbox, getLightboxOrigin, disposeAppLightboxes } from './lightbox';
+import { openAppLightbox, getLightboxOrigin, disposeAppLightboxes, applyLightboxSizeProfile } from './lightbox';
 import type { ResolvedLightboxFile } from './lightbox-opening';
 
 export function nativeLightboxViewType(extension: string): string | null {
@@ -289,7 +289,19 @@ function openNativeLightbox(app: App, anchor: HTMLElement, target: { url: string
    render: (lightbox, close) => {
     const recentLeaf = app.workspace.getMostRecentLeaf();
     const previousLeaf = recentLeaf?.view.containerEl.ownerDocument === doc ? recentLeaf : null;
-    host = lightbox.createDiv(`operon-task-media-lightbox-content ${isFile ? 'operon-native-lightbox-host' : 'operon-web-lightbox-host'}`);
+    host = lightbox.createDiv('operon-task-media-lightbox-content');
+    const applyViewProfile = (viewType: string | null): void => {
+     if (!host) return;
+     const profile = viewType === 'markdown' ? 'markdown' : viewType === 'bases' ? 'base'
+      : viewType === OPERON_TABLE_FILE_VIEW_TYPE ? 'table' : viewType === 'webviewer' ? 'web' : null;
+     if (!profile) return;
+     host.toggleClass('operon-native-lightbox-host', profile !== 'web');
+     host.toggleClass('operon-web-lightbox-host', profile === 'web');
+     for (const kind of ['markdown', 'base', 'table', 'web']) host.toggleClass(`is-${kind}`, profile === kind);
+     applyLightboxSizeProfile(lightbox, profile);
+    };
+    // The resolved target supplies its frame before native loading can yield a paint.
+    applyViewProfile(isFile ? nativeLightboxViewType(target.file.file.extension) : 'webviewer');
     host.inert = true;
     const activateOwned = (): void => {
      if (ready && !closed && leaf) app.workspace.setActiveLeaf(leaf, { focus: false });
@@ -299,7 +311,10 @@ function openNativeLightbox(app: App, anchor: HTMLElement, target: { url: string
     let detachOwned: (() => void) | null = null;
     let restoreMethods: (() => void) | null = null;
     const mount = (): void => {
-     if (!closed && ready && leaf) leaf.view.onResize();
+     if (!closed && ready && leaf) {
+      applyViewProfile(leaf.view.getViewType());
+      leaf.view.onResize();
+     }
     };
     const observer = new ResizeObserver(() => { if (!closed) leaf?.view.onResize(); });
     observer.observe(host);

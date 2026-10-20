@@ -1,8 +1,8 @@
 {
   "schemaVersion": 1,
   "locale": "pt-BR",
-  "keyCount": 3670,
-  "keyFingerprint": "14b8663398cc20d5e558b7e718ab887c68701e03947d3d2e9cea8f50ec68d2d2",
+  "keyCount": 3675,
+  "keyFingerprint": "535d34c968f17554a225cc11790d02e8aace329855d812f4849856bd33559fc2",
   "translations": {
     "buttons": {
       "addFileSubtask": "Adicionar subtarefa em arquivo",
@@ -27,6 +27,10 @@
       "inline": "Tarefa inline",
       "kanbanNoValue": "Sem valor",
       "keepAsIs": "Manter como está",
+      "lightboxHeightDecrease": "Diminuir altura",
+      "lightboxHeightIncrease": "Aumentar altura",
+      "lightboxWidthDecrease": "Diminuir largura",
+      "lightboxWidthIncrease": "Aumentar largura",
       "ok": "OK",
       "partiallySubtract": "Subtrair parcialmente",
       "pin": "Fixar",
@@ -2032,6 +2036,7 @@
       "languageRussian": "Russo",
       "languageSpanish": "Espanhol",
       "languageTurkish": "Turco",
+      "lightboxSizeSaveFailed": "Não foi possível salvar o tamanho da lightbox.",
       "locationMapAppearanceSection": "Aparência do mapa",
       "locationMapsAlwaysLightMode": "Sempre usar mapas claros",
       "locationMapsAlwaysLightModeDesc": "Use o estilo de ladrilho claro para o seletor e a pré-visualização de Localização, mesmo quando Obsidian estiver no modo escuro.",
@@ -3715,5 +3720,5 @@
       "toggleDescendantPreview": "Alternar visualização descendente"
     }
   },
-  "sourceVersion": "7167fce9c5bcec4a4b982373d328102f84d89e81272abdbc893c974ff4a9d22a"
+  "sourceVersion": "abab571f6f4807bae4eb7b46db6a4176e1d3012010143d73510de9600dfa7124"
 }

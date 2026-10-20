@@ -4,6 +4,7 @@ import { getInternalPlugin, isPluginEnabled } from '../core/obsidian-app';
 import { getOwnerDocument, getOwnerWindow } from '../core/dom-compat';
 import { t } from '../core/i18n';
 import { classifyLocalTaskMediaPreview } from '../core/task-media-preview-kind';
+import { getYoutubeEmbedUrl, parseYoutubeVideoUrl } from '../core/youtube-url';
 import { nativeLightboxViewType, getLightboxOwnerLeaf, prepareLightboxTab, lightboxFileState, focusLightboxSourceCaret, openFileLightbox, openWebLightbox } from './web-lightbox';
 import { openTaskMediaLightbox, type TaskMediaPreviewSource } from './task-media-lightbox';
 
@@ -35,7 +36,13 @@ export async function openLightboxTarget(app: App, anchor: HTMLElement, target: 
    return 'opened';
   }
   if (mode === 'tab') return await transferLightboxOpening(anchor, mediaTabOpening(app, anchor, target)) ? 'opened' : 'unavailable';
-  if (target.media) { openTaskMediaLightbox(app, anchor, target.media, mediaTabOpening(app, anchor, target), mediaTabOpening(app, anchor, target, 'split'), mediaTabOpening(app, anchor, target, 'below'));  return 'opened'; }
+  const youtube = target.media ? null : parseYoutubeVideoUrl(url.href);
+  const media: TaskMediaPreviewSource | undefined = target.media ?? (youtube
+   ? {kind: 'youtube', url: getYoutubeEmbedUrl(youtube), label: url.href} : undefined);
+  if (media) {
+   openTaskMediaLightbox(app, anchor, media, mediaTabOpening(app, anchor, target), mediaTabOpening(app, anchor, target, 'split'), mediaTabOpening(app, anchor, target, 'below'));
+   return 'opened';
+  }
   return openWebLightbox(app, anchor, url.href) ? 'opened' : 'unavailable';
  }
  if (mode === 'external') return 'unsupported';

@@ -873,6 +873,7 @@
 		"backgroundDimmingIncrease": "Aumentar el oscurecimiento del fondo",
 		"backgroundDimmingDecrease": "Reducir el oscurecimiento del fondo",
 		"backgroundDimmingSaveFailed": "No se pudo guardar el oscurecimiento del fondo.",
+		"lightboxSizeSaveFailed": "No se pudo guardar el tamaño de la lightbox.",
 		"workspaceTweaksHideScrollbars": "Ocultar barras de desplazamiento",
 		"workspaceTweaksShowScrollbars": "Mostrar barras de desplazamiento",
 		"workspaceTweaksHideScrollbarsDesc": "Ocultar las barras de desplazamiento en todo el espacio de trabajo de Obsidian manteniendo el comportamiento normal de desplazamiento.",
@@ -2249,6 +2250,10 @@
 		"useLastTemplateAsDefaultDesc": "Tras crear una tarea correctamente en Task Creator, guardar la plantilla utilizada como predeterminada para este tipo de tarea. Los comandos y las conversiones también usan esta plantilla."
 	},
 	"buttons": {
+		"lightboxWidthDecrease": "Reducir ancho",
+		"lightboxWidthIncrease": "Aumentar ancho",
+		"lightboxHeightDecrease": "Reducir altura",
+		"lightboxHeightIncrease": "Aumentar altura",
 		"ok": "OK",
 		"close": "Cerrar",
 		"thanks": "¡Gracias!",

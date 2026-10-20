@@ -1,4 +1,5 @@
 import { SettingsWritesSuspendedError } from './src/storage/operon-data-package-store';
+import { bindLightboxSizePreference } from './src/core/lightbox-size';
 import { updateDesktopBackdropDimming, disposeDesktopBackdrops, bindDesktopBackdropDimmingPreference, subscribeDesktopBackdropDimming } from './src/ui/modal-backdrop';
 import { tasksConversionProtectedLines } from './src/core/tasks-conversion-scope';
 import { TasksConversionSettings } from './src/ui/tasks-conversion-settings';
@@ -16406,6 +16407,10 @@ export default class OperonPlugin extends Plugin {
 			onError: error => console.warn('Operon: failed to reconcile project serials after index mutation', error),
 		});
 		this.settings = this.storage.getSettings();
+  this.register(bindLightboxSizePreference({
+   get: () => this.settings.workspaceTweaksLightboxSizes,
+   save: (profile, axis, value) => this.storage.saveLightboxSize(profile, axis, value),
+  }));
   this.register(bindDesktopBackdropDimmingPreference({
    get: () => this.settings.workspaceTweaksBackgroundDimming,
    save: value => this.storage.updateSettings({ workspaceTweaksBackgroundDimming: value }),

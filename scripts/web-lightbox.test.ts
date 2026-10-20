@@ -23,12 +23,12 @@ function fixture(options: { enabled?: boolean; delay?: boolean; fail?: boolean; 
  const root = dom.doc.body.createDiv();
  const view = { containerEl: root.createDiv(), getViewType: () => 'webviewer', onResize() {} };
  if (options.wrongDocument) view.containerEl.ownerDocument = {};
- const owned = { parent: null as any, containerEl: root, getViewState:()=>({type:'webviewer'}), view, async setViewState(state: any) { url = state.state.url; if (owned.parent === group) tabOpens++; if (options.delay) await new Promise<void>(r => release = r); if (options.fail) throw Error('open failed'); }, async loadIfDeferred() {}, detach() { detached++; } };
+ const owned = { parent: null as any, containerEl: root, getViewState:()=>({type:'webviewer',state:{url}}), view, async setViewState(state: any) { url = state.state.url; if (owned.parent === group) tabOpens++; if (options.delay) await new Promise<void>(r => release = r); if (options.fail) throw Error('open failed'); }, async loadIfDeferred() {}, detach() { detached++; } };
  const plugin = { enabled: options.enabled !== false, instance: { openUrl() { tabOpens++; } } };
  const app: any = { internalPlugins: { plugins: { webviewer: plugin }, getEnabledPluginById: () => options.enabled === false ? null : plugin.instance }, workspace: {
   containerEl: dom.doc.body, getLayout:()=>({}), getLeafById:()=>previous, getMostRecentLeaf: () => previous, createLeafInParent: (parent:any) => { created++; owned.parent = parent; parent.insertChild?.(-1,owned); return owned; }, iterateAllLeaves() {}, getLeaf: () => { throw Error('must not reuse user tab'); }, getLeavesOfType: () => [previous], setActiveLeaf() { restored++; },
  } };
- return { ...dom, app, view, release: () => release(), stats: () => ({created, detached, restored, disconnected, tabOpens, url}), cleanup() { disposeWebLightboxes(app); (Platform as any).isDesktopApp = savedDesktop; globalThis.ResizeObserver = savedObserver; } };
+ return { ...dom, app, view, owned, release: () => release(), stats: () => ({created, detached, restored, disconnected, tabOpens, url}), cleanup() { disposeWebLightboxes(app); (Platform as any).isDesktopApp = savedDesktop; globalThis.ResizeObserver = savedObserver; } };
 }
 const tick = () => new Promise(resolve => setImmediate(resolve));
 
@@ -57,9 +57,9 @@ test('failed opening and wrong-window attachment close the shell and clean the o
   try { openWebLightbox(f.app, f.anchor, 'https://example.com'); await tick(); assert.equal(f.stats().detached, 1); assert.equal(f.listeners.get('keydown')!.size, 0); } finally { f.cleanup(); }
  }
 });
-function bind(f:any, chip:any=f.anchor, key='links') {
- const task={operonId:'abcdefg',fieldValues:{links:'https://example.com'},primary:{filePath:'A.md',format:'yaml'},tags:[]};
- return bindDesktopChipOpening(chip,{key,externalRawValue:'https://example.com',label:'Example'} as any,{
+function bind(f:any, chip:any=f.anchor, key='links',url='https://example.com') {
+ const task={operonId:'abcdefg',fieldValues:{links:url},primary:{filePath:'A.md',format:'yaml'},tags:[]};
+ return bindDesktopChipOpening(chip,{key,externalRawValue:url,label:'Example'} as any,{
   app:f.app,getTask:()=>task,getTaskById:()=>task,getAllTasks:()=>[task],getSettings:()=>({keyMappings:[]}),picker:()=>null,
  } as any);
 }
@@ -112,4 +112,49 @@ test('media lightbox replaces a pending web view and late completion cannot clos
   assert.equal((media as unknown as HTMLElement).isConnected, true);
   closeMedia();
  } finally { f.cleanup(); }
+});
+
+for(const [url,youtube,start] of [
+ ['https://www.youtube.com/watch?v=v_USOf1fSYM&t=1s',true,'1'],
+ ['https://youtu.be/v_USOf1fSYM?t=45',true,'45'],
+ ['https://www.youtube.com/shorts/v_USOf1fSYM',true,null],
+ ['https://www.youtube-nocookie.com/embed/v_USOf1fSYM',true,null],
+ ['https://example.com/watch?v=v_USOf1fSYM',false,null],
+ ['https://youtube.com.evil.example/watch?v=v_USOf1fSYM',false,null],
+ ['https://www.youtube.com/',false,null],
+] as const) test(`Links chip selects player or Web Viewer for ${url}`,async()=>{
+ const f=fixture({delay:true});
+ try{
+  assert.equal(bind(f,f.anchor,'links',url),true);
+  (f.anchor as any).events.get('click')(mouse());await tick();
+  const nodes=f.doc.body.querySelectorAll();
+  const player=nodes.find((node:any)=>node.classes.has('operon-task-media-lightbox-content')&&node.classes.has('is-youtube'));
+  if(youtube){
+   assert.ok(player);assert.equal(f.stats().created,0,'player must not create a Web Viewer leaf');
+   const frame=player.children.find((node:any)=>node.tagName==='IFRAME');assert.ok(frame);
+   const embed=new URL(frame.src);assert.equal(embed.hostname,'www.youtube-nocookie.com');assert.equal(embed.pathname,'/embed/v_USOf1fSYM');
+   assert.equal(embed.searchParams.get('start'),start);assert.equal(embed.searchParams.get('autoplay'),'0');
+   assert.equal(nodes.some((node:any)=>node.classes.has('operon-web-lightbox-host')),false);
+   const shell=player.parent;assert.equal(f.doc.activeElement,shell);
+  }else{
+   assert.equal(player,undefined);
+   const host=nodes.find((node:any)=>node.classes.has('operon-web-lightbox-host'));
+   assert.ok(host);assert.equal(host.inert,true);f.release();await tick();assert.equal(host.inert,false);assert.equal(f.stats().url,url);
+  }
+  assert.equal(f.stats().tabOpens,0);
+ }finally{f.release();f.cleanup();await tick();}
+});
+test('YouTube Links modifiers, middle click and player tab control retain the original watch URL',async()=>{
+ const url='https://www.youtube.com/watch?v=v_USOf1fSYM&t=1s',f=fixture();const mac=Platform.isMacOS;
+ const external:string[]=[];f.doc.defaultView.open=(value:string)=>external.push(value);
+ try{
+  bind(f,f.anchor,'links',url);Platform.isMacOS=true;
+  (f.anchor as any).events.get('click')(mouse({metaKey:true}));await tick();assert.equal(f.stats().url,url);assert.equal(f.stats().tabOpens,1);
+  Platform.isMacOS=false;(f.anchor as any).events.get('click')(mouse({ctrlKey:true}));await tick();assert.equal(f.stats().tabOpens,2);assert.equal(f.stats().url,url);
+  (f.anchor as any).events.get('auxclick')(mouse({type:'auxclick',button:1}));await tick();assert.deepEqual(external,[url]);assert.equal(f.stats().tabOpens,2);
+  (f.anchor as any).events.get('click')(mouse());await tick();
+  const nodes=f.doc.body.querySelectorAll(),button=nodes.find((node:any)=>node.classes.has('operon-task-media-lightbox-tab'));
+  assert.ok(button);button.events.get('click')();await tick();assert.equal(f.stats().url,url);assert.equal(f.stats().tabOpens,3);
+  assert.equal(f.doc.body.querySelectorAll().some((node:any)=>node.isConnected&&node.classes.has('is-youtube')),false);
+ }finally{Platform.isMacOS=mac;f.cleanup();await tick();}
 });

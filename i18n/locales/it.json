@@ -873,6 +873,7 @@
 		"backgroundDimmingIncrease": "Aumenta l’oscuramento dello sfondo",
 		"backgroundDimmingDecrease": "Riduci l’oscuramento dello sfondo",
 		"backgroundDimmingSaveFailed": "Impossibile salvare l’oscuramento dello sfondo.",
+		"lightboxSizeSaveFailed": "Impossibile salvare le dimensioni della lightbox.",
 		"workspaceTweaksHideScrollbars": "Nascondi barre di scorrimento",
 		"workspaceTweaksShowScrollbars": "Mostra barre di scorrimento",
 		"workspaceTweaksHideScrollbarsDesc": "Nascondi le barre di scorrimento in tutta l'area di lavoro di Obsidian mantenendo il comportamento di scorrimento normale.",
@@ -2249,6 +2250,10 @@
 		"useLastTemplateAsDefaultDesc": "Dopo la creazione riuscita in Task Creator, salva il modello utilizzato come predefinito per questo tipo di attività. Anche i comandi e le conversioni usano questo modello."
 	},
 	"buttons": {
+		"lightboxWidthDecrease": "Riduci larghezza",
+		"lightboxWidthIncrease": "Aumenta larghezza",
+		"lightboxHeightDecrease": "Riduci altezza",
+		"lightboxHeightIncrease": "Aumenta altezza",
 		"ok": "OK",
 		"close": "Chiudi",
 		"thanks": "Grazie!",

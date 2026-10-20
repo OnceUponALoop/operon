@@ -35116,12 +35116,20 @@ body .operon-canvas-task-pool .operon-canvas-task-pool-meta button:hover { color
 }
 .operon-native-lightbox-host > .workspace-leaf-content { width: 100%; height: 100%; }
 
-/* Markdown follows the web width; Base and Table retain the wider native host. */
-.operon-native-lightbox-host:has(> .operon-lightbox-tabs > .workspace-tab-container > .workspace-leaf > .workspace-leaf-content[data-type="markdown"]) {
- width: min(1200px, 90vw);
+/* Each resolved native type owns its profile before loading; Base and Table stay wide. */
+.operon-native-lightbox-host.is-markdown {
+ width: min(1050px, 90vw);
  max-width: 90vw;
+ height: 90vh;
 }
 
+
+/* Shared desktop frame; video and the YouTube player preserve their own content ratio. */
+.operon-task-media-lightbox.has-content-controls > .operon-task-media-lightbox-content:is(.is-video, .is-youtube) {
+ width: min(90vw, calc(100vw - 96px));
+ height: min(85vh, calc(100vh - 96px));
+ aspect-ratio: auto;
+}
 
 /* The native lightbox owns a private tab group; user tab groups are untouched. */
 .operon-lightbox-tabs.workspace-tabs { width: 100%; height: 100%; min-width: 0; }
@@ -35190,13 +35198,17 @@ body .operon-canvas-task-pool .operon-canvas-task-pool-meta button:hover { color
 }
 
 .operon-task-media-lightbox.has-content-controls .operon-lightbox-dimming-control {
- top: calc(var(--operon-lightbox-dimming-top, calc(100% - 132px)) + var(--operon-lightbox-dimming-index) * var(--operon-lightbox-control-step, 44px));
+ top: calc(var(--operon-lightbox-dimming-top, calc(100% - 88px)) + var(--operon-lightbox-dimming-index) * var(--operon-lightbox-control-step, 44px));
 }
-.operon-task-media-lightbox.has-content-controls .operon-lightbox-dimming-value {
- font-size: var(--font-ui-smaller);
- font-variant-numeric: tabular-nums;
+.operon-task-media-lightbox.has-content-controls > :is(.operon-task-media-lightbox-content, img).is-lightbox-resized {
+ box-sizing: border-box;
+ aspect-ratio: auto;
 }
-.operon-task-media-lightbox.has-content-controls .operon-lightbox-dimming-control:disabled {
+.operon-task-media-lightbox.has-content-controls .operon-lightbox-size-control {
+ left: var(--operon-lightbox-size-left);
+ top: var(--operon-lightbox-size-top);
+}
+.operon-task-media-lightbox.has-content-controls :is(.operon-lightbox-dimming-control, .operon-lightbox-size-control):disabled {
  color: var(--text-faint);
  cursor: default;
 }

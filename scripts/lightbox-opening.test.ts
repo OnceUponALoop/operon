@@ -621,3 +621,76 @@ for(const raw of ['- [ ] Child {{operonId:: abcdefg}}','  - [x] SpätDienst 🎉
  context.fileBodyDraft=`${raw}\n${raw}`;assert.equal(bodySourceCursor.call(context),0);
  context.fileBodyContext.format='yaml';context.fileBodyContext.cursorOffset=4;assert.equal(bodySourceCursor.call(context),4);
 });
+
+
+for (const extension of ['md', 'base', 'table', 'web']) test(`native host width: ${extension} keeps its approved frame without :has`, async () => {
+ const f=fixture(extension);try {
+  if(extension==='web') await openWebLightbox(f.app,f.anchor,'https://example.com');
+  else await openLightboxTarget(f.app,f.anchor,{...local,linktext:`Folder/Note.${extension}`});
+  await tick();
+  const host=f.doc.body.querySelectorAll().find((node:any)=>node.classes.has(extension==='web'?'operon-web-lightbox-host':'operon-native-lightbox-host'));
+  assert.ok(host);
+  assert.equal(host.classes.has('is-markdown'),extension==='md');
+  assert.equal(f.stats().saves,0);
+ }finally{f.cleanup();await tick();}
+});
+
+test('native host width follows successful view replacement and preserves its class on failed navigation',async()=>{
+ const f=fixture();let type='markdown';
+ f.view.getViewType=()=>type;
+ f.leaf.setViewState=async(state:any)=>{if(state.fail)throw Error('load');type=state.type;};
+ try{
+  await openLightboxTarget(f.app,f.anchor,local);await tick();
+  const host=f.doc.body.querySelectorAll().find((node:any)=>node.classes.has('operon-native-lightbox-host'));
+  assert.equal(host.classes.has('is-markdown'),true);
+  for(const next of ['bases','operon-table-file-view','webviewer','markdown']){
+   await f.leaf.setViewState({type:next});
+   assert.equal(host.classes.has('is-markdown'),next==='markdown');
+   assert.equal(host.classes.has('is-base'),next==='bases');assert.equal(host.classes.has('is-table'),next==='operon-table-file-view');
+   assert.equal(host.classes.has('operon-web-lightbox-host'),next==='webviewer');
+  }
+  await assert.rejects(f.leaf.setViewState({type:'bases',fail:true}),/load/);
+  assert.equal(host.classes.has('is-markdown'),true);
+  assert.equal(f.stats().saves,0);
+ }finally{f.cleanup();await tick();}
+});
+
+test('CSS compatibility guard rejects :has while the scoped Markdown frame keeps its approved dimensions',()=>{
+ const css=readFileSync('styles.css','utf8');
+ const guard=readFileSync('scripts/release-guard.mjs','utf8');
+ const rule=guard.split('\n').find(line=>line.includes('avoid :has() selectors'))?.trim();
+ assert.ok(rule);
+ const patternText=rule.slice(1,rule.indexOf(', '));
+ const pattern=new Function(`return ${patternText};`)() as RegExp;
+ assert.equal(pattern.test('.host:has(> .child) {}'),true);
+ assert.equal(pattern.test('.host:HAS (> .child) {}'),true);
+ assert.equal(pattern.test('.host.is-markdown {}'),false);
+ assert.equal(pattern.test(css),false);
+ assert.match(css,/\.operon-native-lightbox-host\.is-markdown\s*\{\s*width: min\(1050px, 90vw\);\s*max-width: 90vw;\s*height: 90vh;/);
+});
+
+for(const extension of ['md','base','table']) for(const phase of ['openFile','loadIfDeferred'] as const) test(`${extension} uses its resolved profile before ${phase} completes`,async()=>{
+ const f=fixture(extension);let release!:()=>void;
+ const original=f.leaf[phase].bind(f.leaf);
+ f.leaf[phase]=async(...args:any[])=>{await new Promise<void>(resolve=>{release=resolve;});return original(...args);};
+ try{
+  await openLightboxTarget(f.app,f.anchor,{...local,linktext:`Folder/Note.${extension}`});await tick();
+  const host=f.doc.body.querySelectorAll().find((node:any)=>node.classes.has('operon-native-lightbox-host'));
+  assert.ok(host);assert.equal(host.inert,true);
+  const profile=extension==='md'?'markdown':extension;
+  assert.equal(host.classes.has(`is-${profile}`),true);
+  const initial=[...host.classes];release();await tick();
+  assert.equal(host.inert,false);assert.deepEqual([...host.classes],initial);assert.equal(f.stats().saves,0);
+ }finally{release?.();f.cleanup();await tick();}
+});
+test('vetoed native navigation retains its profile and unsaved content',async()=>{
+ const f=fixture();let navigated=0;
+ f.leaf.setViewState=async()=>{navigated++;};
+ try{
+  await openLightboxTarget(f.app,f.anchor,local);await tick();f.edit('unsaved');f.fail();
+  const host=f.doc.body.querySelectorAll().find((node:any)=>node.classes.has('operon-native-lightbox-host'));
+  await f.leaf.setViewState({type:'bases',state:{file:'Next.base'}});
+  assert.equal(navigated,0);assert.equal(host.classes.has('is-markdown'),true);assert.equal(host.inert,false);
+  assert.equal(f.view.getViewData(),'unsaved');
+ }finally{f.cleanup();await tick();}
+});

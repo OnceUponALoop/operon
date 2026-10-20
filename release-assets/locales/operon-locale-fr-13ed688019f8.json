@@ -1,8 +1,8 @@
 {
   "schemaVersion": 1,
   "locale": "fr",
-  "keyCount": 3670,
-  "keyFingerprint": "14b8663398cc20d5e558b7e718ab887c68701e03947d3d2e9cea8f50ec68d2d2",
+  "keyCount": 3675,
+  "keyFingerprint": "535d34c968f17554a225cc11790d02e8aace329855d812f4849856bd33559fc2",
   "translations": {
     "buttons": {
       "addFileSubtask": "Ajouter une sous-tâche-fichier",
@@ -27,6 +27,10 @@
       "inline": "En ligne",
       "kanbanNoValue": "Aucune valeur",
       "keepAsIs": "Conserver tel quel",
+      "lightboxHeightDecrease": "Réduire la hauteur",
+      "lightboxHeightIncrease": "Augmenter la hauteur",
+      "lightboxWidthDecrease": "Réduire la largeur",
+      "lightboxWidthIncrease": "Augmenter la largeur",
       "ok": "OK",
       "partiallySubtract": "Soustraire partiellement",
       "pin": "Épingler",
@@ -2032,6 +2036,7 @@
       "languageRussian": "Russe",
       "languageSpanish": "Espagnol",
       "languageTurkish": "Turc",
+      "lightboxSizeSaveFailed": "La taille de la lightbox n’a pas pu être enregistrée.",
       "locationMapAppearanceSection": "Apparence de la carte",
       "locationMapsAlwaysLightMode": "Toujours afficher les cartes en mode clair",
       "locationMapsAlwaysLightModeDesc": "Utilise le style de tuiles clair pour le sélecteur Location et les aperçus de carte, même quand Obsidian est en mode sombre.",
@@ -3715,5 +3720,5 @@
       "toggleDescendantPreview": "Basculer l'aperçu des descendants"
     }
   },
-  "sourceVersion": "6d2dafd0e76d1b777e42e162e96fb325a4ce47f493d2ca1f0a328839de52acd7"
+  "sourceVersion": "003fb63684c1361e1d0e0e4a249bd8a7e0dc21d3de2bd18e420d1ae1c9ed9a3d"
 }

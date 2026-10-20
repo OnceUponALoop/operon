@@ -55,7 +55,7 @@ export type WorkspaceTweaksPackageSettings = Pick<
 	| 'workspaceTweaksPropertiesScope'
 	| 'workspaceTweaksPropertiesExcludedFolders'
 	| 'workspaceTweaksCompactSidebarTabIcons'
->;
+> & Partial<Pick<OperonSettings, 'workspaceTweaksLightboxSizes'>>;
 
 export type OperonDataPackageOwnedSettingsKey =
 	| 'keyMappings'
@@ -153,6 +153,7 @@ export const OPERON_DATA_PACKAGE_OWNED_SETTINGS_KEYS = [
 	'filterTaskShowPlainCheckboxAction',
 	'workspaceTweaksHideScrollbars',
 	'workspaceTweaksBackgroundDimming',
+	'workspaceTweaksLightboxSizes',
 	'workspaceTweaksCollapseProperties',
 	'workspaceTweaksPropertiesScope',
 	'workspaceTweaksPropertiesExcludedFolders',
@@ -701,6 +702,7 @@ export function buildOperonDataPackageFromSettings(
 				version: 1,
 				workspaceTweaksHideScrollbars: normalized.workspaceTweaksHideScrollbars,
 				workspaceTweaksBackgroundDimming: normalized.workspaceTweaksBackgroundDimming,
+				...(Object.keys(normalized.workspaceTweaksLightboxSizes).length ? { workspaceTweaksLightboxSizes: cloneUnknown(normalized.workspaceTweaksLightboxSizes) } : {}),
 				workspaceTweaksCollapseProperties: normalized.workspaceTweaksCollapseProperties,
 				workspaceTweaksPropertiesScope: normalized.workspaceTweaksPropertiesScope,
 				workspaceTweaksPropertiesExcludedFolders: cloneUnknown(normalized.workspaceTweaksPropertiesExcludedFolders),

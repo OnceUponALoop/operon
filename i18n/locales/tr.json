@@ -873,6 +873,7 @@
 		"backgroundDimmingIncrease": "Arka plan karartmasını artır",
 		"backgroundDimmingDecrease": "Arka plan karartmasını azalt",
 		"backgroundDimmingSaveFailed": "Arka plan karartması kaydedilemedi.",
+		"lightboxSizeSaveFailed": "Lightbox boyutu kaydedilemedi.",
 		"workspaceTweaksHideScrollbars": "Hide Scrollbars",
 		"workspaceTweaksShowScrollbars": "Kaydırma Çubuklarını Göster",
 		"workspaceTweaksHideScrollbarsDesc": "Normal kaydırma davranışını koruyarak Obsidian workspace genelindeki scrollbarları gizler.",
@@ -2249,6 +2250,10 @@
 		"useLastTemplateAsDefaultDesc": "Task Creator ile görev başarıyla oluşturulduğunda kullanılan şablonu bu görev türünün varsayılanı olarak kaydeder. Komutlar ve dönüştürme de bu varsayılanı kullanır."
 	},
 	"buttons": {
+		"lightboxWidthDecrease": "Genişliği azalt",
+		"lightboxWidthIncrease": "Genişliği artır",
+		"lightboxHeightDecrease": "Yüksekliği azalt",
+		"lightboxHeightIncrease": "Yüksekliği artır",
 		"ok": "Tamam",
 		"close": "Kapat",
 		"thanks": "Teşekkürler!",

@@ -1,8 +1,8 @@
 {
   "schemaVersion": 1,
   "locale": "zh-TW",
-  "keyCount": 3670,
-  "keyFingerprint": "14b8663398cc20d5e558b7e718ab887c68701e03947d3d2e9cea8f50ec68d2d2",
+  "keyCount": 3675,
+  "keyFingerprint": "535d34c968f17554a225cc11790d02e8aace329855d812f4849856bd33559fc2",
   "translations": {
     "buttons": {
       "addFileSubtask": "新增檔案子任務",
@@ -27,6 +27,10 @@
       "inline": "行內",
       "kanbanNoValue": "無值",
       "keepAsIs": "保持原樣",
+      "lightboxHeightDecrease": "減小高度",
+      "lightboxHeightIncrease": "增大高度",
+      "lightboxWidthDecrease": "減小寬度",
+      "lightboxWidthIncrease": "增大寬度",
       "ok": "確定",
       "partiallySubtract": "部分扣除",
       "pin": "置頂",
@@ -2032,6 +2036,7 @@
       "languageRussian": "俄語",
       "languageSpanish": "西班牙語",
       "languageTurkish": "土耳其語",
+      "lightboxSizeSaveFailed": "無法儲存燈箱尺寸。",
       "locationMapAppearanceSection": "地圖外觀",
       "locationMapsAlwaysLightMode": "始終使用淺色地圖",
       "locationMapsAlwaysLightModeDesc": "即使 Obsidian 處於深色模式，位置選擇器和預覽地圖也使用淺色地圖瓦片樣式。",
@@ -3715,5 +3720,5 @@
       "toggleDescendantPreview": "切換子任務預覽"
     }
   },
-  "sourceVersion": "771db9de188db001c93b1a7c29200c6a92967c841d6c105f75cb76b96bcf4ee6"
+  "sourceVersion": "0dc22bac57f4c82fd4e6f892d8c6cf8ebeed71b9a7a4af608b9f2050d5919f97"
 }

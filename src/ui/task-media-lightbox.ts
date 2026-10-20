@@ -1,6 +1,6 @@
 import { getLightboxOwnerLeaf } from './web-lightbox';
 import { Platform, type App } from 'obsidian';
-import { openAppLightbox, getLightboxOrigin } from './lightbox';
+import { openAppLightbox, getLightboxOrigin, applyLightboxSizeProfile } from './lightbox';
 import { getOwnerWindow } from '../core/dom-compat';
 import type { TaskMediaPreviewKind } from '../core/task-media-preview-kind';
 
@@ -92,6 +92,7 @@ export function openTaskMediaLightbox(app: App, anchor: HTMLElement, source: Tas
 				? lightbox
 				: lightbox.createDiv(`operon-task-media-lightbox-content is-${source.kind}`);
 			const rendered = renderTaskMediaElement(mediaHost, source, { mode: 'lightbox', onError: close });
+			applyLightboxSizeProfile(lightbox, source.kind);
 			if (source.kind === 'image') {
 				bindTaskMediaLightboxZoom(lightbox, rendered.element as HTMLImageElement);
 			} else {

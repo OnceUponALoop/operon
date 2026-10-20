@@ -873,6 +873,7 @@
 		"backgroundDimmingIncrease": "Augmenter l’assombrissement du fond",
 		"backgroundDimmingDecrease": "Réduire l’assombrissement du fond",
 		"backgroundDimmingSaveFailed": "Impossible d’enregistrer l’assombrissement du fond.",
+		"lightboxSizeSaveFailed": "La taille de la lightbox n’a pas pu être enregistrée.",
 		"workspaceTweaksHideScrollbars": "Hide Scrollbars",
 		"workspaceTweaksShowScrollbars": "Afficher les barres de défilement",
 		"workspaceTweaksHideScrollbarsDesc": "Masque les barres de défilement dans tout le workspace Obsidian tout en conservant le défilement normal.",
@@ -2249,6 +2250,10 @@
 		"useLastTemplateAsDefaultDesc": "Après une création réussie dans Task Creator, enregistrer le modèle utilisé comme modèle par défaut pour ce type de tâche. Les commandes et conversions utilisent aussi ce modèle."
 	},
 	"buttons": {
+		"lightboxWidthDecrease": "Réduire la largeur",
+		"lightboxWidthIncrease": "Augmenter la largeur",
+		"lightboxHeightDecrease": "Réduire la hauteur",
+		"lightboxHeightIncrease": "Augmenter la hauteur",
 		"ok": "OK",
 		"close": "Fermer",
 		"thanks": "Merci !",

@@ -1,8 +1,8 @@
 {
   "schemaVersion": 1,
   "locale": "de",
-  "keyCount": 3670,
-  "keyFingerprint": "14b8663398cc20d5e558b7e718ab887c68701e03947d3d2e9cea8f50ec68d2d2",
+  "keyCount": 3675,
+  "keyFingerprint": "535d34c968f17554a225cc11790d02e8aace329855d812f4849856bd33559fc2",
   "translations": {
     "buttons": {
       "addFileSubtask": "Datei-Unteraufgabe hinzufügen",
@@ -27,6 +27,10 @@
       "inline": "Inline",
       "kanbanNoValue": "Kein Wert",
       "keepAsIs": "Unverändert lassen",
+      "lightboxHeightDecrease": "Höhe verringern",
+      "lightboxHeightIncrease": "Höhe vergrößern",
+      "lightboxWidthDecrease": "Breite verringern",
+      "lightboxWidthIncrease": "Breite vergrößern",
       "ok": "OK",
       "partiallySubtract": "Teilweise abziehen",
       "pin": "Anheften",
@@ -2032,6 +2036,7 @@
       "languageRussian": "Russisch",
       "languageSpanish": "Spanisch",
       "languageTurkish": "Türkisch",
+      "lightboxSizeSaveFailed": "Die Lightbox-Größe konnte nicht gespeichert werden.",
       "locationMapAppearanceSection": "Kartendarstellung",
       "locationMapsAlwaysLightMode": "Karten immer hell anzeigen",
       "locationMapsAlwaysLightModeDesc": "Verwendet den hellen Kartenstil für Location-Picker und Vorschau-Karten, auch wenn Obsidian im dunklen Modus ist.",
@@ -3715,5 +3720,5 @@
       "toggleDescendantPreview": "Vorschau untergeordneter Aufgaben umschalten"
     }
   },
-  "sourceVersion": "bfff4207f3a479e43c162edbb0d3e1643b4f0d01c623b927c5470948b4e00adb"
+  "sourceVersion": "e80b0b1e17e60bfebf19d46d2941883f55e750778e005b9135c159cb07c444a1"
 }

@@ -1,8 +1,8 @@
 {
   "schemaVersion": 1,
   "locale": "ja",
-  "keyCount": 3670,
-  "keyFingerprint": "14b8663398cc20d5e558b7e718ab887c68701e03947d3d2e9cea8f50ec68d2d2",
+  "keyCount": 3675,
+  "keyFingerprint": "535d34c968f17554a225cc11790d02e8aace329855d812f4849856bd33559fc2",
   "translations": {
     "buttons": {
       "addFileSubtask": "ファイルサブタスクを追加",
@@ -27,6 +27,10 @@
       "inline": "インライン",
       "kanbanNoValue": "値なし",
       "keepAsIs": "そのまま保持",
+      "lightboxHeightDecrease": "高さを低くする",
+      "lightboxHeightIncrease": "高さを高くする",
+      "lightboxWidthDecrease": "幅を狭くする",
+      "lightboxWidthIncrease": "幅を広げる",
       "ok": "OK",
       "partiallySubtract": "一部を差し引く",
       "pin": "ピン留め",
@@ -2032,6 +2036,7 @@
       "languageRussian": "ロシア語",
       "languageSpanish": "スペイン語",
       "languageTurkish": "トルコ語",
+      "lightboxSizeSaveFailed": "ライトボックスのサイズを保存できませんでした。",
       "locationMapAppearanceSection": "地図の外観",
       "locationMapsAlwaysLightMode": "常にライトマップを使用",
       "locationMapsAlwaysLightModeDesc": "Obsidian がダークモードのときでも、場所ピッカーとプレビューマップにライトマップのタイルスタイルを使用します。",
@@ -3715,5 +3720,5 @@
       "toggleDescendantPreview": "子孫プレビューを切り替え"
     }
   },
-  "sourceVersion": "3175e83b2bbbb0dfa8d352d4243c623d5c60f038075c5e53e5b8ede983e0d520"
+  "sourceVersion": "8f3e0ba95e82f5b7cc99c7b5e22cbb23f437a266625a45985f26a9d2361ea81b"
 }

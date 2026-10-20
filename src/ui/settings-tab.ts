@@ -2032,7 +2032,8 @@ export class OperonSettingsTab extends PluginSettingTab {
 					.onChange(value => this.setControlValue('workspaceTweaksHideScrollbars', value)));
 				const title = t('settings', 'subtabTweaks');
 				return attachDeclarativeSettingsPageTitleAction(setting.settingEl, title,
-					this.buildNativeSettingsDocsAction(title, 'DOCS-098 Workspace Tweaks').action);
+					['DOCS-098 Workspace Tweaks', 'DOCS-151 Lightbox']
+						.map(target => this.buildNativeSettingsDocsAction(title, target).action));
 			};
 		}
 		const groups: SettingDefinitionItem[] = [{

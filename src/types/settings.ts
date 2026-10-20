@@ -1,3 +1,4 @@
+import { normalizeLightboxSizes, type LightboxSizes } from '../core/lightbox-size';
 import { normalizeBackgroundDimming } from '../core/background-dimming';
 import { TASK_INFO_CHIPS, isTaskInfoChipKey } from '../core/task-info-chips';
 import { cloneInlinePropertyDefinitions, validateInlinePropertyDefinitions } from '../core/inline-property-definitions';
@@ -1815,6 +1816,7 @@ export interface OperonSettings extends TaskCardSettings {
 	/** If true, hide Obsidian workspace scrollbars while preserving scrolling. */
 	workspaceTweaksHideScrollbars: boolean;
 	workspaceTweaksBackgroundDimming: number;
+	workspaceTweaksLightboxSizes: LightboxSizes;
 	/** If true, collapse Obsidian Properties when opening matching notes. */
 	workspaceTweaksCollapseProperties: boolean;
 	/** Which notes receive the Properties collapser tweak. */
@@ -2359,6 +2361,7 @@ export const DEFAULT_SETTINGS: OperonSettings = {
 
 	workspaceTweaksHideScrollbars: false,
 	workspaceTweaksBackgroundDimming: 50,
+	workspaceTweaksLightboxSizes: {},
 	workspaceTweaksCollapseProperties: false,
 	workspaceTweaksPropertiesScope: 'operon-file-tasks',
 	workspaceTweaksPropertiesExcludedFolders: [],
@@ -4529,6 +4532,7 @@ export function migrateSettings(raw: unknown): OperonSettings {
 		? src.filterTaskShowPlainCheckboxAction
 		: DEFAULT_SETTINGS.filterTaskShowPlainCheckboxAction;
 	out.workspaceTweaksBackgroundDimming = normalizeBackgroundDimming(src.workspaceTweaksBackgroundDimming);
+	out.workspaceTweaksLightboxSizes = normalizeLightboxSizes(src.workspaceTweaksLightboxSizes);
 	out.workspaceTweaksHideScrollbars = typeof src.workspaceTweaksHideScrollbars === 'boolean'
 		? src.workspaceTweaksHideScrollbars
 		: DEFAULT_SETTINGS.workspaceTweaksHideScrollbars;

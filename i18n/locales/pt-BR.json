@@ -873,6 +873,7 @@
 		"backgroundDimmingIncrease": "Aumentar o escurecimento do fundo",
 		"backgroundDimmingDecrease": "Diminuir o escurecimento do fundo",
 		"backgroundDimmingSaveFailed": "Não foi possível salvar o escurecimento do fundo.",
+		"lightboxSizeSaveFailed": "Não foi possível salvar o tamanho da lightbox.",
 		"workspaceTweaksHideScrollbars": "Ocultar Barras de Rolagem",
 		"workspaceTweaksShowScrollbars": "Mostrar barras de rolagem",
 		"workspaceTweaksHideScrollbarsDesc": "Oculta as barras de rolagem em todo o espaço de trabalho Obsidian mantendo o comportamento normal de rolagem.",
@@ -2249,6 +2250,10 @@
 		"useLastTemplateAsDefaultDesc": "Após criar uma tarefa com sucesso no Task Creator, salvar o modelo utilizado como padrão para este tipo de tarefa. Comandos e conversões também usam esse padrão."
 	},
 	"buttons": {
+		"lightboxWidthDecrease": "Diminuir largura",
+		"lightboxWidthIncrease": "Aumentar largura",
+		"lightboxHeightDecrease": "Diminuir altura",
+		"lightboxHeightIncrease": "Aumentar altura",
 		"ok": "OK",
 		"close": "Fechar",
 		"thanks": "Obrigado!",
