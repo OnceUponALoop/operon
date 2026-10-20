@@ -1,3 +1,4 @@
+import { applyDesktopModalBackdrop } from './modal-backdrop';
 import { bindAssigneeChipImage } from './assignee-chip-image';
 import { App, getIcon, Modal, Platform, setIcon } from 'obsidian';
 import { t } from '../core/i18n';
@@ -30,7 +31,6 @@ import {
 	shouldResolveLocationCompactChips,
 } from './compact-task-layout';
 import { bindOperonHoverTooltip } from './operon-hover-tooltip';
-import { createProjectSerialChipElement } from './project-serial-chip';
 import { setAccessibleLabelWithoutTooltip } from './accessibility-label';
 import { suppressNativeModalCloseButton } from './modal-close-button';
 import {
@@ -95,6 +95,7 @@ export class TaskFinderModal extends Modal {
 	private includeFinishedButton!: HTMLButtonElement;
 	private toolbarEl: HTMLElement | null = null;
 	private toolsEl: HTMLElement | null = null;
+	private backdropCleanup: (() => void) | null = null;
 	private nativeCloseButtonCleanup: (() => void) | null = null;
 	private selectedProjectEl!: HTMLElement;
 	private resultsEl!: HTMLElement;
@@ -152,6 +153,8 @@ export class TaskFinderModal extends Modal {
 		this.isClosing = false;
 		this.cancelSearchRender();
 		this.containerEl.addClass('operon-task-finder-modal-container');
+		this.backdropCleanup?.();
+		this.backdropCleanup = applyDesktopModalBackdrop(this.containerEl);
 		this.modalEl.addClass('operon-task-finder-modal');
 		this.nativeCloseButtonCleanup?.();
 		this.nativeCloseButtonCleanup = suppressNativeModalCloseButton(this.containerEl, this.modalEl);
@@ -299,6 +302,8 @@ export class TaskFinderModal extends Modal {
 	}
 
 	onClose(): void {
+		this.backdropCleanup?.();
+		this.backdropCleanup = null;
 		this.isClosing = true;
 		this.cancelSearchRender();
 		this.searchSessions.clear();
@@ -1170,15 +1175,7 @@ export class TaskFinderModal extends Modal {
 
 	private renderTaskChipLine(body: HTMLElement, task: IndexedTask): void {
 		const chips = body.createDiv('operon-task-finder-chip-row operon-task-chip-surface');
-		const projectSerialDisplay = this.options.getProjectSerialDisplay?.(task.operonId) ?? null;
-		const settings = this.getSettings();
-		if (projectSerialDisplay) {
-			chips.appendChild(createProjectSerialChipElement(
-				projectSerialDisplay,
-				'operon-task-finder-chip operon-task-chip',
-				{ keyMappings: settings.keyMappings, owner: chips },
-			));
-		}
+
 		this.renderTaskChips(chips, task);
 		if (chips.childElementCount === 0) {
 			chips.createSpan({ cls: 'operon-task-finder-result-id', text: task.operonId });
@@ -1208,12 +1205,15 @@ export class TaskFinderModal extends Modal {
 			tasks,
 			settings.taskFinderCompactChips,
 			locationResolver,
-			{ app: this.app, taskLookup: this.getCompactTaskLookup(tasks) },
+			{ task, projectSerialDisplay: this.options.getProjectSerialDisplay?.(task.operonId), app: this.app, taskLookup: this.getCompactTaskLookup(tasks) },
 		);
 		if (this.showOverdueTasks) {
 			entries = this.prioritizeOverdueDateEntries(entries, task, settings);
 		} else if (this.showHappensTodayTasks) {
 			entries = this.prioritizeTodayDateEntries(entries, task, settings);
+		}
+		if (this.showOverdueTasks || this.showHappensTodayTasks) {
+			entries = [...entries.filter(entry => entry.key === 'taskInfo.projectSerial'), ...entries.filter(entry => entry.key !== 'taskInfo.projectSerial')];
 		}
 		for (const entry of entries) {
 			const visualEntry: InlineTaskCompactChipEntry = {

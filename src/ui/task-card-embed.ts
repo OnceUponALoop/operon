@@ -1,8 +1,9 @@
+import { taskDescriptionOpening } from './task-text-link-opening';
 import { bindOperonHoverTooltip, cleanupOperonHoverTooltips, createCompactTaskMarkdownTooltipContent } from './operon-hover-tooltip';
 import { mergeTaskRefreshScopes, type TaskRefreshScope } from '../core/task-refresh-scope';
 import { setAccessibleLabelWithoutTooltip } from './accessibility-label';
 import type { IndexedTask } from '../types/fields';
-import { Notice } from 'obsidian';
+import { Notice, Platform } from 'obsidian';
 import { TaskCardControls, type TaskCardControlDependencies } from './task-card-controls';
 import { isValidOperonId } from '../core/id-generator';
 import { normalizeTaskCardSettings, type TaskCardSettings } from '../types/task-card';
@@ -15,7 +16,7 @@ import { getOwnerWindow } from '../core/dom-compat';
 import { t } from '../core/i18n';
 import { resolveTaskColorSource, resolveTaskStatusIconColor } from '../core/task-color-source';
 import { resolveTaskDisplayIcon, type OperonSettings } from '../types/settings';
-import { renderCompactTaskMarkdown } from './compact-task-markdown-renderer';
+import { renderCompactTaskMarkdown, isCompactTaskMarkdownLinkEventTarget } from './compact-task-markdown-renderer';
 import { TaskCardLayoutService } from './task-card-layout';
 import { parseTaskCardEmbed, resolveTaskCard, type TaskCardParseResult, type TaskCardReader, type TaskCardResolution } from './task-card-embed-model';
 
@@ -32,7 +33,7 @@ class TaskCardEmbedChild extends MarkdownRenderChild {
 	private header!: HTMLElement;
 	private icon!: HTMLButtonElement;
  private controls: TaskCardControls | null = null;
-	private title!: HTMLButtonElement;
+	private title!: HTMLElement;
 	private message!: HTMLElement;
 	private warning!: HTMLElement;
 	private signature = '';
@@ -64,13 +65,21 @@ class TaskCardEmbedChild extends MarkdownRenderChild {
   this.imageWrap.hidden = true;
 		this.header = this.card.createDiv('operon-task-card-header');
 		this.icon = this.header.createEl('button', { cls: 'operon-task-card-status', attr: { type: 'button' } });
-		this.title = this.header.createEl('button', { cls: 'operon-task-card-title', attr: { type: 'button' } });
+		this.title = Platform.isDesktopApp
+   ? this.header.createDiv({cls: 'operon-task-card-title', attr: {tabindex: '0', role: 'group'}})
+   : this.header.createEl('button', { cls: 'operon-task-card-title', attr: { type: 'button' } });
+  this.registerDomEvent(this.title, 'keydown', event => {
+   if (Platform.isDesktopApp && event.target === this.title && (event.key === 'Enter' || event.key === ' ')) {
+    event.preventDefault(); event.stopPropagation(); if (!event.repeat) this.title.click();
+   }
+  });
 		this.message = this.card.createDiv({ cls: 'operon-task-card-message', attr: { role: 'status' } });
 		this.warning = this.card.createDiv({ cls: 'operon-task-card-message', attr: { role: 'status', hidden: '' } });
   let suppressDescriptionClick = false;
   let clearDescriptionGesture = () => {};
   this.register(() => clearDescriptionGesture());
   const beginCardGesture = (event: PointerEvent) => {
+   if (isCompactTaskMarkdownLinkEventTarget(event.target, this.title)) return;
    if (!root.closest('.operon-task-card-canvas-node, [data-operon-task-card-excalidraw]') || event.button !== 0 || (this.excalidrawHost?.attached && !this.excalidrawHost.canInteract())) return;
    if (event.isPrimary === false) return;
    clearDescriptionGesture(); suppressDescriptionClick = false;
@@ -93,10 +102,12 @@ class TaskCardEmbedChild extends MarkdownRenderChild {
   };
   this.registerDomEvent(this.title, 'pointerdown', beginCardGesture);
   this.registerDomEvent(this.title, 'dblclick', event => {
+   if (isCompactTaskMarkdownLinkEventTarget(event.target, this.title)) return;
    if (this.excalidrawHost?.attached && !this.excalidrawHost.canInteract()) return;
    if (root.closest('.operon-task-card-canvas-node, [data-operon-task-card-excalidraw]')) { event.preventDefault(); event.stopPropagation(); }
   });
 		this.registerDomEvent(this.title, 'click', event => {
+   if (isCompactTaskMarkdownLinkEventTarget(event.target, this.title)) return;
    if (this.excalidrawHost?.attached && !this.excalidrawHost.canInteract()) return;
    if (root.closest('.operon-task-card-canvas-node, [data-operon-task-card-excalidraw]')) {
     event.preventDefault(); event.stopPropagation();
@@ -208,7 +219,12 @@ class TaskCardEmbedChild extends MarkdownRenderChild {
 			setAccessibleLabelWithoutTooltip(this.icon, t('tooltips', 'cycleTaskStatus'));
 			if (this.title.dataset.description !== title) {
 				this.title.empty();
-				renderCompactTaskMarkdown(this.title, { app: this.owner.deps.app, value: title, mode: 'visual-only' });
+				renderCompactTaskMarkdown(this.title, { app: this.owner.deps.app, value: title, sourcePath: task.primary.filePath,
+     mode: Platform.isDesktopApp ? 'interactive' : 'visual-only',
+     bindLink: taskDescriptionOpening(this.owner.deps.app, () => {
+      const current = this.owner.resolve(task.operonId); return current.state === 'ready' ? current.task : null;
+     }, () => this.active && (!this.excalidrawHost?.attached || this.excalidrawHost.canInteract())),
+    });
 				this.title.dataset.description = title;
 			}
 			setAccessibleLabelWithoutTooltip(this.title, `${title}. ${hint}`);
@@ -345,10 +361,12 @@ export class TaskCardEmbeds {
   const result = resolveTaskCard(this.deps, id); this.refreshResolutions?.set(id, result); return result;
  }
 
-	activate(id: string, newTab: boolean): void {
+	activate(id: string, newTab: boolean, sourceAnchor?: HTMLElement): void {
 		// Re-resolve after any rename, deletion or duplicate conflict since the last render.
 		if (this.resolve(id).state !== 'ready') { this.refresh(); return; }
-		if (newTab) this.deps.openSource(id);
+		if (newTab && sourceAnchor && Platform.isDesktopApp && this.deps.controls) {
+			void this.deps.controls.onAction(id, 'jumpToSource', undefined, { actionAnchor: sourceAnchor });
+		} else if (newTab) this.deps.openSource(id);
 		else this.deps.openEditor(id);
 	}
 

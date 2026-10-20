@@ -3,7 +3,7 @@ import { test } from 'node:test';
 import { PreparedTaskCreatorDraft, type PreparedTaskCreatorAdapter } from '../src/ui/task-creator-prepared-draft';
 import { DEFAULT_SETTINGS, migrateSettings, buildDefaultTaskChipSettings } from '../src/types/settings';
 import { createEmptyTaskCreatorDraft, TaskCreatorModal } from '../src/ui/task-creator-modal';
-import { App } from 'obsidian';
+import { App, Platform } from 'obsidian';
 import { applyTaskFieldPatchToState } from '../src/core/task-field-patch';
 import type { FileTaskTemplateOption } from '../src/core/file-task-templates';
 const option = (id='A'): FileTaskTemplateOption => ({id,name:id,path:id,kind:'folder'});
@@ -324,4 +324,43 @@ test('default chip profile shows six Creator tools and still reveals template fi
  for (const mode of ['file', 'inline'] as const) assert.deepEqual(ui.visibleKeys(mode).sort(), [...expected].sort());
  await ui.select(option(), 'Task');
  for (const mode of ['file', 'inline'] as const) assert.deepEqual(ui.visibleKeys(mode).sort(), [...expected, 'contexts'].sort());
+});
+
+
+for (const mode of ['inline', 'file'] as const) test(`mobile ${mode} Creator previews template fields and preserves edits before creation`, async () => {
+ const previous = { isPhone: Platform.isPhone, isMobile: Platform.isMobile };
+ Object.assign(Platform, { isPhone: true, isMobile: true });
+ try {
+  let commits = 0;
+  const settings = structuredClone(DEFAULT_SETTINGS);
+  settings.taskCreatorToolbar = [{ key: 'taskIcon', visible: true }];
+  const modal = new TaskCreatorModal(new App(), {
+   settings, allTasks: [], initialDraft: createEmptyTaskCreatorDraft(), initialCreateType: mode,
+   defaultInlineTemplateId: 'A', defaultFileTemplateId: 'B', fileTaskTemplateOptions: [option('A'), option('B')],
+   preparedAdapter: {
+    properties: { keyMappings: settings.keyMappings, propertyTypes: { Client: 'text' } },
+    readTemplate: async id => yaml(`taskIcon: ${id === 'A' ? 'star' : 'heart'}\ncontexts: [Home]\nClient: ${id}`),
+    clock: () => ({ now: '2026-10-18T12:00:00' }), parent: () => null, candidates: () => [],
+    onSubmit: () => { commits++; return true; },
+   },
+   onSubmitInline: () => { commits++; return true; }, onSubmitFile: () => { commits++; return true; },
+  }) as any;
+  const initial = mode === 'inline' ? 'A' : 'B';
+  assert.equal(modal.getModeDefaultTemplateId(), initial);
+  await modal.selectPreparedTemplateId(initial);
+  assert.equal(modal.draft.taskIcon, initial === 'A' ? 'star' : 'heart');
+  for (const key of ['taskIcon', 'contexts', 'Client']) {
+   assert.ok(modal.getVisibleToolbarFieldOrder().includes(key));
+   assert.equal(modal.hasValueForField(key), true);
+  }
+  modal.prepared.applyPayload({ contexts: ['User'] });
+  await modal.selectPreparedTemplateId(initial === 'A' ? 'B' : 'A');
+  assert.deepEqual(modal.prepared.field('contexts').value, ['User'], 'explicit picker replacement keeps the removed template member removed');
+  await modal.selectPreparedTemplate(null);
+  assert.equal(modal.draft.taskIcon, '');
+  assert.ok(!modal.getVisibleToolbarFieldOrder().includes('Client'));
+  assert.deepEqual(modal.prepared.field('contexts').value, ['User']);
+  modal.prepared.close();
+  assert.equal(commits, 0, 'preview, template replacement, clear and cancellation never create a task');
+ } finally { Object.assign(Platform, previous); }
 });

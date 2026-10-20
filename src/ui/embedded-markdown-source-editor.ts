@@ -94,6 +94,7 @@ interface WorkspaceActiveEditorHost {
 
 interface EmbeddedMarkdownSourceEditorRecord {
 	filePath: string;
+	fileBody: boolean;
 }
 
 export interface EmbeddedMarkdownSourceEditorRefreshScope {
@@ -192,6 +193,12 @@ export function buildFilePanelLineNumberBlocks(
 
 export function getEmbeddedMarkdownSourceEditorFilePath(view: EditorView): string {
 	return embeddedMarkdownSourceEditorRecords.get(view)?.filePath ?? '';
+}
+
+/** Only the full Task Editor file body owns document-level filter content. */
+export function isEmbeddedMarkdownFileBodyEditor(view: EditorView): boolean {
+	const record = embeddedMarkdownSourceEditorRecords.get(view);
+	return record?.fileBody === true && !!record.filePath && view.dom.isConnected;
 }
 
 export function refreshEmbeddedMarkdownSourceEditors(
@@ -372,6 +379,7 @@ function resolveEmbeddedMarkdownViewClass(app: App): OperonEmbeddedMarkdownViewC
 			activeEmbeddedMarkdownSourceEditors.add(this.editor.cm);
 			embeddedMarkdownSourceEditorRecords.set(this.editor.cm, {
 				filePath: options.file?.path ?? '',
+				fileBody: this.isFilePanelSourceEditor(),
 			});
 			this.editor.cm.contentDOM.addEventListener('blur', () => {
 				if (this._loaded) {

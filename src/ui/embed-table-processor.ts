@@ -1,8 +1,12 @@
+import { cleanupTaskMediaChipPreviews } from './compact-chip-link-preview';
+import { bindTableTaskOpening, bindTablePropertyOpening, bindTableMarkdownOpening, readTablePropertyLinkValue, type TableOpeningContext } from './table/table-link-opening';
+import { isDesktopOpeningChip } from './links-chip-action';
+import { parseCompactWikiLinkValue } from './compact-task-layout';
 import { cleanupTaskContextualHoverMenus, hideTaskContextualHoverMenu } from './contextual-hover-menu';
 import { clearTableNativePending, getPendingTableRenderState, retainTableNativePending } from './table/table-native-pending';
 import { retainTablePropertyDraft, tablePropertyPickerDraft, tablePropertyUpdateRequest } from './table/table-file-property-editor';
 import { cancelTableNativePropertyRequest, clearTableNativePropertySnapshot, getTableNativePropertySnapshot, getVerifiedTableRowKeys } from './table/table-native-property';
-import { formatTableCompactDuration } from './table/table-display';
+import { formatTableRepeatValue, formatTableCompactDuration } from './table/table-display';
 import { registerFilterDayRefresh } from '../core/filter-day-refresh';
 import { getScopedTrackerSessions } from '../core/time-scope-values';
 import { withTableRowHover } from './table/table-row-hover';
@@ -836,6 +840,7 @@ function destroyEmbedTableInstance(instance: EmbedTableInstance): void {
 	instance.ganttDividerCleanup?.();
 	instance.ganttDividerCleanup = null;
 	instance.scrollPerformance.destroy();
+	cleanupTaskMediaChipPreviews(instance.el);
 	cleanupOperonHoverTooltips(instance.el);
 	instance.widthCleanup?.();
 	instance.widthCleanup = null;
@@ -872,6 +877,7 @@ function resetEmbedTableRenderState(instance: EmbedTableInstance): void {
 	instance.ganttRenderInvalidated = false;
 	instance.ganttTaskModelCache.clear();
 	clearTableVirtualRowCache(instance.virtualRows, row => {
+		cleanupTaskMediaChipPreviews(row);
 		cleanupOperonHoverTooltips(row);
 		cleanupTaskContextualHoverMenus(row);
 		row.remove();
@@ -929,6 +935,7 @@ function renderEmbedTableContents(instance: EmbedTableInstance, deps: EmbedTable
 		cleanupEmbedTableResizeObserver(instance);
 		cleanupEmbedTableToolbarLayout(instance);
 		cleanupEmbedMobileViewport(instance);
+		cleanupTaskMediaChipPreviews(instance.el);
 		cleanupOperonHoverTooltips(instance.el);
 		instance.el.empty();
 		resetEmbedTableRenderState(instance);
@@ -1262,6 +1269,7 @@ function renderEmbedTableContents(instance: EmbedTableInstance, deps: EmbedTable
 	cleanupEmbedTableResizeObserver(instance);
 	cleanupEmbedTableToolbarLayout(instance);
 	cleanupEmbedMobileViewport(instance);
+	cleanupTaskMediaChipPreviews(instance.el);
 	cleanupOperonHoverTooltips(instance.el);
 	instance.el.empty();
 	const root = instance.el.createDiv('operon-table-embed operon-table-root operon-task-chip-surface');
@@ -3059,6 +3067,7 @@ function renderEmbedTableVisibleRowsContents(instance: EmbedTableInstance, deps:
 			}
 		},
 		removeRow: row => {
+			cleanupTaskMediaChipPreviews(row);
 			cleanupOperonHoverTooltips(row);
 			cleanupTaskContextualHoverMenus(row);
 			row.remove();
@@ -4059,8 +4068,16 @@ function renderEmbedTableCell(
 		return;
 	}
 	if (isTablePlainTextField(getTableTaskField(column.key, renderState.settings))) {
+  const conditional = isDesktopOpeningChip(column.key, renderState.settings);
+  if (conditional && parseCompactWikiLinkValue(displayValue)) {
+   const chip = cell.createSpan('operon-table-cell-chip operon-chip operon-inline-compact-chip operon-task-chip');
+   chip.createSpan({ cls: 'operon-table-cell-chip-label', text: parseCompactWikiLinkValue(displayValue)!.displayValue });
+   bindOperonHoverTooltip(chip, { content: displayValue, taskColor: null });
+   bindEmbedTableValueOpening(chip, cell, task, column.key, displayValue, deps);
+   return;
+  }
 		renderTableTextValueDisplay(cell, {
-			value: displayValue,
+			value: displayValue, visualOnlyLinks: conditional,
 			wikilinks: { app: deps.app, sourcePath: task.primary.filePath },
 		});
 		return;
@@ -4070,6 +4087,7 @@ function renderEmbedTableCell(
 	}
 	const chipClass = editable ? 'operon-table-editable-chip' : 'operon-chip-readonly';
 	renderTableCellChips(cell, column.key, displayValue, {
+  ...(Platform.isDesktopApp && isDesktopOpeningChip(column.key, renderState.settings) ? { bindOpening: (chip: HTMLElement, raw: string) => bindEmbedTableValueOpening(chip, cell, task, column.key, raw, deps) } : {}),
 		chipClassName: `operon-table-cell-chip operon-chip operon-live-preview-chip operon-inline-compact-chip operon-task-chip ${chipClass}`,
 		column,
 		task,
@@ -4112,6 +4130,11 @@ function renderEmbedTableFilePropertyCell(
 	};
 	if (field) bindTableFilePropertyRemovalMenu({ cell, field, cellValue, editable, onRemove: () => commit({ kind: 'delete' }) });
 	if (renderTableFilePropertyValue({
+  ...(Platform.isDesktopApp && field && (field.type === 'text' || field.type === 'list') ? {
+   bindOpening: (chip: HTMLElement, member?: unknown, memberIndex?: number) => bindTablePropertyOpening(chip, {
+    ...embedTableOpeningContext(cell, task, deps), onPicker: () => { if (editable) openPicker(memberIndex); },
+   }, () => readTablePropertyLinkValue(deps.app, deps.indexer.getTask(task.operonId), field, member)),
+  } : {}),
 		cell,
 		field,
 		label,
@@ -4159,6 +4182,7 @@ function renderEmbedTableFilePropertyCell(
 		instance.keepActivePickerOnRender = true;
 		instance.activePickerClose = closePicker;
 	};
+ embedTableCellOpeners.set(cell, () => openPicker());
 	cell.addEventListener('click', event => {
 		if (isCompactTaskMarkdownLinkEventTarget(event.target, cell)) return;
 		event.preventDefault();
@@ -4231,14 +4255,15 @@ function renderEmbedTableIconOnlyCell(
 		locationResolver: renderState.locationResolver,
 	});
 	const field = getTableTaskField(column.key, renderState.settings);
-	const baseContent = field?.type === 'date' || field?.type === 'datetime'
+	const baseContent = column.key === 'repeat' ? formatTableRepeatValue(value)
+		: field?.type === 'date' || field?.type === 'datetime'
 		? formatTableDetailedDatetimeValue(column.key, value, renderState.settings)
 		: locationVisual?.label
 		?? formatTableDependencyTooltipContent(column.key, value, renderState.valueResolver.taskLookup)
 		?? formatTableIconOnlyTooltipContent(value);
 	const rawParentTaskId = column.key === 'parentTask' ? (task.fieldValues['parentTask'] ?? '').trim() : '';
 	const canOpenParentTask = !!rawParentTaskId && !!renderState.valueResolver.taskLookup.getTask(rawParentTaskId);
-	const content = canOpenParentTask
+	const content = canOpenParentTask && !Platform.isDesktopApp
 		? `${baseContent}\n${formatTableParentTaskTooltipContent(rawParentTaskId, getTaskSourceOpenModifierLabel())}`
 		: baseContent;
 	const fallbackIcon = field?.icon ?? 'text';
@@ -4308,11 +4333,14 @@ function renderEmbedTableIconOnlyCell(
 	if (locationVisual) {
 		bindEmbedTableLocationMapPreviewTrigger(icon, deps, task, locationVisual, renderState);
 	}
+ const openingKey = column.key === 'source' ? 'taskInfo.source' : column.key;
+ const summaryList = field?.type === 'list' || ['links', 'assignees', 'contexts'].includes(column.key);
+ if (!summaryList && !isTableTaskMediaField(column.key) && column.key !== 'source' && isDesktopOpeningChip(openingKey, renderState.settings)) bindEmbedTableValueOpening(icon, cell, task, column.key, task.fieldValues[column.key] ?? value, deps);
 	if (isTableTaskMediaField(column.key)) {
 		const mediaValue = column.key === 'taskGallery'
 			? parseTableTaskListValue(column.key, value)[0] ?? ''
 			: value;
-		bindTableTaskMediaChipActivation(icon, column.key, mediaValue, {
+		if (!bindEmbedTableValueOpening(icon, cell, task, column.key, mediaValue, deps)) bindTableTaskMediaChipActivation(icon, column.key, mediaValue, {
 			app: deps.app,
 			sourcePath: task.primary.filePath,
 		});
@@ -4541,7 +4569,7 @@ function decorateEmbedTableEditableTaskCell(
 	const canEdit = editable && canWriteEmbedTable(deps);
 	const parentTaskId = key === 'parentTask' ? (task.fieldValues['parentTask'] ?? '').trim() : '';
 	const parentExists = !!parentTaskId && !!deps.indexer.getTask(parentTaskId);
-	const canOpenParentTask = resolveTableParentTaskActivation({
+	const canOpenParentTask = !Platform.isDesktopApp && resolveTableParentTaskActivation({
 		parentTaskId,
 		parentExists,
 		canOpenEditor: true,
@@ -4563,7 +4591,7 @@ function decorateEmbedTableEditableTaskCell(
 	}
 	cell.tabIndex = 0;
 	const fieldLabel = getTableTaskFieldLabel(key, renderState.settings);
-	const valueLabel = value.trim();
+	const valueLabel = key === 'repeat' ? formatTableRepeatValue(value) : value.trim();
 	const editCellLabel = t('table', 'editCellAria');
 	setAccessibleLabelWithoutTooltip(
 		cell,
@@ -4587,7 +4615,7 @@ function decorateEmbedTableEditableTaskCell(
 			app: deps.app,
 			settings: renderState.settings,
 			allTasks,
-			canonicalKey: key,
+			canonicalKey: key === 'repeatOccurrenceDate' ? 'repeat' : key,
 			anchor: snapshotFloatingRectAnchor(cell),
 			currentFieldValues: task.fieldValues,
 			currentTags: task.tags,
@@ -4596,6 +4624,10 @@ function decorateEmbedTableEditableTaskCell(
 			sourcePath: task.primary.filePath,
 			taskFormat: task.primary.format,
 			manualDatePicker: getTableManualDatePickerOptions(key, renderState.settings),
+			onEditMultilineText: rawValue => {
+				openEmbedTableInlineTextPopover(activeInstance, deps, cell, task, key, rawValue, fieldLabel, cellKey, key, true, true);
+				return activeInstance.activePickerClose ?? (() => {});
+			},
 			onCommit: payload => {
 				const normalizedPayload = normalizeTablePickerPayload(payload);
 				if (Object.keys(normalizedPayload).length === 0) return;
@@ -4615,7 +4647,8 @@ function decorateEmbedTableEditableTaskCell(
 		activeInstance.keepActivePickerOnRender = true;
 		activeInstance.activePickerClose = closePicker;
 	};
-	if (key === 'parentTask') {
+ if (canEdit) embedTableCellOpeners.set(cell, openPicker);
+	if (key === 'parentTask' && !Platform.isDesktopApp) {
 		bindTableParentTaskCellActivation(cell, {
 			parentTaskId,
 			parentExists,
@@ -4923,7 +4956,9 @@ function renderEmbedTableInlineTextCell(
 		})
 		: null;
 	const iconContent = formatTableIconOnlyTooltipContent(value);
+ if (canOpenTextPopover && instance) embedTableCellOpeners.set(cell, () => openEmbedTableInlineTextPopover(instance, deps, cell, task, column.key, value, fieldLabel, cellKey, payloadKey));
 	renderTableDescriptionCellContent(cell, {
+  ...(Platform.isDesktopApp ? { bindLink: (anchor, link) => bindTableMarkdownOpening(anchor, link, key === 'note' ? 'note' : 'description', embedTableOpeningContext(cell, task, deps)) } : {}),
 		value,
 		fieldLabel,
 		editLabel: t('table', 'editCellAria'),
@@ -4960,6 +4995,7 @@ function openEmbedTableInlineTextPopover(
 	cellKey: string,
 	payloadKey: string,
 	allowEmptyCommit = false,
+	preserveLineBreaks = false,
 ): void {
 	if (instance.pendingCellKey !== null) return;
 	closeEmbedTableActivePicker(instance);
@@ -5010,7 +5046,8 @@ function openEmbedTableInlineTextPopover(
 			sessionKey: `embed-table-text:${task.operonId}:${key}`,
 			lifecycleOwner: instance.el,
 			editor: {
-				kind: 'compact-markdown',
+				kind: 'compact-markdown', openLinksInLightbox: key === 'description',
+				textPolicy: preserveLineBreaks ? 'task-note' : 'single-line',
 				sourcePath: task.primary.filePath,
 			},
 			onCommit: commitValue,
@@ -5021,6 +5058,23 @@ function openEmbedTableInlineTextPopover(
 		});
 	instance.activePickerClose = closeTextPopover;
 	instance.keepActivePickerOnRender = true;
+}
+
+const embedTableCellOpeners = new WeakMap<HTMLElement, () => void>();
+function embedTableOpeningContext(cell: HTMLElement, task: IndexedTask, deps: EmbedTableDeps): TableOpeningContext {
+ return {
+  app: deps.app, getSettings: () => deps.getSettings(),
+  getTask: () => deps.indexer.getTask(task.operonId),
+  getTaskById: id => deps.indexer.getTask(id), getAllTasks: () => deps.indexer.getAllTasks(),
+  canActivate: () => {
+   const instance = findEmbedTableInstance(cell);
+   return cell.isConnected && !!instance && instance.pendingCellKey === null && !instance.ganttInteraction?.isPending(task.operonId);
+  },
+  picker: () => null, onPicker: () => embedTableCellOpeners.get(cell)?.(),
+ };
+}
+function bindEmbedTableValueOpening(chip: HTMLElement, cell: HTMLElement, task: IndexedTask, key: string, rawValue: string, deps: EmbedTableDeps): boolean {
+ return bindTableTaskOpening(chip, key, rawValue, embedTableOpeningContext(cell, task, deps));
 }
 
 function renderEmbedTableSourceCell(
@@ -5037,6 +5091,10 @@ function renderEmbedTableSourceCell(
 		cell.tabIndex = 0;
 		setAccessibleLabelWithoutTooltip(cell, t('table', 'openSource', { source: fullSource }));
 		renderEmbedTableIconOnlyCell(cell, task, column, fullSource, renderState, deps, { focusable: false });
+  if (Platform.isDesktopApp) {
+   bindEmbedTableValueOpening(cell, cell, task, 'source', '', deps);
+   return;
+  }
 		const openSource = (): void => deps.openTaskSource(task.operonId);
 		cell.addEventListener('click', event => {
 			event.preventDefault();
@@ -5059,6 +5117,7 @@ function renderEmbedTableSourceCell(
 	const iconEl = button.createSpan('operon-table-source-icon');
 	setIcon(iconEl, task.primary.format === 'inline' ? 'text-cursor-input' : 'file-text');
 	button.createSpan({ cls: 'operon-table-source-label', text: value });
+ if (bindEmbedTableValueOpening(button, cell, task, 'source', '', deps)) return;
 	button.addEventListener('click', event => {
 		event.preventDefault();
 		event.stopPropagation();

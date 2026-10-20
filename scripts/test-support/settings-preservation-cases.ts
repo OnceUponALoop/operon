@@ -829,12 +829,12 @@ add('phone editor layout failed save preserves saved preferences and retry succe
 // from the production seeding helper, or a changed default could mask a regression.
 const firstInstallChips = {
  taskCreatorToolbar: ['taskIcon', 'taskColor', 'taskType', 'priority', 'status', 'note'],
- inlineTaskCompactChips: ['priority', 'status', 'parentTask', 'dateScheduled', 'dateDue', 'repeat', 'tags'],
- taskFinderCompactChips: ['taskType', 'priority', 'parentTask', 'assignees'],
- filterTaskCompactChips: ['priority', 'status', 'parentTask', 'dateScheduled', 'dateDue', 'repeat', 'tags', 'assignees'],
- kanbanTaskCompactChips: ['taskImage', 'priority', 'dateScheduled', 'dateDue', 'assignees'],
- taskWikilinkOverlayCompactChips: ['priority', 'dateDue', 'assignees'],
- taskCardCompactChips: ['taskImage', 'priority', 'status', 'dateScheduled', 'dateDue', 'assignees'],
+ inlineTaskCompactChips: ['taskInfo.projectSerial', 'priority', 'status', 'parentTask', 'dateScheduled', 'dateDue', 'repeat', 'tags'],
+ taskFinderCompactChips: ['taskInfo.projectSerial', 'taskType', 'priority', 'parentTask', 'assignees'],
+ filterTaskCompactChips: ['taskInfo.projectSerial', 'priority', 'status', 'parentTask', 'dateScheduled', 'dateDue', 'repeat', 'tags', 'assignees'],
+ kanbanTaskCompactChips: ['taskInfo.projectSerial', 'taskImage', 'priority', 'dateScheduled', 'dateDue', 'assignees'],
+ taskWikilinkOverlayCompactChips: ['taskInfo.projectSerial', 'priority', 'dateDue', 'assignees'],
+ taskCardCompactChips: ['taskInfo.projectSerial', 'taskImage', 'priority', 'status', 'dateScheduled', 'dateDue', 'assignees'],
 };
 const chipSurfaceKeys = Object.keys(firstInstallChips) as (keyof typeof firstInstallChips)[];
 const quietFirstInstallActions = [

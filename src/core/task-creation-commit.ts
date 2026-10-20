@@ -93,7 +93,9 @@ export function prepareCreationCommit(input: PreparedCreationInput, context: Cre
    if (input.createType === 'inline' && !skipped.some(item => item.sourceName === property.sourceName)) skipped.push({ sourceName: property.sourceName, reason });
    continue;
   }
-  if (property.merge === 'system' || key === 'pinned' || key === 'subtasks') continue;
+  // Only an explicit Repeat picker edit may carry a reference date into the new task.
+  const explicitRepeatReference = key === 'repeatOccurrenceDate' && field.userModified && typeof read.value === 'string' && !!read.value;
+  if (property.merge === 'system' && !explicitRepeatReference || key === 'pinned' || key === 'subtasks') continue;
   if (read.value === undefined || !property.type) throw new Error('Invalid property value');
   const value = read.value;
   const name = key ? getVisiblePropertyName(key, mappings) : property.sourceName;

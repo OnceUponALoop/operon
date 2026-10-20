@@ -14,6 +14,8 @@ export type CompactTaskMarkdownNode =
 	| { type: 'wikilink'; target: string; label: string }
 	| { type: 'markdown-link'; destination: string; label: string; external: boolean };
 
+export type CompactTaskMarkdownLink = Extract<CompactTaskMarkdownNode, { type: 'wikilink' | 'markdown-link' }>;
+
 export interface CompactTaskMarkdownRenderOptions {
 	app?: App;
 	value: string;
@@ -21,6 +23,7 @@ export interface CompactTaskMarkdownRenderOptions {
 	mode: CompactTaskMarkdownInteractionMode;
 	containerClassName?: string;
 	linkClassName?: string;
+	bindLink?: (anchor: HTMLElement, link: CompactTaskMarkdownLink) => void;
 }
 
 export interface CompactTaskMarkdownRenderResult {
@@ -79,7 +82,7 @@ export function isCompactTaskMarkdownLinkEventTarget(
 	root: HTMLElement,
 ): boolean {
 	if (!target || typeof (target as HTMLElement).closest !== 'function') return false;
-	const link = (target as HTMLElement).closest('a.internal-link, a.external-link');
+	const link = (target as HTMLElement).closest('a.internal-link, a.external-link, [data-operon-table-link]');
 	return !!link && root.contains(link);
 }
 
@@ -473,6 +476,11 @@ function appendLink(
 	);
 	if (options.linkClassName) anchor.classList.add(options.linkClassName);
 	anchor.textContent = node.label;
+	if (options.bindLink) {
+		options.bindLink(anchor, node);
+		container.appendChild(anchor);
+		return;
+	}
 	anchor.setAttribute('draggable', 'false');
 	anchor.draggable = false;
 	anchor.addEventListener('pointerdown', stopPropagation);

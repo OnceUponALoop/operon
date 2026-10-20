@@ -1,4 +1,9 @@
-import { bindLinksChipKeyboard, handleLinksChipClick } from './links-chip-action';
+import { bindDescendantFocusVisible } from './descendant-focus-visible';
+import { iterateMarkdownLinesOutsideFences } from '../core/markdown-fenced-lines';
+import { taskTextLinkEditorExtension } from './task-text-link-editor';
+import { isTaskInfoChipKey } from '../core/task-info-chips';
+import { bindTaskInfoSourceAction, createTaskSourceActionButton } from './task-info-chip-action';
+import { bindDesktopChipOpening } from './links-chip-action';
 import { identifyInlineTaskPart, rememberInlineTaskDom, reconcileInlineTaskDom } from './inline-retained-dom';
 import { bindAssigneeChipImage } from './assignee-chip-image';
 import { isValidOperonId } from '../core/id-generator';
@@ -11,7 +16,7 @@ import {
 	WidgetType,
 } from '@codemirror/view';
 import { EditorState, Extension, RangeSetBuilder, StateEffect, StateField } from '@codemirror/state';
-import { App, editorInfoField, editorLivePreviewField, setIcon } from 'obsidian';
+import { App, Platform, editorInfoField, editorLivePreviewField, setIcon } from 'obsidian';
 import { createOwnerElement, getOwnerWindow } from '../core/dom-compat';
 import { parseTaskLine } from '../core/parser';
 import { IndexedTask, ParsedTask } from '../types/fields';
@@ -43,12 +48,10 @@ import type { ProjectSerialDisplay } from '../core/project-serials';
 import { getConfiguredKeyMappingIcon } from '../core/key-mapping-icons';
 import { resolveTaskDateToneColor } from '../core/task-date-tone';
 import { getLocationPlaceIndex } from '../core/location-source-resolver';
-import { openObsidianTagSearch } from './tag-search';
 import { bindCompactChipLinkPreview, bindTaskMediaChipPreview } from './compact-chip-link-preview';
 import { bindExternalLinkContextMenu, openExternalUrl } from './external-link-actions';
 import { showLocationMapPreview } from './location-map-preview';
 import { resolveTaskStatusIconColor } from '../core/task-color-source';
-import { createProjectSerialChipElement } from './project-serial-chip';
 import { operonEditorSurfaceScopeFacet } from './editor-augmentation-scope';
 import {
 	bindAdaptiveIconOnlyExpansion,
@@ -59,7 +62,7 @@ import {
 	shouldOpenIconOnlyChipPreview,
 } from './icon-only-chip-preview';
 import { t } from '../core/i18n';
-import { resolveSubtaskActionIcon, resolveSubtaskActionLabelKey } from '../core/subtask-action';
+import { resolveSubtaskChipKinds, resolveSubtaskActionIconForKind, resolveSubtaskActionLabelKeyForKind } from '../core/subtask-action';
 import type { InlineRepeatCompletionMode } from '../storage/repeat-series-store';
 import { openTaskFieldPicker } from './task-field-picker-dispatch';
 import { getCustomFieldMapping, isProjectedCustomFieldType } from './custom-field-surfaces';
@@ -90,7 +93,7 @@ export interface LivePreviewCallbacks {
 	hasSubtasks?: (taskId: string) => boolean;
 	isTaskTracking?: (taskId: string) => boolean;
 	toggleTimer?: (taskId: string) => void | Promise<void>;
-	requestSubtask?: (operonId: string) => void | Promise<void>;
+	requestSubtask?: (operonId: string, requestedKind?: 'inline') => void | Promise<void>;
 	updateFields?: (operonId: string, payload: Record<string, string>, restoreCursor?: LivePreviewCursorRestoreRequest) => void | boolean | Promise<void | boolean>;
 	updateSubtasks?: (operonId: string, subtaskIds: string[]) => void;
 	updateDependencyField?: (operonId: string, field: 'blocking' | 'blockedBy', value: string) => void;
@@ -229,21 +232,7 @@ function bindLivePreviewChipHoverState(element: HTMLElement): void {
 	element.addEventListener('pointerleave', removeHover);
 	element.addEventListener('mouseenter', addHover);
 	element.addEventListener('mouseleave', removeHover);
-	element.addEventListener('focusin', addHover);
-	element.addEventListener('focusout', removeHover);
-}
-
-class HiddenCheckboxWidget extends WidgetType {
-	toDOM(view: EditorView): HTMLElement {
-		const span = createOwnerElement(view.dom, 'span');
-		span.className = 'operon-lp-checkbox-hidden';
-		span.setAttribute('aria-hidden', 'true');
-		return span;
-	}
-
-	eq(): boolean {
-		return true;
-	}
+	// Keyboard focus is styled by :focus-visible; pointer focus is not hover.
 }
 
 export class TaskIconWidget extends WidgetType {
@@ -413,6 +402,7 @@ export class MetadataTailWidget extends WidgetType {
 		wrapper.appendChild(breakEl);
 		const tailWrap = createOwnerElement(wrapper, 'span');
 		tailWrap.className = 'operon-live-preview-tail-wrap operon-task-chip-surface';
+		if (Platform.isDesktopApp) bindDescendantFocusVisible(tailWrap);
 		const row = createOwnerElement(tailWrap, 'span');
 		row.className = 'operon-live-preview-tail-row';
 		const actions = createOwnerElement(tailWrap, 'span');
@@ -464,12 +454,7 @@ export class MetadataTailWidget extends WidgetType {
 
 		const settings = this.callbacks.getSettings();
 		const projectSerialDisplay = operonId ? this.callbacks.getProjectSerialDisplay?.(operonId) ?? null : null;
-		if (projectSerialDisplay) {
-			row.appendChild(createProjectSerialChipElement(projectSerialDisplay, 'operon-task-chip', {
-				keyMappings: settings.keyMappings,
-				owner: row,
-			}));
-		}
+
 		const locationResolver = shouldResolveLocationCompactChips(settings)
 			? getLocationPlaceIndex(this.callbacks.app, settings).resolve
 			: undefined;
@@ -482,6 +467,7 @@ export class MetadataTailWidget extends WidgetType {
 			locationResolver,
 			{
 				app: this.callbacks.app,
+				task: this.indexedTask, projectSerialDisplay,
 				repeatSkipDateResolver: this.callbacks.getRepeatSkipDates,
 				workflowStatusIdentityIndex: this.workflowStatusIdentityIndex,
 				taskLookup: renderContext.taskLookup,
@@ -528,7 +514,7 @@ export class MetadataTailWidget extends WidgetType {
 						() => closeIconOnlyChipPreview(chip),
 					);
 				} else {
-					bindIconOnlyChipPreview(chip);
+					if (entry.key !== 'taskInfo.projectSerial') bindIconOnlyChipPreview(chip);
 				}
 				const previewLinkTarget = entry.previewLinkTarget ?? entry.linkTarget;
 				if (isCompactTaskMediaChipKey(entry.key)) {
@@ -558,7 +544,10 @@ export class MetadataTailWidget extends WidgetType {
 				);
 			}
 
-			const chipNode = entry.tooltipContent
+			if (isTaskInfoChipKey(entry.key)) {
+				bindOperonHoverTooltip(chip, { title: entry.tooltipTitle, content: entry.tooltipContent, taskColor });
+			}
+			const chipNode = entry.tooltipContent && !isTaskInfoChipKey(entry.key)
 				? wrapWithOperonHoverTooltip(chip, {
 					title: entry.tooltipTitle ?? t('taskEditor', 'details'),
 					content: entry.tooltipContent,
@@ -585,28 +574,31 @@ export class MetadataTailWidget extends WidgetType {
 
 		const isTerminal = terminalVisualState !== null;
 		if (!isTerminal && operonId && this.callbacks.requestSubtask && this.callbacks.getSettings().inlineTaskShowSubtaskAction) {
-			const subtaskLabel = t('buttons', resolveSubtaskActionLabelKey(this.indexedTask));
-			const subtaskButton = createOwnerElement(actions, 'button');
-			subtaskButton.type = 'button';
-			subtaskButton.className = 'operon-live-preview-edit operon-live-preview-action operon-task-chip-action';
-			setIcon(subtaskButton, resolveSubtaskActionIcon(this.indexedTask));
-			setAccessibleLabelWithoutTooltip(subtaskButton, subtaskLabel);
-			bindOperonHoverTooltip(subtaskButton, {
-				content: subtaskLabel,
-				taskColor,
-			});
-			if (taskColor) subtaskButton.setCssProps({
-				'--operon-live-hover-border': taskColor,
-				'--operon-task-chip-hover-accent': taskColor,
-			});
-			bindLivePreviewChipHoverState(subtaskButton);
-			subtaskButton.addEventListener('click', (event) => {
-				event.preventDefault();
-				event.stopPropagation();
-				void this.callbacks.requestSubtask?.(operonId);
-			});
-			identifyInlineTaskPart(subtaskButton, 'subtask', subtaskButton.outerHTML.replace(/operon-accessible-label-\d+/g, 'operon-accessible-label'));
-		actions.appendChild(subtaskButton);
+			for (const kind of resolveSubtaskChipKinds(this.indexedTask)) {
+				const subtaskLabel = t('buttons', resolveSubtaskActionLabelKeyForKind(kind));
+				const subtaskButton = createOwnerElement(actions, 'button');
+				subtaskButton.type = 'button';
+				subtaskButton.className = 'operon-live-preview-edit operon-live-preview-action operon-task-chip-action';
+				setIcon(subtaskButton, resolveSubtaskActionIconForKind(kind));
+				setAccessibleLabelWithoutTooltip(subtaskButton, subtaskLabel);
+				bindOperonHoverTooltip(subtaskButton, {
+					content: subtaskLabel,
+					taskColor,
+				});
+				if (taskColor) subtaskButton.setCssProps({
+					'--operon-live-hover-border': taskColor,
+					'--operon-task-chip-hover-accent': taskColor,
+				});
+				bindLivePreviewChipHoverState(subtaskButton);
+				subtaskButton.addEventListener('mousedown', event => { event.preventDefault(); event.stopPropagation(); });
+				subtaskButton.addEventListener('click', (event) => {
+					event.preventDefault();
+					event.stopPropagation();
+					void this.callbacks.requestSubtask?.(operonId, kind === 'inline' ? 'inline' : undefined);
+				});
+				identifyInlineTaskPart(subtaskButton, kind === resolveSubtaskChipKinds(this.indexedTask)[0] ? 'subtask' : 'subtask-inline', subtaskButton.outerHTML.replace(/operon-accessible-label-\d+/g, 'operon-accessible-label'));
+				actions.appendChild(subtaskButton);
+			}
 		}
 
 		if (!isTerminal && operonId && this.callbacks.onContextualAction && this.callbacks.getSettings().inlineTaskShowPinAction) {
@@ -664,6 +656,7 @@ export class MetadataTailWidget extends WidgetType {
 		actions.appendChild(playButton);
 		}
 
+		let noteAction: HTMLElement | null = null;
 		const rawNoteValue = fieldValues['note'] ?? '';
 		const noteValue = rawNoteValue.trim();
 		if (operonId && settings.inlineTaskShowNoteAction && (!isTerminal || noteValue)) {
@@ -693,8 +686,19 @@ export class MetadataTailWidget extends WidgetType {
 			});
 			bindLivePreviewChipHoverState(noteButton);
 			identifyInlineTaskPart(noteButton, 'note', JSON.stringify([rawNoteValue, taskColor, settings.language, noteButton.outerHTML.replace(/operon-accessible-label-\d+/g, 'operon-accessible-label')]));
+			noteAction = noteButton;
 			actions.appendChild(noteButton);
 		}
+
+		if (Platform.isDesktopApp && operonId && settings.inlineTaskShowSourceAction) {
+   const sourceButton = createTaskSourceActionButton({ app: this.callbacks.app, owner: actions,
+    getSettings: this.callbacks.getSettings, getTask: () => this.callbacks.getIndexedTask(operonId),
+    taskColor, className: 'operon-live-preview-edit operon-live-preview-action operon-task-chip-action',
+   });
+   bindLivePreviewChipHoverState(sourceButton);
+   identifyInlineTaskPart(sourceButton, 'source', sourceButton.outerHTML.replace(/operon-accessible-label-\d+/g, 'operon-accessible-label'));
+   actions.insertBefore(sourceButton, noteAction);
+  }
 
 		const editButton = createOwnerElement(actions, 'button');
 		editButton.type = 'button';
@@ -835,9 +839,9 @@ export function operonLivePreviewConcealExtension(callbacks: LivePreviewCallback
 			}
 
 			if (parsed.checkboxRange.to > parsed.checkboxRange.from) {
-				const checkboxWidget = Decoration.replace({
-					widget: new HiddenCheckboxWidget(),
-				});
+				// Keep the native empty replacement: a zero-height widget breaks
+				// coordinate lookup beside Obsidian list indent/fold decorations.
+				const checkboxWidget = Decoration.replace({});
 				decorations.add(line.from + parsed.checkboxRange.from, line.from + parsed.checkboxRange.to, checkboxWidget);
 			}
 
@@ -1038,7 +1042,19 @@ export function operonLivePreviewConcealExtension(callbacks: LivePreviewCallback
 			this.destroyed = true;
 		}
 	});
-	return [field, contextBridge];
+	const descriptionLinks = taskTextLinkEditorExtension(callbacks.app, (view, position) => {
+  if (!isLivePreview(view.state)) return null;
+  const line = view.state.doc.lineAt(position);
+  const outsideFences = iterateMarkdownLinesOutsideFences(view.state.doc.toString(), true);
+  let executable = false;
+  for (const [number] of outsideFences) {if (number === line.number - 1) {executable = true; break;} if (number >= line.number) break;}
+  if (!executable) return null;
+  const path = callbacks.getFilePath(view);
+  const task = parseTaskLine(line.text, line.number - 1, path, callbacks.getSettings().keyMappings);
+  if (!task || (!task.operonId && task.fields.length === 0)) return null;
+  return {from: line.from + task.descriptionRange.from, to: line.from + task.descriptionRange.to, sourcePath: path};
+ });
+ return [field, contextBridge, descriptionLinks];
 }
 
 function isMarkdownFenceLine(line: string): boolean {
@@ -1096,6 +1112,7 @@ export function buildMetadataTailRenderSignature(
 		: null;
 	const locationResolver = locationIndex?.resolve;
 	const entries = buildInlineTaskCompactChipEntries(fieldValues, tags, settings, tasks, undefined, locationResolver, {
+		task: indexedTask, projectSerialDisplay,
 		app: callbacks.app,
 		repeatSkipDateResolver: callbacks.getRepeatSkipDates,
 		workflowStatusIdentityIndex,
@@ -1104,6 +1121,7 @@ export function buildMetadataTailRenderSignature(
 		.map(entry => [
 			entry.key,
 			entry.label,
+			entry.rawValue ?? '',
 			entry.icon,
 			entry.iconOnly,
 			entry.interactive,
@@ -1144,6 +1162,7 @@ export function buildMetadataTailRenderSignature(
 		inlineTaskShowPlayAction: settings.inlineTaskShowPlayAction,
 		inlineTaskShowPinAction: settings.inlineTaskShowPinAction,
 		inlineTaskShowNoteAction: settings.inlineTaskShowNoteAction,
+		inlineTaskShowSourceAction: settings.inlineTaskShowSourceAction,
 		inlineTaskShowSubtaskAction: settings.inlineTaskShowSubtaskAction,
 		noteIcon: getConfiguredKeyMappingIcon('note', settings.keyMappings) || 'notebook-pen',
 	});
@@ -1251,15 +1270,42 @@ function attachLivePreviewChipAction(
 	task: ParsedTask,
 	onCommit?: () => void,
 ): void {
-	bindLinksChipKeyboard(chip, entry.key);
+
+ if (bindDesktopChipOpening(chip, entry, {
+  app: callbacks.app, getSettings: callbacks.getSettings, getAllTasks: callbacks.getAllTasks,
+  getTask: () => {
+   const current = callbacks.getAllTasks().find(candidate => candidate.operonId === task.operonId);
+   return current ? { ...current, fieldValues: Object.fromEntries(Object.entries(getLivePreviewCurrentFieldValues(task, view, callbacks)).filter((item): item is [string, string] => typeof item[1] === 'string')) } : null;
+  },
+  getTaskById: id => callbacks.getAllTasks().find(candidate => candidate.operonId === id),
+  picker: current => ({ anchor: snapshotLivePreviewAnchor(chip), retainInputFocus: true,
+   onCommit: payload => {
+    const normalized = Object.fromEntries(Object.entries(payload).map(([key, value]) => [key, Array.isArray(value) ? value.join('; ') : value]));
+    const cursor = getLivePreviewDescriptionEndCursor(task, view, callbacks);
+    if (callbacks.updateFields) void callbacks.updateFields(current.operonId, normalized, cursor);
+    else for (const [key, value] of Object.entries(normalized)) void callbacks.updateField(current.operonId, key, value, cursor);
+    onCommit?.();
+   },
+  }),
+ })) return;
+	if (entry.key === 'taskInfo.projectSerial') return;
+	if (entry.key === 'taskInfo.source') {
+		bindTaskInfoSourceAction(chip, () => { if (task.operonId) void callbacks.onContextualAction?.(task.operonId, 'jumpToSource'); }, callbacks.app, () => callbacks.getAllTasks().find(current => current.operonId === task.operonId));
+		return;
+	}
+
+	let tagPickerOpen = false;
+	let statusPickerOpen = false;
+	if (entry.key === 'status') {
+		chip.addEventListener('mousedown', event => {
+			event.preventDefault();
+			event.stopPropagation();
+		});
+	}
 	chip.addEventListener('click', (event) => {
 		event.preventDefault();
 		event.stopPropagation();
-		if (handleLinksChipClick(callbacks.app, chip, entry, event)) {
-			onCommit?.();
-			return;
-		}
-		if (entry.iconOnly && shouldOpenIconOnlyChipPreview(chip)) {
+		if (entry.key !== 'tags' && entry.key !== 'status' && entry.iconOnly && shouldOpenIconOnlyChipPreview(chip)) {
 			openIconOnlyChipPreview(chip);
 			return;
 		}
@@ -1296,12 +1342,16 @@ function attachLivePreviewChipAction(
 			return;
 		}
 		switch (entry.key) {
+			case 'status':
 			case 'taskType':
+				if (entry.key === 'status' && statusPickerOpen) return;
+				if (entry.key === 'status') statusPickerOpen = true;
 				openTaskFieldPicker({
 					app: callbacks.app,
 					settings: callbacks.getSettings(),
 					allTasks: callbacks.getAllTasks(),
-					canonicalKey: 'taskType',
+					canonicalKey: entry.key,
+					onClose: () => { statusPickerOpen = false; },
 					anchor: pickerAnchor,
 					currentFieldValues: fieldValues,
 					getCurrentFieldValues: () => getLivePreviewCurrentFieldValues(task, view, callbacks),
@@ -1310,17 +1360,13 @@ function attachLivePreviewChipAction(
 					retainInputFocus: true,
 					taskFormat: 'inline',
 					onCommit: payload => {
-						const value = payload.taskType;
+						const value = payload[entry.key];
+						statusPickerOpen = false;
 						if (typeof value !== 'string') return;
-						void callbacks.updateField(operonId, 'taskType', value, restoreCursor());
+						void callbacks.updateField(operonId, entry.key, value, restoreCursor());
 						onCommit?.();
 					},
 				});
-				break;
-			case 'status':
-				if (callbacks.onContextualAction) void callbacks.onContextualAction(operonId, 'taskStatus');
-				else callbacks.cycleStatus(task, view);
-				onCommit?.();
 				break;
 			case 'location':
 				if (entry.locationCoordinate) {
@@ -1388,8 +1434,27 @@ function attachLivePreviewChipAction(
 				}
 				break;
 			case 'tags':
-				void openObsidianTagSearch(callbacks.app, entry.label);
-				onCommit?.();
+				if (tagPickerOpen) return;
+				tagPickerOpen = true;
+				openTaskFieldPicker({
+					app: callbacks.app,
+					settings: callbacks.getSettings(),
+					allTasks: callbacks.getAllTasks(),
+					canonicalKey: 'tags',
+					anchor: pickerAnchor,
+					currentFieldValues: fieldValues,
+					currentTags: callbacks.getAllTasks().find(candidate => candidate.operonId === operonId)?.tags ?? _tags,
+					sourcePath: task.filePath,
+					taskFormat: 'inline',
+					closeListPickerOnSelect: true,
+					retainInputFocus: true,
+					onClose: () => { tagPickerOpen = false; },
+					onCommit: payload => {
+						if (!Array.isArray(payload.tags)) return;
+						void callbacks.updateField(operonId, '_tags', payload.tags.join('; '), restoreCursor());
+						onCommit?.();
+					},
+				});
 				break;
 			case 'links':
 				openExternalUrl(entry.externalUrl);

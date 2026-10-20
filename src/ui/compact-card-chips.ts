@@ -1,6 +1,8 @@
-import { bindLinksChipKeyboard, handleLinksChipClick } from './links-chip-action';
+import { isTaskInfoChipKey } from '../core/task-info-chips';
+import { bindTaskInfoSourceAction, createTaskSourceActionButton } from './task-info-chip-action';
+import { bindDesktopChipOpening, isDesktopOpeningChip } from './links-chip-action';
 import { bindAssigneeChipImage } from './assignee-chip-image';
-import { App, setIcon } from 'obsidian';
+import { App, Platform, setIcon } from 'obsidian';
 import { createOwnerElement, getOwnerWindow } from '../core/dom-compat';
 import type { ContextualMenuActionHandler, ContextualMenuActionId, ContextualMenuContext } from '../core/contextual-menu-engine';
 import { getLocationPlaceIndex } from '../core/location-source-resolver';
@@ -8,7 +10,7 @@ import { getConfiguredKeyMappingIcon } from '../core/key-mapping-icons';
 import { normalizeTaskFieldColor } from '../core/task-color-source';
 import { t } from '../core/i18n';
 import { localNow } from '../core/local-time';
-import { resolveSubtaskActionIcon, resolveSubtaskActionLabelKey } from '../core/subtask-action';
+import { resolveSubtaskChipKinds, resolveSubtaskActionIconForKind, resolveSubtaskActionLabelKeyForKind } from '../core/subtask-action';
 import { resolveTaskDateToneColor } from '../core/task-date-tone';
 import { IndexedTask } from '../types/fields';
 import { findStatusDef, Pipeline } from '../types/pipeline';
@@ -39,8 +41,6 @@ import {
 } from './icon-only-chip-preview';
 import { showLocationMapPreview } from './location-map-preview';
 import { bindOperonHoverTooltip, createCompactTaskMarkdownTooltipContent, wrapWithOperonHoverTooltip } from './operon-hover-tooltip';
-import { createProjectSerialChipElement } from './project-serial-chip';
-import { openObsidianTagSearch } from './tag-search';
 import { openTaskFieldPicker } from './task-field-picker-dispatch';
 import { getCustomFieldMapping, isProjectedCustomFieldType } from './custom-field-surfaces';
 import { setAccessibleLabelWithoutTooltip } from './accessibility-label';
@@ -63,12 +63,13 @@ export interface CompactCardChipRowCallbacks {
 	updateSubtasks?: (operonId: string, subtaskIds: string[]) => void;
 	updateDependencyField?: (operonId: string, field: 'blocking' | 'blockedBy', value: string) => void;
 	openEditor?: (operonId: string) => void | Promise<void>;
+	getAllTasks?: () => IndexedTask[];
 	getTaskById?: (operonId: string) => IndexedTask | undefined;
 	openNotePopover?: (anchor: HTMLElement, task: IndexedTask) => void;
 }
 
 export interface CompactCardChipRowOptions {
- profile: { items: OperonSettings['kanbanTaskCompactChips']; play: boolean; pin: boolean; note: boolean; subtask: boolean; checkbox: boolean };
+ profile: { items: OperonSettings['kanbanTaskCompactChips']; play: boolean; pin: boolean; note: boolean; source?: boolean; subtask: boolean; checkbox: boolean };
  classPrefix: string;
  bindTarget?: (target: HTMLElement) => void;
  isTargetReadOnly?: (target: HTMLElement) => boolean;
@@ -85,6 +86,7 @@ export interface CompactCardChipRowOptions {
 }
 
 interface KanbanTaskActionChip {
+	requestedSubtaskKind?: 'inline';
 	actionId: ContextualMenuActionId;
 	icon: string;
 	label: string;
@@ -140,13 +142,13 @@ export function buildCompactCardChipRow(
 		locationResolver,
 		{
 			app: callbacks.app,
+			task, projectSerialDisplay: callbacks.getProjectSerialDisplay?.(task.operonId, task),
 			repeatSkipDateResolver: callbacks.getRepeatSkipDates,
 			taskLookup,
 			workflowStatusIdentityIndex: options.workflowStatusIdentityIndex,
 		},
 	);
-	const projectSerialDisplay = callbacks.getProjectSerialDisplay?.(task.operonId, task) ?? null;
-	if (entries.length === 0 && !projectSerialDisplay && actionChips.length === 0) return null;
+	if (entries.length === 0 && actionChips.length === 0) return null;
 
 	const row = createOwnerElement(options.owner, 'div');
 	row.className = `${options.classPrefix}-chip-row operon-task-chip-surface`;
@@ -161,15 +163,6 @@ export function buildCompactCardChipRow(
 	const actionStrip = createOwnerElement(row, 'div');
 	actionStrip.className = `${options.classPrefix}-chip-actions`;
 
-	if (projectSerialDisplay) {
-		const serialChip = createProjectSerialChipElement(projectSerialDisplay, `${options.classPrefix}-chip operon-task-chip`, {
-			keyMappings: settings.keyMappings,
-			owner: chipStrip,
-		});
-		options.bindTarget?.(serialChip);
-		chipStrip.appendChild(serialChip);
-	}
-
 	const statusColor = entries.some(entry => entry.colorRole === 'status')
 		? lookupStatusColor(
 			task.fieldValues['status'],
@@ -178,7 +171,7 @@ export function buildCompactCardChipRow(
 		)
 		: null;
 	for (const rawEntry of entries) {
-		const allowNavigation = options.allowReadOnlyNavigation === true && !!(rawEntry.linkTarget || rawEntry.externalUrl || rawEntry.locationCoordinate || rawEntry.key === 'tags');
+		const allowNavigation = options.allowReadOnlyNavigation === true && !!(rawEntry.key === 'taskInfo.source' || (isDesktopOpeningChip(rawEntry.key, settings) && (rawEntry.previewLinkTarget || rawEntry.key === 'parentTask')) || rawEntry.linkTarget || rawEntry.externalUrl || rawEntry.locationCoordinate);
   const entry = readOnly && !allowNavigation ? { ...rawEntry, interactive: false } : rawEntry;
 		const chip = createInlineTaskCompactChipElement(entry, `${options.classPrefix}-chip operon-task-chip`, { owner: chipStrip });
 		bindAssigneeChipImage(chip, entry, callbacks.app, task.primary.filePath, settings.assigneeImageProperty);
@@ -189,19 +182,22 @@ export function buildCompactCardChipRow(
 			bindAdaptiveIconOnlyExpansion(chip, entry.label, taskColor ?? null, {
 				showTooltip: !isCompactTaskMediaChipKey(entry.key),
 			});
-			if (!readOnly || allowNavigation) attachKanbanChipAction(chip, entry, task, callbacks, options.allTasks, options.isTargetReadOnly, () => closeIconOnlyChipPreview(chip));
+			if (!readOnly || allowNavigation) attachKanbanChipAction(chip, entry, task, callbacks, options.allTasks, options.isTargetReadOnly, () => closeIconOnlyChipPreview(chip), !readOnly);
 			if (!readOnly && entry.externalUrl) bindExternalLinkContextMenu(chip, entry.externalUrl, entry.externalRawValue);
 			if (entry.tooltipContent) bindKanbanChipTooltip(chip, entry, taskColor);
-			if ((readOnly && !allowNavigation) || !entry.interactive) bindIconOnlyChipPreview(chip);
+			if (((readOnly && !allowNavigation) || !entry.interactive) && entry.key !== 'taskInfo.projectSerial') bindIconOnlyChipPreview(chip);
 			if (!readOnly || options.allowReadOnlyNavigation) bindKanbanChipLinkPreview(chip, entry, callbacks, task);
 			chipStrip.appendChild(chip);
 			continue;
 		}
 
 		if ((!readOnly || allowNavigation) && entry.interactive) {
-			attachKanbanChipAction(chip, entry, task, callbacks, options.allTasks, options.isTargetReadOnly);
+			attachKanbanChipAction(chip, entry, task, callbacks, options.allTasks, options.isTargetReadOnly, undefined, !readOnly);
 		}
-		const node = entry.tooltipContent
+		if (isTaskInfoChipKey(entry.key)) {
+			bindOperonHoverTooltip(chip, { title: entry.tooltipTitle, content: entry.tooltipContent, taskColor });
+		}
+		const node = entry.tooltipContent && !isTaskInfoChipKey(entry.key)
 			? wrapWithOperonHoverTooltip(chip, {
 				title: entry.tooltipTitle ?? t('taskEditor', 'details'),
 				content: entry.tooltipContent,
@@ -244,10 +240,11 @@ function buildKanbanTaskActionChips(
 	const canToggleTimer = !!callbacks.toggleTimer || canRunActions;
 	const isTerminal = task.checkbox !== 'open';
 	if (canRunActions && profile.subtask && !isTerminal) {
-		chips.push({
+		for (const kind of resolveSubtaskChipKinds(task)) chips.push({
 			actionId: 'createSubtask',
-			icon: resolveSubtaskActionIcon(task),
-			label: t('buttons', resolveSubtaskActionLabelKey(task)),
+			requestedSubtaskKind: kind === 'inline' ? 'inline' : undefined,
+			icon: resolveSubtaskActionIconForKind(kind),
+			label: t('buttons', resolveSubtaskActionLabelKeyForKind(kind)),
 		});
 	}
 	if (canRunActions && profile.checkbox) {
@@ -286,6 +283,11 @@ function buildKanbanTaskActionChips(
 			empty: !noteValue,
 		});
 	}
+ if (profile.source && Platform.isDesktopApp) {
+  const source = { actionId: 'jumpToSource' as const, icon: 'file-search', label: t('settings', 'contextualMenuActionJumpToSource') };
+  const noteIndex = chips.findIndex(chip => chip.note);
+  chips.splice(noteIndex < 0 ? chips.length : noteIndex, 0, source);
+ }
 	return chips;
 }
 
@@ -299,6 +301,15 @@ function createKanbanTaskActionChipElement(
 	noteEditable: boolean,
  options: CompactCardChipRowOptions,
 ): HTMLElement {
+ if (action.actionId === 'jumpToSource') {
+  const source = createTaskSourceActionButton({ app: callbacks.app, owner,
+   getSettings: callbacks.getSettings, getTask: () => callbacks.getTaskById?.(task.operonId), taskColor,
+   className: `${options.classPrefix}-action-chip operon-task-chip-action`,
+   canActivate: () => (!readOnly || options.allowReadOnlyNavigation === true) && !options.isTargetReadOnly?.(source),
+  });
+  options.bindTarget?.(source);
+  return source;
+ }
 	const canEditNote = action.note === true && noteEditable;
 	const chip = createOwnerElement(
 		owner,
@@ -351,6 +362,7 @@ function createKanbanTaskActionChipElement(
 				buildKanbanTaskActionContext(task, callbacks),
 				{
 					actionAnchor: chip,
+					requestedSubtaskKind: action.requestedSubtaskKind,
 					actionAnchorRect: chip.getBoundingClientRect(),
 				},
 			);
@@ -390,17 +402,31 @@ function attachKanbanChipAction(
 	allTasks: IndexedTask[],
  isTargetReadOnly?: (target: HTMLElement) => boolean,
 	onCommit?: () => void,
+ canEdit = true,
 ): void {
-	bindLinksChipKeyboard(chip, entry.key);
+
+ if (bindDesktopChipOpening(chip, entry, {
+  app: callbacks.app, getSettings: callbacks.getSettings,
+  getTask: () => callbacks.getTaskById?.(task.operonId), getTaskById: id => callbacks.getTaskById?.(id),
+  getAllTasks: () => callbacks.getAllTasks?.() ?? allTasks.map(item => callbacks.getTaskById?.(item.operonId)).filter((item): item is IndexedTask => !!item),
+  canActivate: () => !isTargetReadOnly?.(chip),
+  picker: current => !canEdit || callbacks.canMutate?.() === false || (!callbacks.updateField && !callbacks.updateFields) ? null : {
+   onCommit: payload => { commitKanbanChipPayload(current, payload, callbacks); onCommit?.(); },
+  },
+ })) return;
+	if (entry.key === 'taskInfo.projectSerial') return;
+	if (entry.key === 'taskInfo.source') {
+		bindTaskInfoSourceAction(chip, () => { if (!isTargetReadOnly?.(chip)) void callbacks.onAction?.(task.operonId, 'jumpToSource', buildKanbanTaskActionContext(task, callbacks)); }, callbacks.app, () => callbacks.getTaskById?.(task.operonId));
+		return;
+	}
+
+	let tagPickerOpen = false;
+	let statusPickerOpen = false;
 	chip.addEventListener('click', (event) => {
 		if (isTargetReadOnly?.(chip)) return;
 		event.preventDefault();
 		event.stopPropagation();
-		if (handleLinksChipClick(callbacks.app, chip, entry, event)) {
-			onCommit?.();
-			return;
-		}
-		if (entry.iconOnly && shouldOpenIconOnlyChipPreview(chip)) {
+		if (entry.key !== 'tags' && entry.key !== 'status' && entry.iconOnly && shouldOpenIconOnlyChipPreview(chip)) {
 			openIconOnlyChipPreview(chip);
 			return;
 		}
@@ -421,8 +447,9 @@ function attachKanbanChipAction(
 			return;
 		}
 		if (entry.key === 'tags') {
-			void openObsidianTagSearch(callbacks.app, entry.label);
-			onCommit?.();
+			if (tagPickerOpen || callbacks.canMutate?.() === false || (!callbacks.updateField && !callbacks.updateFields)) return;
+			tagPickerOpen = true;
+			openKanbanTaskFieldPicker(chip, entry, callbacks.getTaskById?.(task.operonId) ?? task, callbacks, allTasks, onCommit, () => { tagPickerOpen = false; });
 			return;
 		}
 		if (entry.linkTarget) {
@@ -436,6 +463,14 @@ function attachKanbanChipAction(
 			return;
 		}
 		if (callbacks.canMutate?.() === false) return;
+		if (entry.key === 'status') {
+			if (statusPickerOpen || (!callbacks.updateField && !callbacks.updateFields)) return;
+			statusPickerOpen = true;
+			openKanbanTaskFieldPicker(chip, entry, callbacks.getTaskById?.(task.operonId) ?? task, callbacks, allTasks,
+				() => { statusPickerOpen = false; onCommit?.(); },
+				() => { statusPickerOpen = false; });
+			return;
+		}
 		if (shouldOpenKanbanTaskFieldPicker(entry, callbacks.getSettings())) {
 			openKanbanTaskFieldPicker(chip, entry, task, callbacks, allTasks, onCommit);
 		}
@@ -455,10 +490,12 @@ function openKanbanTaskFieldPicker(
 	callbacks: CompactCardChipRowCallbacks,
 	allTasks: IndexedTask[],
 	onCommit?: () => void,
+	onClose?: () => void,
 ): void {
 	const settings = callbacks.getSettings();
 	const reminderItem = entry.reminderItem;
 	openTaskFieldPicker({
+		onClose,
 		app: callbacks.app,
 		settings,
 		allTasks,

@@ -21,6 +21,7 @@ const TASK_TEXT_POPOVER_EXCLUDED_KEYS = new Set([
 	'taskImage',
 ]);
 const SPECIALIZED_TASK_TEXT_FIELD_KEYS = new Set([
+	'repeat',
 	'status',
 	'priority',
 	'parentTask',
@@ -31,7 +32,7 @@ const SPECIALIZED_TASK_TEXT_FIELD_KEYS = new Set([
 ]);
 
 export function isTablePlainTextField(
-	field?: { key: string; type: string; unavailable?: boolean } | null,
+	field?: { key: string; type: string; unavailable?: boolean; group?: string } | null,
 ): boolean {
 	return field?.type === 'text'
 		&& field.unavailable !== true
@@ -46,13 +47,14 @@ export function resolveTableTextEditRoute(
 }
 
 export function resolveTableTaskTextEditRoute(
-	field: { key: string; type: string; unavailable?: boolean } | null | undefined,
+	field: { key: string; type: string; unavailable?: boolean; group?: string } | null | undefined,
 	value: string,
 ): TableTextEditRoute {
 	return resolveTableTextEditRoute(
 		value,
 		isTablePlainTextField(field)
 			&& !!field
+			&& field.group !== 'custom'
 			&& !TASK_TEXT_POPOVER_EXCLUDED_KEYS.has(field.key),
 	);
 }

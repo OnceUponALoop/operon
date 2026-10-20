@@ -21,6 +21,7 @@ export interface ExternalCalendarCachedEvent {
 
 export interface ExternalCalendarSourceCache {
 	sourceId: string;
+	sourceIdentity?: string;
 	syncedAt: string | null;
 	lastAttemptAt: string | null;
 	etag: string | null;
@@ -94,6 +95,7 @@ function normalizeSourceCache(raw: unknown): ExternalCalendarSourceCache | null 
 	if (!sourceId) return null;
 	return {
 		sourceId,
+		...(typeof src.sourceIdentity === 'string' ? { sourceIdentity: src.sourceIdentity } : {}),
 		syncedAt: normalizeOptionalString(src.syncedAt),
 		lastAttemptAt: normalizeOptionalString(src.lastAttemptAt),
 		etag: normalizeOptionalString(src.etag),

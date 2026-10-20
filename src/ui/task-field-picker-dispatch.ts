@@ -1,3 +1,4 @@
+import { showTextFieldPopover } from './text-field-popover';
 import { createEmptyQueryRanker } from './field-pickers/empty-query-ranking';
 import { App, Notice } from 'obsidian';
 import { IndexedTask } from '../types/fields';
@@ -83,6 +84,8 @@ export interface TaskFieldPickerDispatchOptions {
 	onCommit: (payload: Record<string, string | string[]>) => void;
 	onRepeatInlineCompletionModeChange?: (mode: InlineRepeatCompletionMode) => void | Promise<void>;
 	onOpenNote?: () => void;
+	multilineEditorOwner?: Node;
+	onEditMultilineText?: (value: string) => () => void;
 	onCancel?: () => void;
 	onClose?: () => void;
 }
@@ -352,9 +355,8 @@ function openManagedTaskDataFieldPicker(options: TaskFieldPickerDispatchOptions)
 		options.onCancel?.();
 		return null;
 	}
-	const value = normalizeCustomFieldRawValue(
-		(options.currentFieldValues as Record<string, unknown>)[field.canonicalKey],
-	);
+	const rawValue = options.currentFieldValues[field.canonicalKey];
+	const value = field.canonicalKey === 'taskType' && typeof rawValue === 'string' ? rawValue : normalizeCustomFieldRawValue(rawValue);
 	const candidates = collectManagedTaskDataFieldValueCandidates(
 		options.app,
 		options.allTasks,
@@ -364,6 +366,8 @@ function openManagedTaskDataFieldPicker(options: TaskFieldPickerDispatchOptions)
 		return showCustomTextFieldPicker(options.anchor, {
 			canonicalKey: field.canonicalKey,
 			type: 'text',
+			separateCurrentValue: field.canonicalKey === 'taskType',
+			editMultilineValue: onClose => openCurrentTextValueEditor(options, field.label, value, onClose),
 			label: field.label,
 			value,
 			candidates,
@@ -411,7 +415,8 @@ function openCustomTaskFieldPicker(options: TaskFieldPickerDispatchOptions): (()
 
 	const label = getCustomFieldLabel(mapping);
 	const canonicalKey = mapping.canonicalKey;
-	const value = normalizeCustomFieldRawValue((options.currentFieldValues as Record<string, unknown>)[canonicalKey]);
+	const rawValue = options.currentFieldValues[canonicalKey];
+	const value = mapping.type === 'text' && typeof rawValue === 'string' ? rawValue : normalizeCustomFieldRawValue(rawValue);
 
 	const rankEmptyCandidates = mapping.type === 'text' || mapping.type === 'list'
 		? createEmptyQueryRanker<string>(options.allTasks, task => {
@@ -425,6 +430,8 @@ function openCustomTaskFieldPicker(options: TaskFieldPickerDispatchOptions): (()
 			return showCustomTextFieldPicker(options.anchor, {
 				canonicalKey,
 				type: 'text',
+				separateCurrentValue: true,
+				editMultilineValue: onClose => openCurrentTextValueEditor(options, label, value, onClose),
 				label,
 				value,
 				candidates: collectCustomFieldValueCandidates(options.app, options.allTasks, mapping),
@@ -517,4 +524,16 @@ function getCustomDateFieldManualDatePickerOptions(options: TaskFieldPickerDispa
 		weekStart: options.settings.calendarWeekStart,
 		showWeekNumbers: options.settings.calendarSidebarShowWeekNumbers,
 	};
+}
+
+function openCurrentTextValueEditor(options: TaskFieldPickerDispatchOptions, label: string, value: string, onClose: () => void): () => void {
+	if (options.onEditMultilineText) return options.onEditMultilineText(value);
+	return showTextFieldPopover({
+		app: options.app, anchor: options.anchor, title: label, initialValue: value,
+		allowEmptyCommit: true,
+		lifecycleOwner: options.multilineEditorOwner,
+		editor: { kind: 'compact-markdown', sourcePath: options.sourcePath ?? '', textPolicy: 'task-note' },
+		onCommit: nextValue => { options.onCommit({ [options.canonicalKey]: nextValue }); },
+		onClose,
+	});
 }

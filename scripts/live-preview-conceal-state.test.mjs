@@ -52,9 +52,10 @@ assert.equal(tails(state)[0].widget.task.filePath,'B.md');assert.equal(tails(mak
 const fenced=make('~~~\\n'+line+'\\n~~~\\n  '+line);assert.equal(tails(fenced).length,1,'fence behavior and nested list preserved');
 assert.equal(tails(make('Prose\\r\\n'+line)).length,1);
 const underlined=make('Prose\\n'+line.replace('Task','++underlined++'));
-const marks=ranges(underlined).filter(r=>!r.widget&&r.to>r.from);assert.equal(marks.length,3);
+const underlineFrom=underlined.doc.toString().indexOf('++');
+const marks=ranges(underlined).filter(r=>!r.widget&&r.to>r.from&&r.from>=underlineFrom);assert.equal(marks.length,3);
 const selected=underlined.update({selection:{anchor:underlined.doc.toString().indexOf('underlined')}}).state;
-assert.equal(ranges(selected).filter(r=>!r.widget&&r.to>r.from).length,1,'underline markers open for active selection');
+assert.equal(ranges(selected).filter(r=>!r.widget&&r.to>r.from&&r.from>=underlineFrom).length,1,'underline markers open for active selection');
 // The fallback bridge dispatches outside view update, resolves the latest source and never survives destroy.
 let path='Old.md',dispatches=0;
 const fallback=operonLivePreviewConcealExtension({...callbacks,getFilePath:()=>path});

@@ -8,6 +8,7 @@ import { editPropertyPoolPreferences, resolvePropertyPoolFavorite, type Property
  */
 
 import { App } from 'obsidian';
+import { normalizeLightboxSizes, type LightboxSizeProfile, type LightboxSizeAxis } from '../core/lightbox-size';
 import type { LocationPickerDefaultChange } from '../core/location-picker-defaults';
 import { OperonSettings, DEFAULT_SETTINGS, migrateSettings, type KeyMapping } from '../types/settings';
 import { WriteQueue } from './write-queue';
@@ -61,6 +62,7 @@ import {
 } from './operon-data-package';
 import {
 	OperonDataPackageStore,
+	SettingsWritesSuspendedError,
 	type OperonDataPackageReloadStage,
 	type OperonDataPackageReloadDiagnostics,
 	type OperonPipelineTaxonomyDiagnostics,
@@ -300,6 +302,11 @@ function pickTaskUiPreferenceStoreSettings(settings: OperonSettings): TaskUiPref
 		taskWikilinkOverlayShowNoteAction: settings.taskWikilinkOverlayShowNoteAction,
 		taskWikilinkOverlayShowSubtaskAction: settings.taskWikilinkOverlayShowSubtaskAction,
 		taskWikilinkOverlayShowPlainCheckboxAction: settings.taskWikilinkOverlayShowPlainCheckboxAction,
+		inlineTaskShowSourceAction: settings.inlineTaskShowSourceAction,
+		filterTaskShowSourceAction: settings.filterTaskShowSourceAction,
+		kanbanTaskShowSourceAction: settings.kanbanTaskShowSourceAction,
+		taskWikilinkOverlayShowSourceAction: settings.taskWikilinkOverlayShowSourceAction,
+		taskCardShowSourceAction: settings.taskCardShowSourceAction,
 		inlineTaskShowPlayAction: settings.inlineTaskShowPlayAction,
 		inlineTaskShowPinAction: settings.inlineTaskShowPinAction,
 		assigneeImageProperty: settings.assigneeImageProperty,
@@ -751,6 +758,16 @@ export class OperonStorage {
 		});
 	}
 
+	async saveLightboxSize(profile: LightboxSizeProfile, axis: LightboxSizeAxis, value: number): Promise<void> {
+  await this.enqueueSettingsTransaction(async () => {
+   const sizes = normalizeLightboxSizes(this.settings.workspaceTweaksLightboxSizes);
+   const next = normalizeLightboxSizes({ [profile]: { [axis]: value } })[profile]?.[axis];
+   if (next === undefined || sizes[profile]?.[axis] === next) return;
+   sizes[profile] = { ...sizes[profile], [axis]: next };
+   await this.persistSettings({ forceRecoveredWrite: true }, [], undefined, false, { workspaceTweaksLightboxSizes: sizes });
+  });
+ }
+
 	async saveLocationPickerDefault(change: LocationPickerDefaultChange): Promise<void> {
 		// Menu coordinates are normalized at its boundary; Settings retains its existing text rules.
 		await this.enqueueSettingsTransaction(async () => {
@@ -1057,7 +1074,7 @@ export class OperonStorage {
 		}
 		if (!this.dataPackageStore.canPersist()) {
 			if (_options.forceRecoveredWrite === false) return;
-			throw new Error(`Operon settings writes are suspended: ${this.dataPackageStore.getWriteSuspensionReason() ?? 'data.json could not be preserved safely'}`);
+			throw new SettingsWritesSuspendedError(`Operon settings writes are suspended: ${this.dataPackageStore.getWriteSuspensionReason() ?? 'data.json could not be preserved safely'}`);
 		}
 		if (this.settings.pipelines.length === 0) {
 			throw new Error('Operon requires at least one configured pipeline');
@@ -1975,7 +1992,7 @@ export class OperonStorage {
 		};
 	}
 	canRunTablePresetFileRecovery(): boolean {
-		return this.tablePresetRecovery.health !== 'degraded' || this.isRescannableTablePresetDegradation();
+		return this.canPersistSettings() && (this.tablePresetRecovery.health !== 'degraded' || this.isRescannableTablePresetDegradation());
 	}
 	private isRescannableTablePresetDegradation(): boolean {
 		const fileLevel = this.tablePresetRecovery.code === 'table-file-missing'

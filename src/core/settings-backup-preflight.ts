@@ -974,14 +974,14 @@ function collectSensitiveValues(
 	backup: { body: { groups: Partial<Record<SettingsBackupProfileGroupId, { data: JsonValue }>> } },
 	target: OperonSettings,
 ): string[] {
-	const values = new Set(target.externalCalendars.flatMap(source => [source.id, source.url]).filter(Boolean));
+	const values = new Set(target.externalCalendars.flatMap(source => [source.id, source.url, source.filePath ?? '']).filter(Boolean));
 	const external = backup.body.groups['external-calendars']?.data;
 	if (external && typeof external === 'object' && !Array.isArray(external)) {
 		const sources = (external as Record<string, unknown>).externalCalendars;
 		if (Array.isArray(sources)) {
 			for (const source of sources) {
 				if (!source || typeof source !== 'object' || Array.isArray(source)) continue;
-				for (const key of ['id', 'url']) {
+				for (const key of ['id', 'url', 'filePath']) {
 					const value = (source as Record<string, unknown>)[key];
 					if (typeof value === 'string' && value) values.add(value);
 				}

@@ -72,6 +72,7 @@ class El {
  contains(el:any):boolean{return el===this||this.children.some(x=>x.contains(el));}
  addEventListener(key:string,fn:any){this.events.set(key,fn);}
  removeEventListener(key:string,fn:any){if(this.events.get(key)===fn)this.events.delete(key);}
+ closest(){return null;}
  get parentElement(){return this.parent;}
  getBoundingClientRect(){return {left:100,top:200};}
  remove(){this.isConnected=false;if(this.parent)this.parent.children=this.parent.children.filter((x:any)=>x!==this);}

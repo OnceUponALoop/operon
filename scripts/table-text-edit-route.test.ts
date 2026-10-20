@@ -83,9 +83,9 @@ async function run(): Promise<void> {
 	equal(resolveTableTextEditRoute('Alpha', true), 'popover');
 	equal(resolveTableTextEditRoute('Alpha', false), 'picker');
 
-	const customText = { key: 'client', type: 'text' };
+	const customText = { key: 'client', type: 'text', group: 'custom' };
 	equal(resolveTableTaskTextEditRoute(customText, ''), 'picker');
-	equal(resolveTableTaskTextEditRoute(customText, 'Alpha'), 'popover');
+	equal(resolveTableTaskTextEditRoute(customText, 'Alpha'), 'picker');
 	equal(resolveTableTaskTextEditRoute({ ...customText, unavailable: true }, 'Alpha'), 'picker');
 	for (const key of ['description', 'note', 'status', 'priority', 'parentTask', 'taskIcon', 'taskColor', 'taskType', 'taskImage']) {
 		equal(resolveTableTaskTextEditRoute({ key, type: 'text' }, 'Alpha'), 'picker', `${key} must keep its special editor`);
@@ -190,7 +190,8 @@ async function run(): Promise<void> {
 	ok(embedSource.includes('tablePropertyUpdateRequest(task, field, cellValue, mutation)'));
 	ok(editorSource.includes('propertyName: cell.sourceName ?? field.propertyName, expected, mutation,'));
 
-	ok(editorSource.includes("resolveTableTextEditRoute(normalizedValue, true) === 'popover'"));
+	ok(editorSource.includes('separateCurrentValue: true'));
+	ok(editorSource.includes('editMultilineValue: onClose'));
 	ok(editorSource.includes('allowEmptyCommit: true'));
 	ok(editorSource.includes('buildTableFilePropertyTextMutation(value)'));
 	ok(popoverSource.includes('options.allowEmptyCommit === true'));

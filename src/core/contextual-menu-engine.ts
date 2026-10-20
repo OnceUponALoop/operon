@@ -214,6 +214,7 @@ export type ContextualMenuActionHandler = (
 ) => void | Promise<void>;
 
 export interface ContextualMenuActionInvocation {
+ requestedSubtaskKind?: 'inline';
  canMutate?: () => boolean;
 	actionAnchor?: HTMLElement | null;
 	actionAnchorRect?: DOMRect | null;

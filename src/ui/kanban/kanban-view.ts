@@ -1,3 +1,4 @@
+import { taskDescriptionOpening } from '../task-text-link-opening';
 import { localToday } from '../../core/local-time';
 import { registerFilterDayRefresh } from '../../core/filter-day-refresh';
 import { showFilterSetPicker } from '../filter-set-picker';
@@ -850,6 +851,7 @@ export class KanbanView extends ItemView {
 			kanbanTaskShowPlayAction: settings.kanbanTaskShowPlayAction,
 			kanbanTaskShowPinAction: settings.kanbanTaskShowPinAction,
 			kanbanTaskShowNoteAction: settings.kanbanTaskShowNoteAction,
+			kanbanTaskShowSourceAction: settings.kanbanTaskShowSourceAction,
 			kanbanTaskShowSubtaskAction: settings.kanbanTaskShowSubtaskAction,
 			kanbanTaskShowPlainCheckboxAction: settings.kanbanTaskShowPlainCheckboxAction,
 			kanbanTaskShowNotesPreview: settings.kanbanTaskShowNotesPreview,
@@ -2473,6 +2475,7 @@ export class KanbanView extends ItemView {
 		renderCompactTaskMarkdown(titleEl, {
 			app: this.app,
 			value: titleText,
+   bindLink: taskDescriptionOpening(this.app, () => this.indexer.getTask(task.operonId)),
 			sourcePath: task.primary.filePath,
 			mode: 'interactive',
 			containerClassName: 'operon-task-description-markdown',
@@ -2527,6 +2530,7 @@ export class KanbanView extends ItemView {
 				updateSubtasks: this.callbacks.updateSubtasks,
 				updateDependencyField: this.callbacks.updateDependencyField,
 				openEditor: (operonId) => this.callbacks.onItemAction?.(operonId, 'openEditor'),
+				getAllTasks: () => this.indexer.getAllTasks(),
 				getTaskById: (operonId) => this.indexer.getTask(operonId),
 				openNotePopover: (anchor, noteTask) => this.openTaskNotePopover(anchor, noteTask),
 			}, {

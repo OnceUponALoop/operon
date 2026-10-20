@@ -1,5 +1,8 @@
+import { isTaskInfoChipKey } from '../core/task-info-chips';
+import type { ContextualMenuActionHandler } from '../core/contextual-menu-engine';
+import { bindTaskInfoSourceAction } from './task-info-chip-action';
 import { identifyInlineTaskPart } from './inline-retained-dom';
-import { bindLinksChipKeyboard, handleLinksChipClick } from './links-chip-action';
+import { bindDesktopChipOpening, isDesktopOpeningChip } from './links-chip-action';
 import { bindAssigneeChipImage } from './assignee-chip-image';
 import { App } from 'obsidian';
 import { createOwnerElement } from '../core/dom-compat';
@@ -19,7 +22,6 @@ import { resolveTaskDateToneColor } from '../core/task-date-tone';
 import { findStatusDef, Pipeline } from '../types/pipeline';
 import { PriorityDefinition } from '../types/priority';
 import { bindOperonHoverTooltip, wrapWithOperonHoverTooltip } from './operon-hover-tooltip';
-import { openObsidianTagSearch } from './tag-search';
 import { bindCompactChipLinkPreview, bindTaskMediaChipPreview } from './compact-chip-link-preview';
 import { bindExternalLinkContextMenu, openExternalUrl } from './external-link-actions';
 import { showLocationMapPreview } from './location-map-preview';
@@ -32,10 +34,10 @@ import {
 	shouldOpenIconOnlyChipPreview,
 } from './icon-only-chip-preview';
 import { t } from '../core/i18n';
-import { createProjectSerialChipElement } from './project-serial-chip';
 import { openTaskFieldPicker } from './task-field-picker-dispatch';
 
 interface TaskWikilinkOverlayChipRenderCallbacks {
+	onContextualAction?: ContextualMenuActionHandler;
 	app: App;
 	getSettings: () => OperonSettings;
 	getAllTasks: () => IndexedTask[];
@@ -64,10 +66,11 @@ export function getTaskWikilinkOverlayChipSignature(
 		allTasks,
 		settings.taskWikilinkOverlayCompactChips,
 		locationIndex?.resolve,
-		{ app, repeatSkipDateResolver: getRepeatSkipDates },
+		{ task, projectSerialDisplay: getProjectSerialDisplay?.(task.operonId, task), app, repeatSkipDateResolver: getRepeatSkipDates },
 	).map(entry => [
 		entry.key,
 		entry.label,
+		entry.rawValue ?? '',
 		entry.icon,
 		entry.iconOnly ? 1 : 0,
 		entry.linkTarget ?? '',
@@ -99,6 +102,7 @@ export function buildTaskWikilinkOverlaySettingsSignature(settings: OperonSettin
 		taskWikilinkOverlayShowPlayAction: settings.taskWikilinkOverlayShowPlayAction,
 		taskWikilinkOverlayShowPinAction: settings.taskWikilinkOverlayShowPinAction,
 		taskWikilinkOverlayShowNoteAction: settings.taskWikilinkOverlayShowNoteAction,
+		taskWikilinkOverlayShowSourceAction: settings.taskWikilinkOverlayShowSourceAction,
 		taskWikilinkOverlayShowSubtaskAction: settings.taskWikilinkOverlayShowSubtaskAction,
 		taskWikilinkOverlayShowPlainCheckboxAction: settings.taskWikilinkOverlayShowPlainCheckboxAction,
 	});
@@ -119,21 +123,14 @@ export function buildTaskWikilinkOverlayChipContainer(
 		callbacks.getAllTasks(),
 		settings.taskWikilinkOverlayCompactChips,
 		locationResolver,
-		{ app: callbacks.app, repeatSkipDateResolver: callbacks.getRepeatSkipDates },
+		{ task, projectSerialDisplay: callbacks.getProjectSerialDisplay?.(task.operonId, task), app: callbacks.app, repeatSkipDateResolver: callbacks.getRepeatSkipDates },
 	);
-	const projectSerialDisplay = callbacks.getProjectSerialDisplay?.(task.operonId, task) ?? null;
-	if (entries.length === 0 && !projectSerialDisplay) return null;
+	if (entries.length === 0) return null;
 
 	const taskColor = normalizeTaskColor(task.fieldValues['taskColor']);
 	const statusColor = lookupStatusColor(task.fieldValues['status'], settings.pipelines);
 	const row = createOwnerElement(callbacks.owner, 'span');
 	row.className = 'operon-task-wikilink-chip-row operon-task-chip-surface';
-	if (projectSerialDisplay) {
-		row.appendChild(createProjectSerialChipElement(projectSerialDisplay, 'operon-task-wikilink-chip operon-task-chip', {
-			keyMappings: settings.keyMappings,
-			owner: row,
-		}));
-	}
 
 	for (const rawEntry of entries) {
 		const entry = {
@@ -162,7 +159,7 @@ export function buildTaskWikilinkOverlayChipContainer(
 			if (entry.interactive) {
 				attachOverlayChipAction(chip, entry, callbacks, task, () => closeIconOnlyChipPreview(chip));
 			} else {
-				bindIconOnlyChipPreview(chip);
+				if (entry.key !== 'taskInfo.projectSerial') bindIconOnlyChipPreview(chip);
 			}
 			const previewLinkTarget = entry.previewLinkTarget ?? entry.linkTarget;
 			if (isCompactTaskMediaChipKey(entry.key)) {
@@ -183,7 +180,10 @@ export function buildTaskWikilinkOverlayChipContainer(
 		if (entry.interactive) {
 			attachOverlayChipAction(chip, entry, callbacks, task);
 		}
-		const node = entry.tooltipContent
+		if (isTaskInfoChipKey(entry.key)) {
+			bindOperonHoverTooltip(chip, { title: entry.tooltipTitle, content: entry.tooltipContent, taskColor });
+		}
+		const node = entry.tooltipContent && !isTaskInfoChipKey(entry.key)
 			? wrapWithOperonHoverTooltip(chip, {
 				title: entry.tooltipTitle ?? t('taskEditor', 'details'),
 				content: entry.tooltipContent,
@@ -215,8 +215,10 @@ function isOverlayChipInteractive(
 	entry: InlineTaskCompactChipEntry,
 	callbacks: TaskWikilinkOverlayChipRenderCallbacks,
 ): boolean {
-	return (entry.key === 'taskType' && !!callbacks.updateField)
-		|| entry.key === 'tags'
+	if (isDesktopOpeningChip(entry.key, callbacks.getSettings())) return true;
+	if (entry.key === 'taskInfo.source') return !!callbacks.onContextualAction;
+	if (entry.key === 'taskInfo.projectSerial') return false;
+	return ((entry.key === 'taskType' || entry.key === 'tags' || entry.key === 'status') && !!callbacks.updateField)
 		|| !!entry.locationCoordinate
 		|| !!entry.linkTarget
 		|| !!entry.externalUrl;
@@ -229,29 +231,63 @@ function attachOverlayChipAction(
 	task: IndexedTask,
 	onCommit?: () => void,
 ): void {
-	bindLinksChipKeyboard(chip, entry.key);
+
+ if (bindDesktopChipOpening(chip, entry, {
+  app: callbacks.app, getSettings: callbacks.getSettings, getAllTasks: callbacks.getAllTasks,
+  getTask: () => callbacks.getAllTasks().find(candidate => candidate.operonId === task.operonId),
+  getTaskById: id => callbacks.getAllTasks().find(candidate => candidate.operonId === id),
+  picker: current => !callbacks.updateField ? null : { onCommit: payload => {
+   for (const [key, value] of Object.entries(payload)) void callbacks.updateField?.(current.operonId, key, Array.isArray(value) ? value.join('; ') : value);
+   onCommit?.();
+  } },
+ })) return;
+	if (entry.key === 'taskInfo.projectSerial') return;
+	if (entry.key === 'taskInfo.source') {
+		bindTaskInfoSourceAction(chip, () => { void callbacks.onContextualAction?.(task.operonId, 'jumpToSource'); }, callbacks.app, () => callbacks.getAllTasks().find(current => current.operonId === task.operonId));
+		return;
+	}
+
+	let tagPickerOpen = false;
+	let statusPickerOpen = false;
 	chip.addEventListener('click', (event) => {
 		event.preventDefault();
 		event.stopPropagation();
-		if (handleLinksChipClick(callbacks.app, chip, entry, event)) {
-			onCommit?.();
-			return;
-		}
-		if (entry.iconOnly && shouldOpenIconOnlyChipPreview(chip)) {
+		if (entry.key !== 'tags' && entry.key !== 'status' && entry.iconOnly && shouldOpenIconOnlyChipPreview(chip)) {
 			openIconOnlyChipPreview(chip);
 			return;
 		}
 		if (entry.key === 'tags') {
-			void openObsidianTagSearch(callbacks.app, entry.label);
-			onCommit?.();
-			return;
-		}
-		if (entry.key === 'taskType' && callbacks.updateField) {
+			if (tagPickerOpen || !callbacks.updateField) return;
+			tagPickerOpen = true;
 			openTaskFieldPicker({
 				app: callbacks.app,
 				settings: callbacks.getSettings(),
 				allTasks: callbacks.getAllTasks(),
-				canonicalKey: 'taskType',
+				canonicalKey: 'tags',
+				anchor: chip,
+				currentFieldValues: task.fieldValues,
+				currentTags: callbacks.getAllTasks().find(candidate => candidate.operonId === task.operonId)?.tags ?? task.tags,
+				sourcePath: task.primary.filePath,
+				taskFormat: task.primary.format,
+				closeListPickerOnSelect: true,
+				onClose: () => { tagPickerOpen = false; },
+				onCommit: payload => {
+					if (!Array.isArray(payload.tags)) return;
+					void callbacks.updateField?.(task.operonId, '_tags', payload.tags.join('; '));
+					onCommit?.();
+				},
+			});
+			return;
+		}
+		if ((entry.key === 'taskType' || entry.key === 'status') && callbacks.updateField) {
+			if (entry.key === 'status' && statusPickerOpen) return;
+			if (entry.key === 'status') statusPickerOpen = true;
+			openTaskFieldPicker({
+				app: callbacks.app,
+				settings: callbacks.getSettings(),
+				allTasks: callbacks.getAllTasks(),
+				canonicalKey: entry.key,
+				onClose: () => { statusPickerOpen = false; },
 				anchor: chip,
 				currentFieldValues: task.fieldValues,
 				getCurrentFieldValues: () => callbacks.getAllTasks()
@@ -260,9 +296,10 @@ function attachOverlayChipAction(
 				sourcePath: task.primary.filePath,
 				taskFormat: task.primary.format,
 				onCommit: payload => {
-					const value = payload.taskType;
+					const value = payload[entry.key];
+					statusPickerOpen = false;
 					if (typeof value !== 'string') return;
-					void callbacks.updateField?.(task.operonId, 'taskType', value);
+					void callbacks.updateField?.(task.operonId, entry.key, value);
 					onCommit?.();
 				},
 			});

@@ -1,12 +1,13 @@
 import { Component, Notice, setIcon } from 'obsidian';
 import { t } from '../core/i18n';
+import { isTaskSourceOpenModifierClick } from './task-source-open-modifier';
 import { CONTEXTUAL_MENU_ACTIONS, getContextualMenuActionIcon, getContextualMenuActionLabel } from '../core/contextual-menu-engine';
 import type { TaskCardEmbeds } from './task-card-embed';
 import { setAccessibleLabelWithoutTooltip } from './accessibility-label';
 import { bindOperonHoverTooltip, cleanupOperonHoverTooltips } from './operon-hover-tooltip';
 
 export interface TaskSelectionControl {
- id: string; icon: string; title: string; active?: boolean; unavailable: boolean; run(): void;
+ id: string; icon: string; title: string; active?: boolean; unavailable: boolean; run(anchor?: HTMLElement, event?: MouseEvent): void;
 }
 interface Context {
  cards: TaskCardEmbeds; taskId: string;
@@ -42,7 +43,11 @@ export function taskSelectionControls(context: Context): TaskSelectionControl[] 
   controls.push({ id: `operon-task-${actionId}`,
    icon: actionId === 'openEditor' ? 'settings-2' : getContextualMenuActionIcon(action, cards.deps.getSettings().keyMappings),
    title: getContextualMenuActionLabel(action), unavailable: false,
-   run: () => { if (context.current()) cards.activate(taskId, actionId === 'jumpToSource'); },
+   run: (anchor, event) => {
+    if (!context.current()) return;
+    if (actionId === 'jumpToSource' && anchor && (!event || event.detail === 0 || !isTaskSourceOpenModifierClick(event))) cards.activate(taskId, true, anchor);
+    else cards.activate(taskId, actionId === 'jumpToSource');
+   },
   });
  }
  return controls;
@@ -61,7 +66,12 @@ export function bindTaskSelectionControl(button: HTMLButtonElement, control: Tas
  life.register(() => cleanupOperonHoverTooltips(button));
  life.registerDomEvent(button, 'pointerdown', event => event.stopPropagation());
  life.registerDomEvent(button, 'keydown', event => { if (event.key === 'Enter' || event.key === ' ') event.stopPropagation(); });
- if (!options.nativeClick) life.registerDomEvent(button, 'click', event => { event.preventDefault(); event.stopPropagation(); control.run(); });
+ // The validated native Excalidraw Source button uses the same route exactly once.
+ if (!options.nativeClick || control.id === 'operon-task-jumpToSource') life.registerDomEvent(button, 'click', event => {
+  event.preventDefault(); event.stopPropagation();
+  if (options.nativeClick) event.stopImmediatePropagation();
+  control.run(button, event);
+ }, options.nativeClick === true);
 }
 export function mountTaskSelectionControl(host: HTMLElement, control: TaskSelectionControl, life: Component): void {
  const button = host.createEl('button', { cls: 'clickable-icon', attr: { type: 'button' } });

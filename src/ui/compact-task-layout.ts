@@ -1,5 +1,7 @@
+import { isTaskInfoChipKey, TASK_INFO_CHIPS, formatTaskInfoSource, getTaskInfoSourceIcon } from '../core/task-info-chips';
+import type { ProjectSerialDisplay } from '../core/project-serials';
 import { getTimeScopedFieldValues } from '../core/time-scope-values';
-import { type App, setIcon } from 'obsidian';
+import { type App, Platform, setIcon } from 'obsidian';
 import { createOwnerElement } from '../core/dom-compat';
 import { getConfiguredKeyMappingIcon } from '../core/key-mapping-icons';
 import { calculateNextRepeatDate, parseRepeatRule, type RepeatRule } from '../core/repeat-rule';
@@ -77,6 +79,8 @@ export function createCompactTaskRenderContext(getAllTasks: () => IndexedTask[])
 }
 
 export interface CompactChipEntryBuildOptions {
+	task?: IndexedTask | null;
+	projectSerialDisplay?: ProjectSerialDisplay | null;
 	app?: App | null;
 	nowEpochMs?: number;
 	repeatSkipDateResolver?: RepeatSkipDateResolver;
@@ -109,6 +113,8 @@ const COMPACT_INTERNAL_VISIBLE_KEYS = ['operonId', 'datetimeModified', 'taskColo
 
 export interface InlineTaskCompactChipEntry {
 	key: string;
+	/** Original list member, never a truncated display label. */
+	rawValue?: string;
 	label: string;
 	icon: string;
 	iconOnly: boolean;
@@ -210,6 +216,20 @@ export function buildInlineTaskCompactChipEntries(
 	const taskById = taskLookup.taskById;
 	for (const key of getInlineTaskCompactVisibleChipKeys(settings, chipItems)) {
 		const item = itemMap.get(key);
+		if (isTaskInfoChipKey(key)) {
+			const task = options?.task;
+			const serial = options?.projectSerialDisplay;
+			const label = key === 'taskInfo.source' ? (task ? formatTaskInfoSource(task, true) : '') : serial?.label;
+			if (!label) continue;
+			const content = key === 'taskInfo.source' && task ? formatTaskInfoSource(task) : label;
+			entries.push({
+				key, label, iconOnly: item?.iconOnly === true, colorRole: 'default', linkTarget: null,
+				icon: key === 'taskInfo.source' && task ? getTaskInfoSourceIcon(task) : getConfiguredKeyMappingIcon('operonId', settings.keyMappings) || 'fingerprint',
+				interactive: key === 'taskInfo.source', tooltipTitle: TASK_INFO_CHIPS[key].label,
+				tooltipContent: content, ariaLabel: `${TASK_INFO_CHIPS[key].label}: ${content}`,
+			});
+			continue;
+		}
 		const customMapping = getCustomFieldMapping(settings.keyMappings, key);
 		if (customMapping && isProjectedCustomFieldType(customMapping)) {
 			pushCustomChipEntries(entries, customMapping, fieldValues, settings, item?.iconOnly === true);
@@ -269,7 +289,7 @@ export function buildInlineTaskCompactChipEntries(
 				const fullLabel = parentTask.description?.trim() || t('taskEditor', 'untitledTask');
 				const label = truncateCompactLabel(fullLabel);
 				const linkTarget = parentTask.primary.format === 'yaml' ? parentTask.primary.filePath : null;
-				const entry = createEntry(settings, key, label, item?.iconOnly === true, 'default', !!linkTarget, linkTarget);
+				const entry = createEntry(settings, key, label, item?.iconOnly === true, 'default', Platform.isDesktopApp || !!linkTarget, linkTarget);
 				if (label !== fullLabel) {
 					entry.tooltipTitle = t('taskEditor', 'parentTask');
 					entry.tooltipContent = fullLabel;
@@ -351,29 +371,29 @@ export function buildInlineTaskCompactChipEntries(
 			}
 			case 'assignees': {
 				for (const rawValue of splitTaskListValue(fieldValues['assignees'])) {
-					entries.push(createEntry(
+					entries.push({ ...createEntry(
 						settings,
 						key,
 						formatAssigneeDisplay(rawValue),
 						item?.iconOnly === true,
 						'default',
-						!!extractWikiLinkTarget(rawValue),
+						Platform.isDesktopApp || !!extractWikiLinkTarget(rawValue),
 						extractWikiLinkTarget(rawValue),
-					));
+					), rawValue });
 				}
 				break;
 			}
 			case 'contexts': {
 				for (const rawValue of splitTaskListValue(fieldValues['contexts'])) {
-					entries.push(createEntry(
+					entries.push({ ...createEntry(
 						settings,
 						key,
 						formatContextDisplay(rawValue),
 						item?.iconOnly === true,
 						'default',
-						!!extractWikiLinkTarget(rawValue),
+						Platform.isDesktopApp || !!extractWikiLinkTarget(rawValue),
 						extractWikiLinkTarget(rawValue),
-					));
+					), rawValue });
 				}
 				break;
 			}
@@ -403,7 +423,11 @@ export function buildInlineTaskCompactChipEntries(
 			}
 			case 'taskType': {
 				const value = fieldValues['taskType']?.trim();
-				if (value) entries.push(createEntry(settings, key, value, item?.iconOnly === true, 'default', true));
+				if (value) {
+     const entry = createEntry(settings, key, value, item?.iconOnly === true, 'default', true);
+     if (Platform.isDesktopApp) entry.previewLinkTarget = parseCompactWikiLinkValue(value)?.linkTarget;
+     entries.push(entry);
+    }
 				break;
 			}
 			case 'taskImage': {
@@ -505,7 +529,7 @@ function createTaskMediaCompactChipEntry(
 		label,
 		iconOnly,
 		'default',
-		reference.isOpenable,
+		Platform.isDesktopApp || reference.isOpenable,
 		isLocalReference ? reference.target : null,
 		reference.kind === 'http-url' ? reference.target : null,
 		rawValue,
@@ -580,7 +604,7 @@ function isBuiltInCompactChipKey(key: string): key is InlineTaskCompactChipKey {
 }
 
 function isRenderableCompactSurfaceKey(settings: OperonSettings, key: string): boolean {
-	if (isBuiltInCompactChipKey(key)) return true;
+	if (isTaskInfoChipKey(key) || isBuiltInCompactChipKey(key)) return true;
 	const mapping = getCustomFieldMapping(settings.keyMappings, key);
 	return !!mapping && isProjectedCustomFieldType(mapping);
 }
@@ -600,6 +624,7 @@ function pushCustomChipEntries(
 			const displayValue = wikiLink?.displayValue ?? value;
 			const label = truncateCompactLabel(displayValue);
 			const entry = createCustomEntry(mapping, label, iconOnly, wikiLink?.linkTarget ?? null);
+			entry.rawValue = value;
 			if (label !== displayValue) {
 				entry.tooltipTitle = getCustomFieldLabel(mapping);
 				entry.tooltipContent = displayValue;
@@ -740,7 +765,7 @@ export function createInlineTaskCompactChipElement(
 	options?: { forceFull?: boolean; owner?: Node | null },
 ): HTMLElement {
 	const iconOnly = entry.iconOnly && options?.forceFull !== true;
-	const tagName = entry.interactive && (!iconOnly || entry.reminderItem) ? 'button' : 'span';
+	const tagName = entry.interactive && (!iconOnly || entry.reminderItem || entry.key === 'taskInfo.source') ? 'button' : 'span';
 	const chip = createOwnerElement(options?.owner, tagName);
 	if (entry.interactive && tagName === 'button') {
 		(chip as HTMLButtonElement).type = 'button';
@@ -749,6 +774,8 @@ export function createInlineTaskCompactChipElement(
 		'operon-chip',
 		'operon-live-preview-chip',
 		'operon-inline-compact-chip',
+		entry.key === 'taskInfo.projectSerial' ? 'operon-project-serial-chip' : '',
+		isTaskInfoChipKey(entry.key) ? 'operon-task-info-chip' : '',
 		entry.linkTarget || entry.previewLinkTarget || entry.externalUrl ? 'is-linked' : '',
 		entry.locationCoordinate ? 'is-location' : '',
 		entry.reminderItem ? 'is-reminder' : '',
@@ -925,7 +952,7 @@ interface CompactWikiLinkValue {
 	displayValue: string;
 }
 
-function parseCompactWikiLinkValue(rawValue: string): CompactWikiLinkValue | null {
+export function parseCompactWikiLinkValue(rawValue: string): CompactWikiLinkValue | null {
 	const trimmed = rawValue.trim();
 	const match = /^!?\[\[([^\]]+)\]\]$/u.exec(trimmed);
 	if (!match) return null;

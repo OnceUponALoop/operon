@@ -1,3 +1,5 @@
+import { taskDescriptionOpening } from '../task-text-link-opening';
+import { calendarNavigationLabels, showCalendarMonthPicker } from './calendar-month-picker';
 import { registerFilterDayRefresh } from '../../core/filter-day-refresh';
 import { getScopedTrackerSessions, getTimeScopedFieldValues } from '../../core/time-scope-values';
 import { usesTrackedOn } from '../../core/tracked-on-filter';
@@ -948,6 +950,8 @@ export class CalendarView extends ItemView {
 	private sidebarResizeCleanup: (() => void) | null = null;
 	private sidebarSectionsLayoutCleanup: (() => void) | null = null;
 	private toolbarLayoutCleanup: (() => void) | null = null;
+	private activeMonthPickerClose: (() => void) | null = null;
+	private activeMonthPickerAnchor: HTMLElement | null = null;
 	private activePresetPickerClose: (() => void) | null = null;
 	private layoutRefreshCleanup: (() => void) | null = null;
 	private layoutRefreshFrame: number | null = null;
@@ -7344,7 +7348,10 @@ export class CalendarView extends ItemView {
 		bindOperonHoverTooltip(projectedButton, { content: projectedLabel, taskColor: null });
 		projectedButton.addEventListener('click', (event) => {
 			event.preventDefault();
-			void this.callbacks.onToggleProjectedOccurrences?.(preset.id, !showProjectedOccurrences);
+			projectedButton.focus({ preventScroll: true });
+			const currentPreset = this.getSettings().calendarPresets.find(entry => entry.id === preset.id);
+			if (!currentPreset) return;
+			void this.callbacks.onToggleProjectedOccurrences?.(preset.id, currentPreset.showProjectedOccurrences === false);
 		});
 
 		const hasSelectedExternalCalendars = this.hasSelectedExternalCalendars(preset);
@@ -7370,8 +7377,10 @@ export class CalendarView extends ItemView {
 		bindOperonHoverTooltip(externalCalendarsButton, { content: externalCalendarsLabel, taskColor: null });
 		externalCalendarsButton.addEventListener('click', (event) => {
 			event.preventDefault();
-			if (!hasSelectedExternalCalendars) return;
-			void this.callbacks.onToggleExternalCalendars?.(preset.id, !showExternalCalendars);
+			externalCalendarsButton.focus({ preventScroll: true });
+			const currentPreset = this.getSettings().calendarPresets.find(entry => entry.id === preset.id);
+			if (!currentPreset || !this.hasSelectedExternalCalendars(currentPreset)) return;
+			void this.callbacks.onToggleExternalCalendars?.(preset.id, currentPreset.showExternalCalendars === false);
 		});
 
 		const currentColorSource = normalizeTaskColorSource(preset.colorSource, CALENDAR_PRESET_TASK_COLOR_SOURCES, 'taskColor');
@@ -7389,7 +7398,11 @@ export class CalendarView extends ItemView {
 		bindOperonHoverTooltip(colorSourceButton, { content: colorSourceLabel, taskColor: null });
 		colorSourceButton.addEventListener('click', (event) => {
 			event.preventDefault();
-			void this.callbacks.onCycleTaskColorSource?.(preset.id, nextColorSource);
+			colorSourceButton.focus({ preventScroll: true });
+			const currentPreset = this.getSettings().calendarPresets.find(entry => entry.id === preset.id);
+			if (!currentPreset) return;
+			void this.callbacks.onCycleTaskColorSource?.(preset.id,
+				getNextTaskColorSource(currentPreset.colorSource, CALENDAR_PRESET_TASK_COLOR_SOURCES, 'taskColor'));
 		});
 
 		const syncExternalCalendarsLabel = t('commands', 'updateExternalCalendars');
@@ -7402,6 +7415,7 @@ export class CalendarView extends ItemView {
 		bindOperonHoverTooltip(syncExternalCalendarsButton, { content: syncExternalCalendarsLabel, taskColor: null });
 		syncExternalCalendarsButton.addEventListener('click', (event) => {
 			event.preventDefault();
+			syncExternalCalendarsButton.focus({ preventScroll: true });
 			void this.callbacks.onSyncExternalCalendars?.();
 		});
 
@@ -7414,6 +7428,7 @@ export class CalendarView extends ItemView {
 		bindOperonHoverTooltip(settingsButton, { content: t('calendar', 'editCurrentCalendarPreset'), taskColor: null });
 		settingsButton.addEventListener('click', (event) => {
 			event.preventDefault();
+			settingsButton.focus({ preventScroll: true });
 			this.closeActivePresetPicker();
 			void this.callbacks.onOpenPresetSettings?.(preset.id);
 		});
@@ -7635,13 +7650,6 @@ export class CalendarView extends ItemView {
 		const monthCard = container.createDiv('operon-calendar-sidebar-month');
 		const anchorDate = state.anchorDate;
 		const anchorDateObject = this.parseDateKey(anchorDate) ?? this.parseDateKey(localToday()) ?? new Date();
-		monthCard.createDiv({
-			text: new Intl.DateTimeFormat(getAppLocale(this.app), {
-				month: 'long',
-				year: 'numeric',
-			}).format(anchorDateObject),
-			cls: 'operon-calendar-sidebar-month-title',
-		});
 		const navRow = monthCard.createDiv('operon-calendar-sidebar-month-nav');
 		const shiftAnchorMonth = (delta: number): void => {
 			const base = this.parseDateKey(this.ensureState().anchorDate) ?? this.parseDateKey(localToday()) ?? new Date();
@@ -7664,15 +7672,7 @@ export class CalendarView extends ItemView {
 			t('calendar', 'previousMonth'),
 			'operon-calendar-sidebar-month-nav-button',
 		);
-		this.createToolbarButton(
-			navRow,
-			this.formatFocusedDateButtonLabel(state.anchorDate),
-			() => {
-				void this.handleTodayButtonClick(this.ensureState(), preset);
-			},
-			undefined,
-			'operon-calendar-sidebar-month-nav-today',
-		);
+		this.renderCalendarDateNavigation(navRow, state, preset, true);
 		this.createToolbarIconButton(
 			navRow,
 			['step-forward'],
@@ -8252,6 +8252,7 @@ export class CalendarView extends ItemView {
 			renderCompactTaskMarkdown(title, {
 				app: this.app,
 				value: titleText,
+    bindLink: taskDescriptionOpening(this.app, () => this.indexer.getTask(task.operonId)),
 				sourcePath: task.primary.filePath,
 				mode: 'interactive',
 				containerClassName: 'operon-task-description-markdown',
@@ -9006,9 +9007,7 @@ export class CalendarView extends ItemView {
 		this.createToolbarIconButton(navGroup, ['step-back'], () => {
 			void this.shiftCalendarAnchorByDays(weekly ? -7 : -1, weekly);
 		}, t('calendar', weekly ? 'previousWeek' : 'previousDay'), t('calendar', weekly ? 'previousWeek' : 'previousDayTooltip'));
-		this.createToolbarButton(navGroup, this.formatFocusedDateButtonLabel(state.anchorDate), () => {
-			void this.handleTodayButtonClick(this.ensureState(), preset);
-		});
+		this.renderCalendarDateNavigation(navGroup, state, preset, false);
 		this.createToolbarIconButton(navGroup, ['step-forward'], () => {
 			void this.shiftCalendarAnchorByDays(weekly ? 7 : 1, weekly);
 		}, t('calendar', weekly ? 'nextWeek' : 'nextDay'), t('calendar', weekly ? 'nextWeek' : 'nextDayTooltip'));
@@ -9020,6 +9019,39 @@ export class CalendarView extends ItemView {
 		this.renderCalendarQuickActions(controlsGroup, preset, 'toolbar');
 
 		this.applyToolbarLayoutMode(toolbar, titleGroup, navGroup, controlsGroup);
+	}
+
+	private renderCalendarDateNavigation(container: HTMLElement, state: CalendarLeafState, preset: CalendarRenderPreset, sidebar: boolean): void {
+		const labels = calendarNavigationLabels(state.anchorDate, this.getSettings().dateDisplayFormat, getAppLocale(this.app));
+		const group = container.createDiv('operon-calendar-date-navigation');
+		group.classList.toggle('is-year-first', labels.yearFirst);
+		const year = group.createEl('button', { text: labels.year, cls: 'operon-calendar-toolbar-button operon-calendar-year-button', attr: {
+			type: 'button', 'aria-haspopup': 'dialog', 'aria-expanded': 'false', 'aria-label': `${t('buttons', 'choose')}: ${labels.full}`,
+		} });
+		const date = group.createEl('button', { text: labels.date, cls: `operon-calendar-toolbar-button operon-calendar-date-button${sidebar ? ' operon-calendar-sidebar-month-nav-today' : ''}`, attr: { type: 'button', 'aria-label': labels.full } });
+		if (!labels.yearFirst) group.insertBefore(date, year);
+		bindOperonHoverTooltip(date, { content: t('calendar', 'mobileGoToToday'), taskColor: null });
+		bindOperonHoverTooltip(year, { content: labels.full, taskColor: null });
+		date.addEventListener('click', () => { void this.handleTodayButtonClick(this.ensureState(), preset); });
+		year.addEventListener('click', event => {
+			event.preventDefault();
+			event.stopPropagation();
+			const wasOpen = this.activeMonthPickerAnchor === year;
+			this.closeActivePresetPicker();
+			if (wasOpen) return;
+			this.activeMonthPickerAnchor = year;
+			year.setAttribute('aria-expanded', 'true');
+			this.activeMonthPickerClose = showCalendarMonthPicker(year, {
+				dateKey: this.ensureState().anchorDate,
+				locale: getAppLocale(this.app),
+				onSelect: anchorDate => { void this.updateLeafState({ anchorDate }); },
+				onClose: () => {
+					this.activeMonthPickerClose = null;
+					this.activeMonthPickerAnchor = null;
+					if (year.isConnected) { year.setAttribute('aria-expanded', 'false'); year.focus({ preventScroll: true }); }
+				},
+			});
+		});
 	}
 
 	private renderCalendarPresetPickerButton(
@@ -9081,6 +9113,9 @@ export class CalendarView extends ItemView {
 	}
 
 	private closeActivePresetPicker(): void {
+		this.activeMonthPickerClose?.();
+		this.activeMonthPickerClose = null;
+		this.activeMonthPickerAnchor = null;
 		const close = this.activePresetPickerClose;
 		this.activePresetPickerClose = null;
 		close?.();
@@ -11742,7 +11777,7 @@ export class CalendarView extends ItemView {
 				return;
 			}
 			if (this.shouldIgnoreCalendarArrowNavigation(event.target)) return;
-			if (this.isCalendarWeekRendered() && (this.hasActiveCalendarDragInteraction() || this.timedHorizontalSnapPending || this.activePresetPickerClose)) return;
+			if (this.isCalendarWeekRendered() && (this.hasActiveCalendarDragInteraction() || this.timedHorizontalSnapPending || this.activePresetPickerClose || this.activeMonthPickerClose)) return;
 			const delta = event.key === 'ArrowLeft'
 				? -1
 				: event.key === 'ArrowRight'
@@ -11822,6 +11857,7 @@ export class CalendarView extends ItemView {
 			renderCompactTaskMarkdown(titleEl, {
 				app: this.app,
 				value: titleText,
+    bindLink: taskDescriptionOpening(this.app, () => this.indexer.getTask(item.taskId)),
 				sourcePath: item.sourceTask.primary.filePath,
 				mode: 'interactive',
 				containerClassName: 'operon-task-description-markdown',
@@ -12454,13 +12490,6 @@ export class CalendarView extends ItemView {
 		return null;
 	}
 
-	private formatFocusedDateButtonLabel(dateKey: string): string {
-		const date = this.parseDateKey(dateKey) ?? this.parseDateKey(localToday()) ?? new Date();
-		return new Intl.DateTimeFormat(undefined, {
-			day: 'numeric',
-			month: 'long',
-		}).format(date);
-	}
 
 	private formatWeekdayLabel(dateKey: string): string {
 		const date = this.parseDateKey(dateKey);
@@ -13495,6 +13524,7 @@ export class CalendarView extends ItemView {
 	}
 
 	private async updateLeafState(state: Partial<CalendarLeafState>): Promise<void> {
+		this.activeMonthPickerClose?.();
 		let previousState = this.state;
 		const nextState = this.syncSidebarOpenSections(this.normalizeState({
 			...(previousState ?? {}),

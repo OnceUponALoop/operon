@@ -22,7 +22,6 @@ import { encodeFilePropertyColumnKey, isEmptyFilePropertyValue, isSupportedRawYa
 import { createVaultFilePropertySnapshot, createCachedTableFilePropertyTypeResolver, getTableFilePropertyTypeIcon, type TableFilePropertyField } from './table/table-file-property';
 import { bindPropertyReadOnlyWarning, propertyReadOnlyWarningText } from './property-readonly-warning';
 import { openTableFilePropertyPicker } from './table/table-file-property-editor';
-import { showTextFieldPopover } from './text-field-popover';
 import { showSearchableFieldPicker } from './field-pickers/searchable-field-picker';
 import { App, Component, MarkdownRenderer, Setting, Notice, getIcon, setIcon, stringifyYaml, TFile, Platform } from 'obsidian';
 import { OperonIndexer } from '../indexer/indexer';
@@ -39,7 +38,7 @@ import {
 	shouldTriggerOneShotAutomation,
 } from '../types/pipeline';
 import { serializeTask } from '../core/serializer';
-import { parseTaskLine } from '../core/parser';
+import { parseTaskLine, resolveInlineTaskDescriptionCursorCh } from '../core/parser';
 import {
 	getManagedTaskFieldType,
 	isManagedTaskFieldCanonicalKey,
@@ -936,14 +935,16 @@ export class TaskEditorContent {
 		const operonId = this.getCurrentOperonId();
 		const lines = this.fileBodyDraft.split('\n');
 		let targetLine: number | null = null;
+		let descriptionEnd = 0;
 		for (let index = 0; index < lines.length; index++) {
 			const task = parseTaskLine(lines[index], index, context.filePath, this.settings.keyMappings);
 			if (!task || !(operonId ? task.operonId === operonId : task.rawLine === this.existingTask?.rawLine)) continue;
 			// An absent or ambiguous task must not redirect focus to another task.
 			if (targetLine !== null) return fallback;
 			targetLine = index;
+			descriptionEnd = resolveInlineTaskDescriptionCursorCh(task);
 		}
-		return targetLine === null ? fallback : this.getBodyCursorOffset(this.fileBodyDraft, targetLine);
+		return targetLine === null ? fallback : this.getBodyCursorOffset(this.fileBodyDraft, targetLine) + descriptionEnd;
 	}
 
 	private async refreshFileBodyDraftFromSource(): Promise<void> {
@@ -3818,11 +3819,11 @@ export class TaskEditorContent {
 			const epoch = ++this.propertyInteractionEpoch;
 			value.addClass('is-picker-open');
 			let closePicker: (() => void) | null = null;
-			closePicker = showTextFieldPopover({
-				app: this.app, anchor: value, title: this.getWorkflowPickerLabel(key),
-				initialValue: this.fieldValues[key] ?? '', allowEmptyCommit: true,
-				lifecycleOwner: value, editor: { kind: 'compact-markdown', sourcePath: this.existingTask?.filePath ?? '' },
-				onCommit: text => this.commitWorkflowActionPayload({ [key]: text }),
+			closePicker = openTaskFieldPicker({
+				app: this.app, anchor: value, settings: this.settings, allTasks: this.indexer.getAllTasks(),
+				canonicalKey: key, currentFieldValues: { ...this.fieldValues }, currentTags: [...this.tags],
+				sourcePath: this.existingTask?.filePath ?? '', multilineEditorOwner: value,
+				onCommit: payload => this.commitWorkflowActionPayload(payload),
 				onClose: () => {
 					if (this.workflowActionPickerClose !== closePicker) return;
 					this.workflowActionPickerClose = null; value.removeClass('is-picker-open');
@@ -5879,8 +5880,15 @@ export class TaskEditorContent {
 			cls: 'operon-editor-core-action-btn operon-editor-tracking-sessions-add',
 			attr: { type: 'button' },
 		});
-		setIcon(addButton, 'plus');
-		addButton.createSpan({ text: t('taskEditor', 'addSession') });
+		const addSessionLabel = t('taskEditor', 'addSession');
+		if (this.usesMobileLayout) {
+			setIcon(addButton, 'plus');
+			addButton.createSpan({ text: addSessionLabel });
+		} else {
+			setIcon(addButton, 'clock-plus');
+			setAccessibleLabelWithoutTooltip(addButton, addSessionLabel);
+			this.bindTaskEditorTooltip(addButton, addSessionLabel);
+		}
 
 		const list = section.createDiv('operon-editor-tracking-sessions-list');
 		const more = this.usesMobileLayout ? null : section.createEl('button', {
@@ -5895,6 +5903,7 @@ export class TaskEditorContent {
 			if (!operonId) return;
 			new TrackerSessionEditModal(this.app, {
 				title: t('taskEditor', 'addSession'),
+				contextTitle: this.description,
 				taskNote: this.buildTrackerSessionTaskNoteOptions(operonId),
 				onSave: async (start, end) => {
 					const added = await this.timeTracker.addSession(operonId, start, end);

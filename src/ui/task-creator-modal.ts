@@ -1,3 +1,4 @@
+import { applyDesktopModalBackdrop } from './modal-backdrop';
 import { bindCreatorToolbarInteractionState } from './surface-interaction-state';
 import { PreparedTaskCreatorDraft, type PreparedTaskCreatorAdapter } from './task-creator-prepared-draft';
 import { openTableFilePropertyPicker } from './table/table-file-property-editor';
@@ -535,6 +536,7 @@ export class TaskCreatorModal extends Modal {
 	private templateButtonEl!: HTMLButtonElement;
 	private fieldButtonMap = new Map<TaskCreatorFieldKey, HTMLButtonElement>();
 	private cleanupInteractionState: (() => void) | null = null;
+	private backdropCleanup: (() => void) | null = null;
 	private nativeCloseButtonCleanup: (() => void) | null = null;
 	private suggestionState: SuggestionState | null = null;
 	private creatorPickerClose: (() => void) | null = null;
@@ -554,17 +556,14 @@ export class TaskCreatorModal extends Modal {
 	private initialDescriptionFocusTimers: WindowTimeoutHandle[] = [];
 	private initialDescriptionFocusInterrupted = false;
 	private ignoreOutsidePointerUntil = 0;
-	private toolbarOverflowFrame: number | null = null;
 	private mobilePickerOpenDepth = 0;
 	private indexUpdatesUnsubscribe: (() => void) | null = null;
 	private readonly resizeHandler = () => {
 		this.updateMobileViewportHeight();
 		this.refreshRenderedTextEditors();
-		this.scheduleToolbarOverflowState();
 	};
 	private readonly visualViewportHandler = () => {
 		this.updateMobileViewportHeight();
-		this.scheduleToolbarOverflowState();
 	};
 	private readonly mobilePickerOpenHandler = () => {
 		this.mobilePickerOpenDepth += 1;
@@ -573,7 +572,6 @@ export class TaskCreatorModal extends Modal {
 		this.mobilePickerOpenDepth = Math.max(0, this.mobilePickerOpenDepth - 1);
 		window.setTimeout(() => this.updateMobileViewportHeight(), 80);
 	};
-	private readonly toolbarScrollHandler = () => this.scheduleToolbarOverflowState();
 
 	constructor(app: App, options: TaskCreatorModalOptions) {
 		super(app);
@@ -601,6 +599,8 @@ export class TaskCreatorModal extends Modal {
 		this.cleanupInteractionState?.();
 		this.cleanupInteractionState = null;
 		this.containerEl.addClass('operon-task-creator-modal-container');
+		this.backdropCleanup?.();
+		this.backdropCleanup = applyDesktopModalBackdrop(this.containerEl);
 		this.modalEl.addClass('operon-task-creator-modal');
 		this.nativeCloseButtonCleanup?.();
 		this.nativeCloseButtonCleanup = suppressNativeModalCloseButton(this.containerEl, this.modalEl);
@@ -646,6 +646,8 @@ export class TaskCreatorModal extends Modal {
 	}
 
 	onClose(): void {
+		this.backdropCleanup?.();
+		this.backdropCleanup = null;
 		this.cleanupInteractionState?.();
 		this.cleanupInteractionState = null;
   this.preparedClosed = true;
@@ -667,11 +669,6 @@ export class TaskCreatorModal extends Modal {
 		this.containerEl.removeEventListener('mousedown', this.handleContainerPointerDown, true);
 		this.containerEl.removeEventListener('click', this.handleContainerPointerDown, true);
 		this.containerEl.removeEventListener('mousedown', this.handleInitialDescriptionFocusPointerDown, true);
-		this.toolsEl?.removeEventListener('scroll', this.toolbarScrollHandler);
-		if (this.toolbarOverflowFrame !== null) {
-			window.cancelAnimationFrame(this.toolbarOverflowFrame);
-			this.toolbarOverflowFrame = null;
-		}
 		this.containerEl.style.removeProperty('--operon-task-creator-mobile-viewport-height');
 		this.clearInitialDescriptionFocusGuard();
 		this.closeActivePicker();
@@ -746,7 +743,6 @@ export class TaskCreatorModal extends Modal {
 		this.reminderStripEl = body.createDiv('operon-task-creator-reminder-strip');
 		this.metadataRowEl = body.createDiv('operon-task-creator-toolbar');
 		this.toolsEl = this.metadataRowEl.createDiv('operon-task-creator-tools');
-		this.toolsEl.addEventListener('scroll', this.toolbarScrollHandler, { passive: true });
 		for (const key of this.getVisibleToolbarFieldOrder()) {
 			const button = this.toolsEl.createEl('button', {
 				cls: 'operon-task-creator-tool',
@@ -802,7 +798,6 @@ export class TaskCreatorModal extends Modal {
 		this.renderFieldButtons();
 		this.renderSubmitControls();
 		this.renderNoteVisibility();
-		this.scheduleToolbarOverflowState();
 	}
 
 	private handleDescriptionEditorKeydown(event: KeyboardEvent): boolean {
@@ -1188,25 +1183,6 @@ export class TaskCreatorModal extends Modal {
 		this.containerEl.style.setProperty('--operon-task-creator-mobile-viewport-height', `${Math.round(height)}px`);
 	}
 
-	private scheduleToolbarOverflowState(): void {
-		if (!Platform.isPhone || !this.metadataRowEl?.isConnected || !this.toolsEl?.isConnected) return;
-		if (this.toolbarOverflowFrame !== null) {
-			window.cancelAnimationFrame(this.toolbarOverflowFrame);
-		}
-		this.toolbarOverflowFrame = window.requestAnimationFrame(() => {
-			this.toolbarOverflowFrame = null;
-			this.updateToolbarOverflowState();
-		});
-	}
-
-	private updateToolbarOverflowState(): void {
-		if (!this.metadataRowEl?.isConnected || !this.toolsEl?.isConnected) return;
-		const maxScrollLeft = Math.max(0, this.toolsEl.scrollWidth - this.toolsEl.clientWidth);
-		const scrollLeft = this.toolsEl.scrollLeft;
-		this.metadataRowEl.toggleClass('is-scrollable-left', scrollLeft > 1);
-		this.metadataRowEl.toggleClass('is-scrollable-right', scrollLeft < maxScrollLeft - 1);
-	}
-
 	private syncSuggestions(): void {
 		if (this.activePickerClose) {
 			debugTaskFieldSuggestion('task-creator', 'picker-active');
@@ -1380,6 +1356,7 @@ export class TaskCreatorModal extends Modal {
 		this.closeActivePicker();
 
 		let pickerBaseline = preparedField;
+		let pendingRepeatCompletionMode: InlineRepeatCompletionMode | undefined;
 		const close = openTaskFieldPicker({
 			app: this.app,
 			settings: this.options.settings,
@@ -1406,6 +1383,7 @@ export class TaskCreatorModal extends Modal {
 			repeatInlineCompletionMode: this.draft.inlineCompletionMode,
 			onCommit: payload => {
 				this.applyPayloadToDraft(payload);
+				if (pendingRepeatCompletionMode !== undefined) this.draft.inlineCompletionMode = pendingRepeatCompletionMode;
 				if (canonicalKey === 'assignees' || canonicalKey === 'tags' || canonicalKey === 'contexts' || canonicalKey === 'links' || canonicalKey === 'taskGallery') {
 					return;
 				}
@@ -1413,7 +1391,7 @@ export class TaskCreatorModal extends Modal {
 				restorePickerFocus();
 			},
 			onRepeatInlineCompletionModeChange: mode => {
-				this.draft.inlineCompletionMode = normalizeInlineCompletionMode(mode);
+				pendingRepeatCompletionMode = normalizeInlineCompletionMode(mode);
 			},
 			onOpenNote: () => {
 				this.openNote();
@@ -1772,7 +1750,6 @@ export class TaskCreatorModal extends Modal {
    }
    // insertBefore only when order actually changes: focused controls retain their DOM identity.
    keys.forEach((key,index) => { const button = this.fieldButtonMap.get(key)!; if (this.toolsEl.children[index] !== button) this.toolsEl.insertBefore(button, this.toolsEl.children[index] ?? null); });
-   this.scheduleToolbarOverflowState();
   }
 		this.renderReminderDraftStrip();
 		for (const key of this.getVisibleToolbarFieldOrder()) {

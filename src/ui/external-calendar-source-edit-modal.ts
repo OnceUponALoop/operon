@@ -1,4 +1,6 @@
-import { App, Modal, Notice, Setting } from 'obsidian';
+import { FileSuggest } from './file-suggest';
+import { externalCalendarSourceIdentity, isVaultCalendarPath } from '../core/external-calendar-source';
+import { App, Modal, Notice, Setting, TFile } from 'obsidian';
 import { ExternalCalendarSource } from '../types/settings';
 import { t } from '../core/i18n';
 import { bindOperonHoverTooltip } from './operon-hover-tooltip';
@@ -26,7 +28,13 @@ export function canSyncExternalCalendarSourceNow(input: {
 	draftUrl: string;
 	savedUrl: string;
 	hasSyncHandler: boolean;
+	draftKind?: 'url' | 'vault-file';
+	savedKind?: 'url' | 'vault-file';
+	draftPath?: string;
+	savedPath?: string;
 }): boolean {
+	if ((input.draftKind ?? 'url') !== (input.savedKind ?? 'url')) return false;
+	if (input.draftKind === 'vault-file') return !!input.hasSyncHandler && !!input.draftPath?.trim() && input.draftPath.trim() === input.savedPath?.trim();
 	const draftUrl = input.draftUrl.trim();
 	if (!input.hasSyncHandler || draftUrl.length === 0) return false;
 	return draftUrl === input.savedUrl.trim();
@@ -35,14 +43,15 @@ export function canSyncExternalCalendarSourceNow(input: {
 export class ExternalCalendarSourceEditModal extends Modal {
 	private readonly source: ExternalCalendarSource;
 	private readonly opts: ExternalCalendarSourceEditModalOptions;
-	private readonly savedUrl: string;
+	private readonly savedSource: ExternalCalendarSource;
+	private fileSuggest: FileSuggest | null = null;
 	private didSave = false;
 
 	constructor(opts: ExternalCalendarSourceEditModalOptions) {
 		super(opts.app);
 		this.opts = opts;
-		this.source = opts.source;
-		this.savedUrl = opts.isNew ? '' : opts.source.url;
+		this.source = { ...opts.source };
+		this.savedSource = { ...opts.source, ...(opts.isNew ? { url: '', filePath: '' } : {}) };
 	}
 
 	onOpen(): void {
@@ -55,12 +64,16 @@ export class ExternalCalendarSourceEditModal extends Modal {
 		if (!this.didSave && this.opts.isNew) {
 			void this.opts.onCancel?.();
 		}
+		this.fileSuggest?.close();
+		this.fileSuggest = null;
 		this.contentEl.empty();
 	}
 
 	private renderModal(): void {
 		const c = this.contentEl;
 		let refreshSyncNowButtonState: () => void = () => {};
+		this.fileSuggest?.close();
+		this.fileSuggest = null;
 		c.empty();
 		c.createEl('h3', {
 			cls: 'operon-external-calendar-edit-modal-title',
@@ -85,19 +98,38 @@ export class ExternalCalendarSourceEditModal extends Modal {
 			});
 		nameSetting.settingEl.addClass('operon-external-calendar-name-setting');
 
-		const urlSetting = new Setting(sourceCard)
-			.setName(t('settings', 'externalCalendarUrl'))
-			.setDesc(t('settings', 'externalCalendarUrlDesc'))
+		new Setting(sourceCard)
+			.setName(t('settings', 'externalCalendarSourceKind'))
+			.addDropdown(drop => drop
+				.addOption('url', t('settings', 'externalCalendarSourceUrl'))
+				.addOption('vault-file', t('settings', 'externalCalendarSourceVault'))
+				.setValue(this.source.sourceKind ?? 'url')
+				.onChange(value => {
+					this.source.sourceKind = value === 'vault-file' ? 'vault-file' : 'url';
+					this.renderModal();
+				}));
+		const local = this.source.sourceKind === 'vault-file';
+		const addressSetting = new Setting(sourceCard)
+			.setName(t('settings', local ? 'externalCalendarFile' : 'externalCalendarUrl'))
+			.setDesc(t('settings', local ? 'externalCalendarFileDesc' : 'externalCalendarUrlDesc'))
 			.addText(text => {
 				text.inputEl.addClass('operon-external-calendar-url-input');
-				text.setValue(this.source.url);
-				text.setPlaceholder(t('settings', 'externalCalendarUrlPlaceholder'));
+				text.setValue(local ? this.source.filePath ?? '' : this.source.url);
+				text.setPlaceholder(local ? 'Calendars/work.ics' : t('settings', 'externalCalendarUrlPlaceholder'));
 				text.onChange(value => {
-					this.source.url = value;
+					if (local) this.source.filePath = value;
+					else this.source.url = value;
 					refreshSyncNowButtonState();
 				});
+				if (local) this.fileSuggest = new FileSuggest(this.app, text.inputEl, file => {
+					this.source.filePath = file.path;
+					refreshSyncNowButtonState();
+				}, {
+					files: () => this.app.vault.getFiles(),
+					filter: file => isVaultCalendarPath(file.path, this.app.vault.configDir),
+				});
 			});
-		urlSetting.settingEl.addClass('operon-external-calendar-url-setting');
+		addressSetting.settingEl.addClass('operon-external-calendar-url-setting');
 
 		const displayCard = this.createExternalCalendarSection(c, t('settings', 'externalCalendarSectionDisplayBehavior'));
 		const hideCreatedSetting = new Setting(displayCard)
@@ -149,7 +181,11 @@ export class ExternalCalendarSourceEditModal extends Modal {
 				}
 				const canSyncNow = (): boolean => canSyncExternalCalendarSourceNow({
 					draftUrl: this.source.url,
-					savedUrl: this.savedUrl,
+					savedUrl: this.savedSource.url,
+					draftKind: this.source.sourceKind,
+					savedKind: this.savedSource.sourceKind,
+					draftPath: this.source.filePath,
+					savedPath: this.savedSource.filePath,
 					hasSyncHandler: !!this.opts.onSyncNow,
 				});
 				refreshSyncNowButtonState = () => {
@@ -188,16 +224,29 @@ export class ExternalCalendarSourceEditModal extends Modal {
 	}
 
 	private async handleSaveClick(): Promise<void> {
-		const url = this.source.url.trim();
-		if (!url) {
-			new Notice(t('settings', 'externalCalendarUrlRequired'));
-			return;
+		if (this.source.sourceKind === 'vault-file') {
+			const path = (this.source.filePath ?? '').trim();
+			const unchanged = externalCalendarSourceIdentity(this.source) === externalCalendarSourceIdentity(this.savedSource);
+			if (!isVaultCalendarPath(path, this.app.vault.configDir)
+				|| (!unchanged && !(this.app.vault.getAbstractFileByPath(path) instanceof TFile))) {
+				new Notice(t('settings', 'externalCalendarFileRequired'));
+				return;
+			}
+			this.source.filePath = path;
+			this.source.url = '';
+		} else {
+			const url = this.source.url.trim();
+			if (!url) {
+				new Notice(t('settings', 'externalCalendarUrlRequired'));
+				return;
+			}
+			this.source.url = url;
+			delete this.source.filePath;
 		}
-		this.source.url = url;
 		this.source.name = this.source.name.trim();
 		this.source.enabled = true;
+		await this.opts.onSave({ ...this.source });
 		this.didSave = true;
-		await this.opts.onSave(this.source);
 		this.close();
 	}
 }

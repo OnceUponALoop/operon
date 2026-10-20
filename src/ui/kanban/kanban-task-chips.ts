@@ -10,7 +10,7 @@ export type KanbanTaskChipRowOptions = Omit<CompactCardChipRowOptions, 'profile'
 export function buildKanbanTaskChipRow(task: IndexedTask, callbacks: KanbanTaskChipRowCallbacks, options: KanbanTaskChipRowOptions): HTMLElement | null {
  const settings = callbacks.getSettings();
  return buildCompactCardChipRow(task, callbacks, { ...options,
-  profile: { items: settings.kanbanTaskCompactChips, play: settings.kanbanTaskShowPlayAction, pin: settings.kanbanTaskShowPinAction, note: settings.kanbanTaskShowNoteAction, subtask: settings.kanbanTaskShowSubtaskAction, checkbox: settings.kanbanTaskShowPlainCheckboxAction },
+  profile: { items: settings.kanbanTaskCompactChips, play: settings.kanbanTaskShowPlayAction, pin: settings.kanbanTaskShowPinAction, note: settings.kanbanTaskShowNoteAction, source: settings.kanbanTaskShowSourceAction, subtask: settings.kanbanTaskShowSubtaskAction, checkbox: settings.kanbanTaskShowPlainCheckboxAction },
   isTargetReadOnly: isKanbanChipActionReadOnly, classPrefix: 'operon-kanban-card', bindTarget: bindKanbanAxisActivationBridge,
   bindRow: row => { bindKanbanChipRowDynamicReadOnlyGuard(row); if (!options.readOnly) bindKanbanChipRowDragShield(row); },
  });

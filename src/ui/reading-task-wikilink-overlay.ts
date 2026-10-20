@@ -1,7 +1,9 @@
+import { createTaskSourceActionButton } from './task-info-chip-action';
+import { taskDescriptionOpening } from './task-text-link-opening';
 import { identifyInlineTaskPart, rememberInlineTaskDom, reconcileInlineTaskDom } from './inline-retained-dom';
 import { cleanupOperonRenderRoot } from './render-root-cleanup';
 import { getTaskIconActionLabel } from '../core/task-icon-action';
-import { App, parseLinktext, setIcon, TFile } from 'obsidian';
+import { App, Platform, parseLinktext, setIcon, TFile } from 'obsidian';
 import { createOwnerElement } from '../core/dom-compat';
 import { t } from '../core/i18n';
 import { DescendantTaskSummary } from '../indexer/indexer';
@@ -28,7 +30,7 @@ import {
 import { bindOperonHoverTooltip, createCompactTaskMarkdownTooltipContent } from './operon-hover-tooltip';
 import { setAccessibleLabelWithoutTooltip } from './accessibility-label';
 import { buildTaskWikilinkOverlayChipContainer } from './task-wikilink-overlay-chips';
-import { resolveSubtaskActionIcon, resolveSubtaskActionLabelKey } from '../core/subtask-action';
+import { resolveSubtaskChipKinds, resolveSubtaskActionIconForKind, resolveSubtaskActionLabelKeyForKind } from '../core/subtask-action';
 import { bindTaskTitleLinkPreview } from './compact-chip-link-preview';
 import {
 	isCompactTaskMarkdownLinkEventTarget,
@@ -51,7 +53,7 @@ interface ReadingTaskFileWikilinkCallbacks {
 	hasSubtasks?: (taskId: string) => boolean;
 	isTaskTracking?: (taskId: string) => boolean;
 	toggleTimer?: (taskId: string) => void | Promise<void>;
-	requestSubtask?: (operonId: string) => void | Promise<void>;
+	requestSubtask?: (operonId: string, requestedKind?: 'inline') => void | Promise<void>;
 	getRepeatSkipDates?: (repeatSeriesId: string) => string[];
 	getProjectSerialDisplay?: (operonId: string, task?: IndexedTask) => ProjectSerialDisplay | null;
 	updateField?: (operonId: string, key: string, value: string) => void | boolean | Promise<void | boolean>;
@@ -238,6 +240,7 @@ export function enhanceReadingTaskFileWikilinks(
 			}
 		}
 		const chipRow = buildTaskWikilinkOverlayChipContainer(resolved.task, {
+			onContextualAction: callbacks.onContextualAction,
 			app: callbacks.app,
 			getSettings: callbacks.getSettings,
 			getAllTasks: callbacks.getAllTasks,
@@ -286,6 +289,7 @@ export function enhanceReadingTaskFileWikilinks(
 			identifyInlineTaskPart(pinButton, 'overlay-pin', pinButton.outerHTML.replace(/operon-accessible-label-\d+/g, 'operon-accessible-label'));
 			wrapper.appendChild(pinButton);
 		}
+		let noteAction: HTMLElement | null = null;
 		const noteValue = resolved.task.fieldValues['note']?.trim();
 		if (settings.taskWikilinkOverlayShowNoteAction && noteValue) {
 			const noteIndicator = createOwnerElement(wrapper, 'span');
@@ -303,24 +307,36 @@ export function enhanceReadingTaskFileWikilinks(
 				preferredHorizontal: 'right',
 			});
 			identifyInlineTaskPart(noteIndicator, 'note', JSON.stringify([resolved.task.fieldValues.note, noteIndicator.outerHTML.replace(/operon-accessible-label-\d+/g, 'operon-accessible-label')]));
+			noteAction = noteIndicator;
 			wrapper.appendChild(noteIndicator);
 		}
 		if (!isTerminal && settings.taskWikilinkOverlayShowSubtaskAction && callbacks.requestSubtask) {
-			const subtaskLabel = t('buttons', resolveSubtaskActionLabelKey(resolved.task));
-			const subtaskButton = createActionButton(
-				'operon-live-preview-edit operon-live-preview-action operon-task-wikilink-overlay-action operon-task-chip-action',
-				visuals.hoverColor,
-				subtaskLabel,
-				(button) => {
-					button.setCssProps({ '--operon-live-hover-border': visuals.hoverColor });
-					setIcon(button, resolveSubtaskActionIcon(resolved.task));
-				},
-				() => { void callbacks.requestSubtask?.(resolved.task.operonId); },
-				wrapper,
-			);
-			identifyInlineTaskPart(subtaskButton, 'subtask', subtaskButton.outerHTML.replace(/operon-accessible-label-\d+/g, 'operon-accessible-label'));
-			wrapper.appendChild(subtaskButton);
+			for (const kind of resolveSubtaskChipKinds(resolved.task)) {
+				const subtaskLabel = t('buttons', resolveSubtaskActionLabelKeyForKind(kind));
+				const subtaskButton = createActionButton(
+					'operon-live-preview-edit operon-live-preview-action operon-task-wikilink-overlay-action operon-task-chip-action',
+					visuals.hoverColor,
+					subtaskLabel,
+					(button) => {
+						button.setCssProps({ '--operon-live-hover-border': visuals.hoverColor });
+						setIcon(button, resolveSubtaskActionIconForKind(kind));
+					},
+					() => { void callbacks.requestSubtask?.(resolved.task.operonId, kind === 'inline' ? 'inline' : undefined); },
+					wrapper,
+				);
+				identifyInlineTaskPart(subtaskButton, kind === resolveSubtaskChipKinds(resolved.task)[0] ? 'subtask' : 'subtask-inline', subtaskButton.outerHTML.replace(/operon-accessible-label-\d+/g, 'operon-accessible-label'));
+				wrapper.appendChild(subtaskButton);
+			}
 		}
+		if (Platform.isDesktopApp && settings.taskWikilinkOverlayShowSourceAction) {
+   const sourceButton = createTaskSourceActionButton({ app: callbacks.app, owner: wrapper,
+    getSettings: callbacks.getSettings, getTask: () => callbacks.getAllTasks().find(current => current.operonId === resolved.task.operonId),
+    canActivate: () => !callbacks.hasDuplicateOperonIdConflict?.(resolved.task.operonId),
+    taskColor: visuals.hoverColor, className: 'operon-live-preview-edit operon-live-preview-action operon-task-wikilink-overlay-action operon-task-chip-action',
+   });
+   identifyInlineTaskPart(sourceButton, 'source', sourceButton.outerHTML.replace(/operon-accessible-label-\d+/g, 'operon-accessible-label'));
+   wrapper.insertBefore(sourceButton, noteAction);
+  }
 		identifyInlineTaskPart(rightButton, 'editor', rightButton.outerHTML.replace(/operon-accessible-label-\d+/g, 'operon-accessible-label'));
 		wrapper.appendChild(rightButton);
 		rememberInlineTaskDom(wrapper);
@@ -970,6 +986,7 @@ function createTaskFileLinkLabel(
 	renderCompactTaskMarkdown(label, {
 		app: callbacks.app,
 		value: description,
+  bindLink: taskDescriptionOpening(callbacks.app, () => callbacks.getAllTasks().find(task => task.operonId === resolved.task.operonId)),
 		sourcePath: resolved.task.primary.filePath,
 		mode: 'interactive',
 		containerClassName: 'operon-task-wikilink-label-markdown',

@@ -949,6 +949,7 @@ export class FilterSetModal extends Modal {
 			pseudoFields.push(buildFilterFieldPickerOption('happensOn', t('filterSets', 'fieldHappensOn'), 'date', 'scheduling', 'calendar'));
 		}
 		if (includeConditionOnly) {
+			pseudoFields.push(buildFilterFieldPickerOption('repeatOccurrenceDate', t('taskEditor', 'repeatReferenceDateField'), 'date', 'scheduling', 'calendars'));
 			pseudoFields.push(buildFilterFieldPickerOption('trackedOn', t('filterSets', 'fieldTrackedOn'), 'date', 'scheduling', 'timer'));
 			pseudoFields.push(buildFilterFieldPickerOption('projectTree', t('filterSets', 'fieldProjectTree'), 'projectTree', 'dependencies', 'git-branch'));
 			pseudoFields.push(buildFilterFieldPickerOption('folders', t('filterSets', 'fieldFolders'), 'folders', 'source', 'folder'));

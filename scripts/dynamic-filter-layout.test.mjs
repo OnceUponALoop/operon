@@ -48,8 +48,8 @@ try {
   const source=new Node(),dom=source.appendChild(new Node()),sizer=dom.appendChild(new Node()),contentContainer=sizer.appendChild(new Node()),content=contentContainer.appendChild(new Node()),line=content.appendChild(new Node());
   source.className='markdown-source-view';sizer.className='cm-sizer';contentContainer.className='cm-contentContainer';content.className='cm-content';line.className='cm-line';contentContainer.rect.bottom=300;line.rect.bottom=100;
   const settings={enabled:true,dynamicFileTaskFilterPlacement:placement};let file='A.md',live=true;
-  const requests=new Map(),state={facet:()=> 'document',field:f=>f===editorLivePreviewField?live:f===editorInfoField?undefined:{filePath:file,height:20}},view={dom,state,dispatch(){metrics.dispatches++;},requestMeasure(r){metrics.requests++;requests.set(r.key,r);}};
-  const callbacks={getFilePath:()=>file,getFilterDeps:()=>({getSettings:()=>settings}),openDynamicFilterSettings(){}};
+  const requests=new Map(),state={facet:()=> 'document',field:f=>f===editorLivePreviewField?live:f===editorInfoField?undefined:{filePath:file,height:20,documentEditor:true}},view={dom,state,dispatch(){metrics.dispatches++;},requestMeasure(r){metrics.requests++;requests.set(r.key,r);}};
+  const callbacks={isDocumentEditor:()=>true,getFilePath:()=>file,getFilterDeps:()=>({getSettings:()=>settings}),openDynamicFilterSettings(){}};
   const C=operonDynamicFileTaskFilterLivePreviewExtension(callbacks),plugin=new C[1](view);
   const flush=()=>{for(let i=0;timers.size&&i<5;i++){const pending=[...timers.values()];timers.clear();pending.forEach(fn=>fn());}const pending=[...requests.values()];requests.clear();phase='read';const reads=pending.map(r=>r.read());phase='write';pending.forEach((r,i)=>r.write(reads[i]));phase='';};
   const update=changes=>plugin.update({view,state,transactions:[],docChanged:false,viewportChanged:false,geometryChanged:false,focusChanged:false,...changes});

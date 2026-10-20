@@ -4,6 +4,7 @@ import { scrollChildIntoView } from './common';
 export interface StatusPickerOption {
 	value: string;
 	color: string;
+	icon?: string;
 	pipelineId: string;
 	pipelineName: string;
 	statusId: string;
@@ -17,6 +18,7 @@ export function buildStatusPickerOptions(pipelines: Pipeline[]): StatusPickerOpt
 			allStatuses.push({
 				value: composeStatusValue(pipeline.name, status.label),
 				color: status.color,
+				...(status.pipelineStatusIcon ? { icon: status.pipelineStatusIcon } : {}),
 				pipelineId: pipeline.id,
 				pipelineName: pipeline.name,
 				statusId: status.id,

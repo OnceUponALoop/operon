@@ -3,6 +3,7 @@ import { setAccessibleLabelWithoutTooltip } from '../accessibility-label';
 import {
 	isCompactTaskMarkdownLinkEventTarget,
 	renderCompactTaskMarkdown,
+ type CompactTaskMarkdownRenderOptions,
 } from '../compact-task-markdown-renderer';
 import {
 	bindOperonHoverTooltip,
@@ -14,6 +15,8 @@ export interface TableTextValueDisplayOptions {
 	value: string;
 	textClassName?: string;
  suppressValueTooltip?: boolean;
+	bindLink?: CompactTaskMarkdownRenderOptions['bindLink'];
+	visualOnlyLinks?: boolean;
 	wikilinks?: {
 		app: App;
 		sourcePath: string;
@@ -33,6 +36,8 @@ export interface TableDescriptionCellOptions {
 		content: string;
 		ariaLabel: string;
 	};
+	bindLink?: CompactTaskMarkdownRenderOptions['bindLink'];
+	visualOnlyLinks?: boolean;
 	wikilinks?: {
 		app: App;
 		sourcePath: string;
@@ -70,7 +75,8 @@ export function renderTableTextValueDisplay(
 			app: options.wikilinks.app,
 			value: options.value,
 			sourcePath: options.wikilinks.sourcePath,
-			mode: 'interactive',
+			mode: options.visualOnlyLinks ? 'visual-only' : 'interactive',
+			bindLink: options.bindLink,
 			containerClassName: 'operon-task-description-markdown',
 		});
 	} else {
@@ -132,6 +138,8 @@ export function renderTableDescriptionCellContent(
 			value,
 			textClassName: options.textClassName,
 			wikilinks: options.wikilinks,
+			bindLink: options.bindLink,
+			visualOnlyLinks: options.visualOnlyLinks,
 		});
 		if (shouldSyncEditableAccessibleLabel()) {
 			syncEditableAccessibleLabel(displayValue);

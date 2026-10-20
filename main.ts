@@ -1,3 +1,6 @@
+import { SettingsWritesSuspendedError } from './src/storage/operon-data-package-store';
+import { bindLightboxSizePreference } from './src/core/lightbox-size';
+import { updateDesktopBackdropDimming, disposeDesktopBackdrops, bindDesktopBackdropDimmingPreference, subscribeDesktopBackdropDimming } from './src/ui/modal-backdrop';
 import { tasksConversionProtectedLines } from './src/core/tasks-conversion-scope';
 import { TasksConversionSettings } from './src/ui/tasks-conversion-settings';
 import { TasksConversionController } from './src/ui/tasks-conversion-controller';
@@ -47,6 +50,7 @@ import { applyPropertyPoolTask, propertyPoolExpectedFields, propertyPoolPeriodic
 import type { PropertyPoolFavorite } from './src/core/property-value-pool';
 import { indentNewInlineSubtask } from './src/core/task-creator-target-resolver';
 import { disposeWebLightboxes } from './src/ui/web-lightbox';
+import { getNativeLightboxLeaves } from './src/ui/native-lightbox-lifecycle';
 import { refreshAssigneeChipImages, disposeAssigneeChipImages } from './src/ui/assignee-chip-image';
 import { normalizeTaskColorValue } from './src/core/task-color-value';
 import { iterateMarkdownFencedBlocks, type MarkdownFencedBlock } from './src/core/markdown-fenced-lines';
@@ -250,6 +254,7 @@ import {
 } from './src/ui/task-editor-content';
 import {
 	getEmbeddedMarkdownSourceEditorFilePath,
+	isEmbeddedMarkdownFileBodyEditor,
 	refreshEmbeddedMarkdownSourceEditors,
 } from './src/ui/embedded-markdown-source-editor';
 import {
@@ -304,6 +309,7 @@ import {
 import { cleanupOperonRenderRoot } from './src/ui/render-root-cleanup';
 import { requestCloseAllTextFieldPopovers } from './src/ui/text-field-popover';
 import { hideTaskContextualHoverMenu } from './src/ui/contextual-hover-menu';
+import { activateResolvedOpening, resolveChipOpening } from './src/ui/links-chip-action';
 import {
 	WindowTimeoutHandle,
 	asHTMLElement,
@@ -1330,6 +1336,7 @@ interface DirectTaskEditContext {
 }
 
 interface TaskFieldsUpdateOptions {
+ inlinePropertyDraft?: readonly InlinePropertyChange[];
  tableCommittedSource?: boolean;
  ownedDrawingSources?: readonly InlineMarkdownSource[];
  directEdit?: DirectTaskEditContext;
@@ -3473,6 +3480,10 @@ export default class OperonPlugin extends Plugin {
 	private async reloadCanonicalSettingsFromStorage(mode: 'background' | 'manual'): Promise<void> {
 		try {
 			const result = await this.refreshCanonicalSettingsSingleFlight();
+			if (!this.storage.canPersistSettings()) {
+				if (mode === 'manual') new Notice(t('settings', 'settingsWriteProtected'));
+				return;
+			}
 			const taxonomyDiagnostics = result.diagnostics.pipelineTaxonomy;
 			if (result.failed) {
 				console.warn('Operon: canonical settings reload warning', result.diagnostics);
@@ -3500,6 +3511,10 @@ export default class OperonPlugin extends Plugin {
 				console.warn('Operon: canonical settings reload warning', result.diagnostics);
 			}
 		} catch (error) {
+			if (error instanceof SettingsWritesSuspendedError) {
+				if (mode === 'manual') new Notice(t('settings', 'settingsWriteProtected'));
+				return;
+			}
 			console.warn('Operon: canonical settings reload failed', error);
 			if (mode === 'manual') {
 				new Notice(t('notifications', 'settingsReloadFailed'));
@@ -3541,7 +3556,7 @@ export default class OperonPlugin extends Plugin {
 		}
 		const hasFileBackedTablePresetAuthority = this.settings.tablePresetFileBindings.length > 0
 			|| this.settings.tablePresetFileInitialized;
-		if (result.changed || hasFileBackedTablePresetAuthority) {
+		if (this.storage.canPersistSettings() && (result.changed || hasFileBackedTablePresetAuthority)) {
 			await this.refreshTablePresetRegistry({ adoptUnbound: true, persistBindings: true });
 			if (this.storage.getTablePresetRecoveryDiagnostics().health !== 'degraded') {
 				await this.ensureCanonicalTablePresetBootstrap();
@@ -3644,6 +3659,16 @@ export default class OperonPlugin extends Plugin {
 		}
 	}
 
+
+	private refreshCalendarAfterQuickAction(leaf: WorkspaceLeaf): void {
+		// Refresh the originating calendar independently of the global view pass.
+		// Both paths retain the same editing, modal and drag protections.
+		if (!this.shouldFreezeCalendarRefresh()) {
+			callUnknownMethod(leaf.view, 'markDirty', { reason: 'settings' });
+		}
+		this.refreshViews();
+	}
+
 	private refreshKanbanLeaves(preserveViewport = false): void {
 		for (const leaf of this.app.workspace.getLeavesOfType(KANBAN_VIEW_TYPE)) {
 			callUnknownMethod(leaf.view, 'markDirty', { preserveViewport });
@@ -3651,10 +3676,11 @@ export default class OperonPlugin extends Plugin {
 	}
 
 	private refreshTableLeaves(presetId?: string, registryEntry?: TablePresetRegistryEntry<TFile> | null): void {
-		const leaves = [
+		const leaves = new Set([
 			...this.app.workspace.getLeavesOfType(OPERON_TABLE_VIEW_TYPE),
 			...this.app.workspace.getLeavesOfType(OPERON_TABLE_FILE_VIEW_TYPE),
-		];
+			...getNativeLightboxLeaves(this.app).filter(leaf => leaf.view instanceof OperonTableView),
+		]);
 		for (const leaf of leaves) {
 			const tableView = leaf.view instanceof OperonTableView ? leaf.view : null;
 			const isFileView = tableView?.getViewType() === OPERON_TABLE_FILE_VIEW_TYPE;
@@ -15546,41 +15572,44 @@ export default class OperonPlugin extends Plugin {
 			}
 		} catch (error) {
 			startupAuthorityCurrent = false;
-			const recoveryEvidence = error instanceof TableFileV5MigrationError
-				? await inspectTableFileV5MigrationRecoveryEvidence(this.app.vault.adapter, this.app.vault.configDir)
-				: await inspectTableFileV3MigrationRecoveryEvidence(this.app.vault.adapter, this.app.vault.configDir);
-			this.storage.markTablePresetDegraded(
-				'table-file-invalid',
-				error instanceof TableFileV3MigrationError || error instanceof TableFileV5MigrationError ? error.code : 'unexpected-recovery-error',
-				{
-					affectedPaths: recoveryEvidence.affectedPaths,
-					repairBackupPath: recoveryEvidence.backupRootPath,
-				},
-			);
-			console.warn('Operon: Table recovery was isolated; plugin startup will continue', error);
+			if (!(error instanceof SettingsWritesSuspendedError)) {
+				const recoveryEvidence = error instanceof TableFileV5MigrationError
+					? await inspectTableFileV5MigrationRecoveryEvidence(this.app.vault.adapter, this.app.vault.configDir)
+					: await inspectTableFileV3MigrationRecoveryEvidence(this.app.vault.adapter, this.app.vault.configDir);
+				this.storage.markTablePresetDegraded(
+					'table-file-invalid',
+					error instanceof TableFileV3MigrationError || error instanceof TableFileV5MigrationError ? error.code : 'unexpected-recovery-error',
+					{
+						affectedPaths: recoveryEvidence.affectedPaths,
+						repairBackupPath: recoveryEvidence.backupRootPath,
+					},
+				);
+				console.warn('Operon: Table recovery was isolated; plugin startup will continue', error);
+			}
 			try {
 				await this.refreshTablePresetRegistry({ adoptUnbound: false, persistBindings: false, reconcileFileNames: false });
 			} catch (refreshError) {
 				console.warn('Operon: degraded Table registry refresh failed; startup will continue', refreshError);
 			}
-			if (!(error instanceof TableFileV3MigrationError) && !(error instanceof TableFileV5MigrationError)) {
-				console.warn('Operon: unexpected Table recovery failure was contained', error);
-			}
 		}
 		try {
-			if (!startupAuthorityCurrent || this.storage.getTablePresetRecoveryDiagnostics().health !== 'ready') {
+			if (this.storage.canPersistSettings() && (!startupAuthorityCurrent || this.storage.getTablePresetRecoveryDiagnostics().health !== 'ready')) {
 				await this.reconcileCanonicalTablePresetFileAuthority();
 			}
 		} catch (error) {
-			this.storage.markTablePresetDegraded('table-file-invalid', 'authority-reconciliation-failed');
-			console.warn('Operon: canonical Table file authority reconciliation failed; startup will continue', error);
+			if (!(error instanceof SettingsWritesSuspendedError)) {
+				this.storage.markTablePresetDegraded('table-file-invalid', 'authority-reconciliation-failed');
+				console.warn('Operon: canonical Table file authority reconciliation failed; startup will continue', error);
+			}
 		}
-		if (this.storage.getTablePresetRecoveryDiagnostics().health !== 'degraded') {
+		if (this.storage.canPersistSettings() && this.storage.getTablePresetRecoveryDiagnostics().health !== 'degraded') {
 			try {
 				await this.ensureCanonicalTablePresetBootstrap();
 			} catch (error) {
-				this.storage.markTablePresetDegraded('table-file-invalid', 'bootstrap-failed');
-				console.warn('Operon: Table bootstrap failed; startup will continue', error);
+				if (!(error instanceof SettingsWritesSuspendedError)) {
+					this.storage.markTablePresetDegraded('table-file-invalid', 'bootstrap-failed');
+					console.warn('Operon: Table bootstrap failed; startup will continue', error);
+				}
 			}
 		}
 		this.registerTablePresetFileWatchers();
@@ -15800,6 +15829,8 @@ export default class OperonPlugin extends Plugin {
 	}
 
 	private async refreshTablePresetRegistry(options: { adoptUnbound?: boolean; persistBindings?: boolean; reconcileFileNames?: boolean } = {}): Promise<void> {
+		// Use the existing read-only registry path while settings writes are paused.
+		if (!this.storage.canPersistSettings()) options = { adoptUnbound: false, persistBindings: false, reconcileFileNames: false };
 		const previousSnapshot = this.tablePresetRegistry.getSnapshot();
 		const previousOrderSignature = this.settings.tablePresetOrderIds.join('\u0000');
 		await this.tablePresetRegistry.refresh();
@@ -16376,6 +16407,15 @@ export default class OperonPlugin extends Plugin {
 			onError: error => console.warn('Operon: failed to reconcile project serials after index mutation', error),
 		});
 		this.settings = this.storage.getSettings();
+  this.register(bindLightboxSizePreference({
+   get: () => this.settings.workspaceTweaksLightboxSizes,
+   save: (profile, axis, value) => this.storage.saveLightboxSize(profile, axis, value),
+  }));
+  this.register(bindDesktopBackdropDimmingPreference({
+   get: () => this.settings.workspaceTweaksBackgroundDimming,
+   save: value => this.storage.updateSettings({ workspaceTweaksBackgroundDimming: value }),
+  }));
+  this.register(subscribeDesktopBackdropDimming(() => this.settingsTab?.refreshBackgroundDimmingState()));
 		this.register(bindLocationPickerDefaults(this.app, {
 			get: () => this.settings,
 			save: change => this.storage.saveLocationPickerDefault(change),
@@ -16413,7 +16453,9 @@ export default class OperonPlugin extends Plugin {
 			() => {
 				if (!this.startupReady) return;
 				this.refreshViews();
+				this.settingsTab?.refreshExternalCalendarStatuses();
 			},
+			this.app,
 		);
 		await this.externalCalendarService.applySettings(this.settings.externalCalendars);
 		this.register(() => {
@@ -17491,7 +17533,9 @@ export default class OperonPlugin extends Plugin {
 				this.timeTracker,
 				{
 					cycleStatus: (operonId) => this.handleTaskIconClick(operonId),
-					navigateToTask: (task) => { this.navigateToTask(task); },
+					navigateToTask: (task, anchor) => {
+						void this.handleContextualMenuAction(task.operonId, 'jumpToSource', undefined, { actionAnchor: anchor });
+					},
 						navigateToDailyNote: (dateKey) => {
 							runAsyncAction('time history daily note navigation failed', () => this.app.workspace.openLinkText(dateKey, '', false));
 						},
@@ -17599,21 +17643,21 @@ export default class OperonPlugin extends Plugin {
 						if (!preset) return;
 						preset.showProjectedOccurrences = nextValue;
 						await this.storage.saveSettings();
-						this.refreshViews();
+						this.refreshCalendarAfterQuickAction(leaf);
 					},
 					onToggleExternalCalendars: async (presetId, nextValue) => {
 						const preset = this.settings.calendarPresets.find(entry => entry.id === presetId);
 						if (!preset) return;
 						preset.showExternalCalendars = nextValue;
 						await this.storage.saveSettings();
-						this.refreshViews();
+						this.refreshCalendarAfterQuickAction(leaf);
 					},
 					onCycleTaskColorSource: async (presetId, nextSource) => {
 						const preset = this.settings.calendarPresets.find(entry => entry.id === presetId);
 						if (!preset) return;
 						preset.colorSource = nextSource;
 						await this.storage.saveSettings();
-						this.refreshViews();
+						this.refreshCalendarAfterQuickAction(leaf);
 					},
 					onMobileCalendarSettingsChange: async (patch) => {
 						Object.assign(this.settings, patch);
@@ -17621,11 +17665,14 @@ export default class OperonPlugin extends Plugin {
 						this.refreshViews();
 					},
 					onSyncExternalCalendars: () => {
-						runAsyncAction('calendar quick action external calendar sync failed', () => this.syncAllExternalCalendarsNow());
+						runAsyncAction('calendar quick action external calendar sync failed', async () => {
+							await this.syncAllExternalCalendarsNow();
+							this.refreshCalendarAfterQuickAction(leaf);
+						});
 					},
 					onExternalItemCreateTask: (seed) => this.handleExternalCalendarItemCreate(leaf, seed),
 					onCalendarDragInteractionEnd: () => this.flushPendingCalendarRefresh(),
-					hasEditableFocus: () => this.hasActiveEditableFocus(),
+					hasEditableFocus: () => this.hasActiveEditableFocus() || this.isTaskEditorModalOpen(),
 					getRepeatSeriesRevision: () => this.storage.repeatSeries.getRevision(),
 					onOpenPresetSettings: (presetId) => {
 						const preset = this.settings.calendarPresets.find(entry => entry.id === presetId) ?? null;
@@ -18613,7 +18660,7 @@ export default class OperonPlugin extends Plugin {
 				this.openSubtasksForTaskId(id);
 			},
 			createSubtask: async (id) => {
-				await this.requestSubtaskForParentId(id, invocation?.canMutate, context.surface === 'excalidrawTask' ? file => !this.isExcalidrawTaskSource(file) : undefined);
+				await this.requestSubtaskForParentId(id, invocation?.canMutate, context.surface === 'excalidrawTask' ? file => !this.isExcalidrawTaskSource(file) : undefined, invocation?.requestedSubtaskKind);
 			},
 			openCheckboxes: async (id, actionAnchor, actionAnchorRect) => {
 				await this.openCheckboxesForTaskId(id, actionAnchor, actionAnchorRect, true, invocation?.canMutate);
@@ -18633,7 +18680,20 @@ export default class OperonPlugin extends Plugin {
 			jumpToSource: async (id) => {
 				const indexedTask = this.indexer.getTask(id);
 				if (!indexedTask) return;
-				this.navigateToTask(indexedTask);
+				if (!Platform.isDesktopApp) { this.navigateToTask(indexedTask); return; }
+				const anchor = invocation?.actionAnchor ?? calendarLeaf?.view.containerEl ?? getActiveDocument().body;
+				const openingContext = {
+					app: this.app,
+					getSettings: () => this.settings,
+					getTask: () => this.indexer.getTask(id),
+					getTaskById: (taskId: string) => this.indexer.getTask(taskId),
+					getAllTasks: () => this.indexer.getAllTasks(),
+					picker: () => null,
+				};
+				await activateResolvedOpening(anchor, {
+					...openingContext,
+					resolve: () => resolveChipOpening({ key: 'taskInfo.source' }, openingContext),
+				});
 			},
 			setAsTracked: async (id, start, end) => {
 				const added = await this.timeTracker.addSession(id, start, end, canCommit);
@@ -22924,8 +22984,8 @@ export default class OperonPlugin extends Plugin {
 				updateRepeatSeriesInlineCompletionMode: (operonId: string, mode: InlineRepeatCompletionMode) => {
 					void this.applyInlineRepeatCompletionModeIfRequested(this.indexer.getTask(operonId), mode);
 				},
-				requestSubtask: (operonId: string) => {
-					void this.requestSubtaskForParentId(operonId);
+				requestSubtask: (operonId: string, requestedKind?: 'inline') => {
+					void this.requestSubtaskForParentId(operonId, undefined, undefined, requestedKind);
 				},
 					onContextualAction: (
 						taskId: string,
@@ -23034,6 +23094,19 @@ export default class OperonPlugin extends Plugin {
 			}
 			return null;
 		}
+
+	/** Filter-only enumeration: never changes normal workspace navigation semantics. */
+	private getDynamicFileTaskFilterMarkdownViews(): MarkdownView[] {
+		return [...new Set([
+			...this.app.workspace.getLeavesOfType('markdown'),
+			...getNativeLightboxLeaves(this.app),
+		].map(leaf => leaf.view).filter((view): view is MarkdownView => view instanceof MarkdownView))];
+	}
+
+	private isDynamicFileTaskFilterDocumentEditor(editorView: EditorView): boolean {
+		return isEmbeddedMarkdownFileBodyEditor(editorView)
+			|| this.getDynamicFileTaskFilterMarkdownViews().some(view => getEditorViewFromEditor(view.editor) === editorView);
+	}
 
 	private getMarkdownViewForPath(filePath: string): MarkdownView | null {
 		const activeView = this.app.workspace.getActiveViewOfType(MarkdownView);
@@ -23207,8 +23280,8 @@ export default class OperonPlugin extends Plugin {
 				toggleTimer: async (taskId) => {
 					await this.toggleTimerForTask(taskId, 'command');
 				},
-				requestSubtask: (operonId) => {
-					void this.requestSubtaskForParentId(operonId);
+				requestSubtask: (operonId, requestedKind) => {
+					void this.requestSubtaskForParentId(operonId, undefined, undefined, requestedKind);
 				},
 				updateFields: (
 					operonId: string,
@@ -23283,13 +23356,16 @@ export default class OperonPlugin extends Plugin {
 				toggleTimer: async (taskId) => {
 					await this.toggleTimerForTask(taskId, 'command');
 				},
-				requestSubtask: (operonId) => {
-					void this.requestSubtaskForParentId(operonId);
+				requestSubtask: (operonId, requestedKind) => {
+					void this.requestSubtaskForParentId(operonId, undefined, undefined, requestedKind);
 				},
 				getRepeatSkipDates: (repeatSeriesId: string) => this.storage.repeatSeries.getSkipDates(repeatSeriesId),
 			}));
 			this.registerEditorExtension(operonDynamicFileTaskFilterLivePreviewExtension({
-				getFilePath: (editorView: EditorView) => this.getFilePathForEditorView(editorView),
+				isDocumentEditor: (editorView: EditorView) => this.isDynamicFileTaskFilterDocumentEditor(editorView),
+				getFilePath: (editorView: EditorView) => this.getDynamicFileTaskFilterMarkdownViews()
+					.find(view => getEditorViewFromEditor(view.editor) === editorView)?.file?.path
+					?? getEmbeddedMarkdownSourceEditorFilePath(editorView),
 				getFilterDeps: () => {
 					if (!this.embedFilterDeps) this.embedFilterDeps = this.buildFilterSurfaceDeps();
 					return this.embedFilterDeps;
@@ -23367,8 +23443,8 @@ export default class OperonPlugin extends Plugin {
 				toggleTimer: async (taskId: string) => {
 					await this.toggleTimerForTask(taskId, 'command');
 				},
-				requestSubtask: (operonId: string) => {
-					void this.requestSubtaskForParentId(operonId);
+				requestSubtask: (operonId: string, requestedKind?: 'inline') => {
+					void this.requestSubtaskForParentId(operonId, undefined, undefined, requestedKind);
 				},
 				getRepeatSkipDates: (repeatSeriesId: string) => this.storage.repeatSeries.getSkipDates(repeatSeriesId),
 			};
@@ -23521,8 +23597,8 @@ export default class OperonPlugin extends Plugin {
 					toggleTimer: async (taskId: string) => {
 						await this.toggleTimerForTask(taskId, 'command');
 					},
-					requestSubtask: (operonId: string) => {
-						void this.requestSubtaskForParentId(operonId);
+					requestSubtask: (operonId: string, requestedKind?: 'inline') => {
+						void this.requestSubtaskForParentId(operonId, undefined, undefined, requestedKind);
 					},
 						updateFields: async (operonId: string, payload: Record<string, string>) => {
 							await this.updateDirectTaskFieldsAndRefresh(operonId, payload);
@@ -23566,7 +23642,6 @@ export default class OperonPlugin extends Plugin {
 								onBlockedAction: invalidSource ? () => {
 									void this.requestInvalidTaskIdRepair({ ...invalidSource, format: 'inline' });
 								} : undefined,
-								projectSerialPlacement: 'tail',
 								workflowStatusIdentityIndex,
 								renderContext,
 							});
@@ -23625,7 +23700,7 @@ export default class OperonPlugin extends Plugin {
 	}
 
 	private pruneDisconnectedDynamicFileTaskFilterReadingHosts(): void {
-		const views = new Set(this.app.workspace.getLeavesOfType('markdown').map(leaf => leaf.view));
+		const views = new Set(this.getDynamicFileTaskFilterMarkdownViews());
 		for (const host of Array.from(this.dynamicFileTaskFilterReadingHosts)) {
 			const owner = this.dynamicFileTaskFilterReadingOwners.get(host);
 			if (!host.isConnected || !owner || !views.has(owner.view)
@@ -23640,8 +23715,7 @@ export default class OperonPlugin extends Plugin {
 		this.pruneDisconnectedDynamicFileTaskFilterReadingHosts();
 		const deps = this.embedFilterDeps ?? this.buildFilterSurfaceDeps();
 		if (!this.embedFilterDeps) this.embedFilterDeps = deps;
-		for (const leaf of this.app.workspace.getLeavesOfType('markdown')) {
-			const view = leaf.view;
+		for (const view of this.getDynamicFileTaskFilterMarkdownViews()) {
 			if (!(view instanceof MarkdownView) || view.file?.path !== filePath || view.getMode() !== 'preview') continue;
 			const root = this.getReadingPreviewContentRoot(view);
 			if (!root) continue;
@@ -23744,7 +23818,7 @@ export default class OperonPlugin extends Plugin {
 		};
 	}
 
-	private async requestSubtaskForParentId(operonId: string, canCommit?: () => boolean, acceptFile?: (file: TFile) => boolean): Promise<void> {
+	private async requestSubtaskForParentId(operonId: string, canCommit?: () => boolean, acceptFile?: (file: TFile) => boolean, requestedKind?: 'inline'): Promise<void> {
 		if (this.redirectDuplicateOperonIdAction(operonId)) return;
 		const indexed = this.indexer.getTask(operonId);
 		if (!indexed) {
@@ -23757,6 +23831,7 @@ export default class OperonPlugin extends Plugin {
 			const parsedFieldValues = Object.fromEntries(parentTask.fields.map(field => [field.key, field.value]));
 			await this.handleSubtaskRequest({
 				parentOperonId: operonId,
+				requestedKind,
 				canCommit, acceptFile,
 				parentDescription: parentTask.description,
 				parentFieldValues: {
@@ -23811,6 +23886,7 @@ export default class OperonPlugin extends Plugin {
 	}
 
 	private applyWorkspaceTweaks(): void {
+  updateDesktopBackdropDimming(this.settings.workspaceTweaksBackgroundDimming);
 		for (const doc of this.getWorkspaceTweakDocuments()) {
 			this.workspaceTweakBodyDocuments.add(doc);
 			doc.body.classList.toggle(WORKSPACE_TWEAK_HIDE_SCROLLBARS_CLASS, this.settings.workspaceTweaksHideScrollbars);
@@ -23827,6 +23903,7 @@ export default class OperonPlugin extends Plugin {
 	}
 
 	private removeWorkspaceTweakBodyClasses(): void {
+  disposeDesktopBackdrops();
 		for (const doc of this.getWorkspaceTweakDocuments()) {
 			this.workspaceTweakBodyDocuments.add(doc);
 		}
@@ -26665,9 +26742,7 @@ export default class OperonPlugin extends Plugin {
 				operonTaskWikilinkForceRevealEffect.of({ filePaths: [forceTaskWikilinkOverlayFilePath] }),
 			]
 			: [refreshEffect];
-		for (const leaf of this.app.workspace.getLeavesOfType('markdown')) {
-			const view = leaf.view;
-			if (!(view instanceof MarkdownView)) continue;
+		for (const view of this.getDynamicFileTaskFilterMarkdownViews()) {
 			if (scopedFilePaths && (!view.file || !scopedFilePaths.has(view.file.path))) {
 				skippedLeaves++;
 				continue;
@@ -34032,6 +34107,7 @@ export default class OperonPlugin extends Plugin {
 					format: 'inline',
 					lineNumber: task.primary.lineNumber,
 					fieldValues: payload,
+					inlinePropertyDraft: options.inlinePropertyDraft,
 					...(renderSource ? {} : { expectedCheckbox: task.checkbox, expectedFieldValues: options.expectedFieldValues }),
 				}],
 			);
@@ -34576,7 +34652,8 @@ export default class OperonPlugin extends Plugin {
 	private renderDirectInlineFieldEdit(task: IndexedTask, content: string, payload: Record<string, string>, options: TaskFieldsUpdateOptions): string | null {
 		const fields = options.mode === 'replace' ? this.parentLinkReplacementPayload(task, payload) : payload;
 		const rendered = this.writer.renderGuardedTaskSourceContent(task.primary.filePath, content, [{ operonId: task.operonId,
-			format: 'inline', lineNumber: task.primary.lineNumber, fieldValues: fields, expectedFieldValues: options.expectedFieldValues }]);
+			format: 'inline', lineNumber: task.primary.lineNumber, fieldValues: fields, expectedFieldValues: options.expectedFieldValues,
+			inlinePropertyDraft: options.inlinePropertyDraft }]);
 		return rendered.ok ? rendered.content : null;
 	}
 
@@ -34634,6 +34711,42 @@ export default class OperonPlugin extends Plugin {
 			}
 			this.setStatusCyclePerfChangedKeys(options.statusCycleTrace, Object.keys(normalizedPayload));
 			this.logStatusCyclePerfStage(options.statusCycleTrace, 'normalize', normalizeStartedAt);
+
+		// UI Text edits use the existing typed transaction for vault-v1 inline fields.
+		// Do not relax the legacy writer's rejection of native property changes.
+		if (task.primary.format === 'inline') {
+			const mappings = this.settings.keyMappings;
+			const mappingSnapshot = JSON.stringify(mappings);
+			const textMappings = mappings.filter(mapping => mapping.isSystem === false && mapping.type === 'text'
+				&& Object.prototype.hasOwnProperty.call(normalizedPayload, mapping.canonicalKey));
+			if (textMappings.length) {
+				try {
+					const definitions = this.storage.getCommittedInlinePropertyDefinitions();
+					const nativeMappings = textMappings.filter(mapping => resolveInlinePropertyDefinition(
+						mapping.visiblePropertyName, 'text', mappings, definitions).encoding === 'vault-v1');
+					if (nativeMappings.length) {
+						const file = this.app.vault.getAbstractFileByPath(task.primary.filePath);
+						if (!(file instanceof TFile)) return false;
+						const content = await this.app.vault.read(file);
+						const parsed = findInlinePropertyTask(content, file.path, operonId, mappings)?.parsed;
+						if (!parsed) return false;
+						const projection = readParsedInlinePropertyProjection(parsed,
+							Object.fromEntries(nativeMappings.map(mapping => [mapping.visiblePropertyName, 'text' as const])), mappings, definitions);
+						if (projection.properties.some(property => {
+							const mapping = nativeMappings.find(item => item.visiblePropertyName === property.sourceName)!;
+							return !['valid', 'missing'].includes(property.state)
+								|| (task.fieldValues[mapping.canonicalKey] ?? '') !== (property.value ?? '');
+						})) return false;
+						const prepared = prepareMappedInlineProperties(content, file.path, operonId,
+							nativeMappings.map(mapping => ({ field: mapping.canonicalKey,
+								value: normalizedPayload[mapping.canonicalKey] || undefined })), mappings, definitions);
+						const canCommit = options.canCommit;
+						options = { ...options, inlinePropertyDraft: prepared.changes,
+							canCommit: () => JSON.stringify(this.settings.keyMappings) === mappingSnapshot && canCommit?.() !== false };
+					}
+				} catch { return false; }
+			}
+		}
 
 			const writerStartedAt = options.statusCycleTrace ? enginePerfNow() : 0;
 			const precommittedAggregateIds = new Set<string>();
@@ -34719,6 +34832,7 @@ export default class OperonPlugin extends Plugin {
 		if (!wroteTask) {
 			wroteTask = await this.writer.writeTaskFields(operonId, normalizedPayload, {
 				mode,
+				inlinePropertyDraft: options.inlinePropertyDraft,
                 expectedFieldValues: parentLinkExpected
                     ? { ...parentLinkExpected, ...options.expectedFieldValues }
                     : options.expectedFieldValues, canCommit: options.canCommit,
