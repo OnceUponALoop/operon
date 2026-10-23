@@ -7,7 +7,39 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### New
+
+- Added a shared **desktop Task Editor workspace** with native Markdown and task fields in one working level. Show or hide either panel without losing drafts, and open nested workspaces while keeping previous levels visible underneath.
+- Added **Layout and opening** settings for left/right Task Editor placement and separate File/Inline source-opening preferences. File tasks open with their source by default; Inline tasks start with the editor alone. Preferences apply to newly opened workspaces, and **Open Source** keeps its source-only opening.
+- Added **Result Behavior** settings in Task Finder so File and Inline task results can independently open the source file, Task Editor, or both on desktop.
+
+### Improved
+
+- Reduced routine startup, background repair, Docs update, and task destination-history notifications while preserving manual results and existing save-error and recovery diagnostics.
+- **Task context menus** show **Stop timer** for the task currently being tracked and **Start timer** for other tasks, so tracking can be started or stopped from the same action across supported views.
+- **Task Creator** closes immediately after submitting an Inline or File task, while creation continues in the background and normal notifications remain available.
+- **Markdown lightboxes** show the note body in Reading, Live Preview, and Source modes, hiding Properties/YAML while preserving metadata in the file and in ordinary Obsidian tabs. Dynamic File Task Filter remains available at the top or bottom of the body.
+- **Task Editor and source editing** stay synchronized, preserving untouched source fields and newer drafts while unsaved Task Editor edits win same-field conflicts. Native Properties saves avoid false conflict warnings while retaining protections for task identity and moves, Additional properties, shared buffers, and YAML.
+- Improved **Task Editor opening responsiveness** by preparing native Markdown only when needed and reusing eligible recently closed Markdown views for faster reopening. Panels appear together when ready, with fresh selection, scroll, and undo state for each new session.
+- **Responsive workspaces** preserve saved Markdown sizes and keep Task Editor at the source's top alignment even when shown alone. Short editors fit their content, while long editors retain access to the last section through scrolling. The full-size color picker opens beyond narrow editor edges without changing its layout, and **Stats → Subtasks** opens the standard Subtasks window while preserving the editor draft.
+- Unified **lightbox controls** with the selected left/right placement across Markdown, Bases, Tables, web pages, and media previews. Panel toggles sit below Close, height controls in the shared middle rail, and width controls below Markdown; transfer and dimming controls appear with the source. Panels and buttons use **6 px corners**, panel toggles use only Operon tooltips, and a 350 ms initial hover delay preserves immediate keyboard access. Actions stay unchanged, and open previews retain their position.
+- Improved **lightbox Escape handling** so only the top level closes through its normal save checks. Menus, suggestions, and nested pickers keep priority, and hidden overlays no longer block closing.
+
+### Fixed
+
+- Fixed rich **task-chip and read-only Notes tooltips** being clipped by short Dynamic File Task Filters and other compact task surfaces, preserving their content and mouse/keyboard behavior.
+- Fixed **custom key icons** being replaced by generic property icons in Task Creator, Task Editor, and Table fields, while preserving checkbox states and read-only indicators.
+- Fixed **deleted custom key names** failing to be reused. Unused names can be recreated with another type, and displaying an empty Table column no longer blocks reuse; existing values and real dependencies remain protected.
+- Fixed **deleted, unused custom fields** lingering in Task Editor’s Additional picker, while keeping active custom fields, normal Obsidian properties in use, and task, template, or draft values available.
+- Fixed failed **custom key creation or deletion** leaving settings partly changed. Failed saves preserve the previous configuration and entered values for retrying without false duplicate-name errors, and validation feedback appears directly below **Add**.
+
+### Removed
+
+- Retired the legacy **Task Editor File Body** panel, its controls and previews, and the **Show line numbers** and **Highlight active line** options from Settings and Settings Search. Native Markdown provides the desktop source view; Description/Notes and checkbox popovers retain their shared Markdown editor, and existing saved settings remain compatible.
+
 ### Validation
+
+- Full local Plugin checks, strict lint, production build, release guard, and code review passed; the previous full regression run passed **5,240/5,240**, and focused notification, tooltip, color-picker/Subtasks checks and manual UI checks passed.
 
 ## [4.1.0] - 2026-10-20
 

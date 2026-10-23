@@ -6,6 +6,7 @@ import {
 	normalizeTaskEditorMobileCoreTools,
 	normalizeTaskEditorWorkflowPickers,
 	OperonSettings,
+	normalizeTaskFinderResultBehavior,
 } from '../types/settings';
 import { WriteQueue } from './write-queue';
 import { preserveInvalidJsonFile, shouldSkipStoreWrite, writeJsonSafely, type RecoveredStoreWriteOptions } from './storage-file-ops';
@@ -18,6 +19,9 @@ export type TaskUiPreferenceStoreSettings = Pick<
 	OperonSettings,
 	| 'taskCreatorToolbar'
 	| 'taskEditorSections'
+	| 'taskEditorPosition'
+	| 'taskEditorFileShowSource'
+	| 'taskEditorInlineShowSource'
 	| 'taskEditorShowLineNumbers'
 	| 'taskEditorHighlightActiveLine'
 	| 'taskEditorWorkflowPickers'
@@ -32,6 +36,8 @@ export type TaskUiPreferenceStoreSettings = Pick<
 	| 'kanbanTaskShowNoteAction'
 	| 'kanbanTaskShowSubtaskAction'
 	| 'kanbanTaskShowPlainCheckboxAction'
+	| 'taskFinderFileResultBehavior'
+	| 'taskFinderInlineResultBehavior'
 	| 'taskFinderCompactChips'
 	| 'taskFinderDefaultScope'
 	| 'taskFinderRememberLastScopes'
@@ -60,7 +66,7 @@ export type TaskUiPreferenceStoreSettings = Pick<
 	| 'filterTaskShowPlainCheckboxAction'
 >;
 
-type DefaultedTaskUiPreferenceKey = 'taskEditorUseMobileLayout'
+type DefaultedTaskUiPreferenceKey = 'taskFinderFileResultBehavior' | 'taskFinderInlineResultBehavior' | 'taskEditorPosition' | 'taskEditorFileShowSource' | 'taskEditorInlineShowSource' | 'taskEditorUseMobileLayout'
  | 'inlineTaskShowSourceAction'
  | 'filterTaskShowSourceAction'
  | 'kanbanTaskShowSourceAction'
@@ -88,6 +94,9 @@ function cloneSettings(settings: TaskUiPreferenceStoreSettings): TaskUiPreferenc
 	return {
 		taskCreatorToolbar: settings.taskCreatorToolbar.map(item => ({ ...item })),
 		taskEditorSections: normalizeTaskEditorSections(settings.taskEditorSections),
+		taskEditorPosition: settings.taskEditorPosition,
+		taskEditorFileShowSource: settings.taskEditorFileShowSource,
+		taskEditorInlineShowSource: settings.taskEditorInlineShowSource,
 		taskEditorShowLineNumbers: settings.taskEditorShowLineNumbers,
 		taskEditorHighlightActiveLine: settings.taskEditorHighlightActiveLine,
 		taskEditorWorkflowPickers: settings.taskEditorWorkflowPickers.map(item => ({ ...item })),
@@ -102,6 +111,8 @@ function cloneSettings(settings: TaskUiPreferenceStoreSettings): TaskUiPreferenc
 		kanbanTaskShowNoteAction: settings.kanbanTaskShowNoteAction,
 		kanbanTaskShowSubtaskAction: settings.kanbanTaskShowSubtaskAction,
 		kanbanTaskShowPlainCheckboxAction: settings.kanbanTaskShowPlainCheckboxAction,
+		taskFinderFileResultBehavior: settings.taskFinderFileResultBehavior,
+		taskFinderInlineResultBehavior: settings.taskFinderInlineResultBehavior,
 		taskFinderCompactChips: settings.taskFinderCompactChips.map(item => ({ ...item })),
 		taskFinderDefaultScope: settings.taskFinderDefaultScope.map(item => ({ ...item })),
 		taskFinderRememberLastScopes: settings.taskFinderRememberLastScopes,
@@ -173,6 +184,9 @@ function readStoreData(
 	return {
 		taskCreatorToolbar: readArray(raw.taskCreatorToolbar, fallback.taskCreatorToolbar),
 		taskEditorSections: normalizeTaskEditorSections(raw.taskEditorSections ?? fallback.taskEditorSections),
+		taskEditorPosition: raw.taskEditorPosition === 'left' ? 'left' : raw.taskEditorPosition === 'right' ? 'right' : fallback.taskEditorPosition,
+		taskEditorFileShowSource: readBoolean(raw.taskEditorFileShowSource, fallback.taskEditorFileShowSource),
+		taskEditorInlineShowSource: readBoolean(raw.taskEditorInlineShowSource, fallback.taskEditorInlineShowSource),
 		taskEditorShowLineNumbers: readBoolean(raw.taskEditorShowLineNumbers, fallback.taskEditorShowLineNumbers),
 		taskEditorHighlightActiveLine: readBoolean(raw.taskEditorHighlightActiveLine, fallback.taskEditorHighlightActiveLine),
 		taskEditorWorkflowPickers: normalizeTaskEditorWorkflowPickers(
@@ -198,6 +212,8 @@ function readStoreData(
 		kanbanTaskShowNoteAction: readBoolean(raw.kanbanTaskShowNoteAction, fallback.kanbanTaskShowNoteAction),
 		kanbanTaskShowSubtaskAction: readBoolean(raw.kanbanTaskShowSubtaskAction, fallback.kanbanTaskShowSubtaskAction),
 		kanbanTaskShowPlainCheckboxAction: readBoolean(raw.kanbanTaskShowPlainCheckboxAction, fallback.kanbanTaskShowPlainCheckboxAction),
+		taskFinderFileResultBehavior: normalizeTaskFinderResultBehavior(raw.taskFinderFileResultBehavior, fallback.taskFinderFileResultBehavior),
+		taskFinderInlineResultBehavior: normalizeTaskFinderResultBehavior(raw.taskFinderInlineResultBehavior, fallback.taskFinderInlineResultBehavior),
 		taskFinderCompactChips: readArray(raw.taskFinderCompactChips, fallback.taskFinderCompactChips),
 		taskFinderDefaultScope: readArray(raw.taskFinderDefaultScope, fallback.taskFinderDefaultScope),
 		taskFinderRememberLastScopes: readBoolean(raw.taskFinderRememberLastScopes, fallback.taskFinderRememberLastScopes),
@@ -273,7 +289,11 @@ export class TaskUiPreferenceStore {
 	}
 
 	loadFromPackage(settings: TaskUiPreferencePackageSettings): void {
-		this.settings = cloneSettings({ ...settings, taskEditorUseMobileLayout: settings.taskEditorUseMobileLayout === true,
+		this.settings = cloneSettings({ ...settings,
+   taskFinderFileResultBehavior: normalizeTaskFinderResultBehavior(settings.taskFinderFileResultBehavior, 'source-and-editor'),
+   taskFinderInlineResultBehavior: normalizeTaskFinderResultBehavior(settings.taskFinderInlineResultBehavior, 'editor'), taskEditorPosition: settings.taskEditorPosition === 'left' ? 'left' : 'right',
+   taskEditorFileShowSource: typeof settings.taskEditorFileShowSource === 'boolean' ? settings.taskEditorFileShowSource : true,
+   taskEditorInlineShowSource: settings.taskEditorInlineShowSource === true, taskEditorUseMobileLayout: settings.taskEditorUseMobileLayout === true,
    inlineTaskShowSourceAction: settings.inlineTaskShowSourceAction !== false,
    filterTaskShowSourceAction: settings.filterTaskShowSourceAction !== false,
    kanbanTaskShowSourceAction: settings.kanbanTaskShowSourceAction !== false,

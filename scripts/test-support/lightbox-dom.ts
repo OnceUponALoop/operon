@@ -12,6 +12,7 @@ export function lightboxFixture() {
   removeClass(name: string) { this.classes.delete(name); }
   toggleClass(name: string, yes: boolean) { if (yes) this.classes.add(name); else this.classes.delete(name); }
   closest() { return null; }
+  getClientRects() { return this.attrs.hidden === '' ? [] : [this.getBoundingClientRect()]; }
   getBoundingClientRect() { return {left:10,top:10,bottom:30,width:100,height:80}; }
   querySelectorAll(): Element[] { return this.children.flatMap(el => [el, ...el.querySelectorAll()]); }
   createSpan(options?: any) { return this.createEl('span',options); }
@@ -26,7 +27,7 @@ export function lightboxFixture() {
   remove() { this.connected = false; }
  }
  doc.getElementById = (id: string) => doc.body.querySelectorAll().find((el: Element) => el.id === id) ?? null;
- doc.defaultView = { HTMLElement: Element, innerWidth:1200, innerHeight:900, setTimeout, clearTimeout, addEventListener() {}, removeEventListener() {} }; doc.win = { createSpan: () => new Element() }; doc.body = new Element();
+ doc.defaultView = { HTMLElement: Element, ResizeObserver: class { observe() {} disconnect() {} }, getComputedStyle: () => ({borderTopRightRadius: '12px'}), innerWidth:1200, innerHeight:900, setTimeout, clearTimeout, addEventListener() {}, removeEventListener() {} }; doc.win = { createSpan: () => new Element() }; doc.body = new Element();
  const anchor = doc.body.createDiv(); anchor.focus();
  return { doc, anchor: anchor as unknown as HTMLElement, listeners, emit: (key: string, event: any) => [...(listeners.get(key) ?? [])].forEach(fn => fn(event)) };
 }

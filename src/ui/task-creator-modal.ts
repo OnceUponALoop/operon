@@ -1,3 +1,4 @@
+import { getNativePropertyIndex } from '../indexer/native-property-index';
 import { applyDesktopModalBackdrop } from './modal-backdrop';
 import { bindCreatorToolbarInteractionState } from './surface-interaction-state';
 import { PreparedTaskCreatorDraft, type PreparedTaskCreatorAdapter } from './task-creator-prepared-draft';
@@ -33,7 +34,7 @@ import {
 } from './compact-markdown-editor-surface';
 import { formatReminderDisplayItem } from './reminder-display';
 import { openTaskFieldPicker } from './task-field-picker-dispatch';
-import { getCheckboxPropertyIcon, getCheckboxPropertyTypeIcon, getCustomFieldIcon, getCustomFieldLabel, getCustomFieldMapping, isProjectedCustomFieldType } from './custom-field-surfaces';
+import { getNativePropertyIcon, getCheckboxPropertyIcon, getCheckboxPropertyTypeIcon, getCustomFieldIcon, getCustomFieldLabel, getCustomFieldMapping, isProjectedCustomFieldType } from './custom-field-surfaces';
 import {
 	debugTaskFieldSuggestion,
 	resolveTaskFieldSuggestions,
@@ -45,6 +46,7 @@ import {
 	clearWindowTimeout,
 	getActiveDocument,
 	getActiveWindow,
+ getOwnerWindow,
 	setWindowTimeout,
 } from '../core/dom-compat';
 import {
@@ -100,6 +102,8 @@ export interface TaskCreatorModalOptions {
 	getInlineParentPreview?: (draft: TaskCreatorDraft) => string | null;
  /** Internal shared draft and submission adapter. */
  preparedAdapter?: PreparedTaskCreatorAdapter;
+ /** Keep a detached submission owned until it finishes or its draft is restored. */
+ onSubmissionStateChange?: () => void;
 	settings: OperonSettings;
 	allTasks: IndexedTask[];
 	getAllTasks?: () => IndexedTask[];
@@ -511,7 +515,11 @@ export function purgeTaskCreatorModalArtifacts(root: ParentNode = getActiveDocum
 export class TaskCreatorModal extends Modal {
 	private readonly options: TaskCreatorModalOptions;
  private readonly prepared: PreparedTaskCreatorDraft | null;
+ private draftPropertiesCleanup?: () => void;
  private preparedClosed = false;
+ private detachedForSubmit = false;
+ private submissionClosePending = false;
+ private hasOpened = false;
  private templateErrorEl: HTMLElement | null = null;
 	private readonly submitMode: TaskCreatorSubmitMode;
 	private draft: TaskCreatorDraft;
@@ -596,6 +604,12 @@ export class TaskCreatorModal extends Modal {
 	}
 
 	onOpen(): void {
+  this.draftPropertiesCleanup?.();
+  this.draftPropertiesCleanup = getNativePropertyIndex(this.app).observeDraftProperties(() => [
+   ...Object.keys(this.draft.fieldValues),
+   ...(this.prepared?.draft.snapshot().fields.filter(field => field.state !== 'missing' && field.state !== 'removed').map(field => field.property.sourceName) ?? []),
+  ]);
+  const firstOpen = !this.hasOpened; this.hasOpened = true;
 		this.cleanupInteractionState?.();
 		this.cleanupInteractionState = null;
 		this.containerEl.addClass('operon-task-creator-modal-container');
@@ -621,7 +635,7 @@ export class TaskCreatorModal extends Modal {
 		// Seed the caret once; later focus recovery keeps the user’s current position.
 		const descriptionEnd = this.getDescriptionDisplayValue().length;
 		this.descriptionCompactEditor?.setSelection?.({ anchor: descriptionEnd, head: descriptionEnd });
-  if (this.prepared) void this.selectPreparedTemplateId(this.draft.fileTemplateId);
+  if (this.prepared && firstOpen) void this.selectPreparedTemplateId(this.draft.fileTemplateId);
 		this.indexUpdatesUnsubscribe?.();
 		this.indexUpdatesUnsubscribe = this.options.subscribeIndexUpdates?.(() => {
 			this.refreshBlockedByDependencyControl();
@@ -650,8 +664,7 @@ export class TaskCreatorModal extends Modal {
 		this.backdropCleanup = null;
 		this.cleanupInteractionState?.();
 		this.cleanupInteractionState = null;
-  this.preparedClosed = true;
-  this.prepared?.close();
+  if (!this.detachedForSubmit) { this.preparedClosed = true; this.prepared?.close(); this.draftPropertiesCleanup?.(); this.draftPropertiesCleanup = undefined; }
 		this.nativeCloseButtonCleanup?.();
 		this.nativeCloseButtonCleanup = null;
 		this.indexUpdatesUnsubscribe?.();
@@ -679,9 +692,14 @@ export class TaskCreatorModal extends Modal {
 		this.noteCompactEditor = null;
 		cleanupOperonHoverTooltips(this.contentEl);
 		this.contentEl.empty();
-		if (!this.resolved) {
+		if (!this.resolved && !this.detachedForSubmit) {
 			this.options.onCancel?.();
 		}
+  this.submissionClosePending = false;
+  if (this.detachedForSubmit && !this.isSubmitting) {
+   if (this.options.onSubmissionStateChange) this.options.onSubmissionStateChange();
+   else this.restoreSubmittedDraft();
+  }
 	}
 
 	private render(): void {
@@ -1814,7 +1832,7 @@ export class TaskCreatorModal extends Modal {
   if (refreshPreview) this.refreshInlineParentPreview();
   this.prepared.updateInputs(this.draft.description);
   this.prepared.syncLegacy(this.draft);
-  if (!this.toolsEl) return;
+  if (!this.toolsEl || this.detachedForSubmit) return;
   this.renderFieldButtons(); this.renderSubmitControls(); this.applyThemeColor();
   this.noteCompactEditor?.setSourceValue(this.draft.note);
  }
@@ -1873,21 +1891,44 @@ export class TaskCreatorModal extends Modal {
   this.refreshPreparedDraft(false);
   return this.prepared.submission('inline', this.draft.description, this.draft.inlineCompletionMode);
  }
+ get isCreatorSessionOpen(): boolean { return !this.preparedClosed; }
+ get hasDetachedSubmission(): boolean { return this.detachedForSubmit; }
+ get canRestoreSubmittedDraft(): boolean { return this.detachedForSubmit && !this.submissionClosePending && !this.isSubmitting && !this.preparedClosed; }
+ restoreSubmittedDraft(): void {
+  if (!this.canRestoreSubmittedDraft) return;
+  this.detachedForSubmit = false;
+  this.containerEl.removeClass('operon-task-creator-force-hidden');
+  this.modalEl.removeClass('operon-task-creator-force-hidden');
+  this.open();
+ }
  private async submitPrepared(mode: TaskCreatorCreateType): Promise<void> {
   const prepared = this.prepared;
-  if (!prepared || this.isSubmitting || this.preparedUncertain || !prepared.canSubmit(mode) || !isTaskCreatorCreateTypeAllowed(this.submitMode, mode) || !this.ensureDescription()) return;
+  if (!prepared || this.isSubmitting || this.preparedClosed || this.preparedUncertain || !prepared.canSubmit(mode) || !isTaskCreatorCreateTypeAllowed(this.submitMode, mode) || !this.ensureDescription()) return;
   this.closeActivePicker(); this.closeSuggestions();
   const request = prepared.submission(mode, this.draft.description, this.draft.inlineCompletionMode);
   this.isSubmitting = true; this.contentEl.inert = true; this.renderSubmitControls();
+  this.detachedForSubmit = true; this.submissionClosePending = true;
   try {
+   this.options.onSubmissionStateChange?.();
+   this.hideImmediately(); this.forceClose();
+   // Let the closed surface paint before starting source/index work.
+   await new Promise<void>(resolve => getOwnerWindow(this.containerEl).setTimeout(resolve, 0));
+   if (this.preparedClosed) return;
    const result = await prepared.adapter.onSubmit(request);
-   if (result === true || typeof result === 'object' && result.outcome === 'committed') { this.resolved = true; this.forceClose(); }
-   else if (typeof result === 'object') {
+   if (this.preparedClosed) return;
+   if (result === true || typeof result === 'object' && result.outcome === 'committed') {
+    this.resolved = true; this.preparedClosed = true; prepared.close(); this.detachedForSubmit = false;
+   } else if (typeof result === 'object') {
     if (result.message) new Notice(result.message);
     this.preparedUncertain = result.outcome === 'uncertain';
    }
   } catch (error) { console.error('Operon: prepared Creator submit failed', error); }
-  finally { this.isSubmitting = false; this.contentEl.inert = false; if (!this.preparedClosed) this.renderSubmitControls(); }
+  finally {
+   if (this.preparedClosed) { this.draftPropertiesCleanup?.(); this.draftPropertiesCleanup = undefined; }
+   this.isSubmitting = false; this.contentEl.inert = false;
+   if (this.options.onSubmissionStateChange) this.options.onSubmissionStateChange();
+   else this.restoreSubmittedDraft();
+  }
  }
 
 	private getAllTasks(): IndexedTask[] {
@@ -2029,7 +2070,7 @@ export class TaskCreatorModal extends Modal {
   const field = this.prepared?.field(key);
   if (field?.readOnlyReason === 'automatic') return 'shield-alert';
   if (field?.property.interpretation === 'native' && field.property.type === 'checkbox') return getCheckboxPropertyIcon(field.value, getCheckboxPropertyTypeIcon(this.options.settings.keyMappings, field.property.sourceName));
-  if (field?.property.interpretation === 'native') return ({ text: 'text', list: 'list', number: 'hash', checkbox: 'square-dashed', date: 'calendar', datetime: 'calendar-clock' } as const)[field.property.type ?? 'text'];
+  if (field?.property.interpretation === 'native') return getNativePropertyIcon(this.options.settings.keyMappings, field.property.sourceName, ({ text: 'text', list: 'list', number: 'hash', checkbox: 'square-dashed', date: 'calendar', datetime: 'calendar-clock' } as const)[field.property.type ?? 'text']);
 		const customMapping = getCustomFieldMapping(this.options.settings.keyMappings, key);
 		if (customMapping) return getCustomFieldIcon(customMapping);
 		return getConfiguredKeyMappingIcon(key, this.options.settings.keyMappings)
@@ -2264,7 +2305,12 @@ export class TaskCreatorModal extends Modal {
 	}
 
 	completeAndClose(): void {
+  this.draftPropertiesCleanup?.(); this.draftPropertiesCleanup = undefined;
 		this.resolved = true;
+  this.preparedClosed = true; this.prepared?.close();
+  if (this.detachedForSubmit) {
+   this.detachedForSubmit = false; this.options.onSubmissionStateChange?.(); return;
+  }
 		this.hideImmediately();
 		this.forceClose();
 	}
@@ -2272,13 +2318,10 @@ export class TaskCreatorModal extends Modal {
 	private hideImmediately(): void {
 		this.containerEl.addClass('operon-task-creator-force-hidden');
 		this.modalEl.addClass('operon-task-creator-force-hidden');
-		for (const el of Array.from(this.containerEl.ownerDocument.querySelectorAll<HTMLElement>('.operon-task-creator-modal-container, .operon-task-creator-modal'))) {
-			el.addClass('operon-task-creator-force-hidden');
-		}
 	}
 
 	private removeCurrentModalArtifacts(): void {
-		purgeTaskCreatorModalArtifacts(this.containerEl.ownerDocument);
+		this.containerEl.remove();
 	}
 
 	private forceClose(): void {
