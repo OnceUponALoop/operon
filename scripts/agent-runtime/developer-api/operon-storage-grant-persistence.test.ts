@@ -219,6 +219,8 @@ function stripFileTaskDisplayTitleDefaults(data: OperonDataPackageV1, verify = f
 	const settings = data.settings as Partial<typeof data.settings>;
 	if (verify) assert.equal(settings.fileTaskDisplayTitleEnabled, false);
 	delete settings.fileTaskDisplayTitleEnabled;
+	if (verify) assert.equal(settings.fileTaskDisplayTitleChangeMode, 'keep');
+	delete settings.fileTaskDisplayTitleChangeMode;
 	if (verify) assert.equal(settings.settingsVersion, 116);
 	settings.settingsVersion = 115;
 	const mappings = data.taxonomy.keyMappings.system;

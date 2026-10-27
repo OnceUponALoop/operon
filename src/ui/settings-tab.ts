@@ -1577,12 +1577,13 @@ export class OperonSettingsTab extends PluginSettingTab {
 		return this.buildTaskSettingsGroups([
 			['newFileTaskCreationDefaults', ['taskCreatorDefaultToFileTask', 'fileTaskAfterCreate', 'taskCreatorDefaultFileTemplateId', 'fileTaskUseLastTemplateAsDefault'], (el, key) => this.renderFileCreationDefaultsSection(el, key), ['DOCS-024 Task templates', 'DOCS-020 Task Creator']],
 			['fileTaskTemplates', ['fileTaskTemplateFolder'], el => this.renderFileTemplatesSection(el), 'DOCS-024 Task templates'],
-			['display', ['fileTaskDisplayTitleEnabled'], (el, key) => this.renderFileTaskDisplaySettings(el, key), ['DOCS-013 File tasks', 'DOCS-039 Key mappings']],
+			['display', ['fileTaskDisplayTitleEnabled', 'fileTaskDisplayTitleChangeMode'], (el, key) => this.renderFileTaskDisplaySettings(el, key), ['DOCS-013 File tasks', 'DOCS-039 Key mappings']],
 			['periodicNotesAsFileTasks', ['createDailyNotesAsOperonTask', 'createWeeklyNotesAsOperonTask'], (el, key) => this.renderPeriodicFileTaskSettings(el, key), 'DOCS-137 Daily and Weekly Notes'],
 			['fileTaskConversion', ['inlineToFileTaskMovePlainCheckboxes', 'inlineToFileTaskSourceDisposition'], (el, key) => this.renderFileConversionSection(el, key), 'DOCS-019 Converting inline and file tasks'],
 			['excludedFolders', ['excludedFolders'], el => this.renderExcludedFolderSettings(el), 'DOCS-054 Missing tasks'],
 			['fileTaskMigrationTitle', ['fileTaskMigration'], el => this.renderFileTaskMigrationSettings(el), ['DOCS-082 Bulk convert a folder into file tasks', 'DOCS-093 How to migrate from TaskNotes']],
-		], entries, t('settings', 'subtabFileTasks'), 'DOCS-013 File tasks');
+		], entries, t('settings', 'subtabFileTasks'), 'DOCS-013 File tasks', undefined,
+			key => key !== 'fileTaskDisplayTitleChangeMode' || this.settings.fileTaskDisplayTitleEnabled);
 	}
 
 	private buildTaskCaptureSearchSection(
@@ -3379,6 +3380,9 @@ export class OperonSettingsTab extends PluginSettingTab {
 		if (key === 'inlineToFileTaskSourceDisposition') {
 			return text === 'remove-inline-task' ? 'remove-inline-task' : 'keep-link';
 		}
+		if (key === 'fileTaskDisplayTitleChangeMode') {
+			return text === 'ask' ? text : 'keep';
+		}
 		if (key === 'inlineTaskParentInlineTargetMode') {
 			return text === 'default' ? 'default' : 'below-parent';
 		}
@@ -3674,6 +3678,10 @@ export class OperonSettingsTab extends PluginSettingTab {
  }
 
 	private getSettingsSearchDropdownOptions(key: OperonSettingSearchKey): Record<string, string> {
+		if (key === 'fileTaskDisplayTitleChangeMode') return {
+			keep: t('settings', 'fileTaskDisplayTitleChangeModeKeep'),
+			ask: t('settings', 'fileTaskDisplayTitleChangeModeAsk'),
+		};
   if (key === 'taskEditorPosition') return { right: t('settings', 'taskEditorPositionRight'), left: t('settings', 'taskEditorPositionLeft') };
   if (key === 'workspaceTweaksBackgroundDimming') return Object.fromEntries(BACKGROUND_DIMMING_OPTIONS.map(value => [String(value), value === 50 ? t('settings', 'workspaceTweaksBackgroundDimmingDefault') : `${value}%`]));
 		if (key === 'calendarTimeGridScale') {
@@ -5870,6 +5878,17 @@ export class OperonSettingsTab extends PluginSettingTab {
 				'fileTaskDisplayTitleEnabled',
 				{ onAfterChange: () => this.redisplayPreservingScroll() },
 			);
+		}
+		if (!this.settings.fileTaskDisplayTitleEnabled) return;
+		if (!selectedKey || selectedKey === 'fileTaskDisplayTitleChangeMode') {
+			this.renderBoundDropdownSetting(containerEl, t('settings', 'fileTaskDisplayTitleChangeMode'),
+				t('settings', 'fileTaskDisplayTitleChangeModeDesc'), 'fileTaskDisplayTitleChangeMode', {
+					value: this.settings.fileTaskDisplayTitleChangeMode,
+					dropdownOptions: [
+						{ value: 'keep', label: t('settings', 'fileTaskDisplayTitleChangeModeKeep') },
+						{ value: 'ask', label: t('settings', 'fileTaskDisplayTitleChangeModeAsk') },
+					],
+				});
 		}
 	}
 

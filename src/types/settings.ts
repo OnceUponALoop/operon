@@ -1,4 +1,5 @@
 import { normalizeLightboxSizes, type LightboxSizes } from '../core/lightbox-size';
+import type { FileTaskTitleChangeMode } from '../core/filename-rule';
 import { normalizeBackgroundDimming } from '../core/background-dimming';
 import { TASK_INFO_CHIPS, isTaskInfoChipKey } from '../core/task-info-chips';
 import { cloneInlinePropertyDefinitions, validateInlinePropertyDefinitions } from '../core/inline-property-definitions';
@@ -1715,6 +1716,7 @@ export interface OperonSettings extends TaskCardSettings {
 	fileTasksFolder: string;
 	/** If true, File Task labels use the configured frontmatter property when present. */
 	fileTaskDisplayTitleEnabled: boolean;
+	fileTaskDisplayTitleChangeMode: FileTaskTitleChangeMode;
 	/** Optional pipeline-specific destination folders for File Tasks. */
 	fileTaskPipelineLocations: FileTaskPipelineLocationRule[];
 	/** Move existing notes after they are converted into a File Task. */
@@ -2343,6 +2345,7 @@ export const DEFAULT_SETTINGS: OperonSettings = {
 	assigneesRequired: false,
 	fileTasksFolder: 'Operon/Tasks',
 	fileTaskDisplayTitleEnabled: false,
+	fileTaskDisplayTitleChangeMode: 'keep',
 	fileTaskPipelineLocations: [],
 	moveConvertedNotesToPipelineLocation: false,
 	fileTaskAutoArchiveEnabled: false,
@@ -4939,6 +4942,7 @@ export function migrateSettings(raw: unknown): OperonSettings {
 	}
 
 	out.fileTaskDisplayTitleEnabled = src.fileTaskDisplayTitleEnabled === true;
+	out.fileTaskDisplayTitleChangeMode = src.fileTaskDisplayTitleChangeMode === 'ask' ? 'ask' : 'keep';
 
 	// Ensure key mappings include all canonical keys.
 	if (out.keyMappings.length === 0) {

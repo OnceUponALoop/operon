@@ -69,8 +69,8 @@
     },
     {
       "path": "DOCS-013 File tasks.md",
-      "sha256": "5a0aa30b24f4b3d6a09d46decab929453307a965416a90677d1c35bf0f790bff",
-      "bytes": 7073
+      "sha256": "68d9d9b7a5bb34231f71ea0319f17575cb868c9f833905161a6c429ab2cb4ce2",
+      "bytes": 8202
     },
     {
       "path": "DOCS-014 Inline vs file tasks.md",
@@ -199,8 +199,8 @@
     },
     {
       "path": "DOCS-039 Key mappings.md",
-      "sha256": "3488fe60ac97cbe2594a7fa1439c7996cf97b0bfca5495e94220c632e55c50a8",
-      "bytes": 10362
+      "sha256": "03f38c83bc558f07011be21c64f59dbccded8410c2c2363784e75b221d675e15",
+      "bytes": 10441
     },
     {
       "path": "DOCS-040 Custom keys.md",
@@ -768,5 +768,5 @@
       "bytes": 7479
     }
   ],
-  "generatedAt": "2026-10-26T21:35:44.705Z"
+  "generatedAt": "2026-10-26T21:45:52.121Z"
 }
