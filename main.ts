@@ -701,6 +701,7 @@ import { FlowTimeBreakController } from './src/systems/flow-time-break';
 import { FormatConverter } from './src/systems/format-converter';
 import { FileTaskArchiver } from './src/systems/file-task-archiver';
 import { FileTaskPipelineMover } from './src/systems/file-task-pipeline-mover';
+import { FileTaskTitleRenamer } from './src/systems/file-task-title-renamer';
 import { ExternalCalendarService } from './src/systems/external-calendar-service';
 import { buildExternalCalendarItems } from './src/systems/external-calendar-query';
 import { formatDurationHuman, parseLocalDatetime } from './src/systems/tracker-utils';
@@ -16735,6 +16736,16 @@ export default class OperonPlugin extends Plugin {
 				);
 			this.initializeIndexV8ManifestMonitor();
 		this.initializeTableFilePropertyTypeMonitor();
+		const fileTaskTitleRenamer = new FileTaskTitleRenamer(
+			this.indexer, () => this.settings, () => this.startupReady,
+			task => {
+				const file = this.app.vault.getAbstractFileByPath(task.primary.filePath);
+				return file instanceof TFile ? file.basename : null;
+			},
+			(operonId, filename) => this.renameFileTaskFromTitle(operonId, filename),
+			message => { new Notice(message); },
+		);
+		this.register(() => fileTaskTitleRenamer.destroy());
 
 		// Refresh sidebar views whenever the index is updated
 		// Suppressed during startup — onLayoutReady handles the authoritative render

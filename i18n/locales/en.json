@@ -2293,7 +2293,7 @@
 		"fileTaskDisplayTitleEnabled": "Use a property as the File Task display title",
 		"fileTaskDisplayTitleEnabledDesc": "Use the read-only Key Mapping as the File Task label. Edit the property to change the display title; rename the file separately.",
 		"fileTaskDisplayTitleChangeMode": "When the display title changes",
-		"fileTaskDisplayTitleChangeModeDesc": "Keep the filename or ask after an Operon UI title save.",
+		"fileTaskDisplayTitleChangeModeDesc": "Keep the filename, ask after an Operon UI title save, or rename automatically whenever the display title changes, including edits outside Operon (Properties, source, or frontmatter edits by agents).",
 		"fileTaskDisplayTitleChangeModeKeep": "Keep the filename",
 		"fileTaskDisplayTitleChangeModeAsk": "Ask",
 		"fileTaskDisplayTitleChangeModeAuto": "Rename automatically",

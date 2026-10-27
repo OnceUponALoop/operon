@@ -69,8 +69,8 @@
     },
     {
       "path": "DOCS-013 File tasks.md",
-      "sha256": "9450ba32a1c576372e29311acd5d45ab5de04b480177e19156018224657d0605",
-      "bytes": 8870
+      "sha256": "26da280b96ff0923aba3a1f99a2867b4319968fa38326956959a761967a450b5",
+      "bytes": 9328
     },
     {
       "path": "DOCS-014 Inline vs file tasks.md",
@@ -768,5 +768,5 @@
       "bytes": 7479
     }
   ],
-  "generatedAt": "2026-10-26T21:53:27.019Z"
+  "generatedAt": "2026-10-26T22:01:07.106Z"
 }

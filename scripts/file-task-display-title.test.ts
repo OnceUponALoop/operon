@@ -5,6 +5,7 @@ import { setImmediate } from 'node:timers/promises';
 import ts from 'typescript';
 import { parse as parseYaml, stringify as stringifyYaml } from 'yaml';
 import { Notice, TFile, type App } from 'obsidian';
+import { activeWindow } from './test-support/obsidian';
 import { getTaskDisplayTitle } from '../src/core/task-display-title';
 import { isWritableRawYamlPropertyName } from '../src/core/raw-yaml-property';
 import { applyYamlTaskFieldValues } from '../src/core/task-writer-yaml';
@@ -14,14 +15,19 @@ import { resolveFileTaskDefaults } from '../src/core/file-task-defaults';
 import { exportOperonSettingsBackupJsonV1 } from '../src/core/settings-backup-export';
 import { parseOperonSettingsBackupV1 } from '../src/core/settings-backup-format';
 import { validateOperonSettingsBackupGroupsV1 } from '../src/core/settings-backup-group-validation';
-import { DEFAULT_FILENAME_RULE, deriveTaskFilename, filenameSuggestionAfterTitleEdit, normalizeFilenameRule, sanitizeTaskFilename, validateFilenameRule, type FilenameRule } from '../src/core/filename-rule';
+import {
+	DEFAULT_FILENAME_RULE, deriveTaskFilename, filenameSuggestionAfterTitleEdit, normalizeFilenameRule,
+	sanitizeTaskFilename, validateFilenameRule, type FilenameRule,
+} from '../src/core/filename-rule';
 import { t } from '../src/core/i18n';
 import { scanFileWithMappings } from '../src/indexer/file-scanner';
+import type { IndexReconciliationEvent } from '../src/indexer/indexer';
 import type { IndexedTask } from '../src/types/fields';
 import { DEFAULT_SETTINGS, buildKeyMappingVisiblePropertyNameUpdate, getMissingDefaultKeyMappingCollisions, isChildTaskInheritanceEligibleFieldKey, migrateSettings } from '../src/types/settings';
 import { buildLivePropertyCatalogV1 } from '../src/agent-runtime/runtime/catalog-builder';
 import { buildTaskPoolSearchText } from '../src/systems/task-pool-search';
 import { rankTaskSearchResults } from '../src/systems/task-search';
+import { FileTaskTitleRenamer, FILE_TASK_TITLE_RENAME_DELAY_MS } from '../src/systems/file-task-title-renamer';
 import { getTableTaskRawValue } from '../src/ui/table/table-value-adapter';
 import { createTableValueResolver } from '../src/ui/table/table-value-cache';
 import { buildTableTaskSearchMatcher } from '../src/ui/table/table-search';
@@ -31,13 +37,11 @@ const file = Object.assign(Object.create(TFile.prototype) as TFile, {
 	path: 'old-file.md', name: 'old-file.md', basename: 'old-file', extension: 'md', parent: { path: '' },
 	stat: { mtime: 1, ctime: 1, size: 1 },
 });
-
 const task: IndexedTask = {
 	operonId: 'n000123', description: 'old-file', checkbox: 'open', tags: [],
 	fieldValues: { fileTaskDisplayTitle: 'Readable task title' },
 	primary: { filePath: file.path, lineNumber: 0, format: 'yaml' }, datetimeModified: '', tier: 'hot',
 };
-
 function mappingsFor(name: string) {
 	const result = buildKeyMappingVisiblePropertyNameUpdate(DEFAULT_SETTINGS.keyMappings, 'fileTaskDisplayTitle', name);
 	assert.equal(result.status, 'updated');
@@ -130,7 +134,6 @@ test('mapped title writes and clears preserve identity; unrelated replace writes
 });
 
 const customRule = (pattern: string, replacement = ''): FilenameRule => ({ preset: 'custom', lowercase: false, rules: [{ pattern, replacement }] });
-
 test('filename presets preserve Unicode and custom rules apply in order', () => {
 	for (const [title, preset, expected] of [
 		['Quarterly: Review!', 'same', 'Quarterly Review!'], ['Quarterly: Review!', 'kebab', 'quarterly-review'],
@@ -157,7 +160,7 @@ test('custom filename rules reject unsupported syntax and enforce execution limi
 
 test('Ask alone suggests a changed filename and retains a fallback for invalid rules', async () => {
 	for (const [title, basename, mode, expected] of [
-		['New task', 'old-name', 'keep', null],
+		['New task', 'old-name', 'keep', null], ['New task', 'old-name', 'auto', null],
 		['New task', 'old-name', 'ask', { filename: 'new-task' }], ['New task', 'new-task', 'ask', null],
 		['  \t ', 'old-name', 'ask', null],
 	] as const) assert.deepEqual(await filenameSuggestionAfterTitleEdit(title, basename, mode, DEFAULT_FILENAME_RULE), expected);
@@ -189,6 +192,7 @@ test('filename rule settings normalize and survive a backup round trip', () => {
 	assert.deepEqual(migrateSettings({ ...DEFAULT_SETTINGS, ...decoded.payloads.general }).fileTaskFilenameRule, rule);
 });
 
+// Match the existing source-sync suite: execute selected production methods with bounded collaborators.
 function methods(filename: string, names: string[], dependencies: Record<string, unknown> = {}) {
 	const source = readFileSync(filename, 'utf8'), ast = ts.createSourceFile(filename, source, ts.ScriptTarget.Latest, true);
 	const klass = ast.statements.find(node => ts.isClassDeclaration(node) && names.every(name => node.members.some(member => member.name?.getText(ast) === name))) as ts.ClassDeclaration;
@@ -203,6 +207,7 @@ const RenameHost = methods('main.ts', [
 ], { TFile, buildMergedFileTaskDraft, filenameSuggestionAfterTitleEdit, parseFrontmatterDocument, splitFrontmatterDocument,
 	resolveFileTaskDefaults, localNow: () => '2026-10-25T02:00:00', generateOperonId: () => 'n000999', t });
 
+// The repository's Node declarations predate the Node 24 test APIs used by this lane.
 type TestScope = TestContext & {
 	after(cleanup: () => void): void;
 	mock: {
@@ -210,8 +215,7 @@ type TestScope = TestContext & {
 		method(target: unknown, name: string, implementation: unknown): void;
 	};
 };
-
-async function vaultFixture(_context: TestContext) {
+async function vaultFixture(context: TestContext) {
 	const currentFile = Object.assign(Object.create(TFile.prototype) as TFile, file, { stat: { ...file.stat } });
 	let source = '---\noperonId: n000123\ntitle: Original title\nstatus: Task.Todo\n---\nBody content.';
 	let current: IndexedTask = { ...task, fieldValues: { operonId: 'n000123', fileTaskDisplayTitle: 'Original title', status: 'Task.Todo' } };
@@ -219,6 +223,7 @@ async function vaultFixture(_context: TestContext) {
 	const notices: string[] = [], destinations: string[] = [];
 	const occupied = new Map<string, string>();
 	const state = { ready: true, fullScanAt: '2026-10-26T00:00:00Z', settlement: Promise.resolve(), beforeRename: async () => {} };
+	const listeners = new Set<(event: IndexReconciliationEvent) => void>();
 	const app = { vault: {
 		getAbstractFileByPath: (name: string) => name === currentFile.path ? currentFile : occupied.has(name) ? Object.create(TFile.prototype) : null,
 		read: async () => source, cachedRead: async () => source,
@@ -236,14 +241,22 @@ async function vaultFixture(_context: TestContext) {
 			Object.assign(currentFile, { path: destination, name: destination, basename: destination.slice(0, -3) });
 		},
 	} } as unknown as App;
+	const emit = (event: IndexReconciliationEvent) => { for (const listener of listeners) listener(event); };
 	const indexer = {
 		getTask: () => current, getAllTasks: () => [current], hasDuplicateOperonIdConflict: () => false,
 		isTaskSourceTransitionActive: () => false, isPathIndexable: () => true,
+		subscribeIndexReconciliation: (listener: (event: IndexReconciliationEvent) => void) => { listeners.add(listener); return () => { listeners.delete(listener); }; },
+		awaitRamSettlement: async () => { await state.settlement; return { state: 'settled' as const, ramGeneration: 1 }; },
+		getLiveReadAuthoritySnapshot: () => ({
+			state: 'verified' as const, settled: true, ramGeneration: 1, coherenceBasis: 'verified-full-scan' as const,
+			lastFullScanAt: state.fullScanAt, durable: { status: 'unavailable' as const },
+		}),
 		reindexFilePath: async () => {}, reindexFilesBatch: async () => {}, scheduleReindex() {},
 		reindexCommittedMutationSources: async () => {
-			const scanned = (await scanFileWithMappings(app, currentFile, settings.keyMappings, source)).yamlTask!;
+			const before = current, scanned = (await scanFileWithMappings(app, currentFile, settings.keyMappings, source)).yamlTask!;
 			assert.ok(scanned);
 			current = { ...current, description: scanned.description, fieldValues: scanned.fieldValues, primary: { ...current.primary, filePath: currentFile.path } };
+			emit({ kind: 'incremental', generation: 1, affectedOperonIds: [current.operonId], changes: [{ before, after: current }] });
 		},
 	};
 	const main = new RenameHost();
@@ -252,9 +265,21 @@ async function vaultFixture(_context: TestContext) {
 		markInternalTaskWrite() {}, getParentLinkExpectedFields: () => null, parentLinkSourceMatches: () => true,
 		refreshViews() {}, scheduleProjectSerialIndexReconcile() {}, consumeTableMutationRefresh() {}, refreshAggregateTotalsAfterTaskMutation: async () => {},
 	});
+	const renamer = new FileTaskTitleRenamer(indexer, () => settings, () => state.ready, () => currentFile.basename,
+		(id, name) => main.renameFileTaskFromTitle(id, name), message => notices.push(message));
+	(context as TestScope).after(() => renamer.destroy());
 	return { app, file: currentFile, settings, state, main, indexer, notices, destinations, occupied,
 		task: () => current, source: () => source, frontmatter: () => parseYaml(splitFrontmatterDocument(source).frontmatter!) as Record<string, unknown>,
+		full: () => emit({ kind: 'full', generation: 1 }),
+		edit: async (title: string) => { await app.fileManager.processFrontMatter(currentFile, value => { value.title = title; }); await indexer.reindexCommittedMutationSources(); },
 	};
+}
+function renameClock(context: TestContext) {
+	const scope = context as TestScope;
+	scope.mock.timers.enable({ apis: ['setTimeout'] });
+	scope.mock.method(activeWindow, 'setTimeout', globalThis.setTimeout);
+	scope.mock.method(activeWindow, 'clearTimeout', globalThis.clearTimeout);
+	return async () => { scope.mock.timers.tick(FILE_TASK_TITLE_RENAME_DELAY_MS + 1); await setImmediate(); };
 }
 
 test('title persistence precedes Ask and explicit rename preserves source and task identity', async context => {
@@ -272,7 +297,7 @@ test('title persistence precedes Ask and explicit rename preserves source and ta
 	assert.equal(f.source(), saved);
 	assert.equal(f.task().operonId, task.operonId);
 	assert.equal(f.task().description, 'saved-title');
-	for (const mode of ['keep'] as const) {
+	for (const mode of ['keep', 'auto'] as const) {
 		f.settings.fileTaskDisplayTitleChangeMode = mode;
 		assert.equal(await f.main.handleFileTaskTitleChanged(task.operonId, 'Other title'), null);
 	}
@@ -292,6 +317,111 @@ test('disabled display titles retain filename editing and shared collision valid
 	assert.equal(f.task().operonId, task.operonId);
 });
 
+test('automatic title changes rename once and ignore write/rename echoes', async context => {
+	const advance = renameClock(context), f = await vaultFixture(context);
+	f.settings.fileTaskDisplayTitleChangeMode = 'auto';
+	await f.edit('External title'); await advance();
+	await f.indexer.reindexCommittedMutationSources(); await advance();
+	assert.deepEqual(f.destinations, ['external-title.md']);
+	assert.equal(f.task().description, 'external-title');
+	assert.equal(f.task().operonId, task.operonId);
+	assert.equal(f.frontmatter().title, 'External title');
+	assert.deepEqual(f.notices, []);
+});
+
+test('rapid title edits select the latest value for external and Operon writes', async context => {
+	const advance = renameClock(context), f = await vaultFixture(context);
+	f.settings.fileTaskDisplayTitleChangeMode = 'auto';
+	await f.edit('First title'); await f.edit('Latest title'); await advance();
+	assert.deepEqual(f.destinations, ['latest-title.md']);
+	assert.equal(f.frontmatter().title, 'Latest title');
+	await f.main.updateTableTaskFieldsAndRefresh(task.operonId, { fileTaskDisplayTitle: 'Automatic table title' });
+	assert.equal(await f.main.handleFileTaskTitleChanged(task.operonId, 'Automatic table title'), null);
+	await advance();
+	assert.deepEqual(f.destinations, ['latest-title.md', 'automatic-table-title.md']);
+});
+
+test('manual moves cancel pending work with and without index path publication', async context => {
+	const advance = renameClock(context);
+	for (const publish of [false, true]) {
+		const f = await vaultFixture(context); f.settings.fileTaskDisplayTitleChangeMode = 'auto';
+		await f.edit('Pending title'); await f.app.fileManager.renameFile(f.file, 'manual-choice.md');
+		if (publish) await f.indexer.reindexCommittedMutationSources();
+		await advance();
+		assert.deepEqual(f.destinations, ['manual-choice.md']);
+		assert.equal(f.frontmatter().title, 'Pending title');
+		assert.deepEqual(f.notices, []);
+		await f.edit('Next title'); await advance();
+		assert.deepEqual(f.destinations, ['manual-choice.md', 'next-title.md']);
+	}
+});
+
+test('new title and managed values survive already-issued native rename I/O', async context => {
+	const advance = renameClock(context), f = await vaultFixture(context);
+	f.settings.fileTaskDisplayTitleChangeMode = 'auto';
+	let release!: () => void;
+	const gate = new Promise<void>(resolve => { release = resolve; });
+	let entered = false;
+	f.state.beforeRename = async () => { if (!entered) { entered = true; await gate; } };
+	await f.edit('Already issued'); await advance();
+	assert.equal(entered, true);
+	await f.edit('Newest during I/O');
+	await f.app.fileManager.processFrontMatter(f.file, value => { value.note = 'Newer managed value'; });
+	release(); await advance();
+	assert.deepEqual(f.destinations, ['already-issued.md', 'newest-during-i-o.md']);
+	assert.equal(f.frontmatter().title, 'Newest during I/O');
+	assert.equal(f.frontmatter().note, 'Newer managed value');
+	assert.deepEqual(f.notices, []);
+});
+
+test('keep, ask, disabled titles and mode changes never trigger automatic renames', async context => {
+	const advance = renameClock(context), f = await vaultFixture(context);
+	for (const mode of ['keep', 'ask'] as const) { f.settings.fileTaskDisplayTitleChangeMode = mode; await f.edit(`External ${mode}`); await advance(); }
+	f.settings.fileTaskDisplayTitleChangeMode = 'auto'; f.settings.fileTaskDisplayTitleEnabled = false;
+	await f.edit('Disabled title'); f.settings.fileTaskDisplayTitleEnabled = true; await advance();
+	await f.edit('Enabled title'); f.settings.fileTaskDisplayTitleChangeMode = 'keep'; await advance();
+	assert.deepEqual(f.destinations, []);
+	assert.deepEqual(f.notices, []);
+});
+
+test('startup and full rebuild cancel drift, including the RAM settlement interval', async context => {
+	const advance = renameClock(context), f = await vaultFixture(context);
+	f.settings.fileTaskDisplayTitleChangeMode = 'auto'; f.state.ready = false;
+	await f.edit('Initial build'); f.full(); f.state.ready = true; await advance();
+	assert.deepEqual(f.destinations, []);
+	await f.edit('Pending before rebuild'); f.full(); await advance();
+	assert.deepEqual(f.destinations, []);
+	let release!: () => void;
+	f.state.settlement = new Promise<void>(resolve => { release = resolve; });
+	await f.edit('Before settlement'); await advance();
+	f.state.fullScanAt = '2026-10-26T00:01:00Z'; release(); await advance();
+	assert.deepEqual(f.destinations, []);
+	assert.deepEqual(f.notices, []);
+	await f.edit('Next incremental'); await advance();
+	assert.deepEqual(f.destinations, ['next-incremental.md']);
+});
+
+test('automatic collisions and invalid or empty names preserve source and notify once', async context => {
+	const advance = renameClock(context);
+	for (const title of ['Collision title', '..', '!!!', '']) {
+		const f = await vaultFixture(context); f.settings.fileTaskDisplayTitleChangeMode = 'auto';
+		f.occupied.set('collision-title.md', 'Existing file');
+		if (title === '..') f.settings.fileTaskFilenameRule.preset = 'same';
+		await f.edit(title); await advance();
+		await f.indexer.reindexCommittedMutationSources(); await advance();
+		assert.equal(f.file.path, 'old-file.md');
+		assert.equal(f.frontmatter().title, title);
+		assert.deepEqual(f.destinations, []);
+		assert.equal(f.notices.length, 1);
+		assert.equal(f.occupied.get('collision-title.md'), 'Existing file');
+	}
+	const equal = await vaultFixture(context); equal.settings.fileTaskDisplayTitleChangeMode = 'auto';
+	await equal.edit('Old file'); await advance();
+	assert.deepEqual(equal.destinations, []);
+	assert.deepEqual(equal.notices, []);
+});
+
+// Only the DOM operations used by native rename controls; assertions target actions, not layout.
 class Control {
 	children: Control[] = [];
 	parentElement: Control | null = null;
@@ -325,7 +455,6 @@ class Control {
 	}
 	descendants(): Control[] { return this.children.flatMap(child => [child, ...child.descendants()]); }
 }
-
 function renameControls(host: Control, filename: string, rename: (value: string) => Promise<void>, dismiss = () => host.empty()) {
 	renderFileTaskRenameControls(host as unknown as HTMLElement, { filename }, { variant: 'editor-row', currentFilename: 'old-file.md', rename, dismiss });
 	return { rename: host.find('button', t('taskEditor', 'fileTaskRenameAction')), keep: host.find('button', t('taskEditor', 'fileTaskKeep')) };
@@ -453,11 +582,10 @@ test('settings reject invalid regex drafts before persistence and retain draft e
  assert.equal(saves, 1); assert.equal(renderer.settings.fileTaskFilenameRule.rules[0].replacement, '_');
 });
 
+
 // Additional approved rendering coverage.
 import contextFixtures from './agent-runtime/contracts/fixtures/cases.json';
 import { decodeTaskContextV1 } from '../src/agent-runtime/contracts/v1/decode';
-
-
 
 test('Runtime TaskContext displayTitle is optional and bounded in UTF-8 bytes', () => {
 	const fixture = contextFixtures.cases.find(item => item.schemaId === 'task-context' && item.expected);

@@ -4944,7 +4944,8 @@ export function migrateSettings(raw: unknown): OperonSettings {
 	}
 
 	out.fileTaskDisplayTitleEnabled = src.fileTaskDisplayTitleEnabled === true;
-	out.fileTaskDisplayTitleChangeMode = src.fileTaskDisplayTitleChangeMode === 'ask' ? 'ask' : 'keep';
+	out.fileTaskDisplayTitleChangeMode = src.fileTaskDisplayTitleChangeMode === 'ask'
+		|| src.fileTaskDisplayTitleChangeMode === 'auto' ? src.fileTaskDisplayTitleChangeMode : 'keep';
 	out.fileTaskFilenameRule = normalizeFilenameRule(src.fileTaskFilenameRule);
 
 	// Ensure key mappings include all canonical keys.

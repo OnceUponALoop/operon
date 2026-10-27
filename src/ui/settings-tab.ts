@@ -3382,7 +3382,7 @@ export class OperonSettingsTab extends PluginSettingTab {
 			return text === 'remove-inline-task' ? 'remove-inline-task' : 'keep-link';
 		}
 		if (key === 'fileTaskDisplayTitleChangeMode') {
-			return text === 'ask' ? text : 'keep';
+			return text === 'ask' || text === 'auto' ? text : 'keep';
 		}
 		if (key === 'inlineTaskParentInlineTargetMode') {
 			return text === 'default' ? 'default' : 'below-parent';
@@ -3682,6 +3682,7 @@ export class OperonSettingsTab extends PluginSettingTab {
 		if (key === 'fileTaskDisplayTitleChangeMode') return {
 			keep: t('settings', 'fileTaskDisplayTitleChangeModeKeep'),
 			ask: t('settings', 'fileTaskDisplayTitleChangeModeAsk'),
+			auto: t('settings', 'fileTaskDisplayTitleChangeModeAuto'),
 		};
   if (key === 'taskEditorPosition') return { right: t('settings', 'taskEditorPositionRight'), left: t('settings', 'taskEditorPositionLeft') };
   if (key === 'workspaceTweaksBackgroundDimming') return Object.fromEntries(BACKGROUND_DIMMING_OPTIONS.map(value => [String(value), value === 50 ? t('settings', 'workspaceTweaksBackgroundDimmingDefault') : `${value}%`]));
@@ -5889,6 +5890,7 @@ export class OperonSettingsTab extends PluginSettingTab {
 					dropdownOptions: [
 						{ value: 'keep', label: t('settings', 'fileTaskDisplayTitleChangeModeKeep') },
 						{ value: 'ask', label: t('settings', 'fileTaskDisplayTitleChangeModeAsk') },
+						{ value: 'auto', label: t('settings', 'fileTaskDisplayTitleChangeModeAuto') },
 					],
 					onAfterChange: () => this.redisplayPreservingScroll(),
 				});

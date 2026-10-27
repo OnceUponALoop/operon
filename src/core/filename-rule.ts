@@ -12,7 +12,7 @@ export interface FilenameRule {
 	rules: FilenameRegexRule[];
 }
 
-export type FileTaskTitleChangeMode = 'keep' | 'ask';
+export type FileTaskTitleChangeMode = 'keep' | 'ask' | 'auto';
 
 export interface FileTaskRenameSuggestion {
 	filename: string;
