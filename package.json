@@ -243,7 +243,8 @@
     "@codemirror/language": "^6.12.3",
     "@codemirror/state": "6.5.0",
     "@codemirror/view": "6.38.6",
-    "ical.js": "^2.2.1"
+    "ical.js": "^2.2.1",
+    "re2js": "2.9.0"
   },
   "overrides": {
     "obsidian": {

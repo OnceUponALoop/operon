@@ -16,7 +16,7 @@
     {
       "file": "catalog.schema.json",
       "id": "urn:operon:schema:runtime:v1:catalog.schema.json",
-      "sha256": "42da56915287a4f2aaf527dbed79143346e1364c6aa93cc2f34c92da956ba5fb"
+      "sha256": "243d8a5738f000eba386bba97b8f552ddf92cd97e3e76536ea57f27d435a1e37"
     },
     {
       "file": "cli.schema.json",
@@ -88,7 +88,7 @@
       "schemaId": "catalog-request",
       "ref": "urn:operon:schema:runtime:v1:catalog.schema.json#/$defs/request",
       "file": "catalog.schema.json",
-      "sha256": "42da56915287a4f2aaf527dbed79143346e1364c6aa93cc2f34c92da956ba5fb",
+      "sha256": "243d8a5738f000eba386bba97b8f552ddf92cd97e3e76536ea57f27d435a1e37",
       "stability": "stable"
     },
     {
@@ -263,7 +263,7 @@
       "schemaId": "operon-catalog",
       "ref": "urn:operon:schema:runtime:v1:catalog.schema.json#/$defs/result",
       "file": "catalog.schema.json",
-      "sha256": "42da56915287a4f2aaf527dbed79143346e1364c6aa93cc2f34c92da956ba5fb",
+      "sha256": "243d8a5738f000eba386bba97b8f552ddf92cd97e3e76536ea57f27d435a1e37",
       "stability": "stable"
     },
     {
@@ -379,5 +379,5 @@
       "stability": "stable"
     }
   ],
-  "aggregateSha256": "5001892af7eb87df168d91d661a11611b2a7f1ff99228f7b4aa05ff0cd60c283"
+  "aggregateSha256": "a235816c6ae146e87b93999d9268f1c82bba01f5bf315823713b910bbc835307"
 }

@@ -11,7 +11,10 @@ import { applyYamlTaskFieldValues } from '../src/core/task-writer-yaml';
 import { TaskWriter, type TaskWriterIndexerPort } from '../src/core/task-writer';
 import { buildMergedFileTaskDraft, parseFrontmatterDocument, splitFrontmatterDocument } from '../src/core/file-task-template-merge';
 import { resolveFileTaskDefaults } from '../src/core/file-task-defaults';
-import { deriveTaskFilename, filenameSuggestionAfterTitleEdit, sanitizeTaskFilename } from '../src/core/filename-rule';
+import { exportOperonSettingsBackupJsonV1 } from '../src/core/settings-backup-export';
+import { parseOperonSettingsBackupV1 } from '../src/core/settings-backup-format';
+import { validateOperonSettingsBackupGroupsV1 } from '../src/core/settings-backup-group-validation';
+import { DEFAULT_FILENAME_RULE, deriveTaskFilename, filenameSuggestionAfterTitleEdit, normalizeFilenameRule, sanitizeTaskFilename, validateFilenameRule, type FilenameRule } from '../src/core/filename-rule';
 import { t } from '../src/core/i18n';
 import { scanFileWithMappings } from '../src/indexer/file-scanner';
 import type { IndexedTask } from '../src/types/fields';
@@ -126,11 +129,30 @@ test('mapped title writes and clears preserve identity; unrelated replace writes
 	}
 });
 
-test('default kebab suggestions preserve Unicode and sanitize filenames', () => {
-	for (const [title, expected] of [['Quarterly: Review!', 'quarterly-review'], ['日本語 計画 １２３', '日本語-計画-１２３'], ['خطة العمل ١٢٣', 'خطة-العمل-١٢٣']]) {
-		assert.equal(deriveTaskFilename(title), expected);
-	}
+const customRule = (pattern: string, replacement = ''): FilenameRule => ({ preset: 'custom', lowercase: false, rules: [{ pattern, replacement }] });
+
+test('filename presets preserve Unicode and custom rules apply in order', () => {
+	for (const [title, preset, expected] of [
+		['Quarterly: Review!', 'same', 'Quarterly Review!'], ['Quarterly: Review!', 'kebab', 'quarterly-review'],
+		['Quarterly: Review!', 'snake', 'quarterly_review'], ['日本語 計画 １２３', 'kebab', '日本語-計画-１２３'],
+		['خطة العمل ١٢٣', 'snake', 'خطة_العمل_١٢٣'],
+	] as const) assert.equal(deriveTaskFilename(title, { preset, lowercase: preset === 'same', rules: [] }), expected);
+	assert.equal(deriveTaskFilename('Alpha Beta', customRule('(\\w+) (\\w+)', '$2-$1')), 'Beta-Alpha');
+	assert.equal(deriveTaskFilename('AB item', { preset: 'custom', lowercase: true, rules: [
+		{ pattern: 'a', replacement: 'b' }, { pattern: 'b', replacement: 'c' }, { pattern: '\\s+', replacement: '_' },
+	] }), 'cc_item');
 	assert.equal(sanitizeTaskFilename(' A:B/C\\D*E?F"G<H>I|J \n K '), 'ABCDEFGHIJ K');
+});
+
+test('custom filename rules reject unsupported syntax and enforce execution limits', () => {
+	for (const pattern of ['[', '(a)\\1', '(?=a)']) assert.throws(() => validateFilenameRule(customRule(pattern)), /invalid|unsupported/i);
+	for (const rule of [
+		{ ...customRule('a'), rules: Array.from({ length: 17 }, () => ({ pattern: 'a', replacement: '' })) },
+		customRule('a'.repeat(257)), customRule('a', 'b'.repeat(257)),
+	]) assert.throws(() => validateFilenameRule(rule), /safety limits/i);
+	assert.throws(() => deriveTaskFilename('a'.repeat(1025), customRule('a')), /safety limits/i);
+	assert.throws(() => deriveTaskFilename('a'.repeat(1024), customRule('a', 'bb')), /safety limits/i);
+	assert.equal(deriveTaskFilename('a'.repeat(1024), customRule('a', 'b')), 'b'.repeat(1024));
 });
 
 test('Ask alone suggests a changed filename and retains a fallback for invalid rules', async () => {
@@ -138,10 +160,33 @@ test('Ask alone suggests a changed filename and retains a fallback for invalid r
 		['New task', 'old-name', 'keep', null],
 		['New task', 'old-name', 'ask', { filename: 'new-task' }], ['New task', 'new-task', 'ask', null],
 		['  \t ', 'old-name', 'ask', null],
-	] as const) assert.deepEqual(await filenameSuggestionAfterTitleEdit(title, basename, mode), expected);
-	const empty = await filenameSuggestionAfterTitleEdit('!!!', 'current-name', 'ask');
+	] as const) assert.deepEqual(await filenameSuggestionAfterTitleEdit(title, basename, mode, DEFAULT_FILENAME_RULE), expected);
+	assert.deepEqual(await filenameSuggestionAfterTitleEdit(' Name ', 'old', 'ask', customRule('^\\s+', 'unsaved-')), { filename: 'Name' });
+	const empty = await filenameSuggestionAfterTitleEdit('!!!', 'current-name', 'ask', DEFAULT_FILENAME_RULE);
 	assert.equal(empty?.filename, 'current-name');
 	assert.match(empty?.error ?? '', /empty filename.*current-name/i);
+	const invalid = await filenameSuggestionAfterTitleEdit('Bad [ pattern', 'old', 'ask', customRule('['));
+	assert.equal(invalid?.filename, 'Bad [ pattern');
+	assert.ok(invalid?.error);
+});
+
+test('filename rule settings normalize and survive a backup round trip', () => {
+	assert.deepEqual(normalizeFilenameRule({
+		preset: 'snake', lowercase: false,
+		rules: [{ pattern: 'a', replacement: 'b' }, { pattern: 3, replacement: 'c' }, null],
+	}), { preset: 'snake', lowercase: false, rules: [{ pattern: 'a', replacement: 'b' }] });
+	assert.deepEqual(normalizeFilenameRule({ preset: 'unknown', lowercase: 'false', rules: 'invalid' }), { preset: 'kebab', lowercase: false, rules: [] });
+	const rule = customRule('\\s+', '_');
+	const settings = migrateSettings({ ...DEFAULT_SETTINGS, fileTaskDisplayTitleEnabled: true, fileTaskFilenameRule: rule });
+	assert.equal(settings.fileTaskDisplayTitleEnabled, true);
+	assert.deepEqual(settings.fileTaskFilenameRule, rule);
+	const backup = exportOperonSettingsBackupJsonV1({ settings, source: { pluginVersion: '4.3.0', obsidianVersion: '1.14.5', dataPackageSchemaVersion: 2 }, createdAt: '2026-10-25T00:00:00.000Z' });
+	assert.ok(backup.ok);
+	const parsed = parseOperonSettingsBackupV1(backup.json);
+	assert.ok(parsed.ok);
+	const decoded = validateOperonSettingsBackupGroupsV1(parsed.value.body.groups);
+	assert.ok(decoded.ok);
+	assert.deepEqual(migrateSettings({ ...DEFAULT_SETTINGS, ...decoded.payloads.general }).fileTaskFilenameRule, rule);
 });
 
 function methods(filename: string, names: string[], dependencies: Record<string, unknown> = {}) {
@@ -152,7 +197,6 @@ function methods(filename: string, names: string[], dependencies: Record<string,
 	const code = ts.transpileModule(`class Fixture { ${selected} }`, { compilerOptions: { target: ts.ScriptTarget.ES2022 } }).outputText;
 	return new Function(...Object.keys(dependencies), `${code}; return Fixture;`)(...Object.values(dependencies));
 }
-
 const RenameHost = methods('main.ts', [
 	'updateTableTaskFieldsAndRefresh', 'commitTableTaskFieldsAndRefresh', 'renameFileTaskFromTitle', 'handleFileTaskTitleChanged',
 	'updateTableTaskDescriptionAndRefresh', 'commitTableTaskDescriptionAndRefresh', 'writeYamlTaskInstance',
@@ -353,6 +397,60 @@ test('mapped titles round-trip unsafe text through the scanner', async () => {
 		defaults: { operonId: 'n000123', datetimeModified: '2026-10-25T02:00:00' }, keyMappings: DEFAULT_SETTINGS.keyMappings, bodyStrategy: 'preserve-source',
 	});
 	assert.match(draft.content, /title: "Title: subtitle"/u);
+});
+
+test('settings reject invalid regex drafts before persistence and retain draft errors across edits', async () => {
+ const inputs: Array<{ change: (value: string) => Promise<void> }> = [];
+ let message = '', saves = 0;
+ const preview = { setAttribute() {}, setText(value: string) { message = value; }, addClass() {}, removeClass() {} };
+ class SettingsElement {
+  value = '';
+  disabled = false;
+  createDiv(): SettingsElement { return new SettingsElement(); }
+  createSpan(): void {}
+  createEl(): SettingsElement { return new SettingsElement(); }
+  addEventListener(event: string, handler: () => Promise<void>): void {
+   if (event === 'input') inputs.push({ change: async value => { this.value = value; await handler(); } });
+  }
+ }
+ const Settings = methods('src/ui/settings-tab.ts', ['renderFileTaskDisplaySettings'], {
+  t, deriveTaskFilename, validateFilenameRule,
+  setIcon() {}, setTooltip() {},
+  settingsAsyncHandler: (_label: string, action: unknown) => action,
+  Setting: class {
+   settingEl = preview;
+   setName() { return this; } setDesc(value: string) { message = value; return this; }
+   addDropdown(build: (control: object) => void) {
+    const control = { addOptions() { return control; }, setValue() { return control; }, onChange() { return control; } };
+    build(control); return this;
+   }
+   addText(build: (control: object) => void) {
+    const entry = { change: async (_value: string) => {} };
+    const control = { setValue() { return control; }, setPlaceholder() { return control; },
+     onChange(change: typeof entry.change) { entry.change = change; return control; } };
+    inputs.push(entry); build(control); return this;
+   }
+   addToggle() { return this; } addExtraButton() { return this; } addButton() { return this; }
+  },
+ });
+ const renderer = new Settings();
+ Object.assign(renderer, {
+  settings: { ...DEFAULT_SETTINGS, fileTaskDisplayTitleEnabled: true,
+   fileTaskDisplayTitleChangeMode: 'ask',
+   fileTaskFilenameRule: { preset: 'custom', lowercase: false, rules: [{ pattern: '\\s+', replacement: '-' }] } },
+  app: { workspace: { getActiveFile: () => null } },
+  saveSettings: async () => { saves++; }, redisplayPreservingScroll() {},
+ });
+ renderer.renderFileTaskDisplaySettings(new SettingsElement(), 'fileTaskFilenameRule');
+ await inputs[1].change('[');
+ assert.equal(saves, 0); assert.equal(renderer.settings.fileTaskFilenameRule.rules[0].pattern, '\\s+');
+ assert.ok(message.startsWith(t('settings', 'fileTaskFilenameRuleInvalid', { error: '' })));
+ await inputs[2].change('_');
+ assert.equal(saves, 0, 'another input must not accidentally persist the rejected pattern');
+ await inputs[1].change('(a)\\1');
+ assert.equal(saves, 0); assert.ok(message.startsWith(t('settings', 'fileTaskFilenameRuleInvalid', { error: '' })));
+ await inputs[1].change('\\s+');
+ assert.equal(saves, 1); assert.equal(renderer.settings.fileTaskFilenameRule.rules[0].replacement, '_');
 });
 
 // Additional approved rendering coverage.

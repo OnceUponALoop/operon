@@ -28718,6 +28718,88 @@ body .modal.operon-kanban-preset-quick-settings-modal .operon-kanban-sort-mode-s
 	margin-top: 18px;
 }
 
+.operon-filename-rule-preview-setting:where(.operon-settings-scope, .operon-settings-scope *).mod-warning .setting-item-description {
+	color: var(--text-error);
+}
+
+.operon-file-task-display-settings:where(.operon-settings-scope, .operon-settings-scope *) > :is(.setting-item, .operon-filename-rule-controls):not(:first-child) {
+	border-top: var(--setting-items-divider-width) solid var(--setting-items-divider-color);
+}
+
+.operon-filename-rule-controls:where(.operon-settings-scope, .operon-settings-scope *) > .setting-item,
+.operon-filename-rule-controls:where(.operon-settings-scope, .operon-settings-scope *) > .operon-filename-rule-list,
+.operon-filename-rule-controls:where(.operon-settings-scope, .operon-settings-scope *) .operon-filename-rule-row {
+	border-top: 0;
+}
+
+.operon-filename-rule-list:where(.operon-settings-scope, .operon-settings-scope *) {
+	container-type: inline-size;
+	display: flex;
+	flex-direction: column;
+	gap: 8px;
+	margin: 8px 0;
+}
+
+.operon-filename-rule-row:where(.operon-settings-scope, .operon-settings-scope *) {
+	display: grid;
+	grid-template-columns: 24px minmax(0, 1fr) auto;
+	align-items: center;
+	gap: 8px;
+	width: 100%;
+	min-width: 0;
+	box-sizing: border-box;
+	padding: 8px 0;
+}
+
+.operon-filename-rule-index:where(.operon-settings-scope, .operon-settings-scope *) {
+	color: var(--text-muted);
+	font-size: var(--font-ui-small);
+	font-variant-numeric: tabular-nums;
+	text-align: center;
+}
+
+.operon-filename-rule-inputs:where(.operon-settings-scope, .operon-settings-scope *) {
+	display: grid;
+	grid-template-columns: repeat(2, minmax(0, 1fr));
+	gap: 8px;
+	min-width: 0;
+}
+
+.operon-filename-rule-inputs:where(.operon-settings-scope, .operon-settings-scope *) input[type='text'] {
+	width: 100%;
+	min-width: 0;
+}
+
+.operon-filename-rule-actions:where(.operon-settings-scope, .operon-settings-scope *) {
+	display: flex;
+	flex: 0 0 auto;
+	gap: 2px;
+}
+
+.operon-filename-rule-action:where(.operon-settings-scope, .operon-settings-scope *) {
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	width: 30px;
+	min-width: 30px;
+	height: 30px;
+	padding: 0;
+}
+
+@container (max-width: 480px) {
+	.operon-filename-rule-row:where(.operon-settings-scope, .operon-settings-scope *) {
+		grid-template-columns: 24px minmax(0, 1fr);
+	}
+
+	.operon-filename-rule-inputs:where(.operon-settings-scope, .operon-settings-scope *) {
+		grid-template-columns: minmax(0, 1fr);
+	}
+
+	.operon-filename-rule-actions:where(.operon-settings-scope, .operon-settings-scope *) {
+		grid-column: 2;
+	}
+}
+
 .operon-file-task-migration-desc:where(.operon-settings-scope, .operon-settings-scope *) {
 	opacity: 0.82;
 	font-size: 13px;

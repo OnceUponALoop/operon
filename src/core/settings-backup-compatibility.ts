@@ -394,6 +394,7 @@ export const ALL_OPERON_SETTINGS_BACKUP_KEYS = [
 	'fileRepeatCustomFolder',
 	'fileTaskDisplayTitleEnabled',
 	'fileTaskDisplayTitleChangeMode',
+	'fileTaskFilenameRule',
 	'keepInlineTasksWithParent',
 	'autoCompleteParentWhenAllChildrenTerminal',
 	'cascadeCancelToDescendants',

@@ -36372,7 +36372,8 @@ export default class OperonPlugin extends Plugin {
 	private async handleFileTaskTitleChanged(operonId: string, title: string): Promise<FileTaskRenameSuggestion | null> {
 		const task = this.indexer.getTask(operonId);
 		if (!this.settings.fileTaskDisplayTitleEnabled || task?.primary.format !== 'yaml') return null;
-		return filenameSuggestionAfterTitleEdit(title, task.description, this.settings.fileTaskDisplayTitleChangeMode);
+		return filenameSuggestionAfterTitleEdit(title, task.description, this.settings.fileTaskDisplayTitleChangeMode,
+			this.settings.fileTaskFilenameRule);
 	}
 
 	private async commitTableTaskDescriptionAndRefresh(task: IndexedTask, description: string): Promise<boolean> {

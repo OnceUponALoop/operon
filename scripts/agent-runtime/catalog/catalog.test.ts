@@ -25,7 +25,7 @@ globalThis.__operonAgentRuntimeCatalogTestRun = run();
 
 async function run(): Promise<void> {
 	testDefaultCatalog();
-	testDisplayTitleReadOnly();
+	testFilenameRulePolicy();
 	testFileTaskTemplateCandidates();
 	testCustomKeysAndCollisions();
 	testTaxonomyAndPolicyFreshness();
@@ -35,13 +35,21 @@ async function run(): Promise<void> {
 	console.log('Agent Runtime Property Catalog tests passed');
 }
 
-function testDisplayTitleReadOnly(): void {
-	const built = buildLivePropertyCatalogV1(settings());
-	assert.ok(built.ok);
+function testFilenameRulePolicy(): void {
+	const configured = settings();
+	configured.fileTaskFilenameRule = { preset: 'custom', lowercase: false, rules: [{ pattern: ' ', replacement: '_' }] };
+	const originalFingerprint = computeContextSettingsFingerprintV1(configured);
+	const built = buildLivePropertyCatalogV1(configured);
+	assert.equal(built.ok, true);
+	if (!built.ok) return;
+	assert.deepEqual(built.value.policies.fileTaskFilenameRule, configured.fileTaskFilenameRule);
 	const title = built.value.fields.find(field => field.canonicalKey === 'fileTaskDisplayTitle')!;
 	assert.deepEqual([title.source, title.mappingStatus, title.readable, title.mutationClass], ['built-in', 'mapped', true, 'runtime-owned']);
 	assert.equal(isGeneralUpdateFieldV1(title), false);
 	assert.equal(built.value.policies.taskUpdate.writableKeys.includes('fileTaskDisplayTitle'), false);
+	configured.fileTaskFilenameRule.rules[0].replacement = '-';
+	assert.equal(built.value.policies.fileTaskFilenameRule?.rules[0].replacement, '_');
+	assert.notEqual(computeContextSettingsFingerprintV1(configured), originalFingerprint);
 }
 
 function testDefaultCatalog(): void {
@@ -375,6 +383,7 @@ function testFullContractParity(): void {
 	assert.equal(decoded.ok, true, JSON.stringify(decoded));
 	if (decoded.ok) assert.equal(decoded.value.catalogRevision, result.catalogRevision);
 	const olderRuntimeResult = structuredClone(result);
+	delete olderRuntimeResult.policies.fileTaskFilenameRule;
 	delete olderRuntimeResult.policies.creation.typedCreateVersion;
 	delete olderRuntimeResult.policies.creation.typedCreateFeatures;
 	delete olderRuntimeResult.policies.creation.fileTaskTemplateCandidates;

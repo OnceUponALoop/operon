@@ -18,7 +18,7 @@ import { editorInfoField } from 'obsidian';
 import { NativeLightboxLifecycle } from '../src/ui/native-lightbox-lifecycle';
 import { lightboxBodyStart, nativeLightboxBodyExtension } from '../src/ui/native-lightbox-body';
 import { DEFAULT_SETTINGS } from '../src/types/settings';
-import { filenameSuggestionAfterTitleEdit } from '../src/core/filename-rule';
+import { DEFAULT_FILENAME_RULE, filenameSuggestionAfterTitleEdit } from '../src/core/filename-rule';
 import { t } from '../src/core/i18n';
 
 const state = (fields: Record<string, string> = {}): TaskEditorSourceState => ({ description: 'before', checkbox: 'open', tags: ['one'], fieldValues: { operonId: 'task1', priority: 'A', note: 'old note', ...fields } });
@@ -467,7 +467,7 @@ function savedTitleEditor() {
    policyTitles.push(title);
    assert.equal(events.at(-1), 'saved', 'title must be committed before asking or renaming');
    events.push('policy');
-   return filenameSuggestionAfterTitleEdit(title, 'slug', 'ask');
+   return filenameSuggestionAfterTitleEdit(title, 'slug', 'ask', DEFAULT_FILENAME_RULE);
   },
   getCurrentIndexedTask: () => ({ description: 'slug', primary: { filePath: 'slug.md' } }),
   getCompactTextSourcePath: () => 'slug.md',
