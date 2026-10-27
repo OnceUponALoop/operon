@@ -274,7 +274,7 @@ function parseSection(
 	parsed: ParsedFrontmatterSection;
 	value?: string | string[];
 } {
-	if (section.yamlKey === 'title') {
+	if (section.yamlKey === 'title' && reverseMap.get(section.yamlKey) !== 'fileTaskDisplayTitle') {
 		const headerLine = section.lines[0] ?? '';
 		const valuePart = headerLine.slice(headerLine.indexOf(':') + 1);
 		return {

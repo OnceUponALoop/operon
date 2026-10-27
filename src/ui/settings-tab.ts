@@ -36,6 +36,7 @@ import {
 	isNonEnglishSupportedLanguage,
 	type NonEnglishOperonLanguage,
 } from '../types/settings';
+import { getMissingDefaultKeyMappingCollisions } from '../types/settings';
 import {
 	createProjectSerialScopeId,
 	formatProjectSerialLabel,
@@ -1576,6 +1577,7 @@ export class OperonSettingsTab extends PluginSettingTab {
 		return this.buildTaskSettingsGroups([
 			['newFileTaskCreationDefaults', ['taskCreatorDefaultToFileTask', 'fileTaskAfterCreate', 'taskCreatorDefaultFileTemplateId', 'fileTaskUseLastTemplateAsDefault'], (el, key) => this.renderFileCreationDefaultsSection(el, key), ['DOCS-024 Task templates', 'DOCS-020 Task Creator']],
 			['fileTaskTemplates', ['fileTaskTemplateFolder'], el => this.renderFileTemplatesSection(el), 'DOCS-024 Task templates'],
+			['display', ['fileTaskDisplayTitleEnabled'], (el, key) => this.renderFileTaskDisplaySettings(el, key), ['DOCS-013 File tasks', 'DOCS-039 Key mappings']],
 			['periodicNotesAsFileTasks', ['createDailyNotesAsOperonTask', 'createWeeklyNotesAsOperonTask'], (el, key) => this.renderPeriodicFileTaskSettings(el, key), 'DOCS-137 Daily and Weekly Notes'],
 			['fileTaskConversion', ['inlineToFileTaskMovePlainCheckboxes', 'inlineToFileTaskSourceDisposition'], (el, key) => this.renderFileConversionSection(el, key), 'DOCS-019 Converting inline and file tasks'],
 			['excludedFolders', ['excludedFolders'], el => this.renderExcludedFolderSettings(el), 'DOCS-054 Missing tasks'],
@@ -4064,6 +4066,7 @@ export class OperonSettingsTab extends PluginSettingTab {
 	}
 
 	private applySettingsSearchAfterSaveEffects(key: OperonSettingSearchKey): void {
+		if (key === 'fileTaskDisplayTitleEnabled') this.updateNativeSettingsDefinitions();
 		if (key === 'taskIconClickAction') {
 			this.refreshNativeSettingsDom();
 			this.applyPendingSettingsChange();
@@ -5856,6 +5859,18 @@ export class OperonSettingsTab extends PluginSettingTab {
 
 	private renderFileTemplatesSection(containerEl: HTMLElement): void {
 		this.renderFileTaskTemplateSettings(containerEl);
+	}
+
+	private renderFileTaskDisplaySettings(containerEl: HTMLElement, selectedKey?: string): void {
+		if (!selectedKey || selectedKey === 'fileTaskDisplayTitleEnabled') {
+			this.renderBoundToggleSetting(
+				containerEl,
+				t('settings', 'fileTaskDisplayTitleEnabled'),
+				t('settings', 'fileTaskDisplayTitleEnabledDesc'),
+				'fileTaskDisplayTitleEnabled',
+				{ onAfterChange: () => this.redisplayPreservingScroll() },
+			);
+		}
 	}
 
 	private renderFileConversionSection(containerEl: HTMLElement, selectedKey?: string): void {
@@ -11754,6 +11769,9 @@ export class OperonSettingsTab extends PluginSettingTab {
 	 */
 	private buildKeyMappingsSettingsItems(): SettingDefinitionItem[] {
 		const canonicalSortIndex = new Map(CANONICAL_KEY_ORDER.map((entry, index) => [entry.name, index]));
+		const missingDefaultKeyMappingCollisions = getMissingDefaultKeyMappingCollisions(
+			this.settings.keyMappings,
+		);
 		const systemMappings = this.settings.keyMappings
 			.filter(mapping => mapping.isSystem && mapping.isInternal !== true)
 			.sort((left, right) => (canonicalSortIndex.get(left.canonicalKey) ?? Number.MAX_SAFE_INTEGER)
@@ -11772,6 +11790,12 @@ export class OperonSettingsTab extends PluginSettingTab {
 				const explanation = host.createDiv('setting-item-description operon-key-mappings-help');
 				explanation.createEl('p', { text: t('settings', 'keyMappingsIntro') });
 				explanation.createEl('p', { text: t('settings', 'keyMappingsLegendHideDesc') });
+				if (missingDefaultKeyMappingCollisions.length > 0) {
+					explanation.createEl('p', {
+						text: t('settings', 'keyMappingsMappingCollision'),
+						cls: 'mod-warning',
+					});
+				}
 				const title = t('settings', 'tabKeyMappings');
 				return attachDeclarativeSettingsPageTitleAction(host, title,
 					['DOCS-039 Key mappings', 'DOCS-018 Task properties'].map(target => this.buildNativeSettingsDocsAction(title, target).action));

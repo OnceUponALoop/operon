@@ -25,6 +25,7 @@ globalThis.__operonAgentRuntimeCatalogTestRun = run();
 
 async function run(): Promise<void> {
 	testDefaultCatalog();
+	testDisplayTitleReadOnly();
 	testFileTaskTemplateCandidates();
 	testCustomKeysAndCollisions();
 	testTaxonomyAndPolicyFreshness();
@@ -32,6 +33,15 @@ async function run(): Promise<void> {
 	testFullContractParity();
 	await testWarmPerformance();
 	console.log('Agent Runtime Property Catalog tests passed');
+}
+
+function testDisplayTitleReadOnly(): void {
+	const built = buildLivePropertyCatalogV1(settings());
+	assert.ok(built.ok);
+	const title = built.value.fields.find(field => field.canonicalKey === 'fileTaskDisplayTitle')!;
+	assert.deepEqual([title.source, title.mappingStatus, title.readable, title.mutationClass], ['built-in', 'mapped', true, 'runtime-owned']);
+	assert.equal(isGeneralUpdateFieldV1(title), false);
+	assert.equal(built.value.policies.taskUpdate.writableKeys.includes('fileTaskDisplayTitle'), false);
 }
 
 function testDefaultCatalog(): void {

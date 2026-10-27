@@ -428,6 +428,7 @@
           "projectSerialGeneration": 4,
           "projectSerialSignature": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc"
         },
+        "displayTitle": "Legacy task display title",
         "writableFields": [
           {
             "canonicalKey": "description",

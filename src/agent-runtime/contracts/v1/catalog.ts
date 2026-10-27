@@ -415,6 +415,7 @@ export const RUNTIME_OWNED_KEYS_V1 = [
 	'timezone',
 	'datetimeCreated',
 	'datetimeModified',
+	'fileTaskDisplayTitle',
 ] as const;
 
 export type GeneralUpdateValidationCodeV1 =

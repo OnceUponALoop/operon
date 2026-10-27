@@ -108,6 +108,7 @@ Open **Settings → Operon → Tasks → File Tasks**:
 
 - **New File Task Creation Defaults** sets Task Creator's default File mode and preselected file-task template.
 - **File Task Templates** manages file-task templates.
+- **File Task display title** is an opt-in setting under **Settings → Operon → Tasks → File Tasks → Display**. When enabled, a non-empty `fileTaskDisplayTitle` frontmatter value (mapped to `title` by default) supplies the visible label; otherwise Operon falls back to the filename-derived description. The filename still controls board ordering and Table sorting/grouping. See [[DOCS-039 Key mappings|Key mappings]].
 - **Daily and Weekly Notes as File Tasks** contains the two toggles for creating new Daily or Weekly Notes as Operon File Tasks. Their management, format, template, and folder settings live under **Tasks → Task Router → Daily and Weekly Notes**; see [[DOCS-137 Daily and Weekly Notes|Daily and Weekly Notes]].
 - **File Task Conversion** contains conversion preferences.
 - **Excluded folders** keeps selected folders outside Operon's task indexing.

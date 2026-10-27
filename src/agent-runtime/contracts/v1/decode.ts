@@ -3703,7 +3703,7 @@ function checkTaskContext(value: unknown, path: string, issues: DecodeIssueV1[])
 		'identity', 'description', 'representation', 'locator', 'checkbox', 'workflow',
 		'priority', 'dates', 'datetimes', 'relationships', 'recurrence', 'tracker',
 		'pinned', 'sourceRevision', 'contextRevision', 'note', 'links', 'customFields',
-		'sourceMarkdown', 'trackerHistory', 'reminderItems', 'writableFields',
+		'sourceMarkdown', 'trackerHistory', 'reminderItems', 'writableFields', 'displayTitle',
 	], issues);
 	if (!object) return;
 	checkTaskIdentity(object.identity, `${path}/identity`, issues);
@@ -3743,6 +3743,9 @@ function checkTaskContext(value: unknown, path: string, issues: DecodeIssueV1[])
 	checkBoolean(object.pinned, `${path}/pinned`, issues);
 	checkSourceRevision(object.sourceRevision, `${path}/sourceRevision`, issues);
 	checkContextRevision(object.contextRevision, `${path}/contextRevision`, issues);
+	if (object.displayTitle !== undefined) {
+		checkStringByteCap(object.displayTitle, `${path}/displayTitle`, CONTEXT_HYDRATION_CAPS_V1.noteBytesPerTask, issues);
+	}
 	if (object.note !== undefined) {
 		checkStringByteCap(object.note, `${path}/note`, CONTEXT_HYDRATION_CAPS_V1.noteBytesPerTask, issues);
 	}

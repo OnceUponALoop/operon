@@ -2289,7 +2289,11 @@
 		"upcomingShowStatusDockDesc": "Keep the current task visible when its countdown ends and show the next timed task beside it.",
 		"upcomingDockDaysDesc": "Choose how many calendar days to include in both the sidebar and status dock, counting today.",
 		"settingsPageTrackerDescDock": "Time tracking history, status dock timer, FlowTime behavior, and session splitting.",
-		"duplicateAlertDelayDescDock": "How long Operon waits before showing duplicate notices, status dock alerts, and the optional manager popup."
+		"duplicateAlertDelayDescDock": "How long Operon waits before showing duplicate notices, status dock alerts, and the optional manager popup.",
+		"fileTaskDisplayTitleEnabled": "Use a property as the File Task display title",
+		"fileTaskDisplayTitleEnabledDesc": "Use the read-only Key Mapping as the File Task label. Edit the property outside Operon to change the display title; Operon editors still rename the file.",
+		"keyMappingsDesc_fileTaskDisplayTitle": "Read-only frontmatter property used as the File Task label when display titles are enabled.",
+		"keyMappingsMappingCollision": "Some built-in Key Mappings could not be added because existing custom keys use the same canonical key or default property name. Rename the conflicting key, then reopen Settings."
 	},
 	"buttons": {
 		"lightboxWidthDecrease": "Decrease width",

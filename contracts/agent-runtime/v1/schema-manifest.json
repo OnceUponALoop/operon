@@ -36,7 +36,7 @@
     {
       "file": "context.schema.json",
       "id": "urn:operon:schema:runtime:v1:context.schema.json",
-      "sha256": "528a1b6412acdbc6df004cdcb5a22e9bc83d0778ae1408f804664a98912418fc"
+      "sha256": "79ff85ff7f078b063e3facaed812af0f4d7589d87f34a82ec9757b1e39931ef3"
     },
     {
       "file": "developer-api.schema.json",
@@ -312,7 +312,7 @@
       "schemaId": "task-context",
       "ref": "urn:operon:schema:runtime:v1:context.schema.json#/$defs/taskContext",
       "file": "context.schema.json",
-      "sha256": "528a1b6412acdbc6df004cdcb5a22e9bc83d0778ae1408f804664a98912418fc",
+      "sha256": "79ff85ff7f078b063e3facaed812af0f4d7589d87f34a82ec9757b1e39931ef3",
       "stability": "stable"
     },
     {
@@ -379,5 +379,5 @@
       "stability": "stable"
     }
   ],
-  "aggregateSha256": "7f0123fc1da01ca5d10d02c8a95def5aae2bac9086ad19787dae547d94b59d8f"
+  "aggregateSha256": "5001892af7eb87df168d91d661a11611b2a7f1ff99228f7b4aa05ff0cd60c283"
 }
